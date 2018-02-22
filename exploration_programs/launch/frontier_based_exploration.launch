@@ -1,0 +1,9 @@
+<launch>
+	<node pkg="exploration_programs" type="bumper_hit" name="bumper_hit" />
+	<node pkg="exploration_programs" type="odometry_on_map" name="odometry_on_map" respawn="true" />
+	<node pkg="exploration_programs" type="odom_support" name="odom_support" />
+	<node pkg="exploration_programs" type="tf_odom2map" name="tf_odom2map" respawn="true" />
+	<node pkg="exploration_programs" type="tf_odom2map_support" name="tf_odom2map_support" />
+	<node pkg="exploration_programs" type="odom_marker" name="odom_marker" />
+	<node pkg="exploration_programs" type="only_new_vector_explore_program" name="only_new_vector_explore_program" output="screen" />
+</launch>
