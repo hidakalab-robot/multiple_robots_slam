@@ -1463,7 +1463,7 @@ void VFH_scan_callback(const sensor_msgs::LaserScan::ConstPtr& VFH_msg){
 
 
 int main(int argc, char** argv){
-	ros::init(argc, argv, "only_new_sensor_based_exploration");
+	ros::init(argc, argv, "new_sensor_based_exploration");
 	ros::NodeHandle s;
 
 	VFH_option = ros::SubscribeOptions::create<sensor_msgs::LaserScan>("/scan",1,VFH_scan_callback,ros::VoidPtr(),&VFH_queue);

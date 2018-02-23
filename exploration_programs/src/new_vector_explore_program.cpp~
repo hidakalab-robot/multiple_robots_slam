@@ -96,7 +96,6 @@ bool bumper_hit = false;
 int which_bumper = 0;
 bool first_move = false;
 bool reverse_flag = false;
-float omega = 0;
 
 //引力を考慮した回転方向が決まったらこの関数を使う//地図情報に基づいて回転方向を決定//引力方向に回ると反転しそうだったら//両側にあったら引力
 void rotation_based_map(const nav_msgs::OccupancyGrid::ConstPtr& map_msg){
@@ -419,7 +418,7 @@ void vel_recovery(){
 //速度などを引数で使えるようにした速度送信関数
 void vel_curve_VFH2(float theta,float v,float t){
 	float theta_rho;
-	//float omega;
+	float omega;
 
 	pre_theta = theta;
 
@@ -692,12 +691,12 @@ void scan_rotate_callback(const sensor_msgs::LaserScan::ConstPtr& src_msg){
 		vel_curve_VFH2(Emergency_avoidance*angle_max/6,0.0,0.3);
 	}
 	else{
-		if(omega > 0 && plus_ave > range_threshold){
+		if(vel.angular.z > 0 && plus_ave > range_threshold){
 			Emergency_avoidance = 1.0;
 			vel_curve_VFH2(Emergency_avoidance*angle_max/6,forward_vel,0.3);
 		}
 
-		else if(omega < 0 && minus_ave > range_threshold){
+		else if(vel.angular.z < 0 && minus_ave > range_threshold){
 			Emergency_avoidance = -1.0;
 			vel_curve_VFH2(Emergency_avoidance*angle_max/6,forward_vel,0.3);
 		}
@@ -1380,7 +1379,7 @@ void frontier_search(const nav_msgs::OccupancyGrid::ConstPtr& msg){
 
 int main(int argc, char** argv){
 
-  	ros::init(argc, argv, "only_new_vector_explore_program");
+  	ros::init(argc, argv, "new_vector_explore_program");
   	ros::NodeHandle f;
 
 	scan_option = ros::SubscribeOptions::create<sensor_msgs::LaserScan>("/scan",1,VFH_gravity,ros::VoidPtr(),&scan_queue);
@@ -1425,19 +1424,6 @@ int main(int argc, char** argv){
 	sleep(1);
 	
 	led1_pub.publish(led1);
-
-	//start_rotate//360[deg]回る//yawの符号が二回変わるまで
-	float pre_yaw = 0;
-	int rotate_count = 0;
-	vel.angular.z = 0.3;
-	while(rotate_count < 2){
-		vel_pub.publish(vel);
-		odom_queue.callOne(ros::WallDuration(1));
-		if(yaw*pre_yaw < 0){
-			rotate_count++;
-		}
-		pre_yaw = yaw;
-	}
 
 	while(!stop && ros::ok()){
 		map_queue.callOne(ros::WallDuration(1));

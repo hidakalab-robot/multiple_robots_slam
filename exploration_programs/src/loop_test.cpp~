@@ -6,7 +6,6 @@ ros::CallbackQueue tf_queue;
 ros::Subscriber tf_sub;
 ros::SubscribeOptions tf_option;
 ros::Publisher loop_pub;
-geometry_msgs::Point count;
 
 float pre_loop_x = 0;
 float pre_loop_y = 0;
@@ -29,7 +28,6 @@ void tf_callback(const geometry_msgs::Point::ConstPtr& tf_data){
 		pre_loop_x = trans_x;
 		pre_loop_y = trans_y;
 	}
-	count.x = loop_count;
 }
 
 int main(int argc, char** argv){
@@ -44,7 +42,6 @@ int main(int argc, char** argv){
 
 	while(ros::ok()){
 		tf_queue.callOne(ros::WallDuration(1));
-		loop_pub.publish(count);
 	}
 
 	return 0;

@@ -96,6 +96,7 @@ bool bumper_hit = false;
 int which_bumper = 0;
 bool first_move = false;
 bool reverse_flag = false;
+float omega = 0;
 
 //引力を考慮した回転方向が決まったらこの関数を使う//地図情報に基づいて回転方向を決定//引力方向に回ると反転しそうだったら//両側にあったら引力
 void rotation_based_map(const nav_msgs::OccupancyGrid::ConstPtr& map_msg){
@@ -418,7 +419,7 @@ void vel_recovery(){
 //速度などを引数で使えるようにした速度送信関数
 void vel_curve_VFH2(float theta,float v,float t){
 	float theta_rho;
-	float omega;
+	//float omega;
 
 	pre_theta = theta;
 
@@ -691,7 +692,16 @@ void scan_rotate_callback(const sensor_msgs::LaserScan::ConstPtr& src_msg){
 		vel_curve_VFH2(Emergency_avoidance*angle_max/6,0.0,0.3);
 	}
 	else{
-		if(plus_ave > minus_ave){
+		if(omega > 0 && plus_ave > range_threshold){
+			Emergency_avoidance = 1.0;
+			vel_curve_VFH2(Emergency_avoidance*angle_max/6,forward_vel,0.3);
+		}
+
+		else if(omega < 0 && minus_ave > range_threshold){
+			Emergency_avoidance = -1.0;
+			vel_curve_VFH2(Emergency_avoidance*angle_max/6,forward_vel,0.3);
+		}
+		else if(plus_ave > minus_ave){
 			std::cout << "plusに回転\n" << std::endl;
 			Emergency_avoidance = 1.0;
 			vel_curve_VFH2(Emergency_avoidance*angle_max/6,forward_vel,0.3);

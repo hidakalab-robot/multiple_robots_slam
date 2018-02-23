@@ -65,9 +65,9 @@ void marge_map(){
 	int rotated_map[rotated_width][rotated_width];//回転した地図
 	*/	
 	
-	//rotation_angle = calc_rotation_angle();//地図を回転する角度を計算
+	rotation_angle = calc_rotation_angle();//地図を回転する角度を計算
 
-	//map_rotation(rotation_angle);//地図を回転する;
+	map_rotation(rotation_angle);//地図を回転する;
 
 	//merging();合成する
 	
