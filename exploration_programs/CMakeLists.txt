@@ -243,3 +243,6 @@ target_link_libraries(odom_marker ${catkin_LIBRARIES})
 
 add_executable(loop_test src/loop_test.cpp)
 target_link_libraries(loop_test ${catkin_LIBRARIES})
+
+add_executable(calc_move_distance src/calc_move_distance.cpp)
+target_link_libraries(calc_move_distance ${catkin_LIBRARIES})

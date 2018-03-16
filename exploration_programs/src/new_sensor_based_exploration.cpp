@@ -8,7 +8,7 @@
 #include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/Point.h>
 #include <kobuki_msgs/Led.h>
-#include <std_msgs/ColorRGBA.h>
+
 
 /*パブリッシュ、サブスクライブ関連*/
 ros::CallbackQueue VFH_queue;
