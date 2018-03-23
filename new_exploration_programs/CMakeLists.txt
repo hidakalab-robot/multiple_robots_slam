@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(exploration_programs)
+project(new_exploration_programs)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,16 +8,15 @@ project(exploration_programs)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
+  kobuki_msgs
+  nav_msgs
   roscpp
   rospy
-  std_msgs
-  geometry_msgs
   sensor_msgs
+  std_msgs
+  visualization_msgs
   tf
-  tf2_msgs
-  nav_msgs
-  actionlib
-  move_base_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -77,7 +76,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(
 #   DEPENDENCIES
-#   geometry_msgs#   nav_msgs#   std_msgs
+#   geometry_msgs#   kobuki_msgs#   nav_msgs#   sensor_msgs#   std_msgs#   visualization_msgs
 # )
 
 ################################################
@@ -110,9 +109,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES exploration_programs
-#  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs
+  INCLUDE_DIRS include
+#  LIBRARIES new_exploration_programs
+#  CATKIN_DEPENDS geometry_msgs kobuki_msgs nav_msgs roscpp rospy sensor_msgs std_msgs visualization_msgs
 #  DEPENDS system_lib
 )
 
@@ -123,13 +122,13 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+  include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/exploration_programs.cpp
+#   src/${PROJECT_NAME}/new_exploration_programs.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -140,7 +139,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/exploration_programs_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/new_exploration_programs_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -197,7 +196,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_exploration_programs.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_new_exploration_programs.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
@@ -205,44 +204,32 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-#add_executable(new_vector_explore_program src/new_vector_explore_program.cpp)
-#target_link_libraries(new_vector_explore_program ${catkin_LIBRARIES})
+add_executable(frontier-based_exploration src/main/frontier-based_exploration_main.cpp src/avoidance_process/avoidance_process.cpp src/avoidance_process/avoidance_process_function.cpp src/basic_process/basic_process_function.cpp src/basic_process/basic_process.cpp src/frontier_map_process/frontier_map_process.cpp src/frontier_map_process/frontier_map_process_function.cpp src/frontier_moving_process/frontier_moving_process.cpp src/frontier_moving_process/frontier_moving_process_function.cpp)
+target_link_libraries(frontier-based_exploration ${catkin_LIBRARIES})
 
-#add_executable(only_new_vector_explore_program src/only_new_vector_explore_program.cpp)
-#target_link_libraries(only_new_vector_explore_program ${catkin_LIBRARIES})
+add_executable(data_export src/sub_process/data_export.cpp)
+target_link_libraries(data_export ${catkin_LIBRARIES})
 
-#add_executable(data_export src/data_export.cpp)
-#target_link_libraries(data_export ${catkin_LIBRARIES})
+add_executable(odometry_on_map src/sub_process/odometry_on_map.cpp)
+target_link_libraries(odometry_on_map ${catkin_LIBRARIES})
 
-#add_executable(odometry_on_map src/odometry_on_map.cpp)
-#target_link_libraries(odometry_on_map ${catkin_LIBRARIES})
+add_executable(odom_support src/sub_process/odom_support.cpp)
+target_link_libraries(odom_support ${catkin_LIBRARIES})
 
-#add_executable(odom_support src/odom_support.cpp)
-#target_link_libraries(odom_support ${catkin_LIBRARIES})
+add_executable(bumper_hit src/sub_process/bumper_hit.cpp)
+target_link_libraries(bumper_hit ${catkin_LIBRARIES})
 
-#add_executable(bumper_hit src/bumper_hit.cpp)
-#target_link_libraries(bumper_hit ${catkin_LIBRARIES})
+add_executable(tf_odom2map src/sub_process/tf_odom2map.cpp)
+target_link_libraries(tf_odom2map ${catkin_LIBRARIES})
 
-#add_executable(new_sensor_based_exploration src/new_sensor_based_exploration.cpp)
-#target_link_libraries(new_sensor_based_exploration ${catkin_LIBRARIES})
+add_executable(tf_odom2map_support src/sub_process/tf_odom2map_support.cpp)
+target_link_libraries(tf_odom2map_support ${catkin_LIBRARIES})
 
-#add_executable(only_new_sensor_based_exploration src/only_new_sensor_based_exploration.cpp)
-#target_link_libraries(only_new_sensor_based_exploration ${catkin_LIBRARIES})
+add_executable(odom_marker src/sub_process/odom_marker.cpp)
+target_link_libraries(odom_marker ${catkin_LIBRARIES})
 
-#add_executable(new_hybrid_exploration src/new_hybrid_exploration.cpp)
-#target_link_libraries(new_hybrid_exploration ${catkin_LIBRARIES})
+add_executable(loop_test src/sub_process/loop_test.cpp)
+target_link_libraries(loop_test ${catkin_LIBRARIES})
 
-#add_executable(tf_odom2map src/tf_odom2map.cpp)
-#target_link_libraries(tf_odom2map ${catkin_LIBRARIES})
-
-#add_executable(tf_odom2map_support src/tf_odom2map_support.cpp)
-#target_link_libraries(tf_odom2map_support ${catkin_LIBRARIES})
-
-#add_executable(odom_marker src/odom_marker.cpp)
-#target_link_libraries(odom_marker ${catkin_LIBRARIES})
-
-#add_executable(loop_test src/loop_test.cpp)
-#target_link_libraries(loop_test ${catkin_LIBRARIES})
-
-#add_executable(calc_move_distance src/calc_move_distance.cpp)
-#target_link_libraries(calc_move_distance ${catkin_LIBRARIES})
+add_executable(calc_move_distance src/sub_process/calc_move_distance.cpp)
+target_link_libraries(calc_move_distance ${catkin_LIBRARIES})

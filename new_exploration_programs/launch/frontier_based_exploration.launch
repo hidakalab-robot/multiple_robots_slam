@@ -1,0 +1,13 @@
+<launch>
+	<node pkg="new_exploration_programs" type="bumper_hit" name="bumper_hit" />
+	<node pkg="new_exploration_programs" type="odometry_on_map" name="odometry_on_map" respawn="true" />
+	<node pkg="new_exploration_programs" type="odom_support" name="odom_support" />
+	<node pkg="new_exploration_programs" type="tf_odom2map" name="tf_odom2map" respawn="true" />
+	<node pkg="new_exploration_programs" type="tf_odom2map_support" name="tf_odom2map_support" />
+	<node pkg="new_exploration_programs" type="odom_marker" name="odom_marker" />
+
+	<arg name="rotate" default="true"/>
+	<node pkg="new_exploration_programs" type="frontier-based_exploration" name="frontier-based_exploration" output="screen">
+		<param name="rotate_param" value="($arg rotate)"/>
+	</node>
+</launch>
