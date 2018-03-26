@@ -1,6 +1,5 @@
-#ifndef INCLUDE_GARDE_AP
-#define INCLUDE_GARDE_AP
-
+#ifndef INCLUDE_GUARD_AP
+#define INCLUDE_GUARD_AP
 
 #include <ros/ros.h>
 #include <new_exploration_programs/basic_process.h>

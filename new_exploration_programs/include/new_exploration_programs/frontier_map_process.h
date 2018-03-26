@@ -1,5 +1,5 @@
-#ifndef INCLUDE_GARDE_FMAP
-#define INCLUDE_GARDE_FMAP
+#ifndef INCLUDE_GUARD_FMAP
+#define INCLUDE_GUARD_FMAP
 
 #include <ros/ros.h>
 #include <new_exploration_programs/basic_process.h>

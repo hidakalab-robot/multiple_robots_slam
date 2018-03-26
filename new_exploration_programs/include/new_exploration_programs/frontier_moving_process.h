@@ -1,5 +1,5 @@
-#ifndef INCLUDE_GARDE_FMOP
-#define INCLUDE_GARDE_FMOP
+#ifndef INCLUDE_GUARD_FMOP
+#define INCLUDE_GUARD_FMOP
 
 #include <ros/ros.h>
 #include <new_exploration_programs/basic_process.h>

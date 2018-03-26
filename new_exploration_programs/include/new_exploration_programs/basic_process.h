@@ -1,5 +1,5 @@
-#ifndef INCLUDE_GARDE_BP
-#define INCLUDE_GARDE_BP
+#ifndef INCLUDE_GUARD_BP
+#define INCLUDE_GUARD_BP
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
