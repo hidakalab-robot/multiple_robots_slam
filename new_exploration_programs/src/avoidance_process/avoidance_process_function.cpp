@@ -1,5 +1,5 @@
 #include <new_exploration_programs/avoidance_process.h>
-#include <new_exploration_programs/basic_process.h>
+//#include <new_exploration_programs/basic_process.h>
 
 void AvoidanceProcess::obstacle_avoidance(void)
 {
@@ -14,11 +14,11 @@ void AvoidanceProcess::obstacle_avoidance(void)
   float angle_increment;
 
   float omega;
-  bp->get_omega(&omega);
+  bp.get_omega(&omega);
 
-  bp->get_scan(&ranges, &angle_min, &angle_max, &angle_increment);
+  bp.get_scan(&ranges, &angle_min, &angle_max, &angle_increment);
 
-  bp->approx(ranges);
+  bp.approx(ranges);
 
   //minus側の平均
   for(int i=0;i<ranges.size()/2;i++){
@@ -44,31 +44,31 @@ void AvoidanceProcess::obstacle_avoidance(void)
   std::cout << "minus_ave:" << minus_ave << std::endl;
 
   if(plus_ave < range_threshold && minus_ave < range_threshold){
-    bp->vel_curve_VFH(avoidance_sign*angle_max/6,0.3,0.0);
+    bp.vel_curve_VFH(avoidance_sign*angle_max/6,0.3,0.0);
   }
   else{
     if(omega > 0 && plus_ave > range_threshold){
       avoidance_sign = 1.0;
-      bp->vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
+      bp.vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
     }
 
     else if(omega < 0 && minus_ave > range_threshold){
       avoidance_sign = -1.0;
-      bp->vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
+      bp.vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
     }
     else if(plus_ave > minus_ave){
       std::cout << "plusに回転\n" << std::endl;
       avoidance_sign = 1.0;
-      bp->vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
+      bp.vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
     }
     else if(plus_ave < minus_ave){
       std::cout << "minusに回転\n" << std::endl;
       avoidance_sign = -1.0;
-      bp->vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
+      bp.vel_curve_VFH(avoidance_sign*angle_max/6,0.3);
     }
     else{
       std::cout << "無理です\n" << std::endl;
-      bp->vel_curve_VFH(avoidance_sign*angle_max/6,0.3,0.0);
+      bp.vel_curve_VFH(avoidance_sign*angle_max/6,0.3,0.0);
     }
   }
 }
@@ -88,9 +88,9 @@ void AvoidanceProcess::bumper_avoidance(void)
   ros::Time set_time;
   ros::Duration rotate(rotate_time);
 
-  bp->get_bumper(&bumper_hit,&which_bumper);
-  bp->get_rotatevel(&rotate_vel);
-  bp->get_pretheta(&pre_theta);
+  bp.get_bumper(&bumper_hit,&which_bumper);
+  bp.get_rotatevel(&rotate_vel);
+  bp.get_pretheta(&pre_theta);
 
   if(bumper_hit)
   {
@@ -102,30 +102,30 @@ void AvoidanceProcess::bumper_avoidance(void)
     if(which_bumper == 0)
     {
       vel_z = -rotate_vel;
-      bp->set_vel(vel_x,vel_z);
+      bp.set_vel(vel_x,vel_z);
     }
     else if(which_bumper == 2)
     {
       vel_z = rotate_vel;
-      bp->set_vel(vel_x,vel_z);
+      bp.set_vel(vel_x,vel_z);
     }
     else
     {
       if(pre_theta > 0)
       {
         vel_z = -rotate_vel;
-        bp->set_vel(vel_x,vel_z);
+        bp.set_vel(vel_x,vel_z);
       }
       else
       {
         vel_z = rotate_vel;
-        bp->set_vel(vel_x,vel_z);
+        bp.set_vel(vel_x,vel_z);
       }
     }
     set_time = ros::Time::now();
     while(ros::Time::now()-set_time < rotate)
     {
-	bp->pub_vel();
+	bp.pub_vel();
     }
   }
 }
@@ -139,11 +139,11 @@ void AvoidanceProcess::go_back(void)
 
     float vel_x = back_vel;
     float vel_z = 0;
-    bp->set_vel(vel_x,vel_z);
+    bp.set_vel(vel_x,vel_z);
 
     set_time = ros::Time::now();
 
     while(ros::Time::now()-set_time < back){
-			bp->pub_vel();
+			bp.pub_vel();
 		}
 }

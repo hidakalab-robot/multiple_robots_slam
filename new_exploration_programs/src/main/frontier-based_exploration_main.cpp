@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv){
 
-  	ros::init(argc, argv, "frontier-based_exploration");
+  	ros::init(argc, argv, "frontier_based_exploration");
   	ros::NodeHandle nh("~");
 
     bool rotate;
@@ -27,6 +27,8 @@ int main(int argc, char** argv){
     int led_val = 3;
     bp.set_led1(led_val);
     bp.pub_led1();
+
+    std::cout << "rotate:" << rotate << std::endl;
 
     if(rotate)
     {

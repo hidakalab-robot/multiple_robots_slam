@@ -1,9 +1,14 @@
+#ifndef INCLUDE_GARDE_FMOP
+#define INCLUDE_GARDE_FMOP
+
 #include <ros/ros.h>
+#include <new_exploration_programs/basic_process.h>
+#include <new_exploration_programs/frontier_map_process.h>
+#include <new_exploration_programs/avoidance_process.h>
 
-
-class BasicProcess;
-class FrontierMapProcess;
-class AvoidanceProcess;
+//class BasicProcess;
+//class FrontierMapProcess;
+//class AvoidanceProcess;
 
 class FrontierMovingProcess
 {
@@ -17,9 +22,13 @@ private:
 	double yaw;
 	float no_goal;//3.14
 
-	BasicProcess *bp;
-	FrontierMapProcess *fmap;
-	AvoidanceProcess *ap;
+	//BasicProcess *bp;
+	//FrontierMapProcess *fmap;
+	//AvoidanceProcess *ap;
+
+	BasicProcess bp;
+	FrontierMapProcess fmap;
+	AvoidanceProcess ap;
 public:
 	/*コンストラクタ*/
 	FrontierMovingProcess();
@@ -31,3 +40,5 @@ public:
 	void reverse_check(void);//なんか回転するやつ
 	void VFH_moving(void);
 };
+
+#endif

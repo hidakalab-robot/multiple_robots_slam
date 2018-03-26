@@ -1,7 +1,10 @@
+#ifndef INCLUDE_GARDE_FMAP
+#define INCLUDE_GARDE_FMAP
+
 #include <ros/ros.h>
+#include <new_exploration_programs/basic_process.h>
 
-
-class BasicProcess;
+//class BasicProcess;
 
 class FrontierMapProcess
 {
@@ -29,7 +32,8 @@ private:
 	static float pre_goal_point_x;//移動用関数から持ってくるようにする
 	static float pre_goal_point_y;
 
-	BasicProcess *bp;
+	//BasicProcess *bp;
+	BasicProcess bp;
 
 public:
 	/*コンストラクタ*/
@@ -43,3 +47,5 @@ public:
 	void set_pregoalpoint(float x, float y);
 	bool stop_check(void);
 };
+
+#endif

@@ -1,12 +1,17 @@
+#ifndef INCLUDE_GARDE_AP
+#define INCLUDE_GARDE_AP
+
+
 #include <ros/ros.h>
+#include <new_exploration_programs/basic_process.h>
 
-
-class BasicProcess;
+//class BasicProcess;
 
 class AvoidanceProcess
 {
 private:
-	BasicProcess *bp;
+	//BasicProcess *bp;
+	BasicProcess bp;
 	float avoidance_sign;//1.0
 public:
 	/*コンストラクタ*/
@@ -21,3 +26,5 @@ public:
 	//bumper回避のやつここに入れる
 
 };
+
+#endif

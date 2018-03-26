@@ -204,8 +204,8 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(frontier-based_exploration src/main/frontier-based_exploration_main.cpp src/avoidance_process/avoidance_process.cpp src/avoidance_process/avoidance_process_function.cpp src/basic_process/basic_process_function.cpp src/basic_process/basic_process.cpp src/frontier_map_process/frontier_map_process.cpp src/frontier_map_process/frontier_map_process_function.cpp src/frontier_moving_process/frontier_moving_process.cpp src/frontier_moving_process/frontier_moving_process_function.cpp)
-target_link_libraries(frontier-based_exploration ${catkin_LIBRARIES})
+add_executable(frontier_based_exploration src/main/frontier-based_exploration_main.cpp src/avoidance_process/avoidance_process.cpp src/avoidance_process/avoidance_process_function.cpp src/basic_process/basic_process_function.cpp src/basic_process/basic_process.cpp src/frontier_map_process/frontier_map_process.cpp src/frontier_map_process/frontier_map_process_function.cpp src/frontier_moving_process/frontier_moving_process.cpp src/frontier_moving_process/frontier_moving_process_function.cpp)
+target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
 
 add_executable(data_export src/sub_process/data_export.cpp)
 target_link_libraries(data_export ${catkin_LIBRARIES})

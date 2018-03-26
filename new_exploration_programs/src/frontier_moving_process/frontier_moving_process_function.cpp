@@ -1,7 +1,7 @@
 #include <new_exploration_programs/frontier_moving_process.h>
-#include <new_exploration_programs/frontier_map_process.h>
-#include <new_exploration_programs/basic_process.h>
-#include <new_exploration_programs/avoidance_process.h>
+//#include <new_exploration_programs/frontier_map_process.h>
+//#include <new_exploration_programs/basic_process.h>
+//#include <new_exploration_programs/avoidance_process.h>
 
 void FrontierMovingProcess::VFH_navigation(void){
 
@@ -11,8 +11,8 @@ void FrontierMovingProcess::VFH_navigation(void){
 	float goal_point_x;
 	float goal_point_y;
 
-	fmap->get_flogoal(&goal_point_x, &goal_point_y);
-	bp->display_gravity(goal_point_x, goal_point_y);
+	fmap.get_flogoal(&goal_point_x, &goal_point_y);
+	bp.display_gravity(goal_point_x, goal_point_y);
 
 	const float goal_margin = 1.0;//0.8;//0.5;
 	float now2goal_dis = 100.0;
@@ -27,7 +27,7 @@ void FrontierMovingProcess::VFH_navigation(void){
 	//float odom_x;
 	//float odom_y;
 
-	bp->get_odom(&odom_x, &odom_y, &yaw);
+	bp.get_odom(&odom_x, &odom_y, &yaw);
 
 	std::cout << "目標へ移動開始" << std::endl;
 	std::cout << "goal(" << goal_point_x << "," << goal_point_y << ")" << std::endl;
@@ -51,11 +51,11 @@ void FrontierMovingProcess::VFH_navigation(void){
 		}
 
 		//AvoidanceProcessにいれるbumper_che();
-		ap->bumper_avoidance();
+		ap.bumper_avoidance();
 		VFH_moving();//ロボットを動かす
 
 		//odom_queue.callOne(ros::WallDuration(1));//自分のオドメトリ取得
-		bp->get_odom(&odom_x, &odom_y, &yaw);
+		bp.get_odom(&odom_x, &odom_y, &yaw);
 
 		std::cout << "goal(" << goal_point_x << "," << goal_point_y << ")" << std::endl;
 		std::cout << "now(" << odom_x << "," << odom_y << ")\n" << std::endl;
@@ -77,7 +77,7 @@ void FrontierMovingProcess::VFH_navigation(void){
 		}
 	}
 
-	fmap->set_pregoalpoint(goal_point_x, goal_point_y);
+	fmap.set_pregoalpoint(goal_point_x, goal_point_y);
 	//pre_goal_point_x = goal_point_x;
 	//pre_goal_point_y = goal_point_y;
 
@@ -105,11 +105,11 @@ void FrontierMovingProcess::VFH_goal_angle(void){
 	const float safe_space = 0.6;
 	const float forward_dis = 0.75;
 
-	bp->get_scanthreshold(&scan_threshold);
+	bp.get_scanthreshold(&scan_threshold);
 
-	bp->get_scan(&ranges, &angle_min, &angle_max, &angle_increment);
+	bp.get_scan(&ranges, &angle_min, &angle_max, &angle_increment);
 
-	bp->approx(ranges);
+	bp.approx(ranges);
 
 	for(int i=0;i<ranges.size();i++){
 		angles.push_back(angle_min+(angle_increment*i));
@@ -256,7 +256,7 @@ void FrontierMovingProcess::VFH_goal_angle(void){
 		x_g = (scan_threshold/2) * cos(ang_g) + odom_x;
 		y_g = (scan_threshold/2) * sin(ang_g) + odom_y;
 
-		bp->display_goal_angle(x_g, y_g);
+		bp.display_goal_angle(x_g, y_g);
 
 	}
 
@@ -280,17 +280,17 @@ void FrontierMovingProcess::reverse_check(void){
 	float vel_x,vel_z;
 	float rotate_vel;
 
-	bp->get_rotatevel(&rotate_vel);
+	bp.get_rotatevel(&rotate_vel);
 
 	//ここでgra_angle_rの確認をする
 	if(std::abs(gra_angle_r) >= M_PI/2){
 		vel_z = rotate_vel*(gra_angle-yaw)/std::abs(gra_angle-yaw);
 		vel_x = 0;
-		bp->set_vel(vel_x, vel_z);
+		bp.set_vel(vel_x, vel_z);
 		//yawとgra_angleの差が小さくなるまで回る
 		while(ros::ok() && std::abs(gra_angle-yaw) > reverse_threshold){
-			bp->pub_vel();
-			bp->get_odom(&odom_x, &odom_y, &yaw);
+			bp.pub_vel();
+			bp.get_odom(&odom_x, &odom_y, &yaw);
 		}
 		VFH_goal_angle();
 	}
@@ -303,11 +303,11 @@ void FrontierMovingProcess::VFH_moving(void)
 	if(g_angle == no_goal)
 	{
 		//scan_rotateのやつ
-		ap->obstacle_avoidance();
+		ap.obstacle_avoidance();
 	}
 
 	else//(ないとき)
 	{
-		bp->vel_curve_VFH(g_angle,0.7);
+		bp.vel_curve_VFH(g_angle,0.7);
 	}
 }

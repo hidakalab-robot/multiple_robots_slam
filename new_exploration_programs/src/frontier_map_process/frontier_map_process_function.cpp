@@ -1,5 +1,5 @@
 #include <new_exploration_programs/frontier_map_process.h>
-#include <new_exploration_programs/basic_process.h>
+//#include <new_exploration_programs/basic_process.h>
 
 void FrontierMapProcess::frontier_search(void)
 {
@@ -9,7 +9,7 @@ void FrontierMapProcess::frontier_search(void)
 
 	//BasicProcess bp;
 
-	bp->get_map(&info, &data);//地図情報取得
+	bp.get_map(&info, &data);//地図情報取得
 
 	const int x = info.width;//地図の横サイズ
 	const int y = info.height;//地図の縦サイズ
@@ -344,7 +344,7 @@ void FrontierMapProcess::choose_goal_frontier(void)
 	std::cout << "start:ロボットの現在座標を取得" << std::endl;
 
 	//odom_queue.callOne(ros::WallDuration(1));
-	bp->get_odom(&ro_x_map, &ro_y_map, &ro_z_map);
+	bp.get_odom(&ro_x_map, &ro_y_map, &ro_z_map);
 	//odom_get(&ro_x_map, &ro_y_map, &ro_z_map);
 
 	pre_vector_x = cos(ro_z_map);
@@ -454,7 +454,7 @@ void FrontierMapProcess::choose_goal_frontier(void)
 	//目標が決まるたびにLEDの色を変える
 
 	int led_val;
-	bp->get_led2(&led_val);
+	bp.get_led2(&led_val);
 
 	if(led_val < 3){
 		led_val++;
@@ -462,8 +462,8 @@ void FrontierMapProcess::choose_goal_frontier(void)
 	else{
 		led_val = 1;
 	}
-	bp->set_led2(led_val);
-	bp->pub_led2();
+	bp.set_led2(led_val);
+	bp.pub_led2();
 
 
 	//VFH_navigation(fro_x_tmp[goal_num], fro_y_tmp[goal_num]);

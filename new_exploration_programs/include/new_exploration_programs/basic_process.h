@@ -1,3 +1,6 @@
+#ifndef INCLUDE_GARDE_BP
+#define INCLUDE_GARDE_BP
+
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <geometry_msgs/Twist.h>
@@ -122,3 +125,5 @@ public:
 	void approx(std::vector<float> &scan);
 	void one_rotation(void);
 };
+
+#endif
