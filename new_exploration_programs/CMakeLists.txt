@@ -17,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   visualization_msgs
   tf
+  pcl_conversions
+  pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -233,3 +235,9 @@ target_link_libraries(loop_test ${catkin_LIBRARIES})
 
 add_executable(calc_move_distance src/sub_process/calc_move_distance.cpp)
 target_link_libraries(calc_move_distance ${catkin_LIBRARIES})
+
+add_executable(analysis_point_cloud src/test_code/analysis_point_cloud.cpp)
+target_link_libraries(analysis_point_cloud ${catkin_LIBRARIES})
+
+add_executable(pointcloud_test src/test_code/pointcloud_test.cpp)
+target_link_libraries(pointcloud_test ${catkin_LIBRARIES})
