@@ -5,6 +5,21 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
+#include <pcl/filters/voxel_grid.h>
+
+#include <pcl/ModelCoefficients.h>  
+//#include <pcl/point_types.h>  
+#include <pcl/io/pcd_io.h>  
+#include <pcl/features/normal_3d.h>  
+#include <pcl/filters/extract_indices.h>  
+//#include <pcl/filters/voxel_grid.h>  
+#include <pcl/kdtree/kdtree.h>  
+#include <pcl/sample_consensus/method_types.h>  
+#include <pcl/sample_consensus/model_types.h>  
+#include <pcl/segmentation/sac_segmentation.h>  
+#include <pcl/segmentation/extract_clusters.h>  
+//#include <pcl/visualization/cloud_viewer.h>
+
 
 class AnalysisPointCloud
 {
@@ -16,6 +31,7 @@ private:
 	ros::Subscriber pc_sub2;
 
 	ros::Publisher pc_pub;
+	ros::Publisher pc_pub2;
 
 	uint32_t height;
 	uint32_t width;
@@ -39,6 +55,7 @@ public:
 		apc2.setCallbackQueue(&pc_queue2);
 		pc_sub2 = apc2.subscribe("/camera/depth_registered/points",1,&AnalysisPointCloud::processing_pc,this);
 		pc_pub = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud", 1);
+		pc_pub2 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud2", 1);
 	};
 	~AnalysisPointCloud(){};
 	void pointcloud_callback(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
@@ -49,28 +66,35 @@ public:
 void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr& ppc_msg)
 {
 	std::cout << "1" << std::endl;
-	pcl::PointCloud<pcl::PointXYZ> test_cloud;
+	pcl::PointCloud<pcl::PointXYZ>::Ptr test_cloud;
 	std::cout << "2" << std::endl;
-	//pcl_conversions::toPCL(*ppc_msg,pcl_pc);
-	pcl::fromROSMsg (*ppc_msg, test_cloud);
+	pcl::fromROSMsg (*ppc_msg, *test_cloud);
 	std::cout << "get_point_cloud" << std::endl;
 
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr filtered_cloud;
+	pcl::VoxelGrid<pcl::PointXYZ> vgf;
+	vgf.setInputCloud (test_cloud);
+	vgf.setLeafSize (0.1f, 0.1f, 0.1f);
+	vgf.filter (*filtered_cloud);
 	
-
-
-	for(int i=0;i<test_cloud.points.size();i++)
+	for(int i=0;i<test_cloud->points.size();i++)
 	{
-		test_cloud.points[i].x+=1.0;
+		test_cloud->points[i].x+=1.0;
 		//std::cout << test_cloud.points[i].x << ", " << test_cloud.points[i].y << ", " << test_cloud.points[i].z << std::endl;
 	//", " << +test_cloud.points[i].r << ", " << +test_cloud.points[i].g << ", " << +test_cloud.points[i].b << std::endl;
 		if(!ros::ok())
 			break;
 	}
 	std::cout << "edit_cloud" << std::endl;
-	sensor_msgs::PointCloud2 edit_cloud;
-	pcl::toROSMsg (test_cloud, edit_cloud);
+	sensor_msgs::PointCloud2 edit_cloud, edit_cloud2;
+	pcl::toROSMsg (*test_cloud, edit_cloud);
+	pcl::toROSMsg (*filtered_cloud, edit_cloud2);
+
 	pc_pub.publish(edit_cloud);
+	pc_pub2.publish(edit_cloud2);
 	std::cout << "publish_cloud" << std::endl;
+
 }
 
 
@@ -101,8 +125,9 @@ void AnalysisPointCloud::pointcloud_callback(const sensor_msgs::PointCloud2::Con
 		//std::cout << "datatype: " << datatype << std::endl; 
 		//std::cout << "count: " << count << std::endl; 
 	}
+
 	
-	for(int i=0;i<100/*data.size()*/;i++)
+	for(int i=0;i<100;i++)
 	{
 		std::cout << "data[" << i << "]: " << +data[i] << std::endl;
 		if(!ros::ok())
@@ -116,7 +141,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "analysis_point_cloud");
 	AnalysisPointCloud apc;
 	while(ros::ok()){
-		//apc.pc_queue.callOne(ros::WallDuration(1));
+		//apc.pc_queue.callOne(ros::WallDuration(1));//使用しない関数
 		std::cout << "0" << std::endl;
 		apc.pc_queue2.callOne(ros::WallDuration(10));
 	}
