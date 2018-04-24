@@ -58,6 +58,10 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	pcl::fromROSMsg (*ppc_msg, *test_cloud);
 	std::cout << "get_point_cloud" << std::endl;
 
+	std::cout << "tes_seq: " << test_cloud->header.seq << std::endl;
+	std::cout << "tes_stamp: " << test_cloud->header.stamp << std::endl;
+	std::cout << "tes_frame: " << test_cloud->header.frame_id << std::endl;
+
 /*初期状態を出力*/
 	sensor_msgs::PointCloud2 edit_cloud1;
 	pcl::toROSMsg (*test_cloud, edit_cloud1);
@@ -71,12 +75,16 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::VoxelGrid<pcl::PointXYZ> vg;
 	vg.setInputCloud (test_cloud);
-	vg.setLeafSize (0.01f, 0.01f, 0.01f);
+	vg.setLeafSize (0.1f, 0.1f, 0.1f);//voxel size (x,y,z)
 	vg.filter (*voxeled_cloud);
 
 /*voxel_grid時点での出力*/
 	sensor_msgs::PointCloud2 edit_cloud2;
 	pcl::toROSMsg (*voxeled_cloud, edit_cloud2);
+
+	std::cout << "vox_seq: " << test_cloud->header.seq << std::endl;
+	std::cout << "vox_stamp: " << test_cloud->header.stamp << std::endl;
+	std::cout << "vox_frame: " << test_cloud->header.frame_id << std::endl;
 
 	for(int i=0;i<voxeled_cloud->points.size();i++)
 	{
@@ -90,22 +98,27 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
 	pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
 	seg.setOptimizeCoefficients (true);
-	seg.setModelType (pcl::SACMODEL_PLANE);
+	//seg.setModelType (pcl::SACMODEL_PLANE);
+	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);
 	seg.setMethodType (pcl::SAC_RANSAC);
-	seg.setMaxIterations (100);
-	seg.setDistanceThreshold (0.02);
+	seg.setMaxIterations (500);//RANSACの繰り返し回数
+	seg.setDistanceThreshold (0.1);//モデルとどのくらい離れていてもいいか???謎
 
-	int i=0;
-	int nr_points = (int) voxeled_cloud->points.size ();
+	seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
+	seg.setEpsAngle(30.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
 
-	while (voxeled_cloud->points.size () > 0.3 * nr_points)
-	{
+	//int i=0;
+	//int nr_points = (int) voxeled_cloud->points.size ();
+
+//	while (voxeled_cloud->points.size () > 0.3 * nr_points)
+	//{
 	 seg.setInputCloud (voxeled_cloud);
 	 seg.segment (*inliers, *coefficients);
 	 if (inliers->indices.size () == 0)
 	 {
 		 std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-		 break;
+		 //break;
+		 return;
 	 }
 
 	 pcl::ExtractIndices<pcl::PointXYZ> extract;
@@ -115,8 +128,7 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	 extract.setNegative (true);
 	 extract.filter (*cloud_f);
 	 *voxeled_cloud = *cloud_f;
- }
-
+ //}
 
 /*平面除去出力*/
 
@@ -128,21 +140,20 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 		voxeled_cloud->points[i].x+=3.0;
 	}
 
-
 /*ユークリッドクラスタリング処理*/
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);
 	tree->setInputCloud (voxeled_cloud);
 	std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-	ec.setClusterTolerance (0.08);
-	ec.setMinClusterSize (100);
-	ec.setMaxClusterSize (25000000);
+	ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
+	ec.setMinClusterSize (100);//クラスタを構成する最小の点数
+	ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (voxeled_cloud);
 	ec.extract (cluster_indices);
 
 	int j = 0;
-	float colors[6][3] ={{255, 0, 0}, {0,255,0}, {0,0,255}, {255,255,0}, {0,255,255}, {255,0,255}};
+	float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr cluster_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::copyPointCloud(*voxeled_cloud, *cluster_cloud);
 
@@ -150,9 +161,9 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
   {
       for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
 			{
-					cluster_cloud->points[*pit].r = colors[j%6][0];
-					cluster_cloud->points[*pit].g = colors[j%6][1];
-					cluster_cloud->points[*pit].b = colors[j%6][2];
+					cluster_cloud->points[*pit].r = colors[j%12][0];
+					cluster_cloud->points[*pit].g = colors[j%12][1];
+					cluster_cloud->points[*pit].b = colors[j%12][2];
       }
       j++;
   }
