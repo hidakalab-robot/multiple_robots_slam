@@ -33,6 +33,7 @@ private:
 	ros::Publisher pc_pub2;
 	ros::Publisher pc_pub3;
 	ros::Publisher pc_pub4;
+	ros::Publisher pc_pub5;
 
 public:
 	ros::CallbackQueue pc_queue;
@@ -44,6 +45,7 @@ public:
 		pc_pub2 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud2", 1);
 		pc_pub3 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud3", 1);
 		pc_pub4 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud4", 1);
+		pc_pub5 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
 	};
 	~AnalysisPointCloud(){};
 	void processing_pc(const sensor_msgs::PointCloud2::ConstPtr& ppc_msg);
@@ -68,7 +70,7 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 
 	for(int i=0;i<test_cloud->points.size();i++)
 	{
-		test_cloud->points[i].x+=3.0;
+		test_cloud->points[i].x+=5.0;
 	}
 
 /*voxel_grid処理*/
@@ -79,17 +81,21 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	vg.filter (*voxeled_cloud);
 
 /*voxel_grid時点での出力*/
-	sensor_msgs::PointCloud2 edit_cloud2;
-	pcl::toROSMsg (*voxeled_cloud, edit_cloud2);
-
-	// std::cout << "vox_seq: " << test_cloud->header.seq << std::endl;
-	// std::cout << "vox_stamp: " << test_cloud->header.stamp << std::endl;
-	// std::cout << "vox_frame: " << test_cloud->header.frame_id << std::endl;
+	// sensor_msgs::PointCloud2 edit_cloud2;
+	// pcl::toROSMsg (*voxeled_cloud, edit_cloud2);
 	//
-	for(int i=0;i<voxeled_cloud->points.size();i++)
-	{
-		voxeled_cloud->points[i].x+=3.0;
-	}
+	// // std::cout << "vox_seq: " << test_cloud->header.seq << std::endl;
+	// // std::cout << "vox_stamp: " << test_cloud->header.stamp << std::endl;
+	// // std::cout << "vox_frame: " << test_cloud->header.frame_id << std::endl;
+	// //
+	//
+	// std::cout << "before_size: " << test_cloud->points.size() << std::endl;
+	// std::cout << "after_size: " << voxeled_cloud->points.size() << std::endl;
+	//
+	// for(int i=0;i<voxeled_cloud->points.size();i++)
+	// {
+	// 	voxeled_cloud->points[i].x+=5.0;
+	// }
 
 /*論文ではここで床面除去を入れてるけど、取り敢えず平面除去*/
 /*地面除去も追加、平面抽出は繰り返さない場合一番大きい平面のみ抽出する*/
@@ -120,6 +126,29 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 		 std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
 		 //break;
 	 }
+	 else
+	 {
+		 std::cout << "inliers->indices.size () : " << inliers->indices.size () << std::endl;
+	 }
+
+	 /*view_ground 推定した地面部分の色を赤で表示するだけ*/
+	 pcl::PointCloud<pcl::PointXYZRGB>::Ptr view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+	 pcl::copyPointCloud(*voxeled_cloud, *view_ground_cloud);
+
+	 for (int i = 0; i < view_ground_cloud->points.size (); i++)
+	 {
+		 view_ground_cloud->points[i].r = 255;
+		 view_ground_cloud->points[i].g = 255;
+		 view_ground_cloud->points[i].b = 255;
+	 }
+
+	 for (int i = 0; i < inliers->indices.size(); ++i)
+	 {
+		 view_ground_cloud->points[inliers->indices[i]].r = 255;
+		 view_ground_cloud->points[inliers->indices[i]].g = 0;
+		 view_ground_cloud->points[inliers->indices[i]].b = 0;
+	 }
+	 /*↑ここまで色付け*/
 
 	 pcl::ExtractIndices<pcl::PointXYZ> extract;
 	 extract.setInputCloud (voxeled_cloud);
@@ -132,13 +161,25 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 
 /*平面除去出力*/
 
-	sensor_msgs::PointCloud2 edit_cloud3;
-	pcl::toROSMsg (*ground_deleted_cloud, edit_cloud3);
+	/*地面色付け出力*/
+	sensor_msgs::PointCloud2 edit_cloud5;
+	pcl::toROSMsg (*view_ground_cloud, edit_cloud5);
 
 	for(int i=0;i<ground_deleted_cloud->points.size();i++)
 	{
-		ground_deleted_cloud->points[i].x+=3.0;
+		ground_deleted_cloud->points[i].x+=5.0;
 	}
+
+	/*地面削除出力*/
+	// sensor_msgs::PointCloud2 edit_cloud3;
+	// pcl::toROSMsg (*ground_deleted_cloud, edit_cloud3);
+	//
+	// for(int i=0;i<ground_deleted_cloud->points.size();i++)
+	// {
+	// 	ground_deleted_cloud->points[i].x+=5.0;
+	// }
+
+	std::cout << "del_ground_size: " << ground_deleted_cloud->points.size() << std::endl;
 
 /*ユークリッドクラスタリング処理*/
 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
@@ -175,9 +216,10 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	std::cout << "edit_cloud" << std::endl;
 
 	pc_pub1.publish(edit_cloud1);
-	pc_pub2.publish(edit_cloud2);
-	pc_pub3.publish(edit_cloud3);
+	//pc_pub2.publish(edit_cloud2);
+	//pc_pub3.publish(edit_cloud3);
 	pc_pub4.publish(edit_cloud4);
+	pc_pub5.publish(edit_cloud5);
 	std::cout << "publish_cloud" << std::endl;
 
 /*以下ごみ*/
