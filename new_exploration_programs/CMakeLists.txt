@@ -241,3 +241,6 @@ target_link_libraries(analysis_point_cloud ${catkin_LIBRARIES})
 
 add_executable(pointcloud_test src/test_code/pointcloud_test.cpp)
 target_link_libraries(pointcloud_test ${catkin_LIBRARIES})
+
+add_executable(processing_pointcloud src/test_code/processing_pointcloud.cpp)
+target_link_libraries(processing_pointcloud ${catkin_LIBRARIES})

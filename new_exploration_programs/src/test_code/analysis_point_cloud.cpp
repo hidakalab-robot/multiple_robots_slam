@@ -7,6 +7,8 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 
+#include <limits>
+
 
 /*用途不明ヘッダー*/
 //#include <pcl_conversions/pcl_conversions.h>
@@ -24,8 +26,8 @@
 class AnalysisPointCloud
 {
 private:
-	ros::NodeHandle apcs;
-	ros::NodeHandle apcp;
+	ros::NodeHandle ppcs;
+	ros::NodeHandle ppcp;
 
 	ros::Subscriber pc_sub;
 
@@ -35,34 +37,76 @@ private:
 	ros::Publisher pc_pub4;
 	ros::Publisher pc_pub5;
 
+	float camera_position_y;//カメラの高さ
+	float ground_position_y;//どのくらいの高さまで床とするか
+
+	float cloud_position;//表示の時それぞれの点群をどれくらい離すか
+
+	float nan_c;
+
 public:
 	ros::CallbackQueue pc_queue;
 	AnalysisPointCloud()
 	{
-		apcs.setCallbackQueue(&pc_queue);
-		pc_sub = apcs.subscribe("/camera/depth_registered/points",1,&AnalysisPointCloud::processing_pc,this);
-		pc_pub1 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud1", 1);
-		pc_pub2 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud2", 1);
-		pc_pub3 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud3", 1);
-		pc_pub4 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud4", 1);
-		pc_pub5 = apcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
+		ppcs.setCallbackQueue(&pc_queue);
+		pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&AnalysisPointCloud::processing_pc,this);
+		pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud1", 1);
+		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud2", 1);
+		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud3", 1);
+		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud4", 1);
+		pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
+
+		camera_position_y = 0.41;
+		ground_position_y = 0.3;
+
+		cloud_position = 5.0;
+
+		nan_c = std::numeric_limits<float>::quiet_NaN();
+
+		//vg.setLeafSize (0.1f, 0.1f, 0.1f);
+
+		// seg.setOptimizeCoefficients (true);
+		// //seg.setModelType (pcl::SACMODEL_PLANE);//全平面抽出
+		// seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
+		// seg.setMethodType (pcl::SAC_RANSAC);
+		// seg.setMaxIterations (1000);//RANSACの繰り返し回数
+		// seg.setDistanceThreshold (0.1);//モデルとどのくらい離れていてもいいか???謎
+		// seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
+		// seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
+
+		//ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
+		//ec.setMinClusterSize (100);//クラスタを構成する最小の点数
+		//ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
+
+		// = {{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}}
+
+
+		//colors[12][3] = {{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
+
 	};
 	~AnalysisPointCloud(){};
 	void processing_pc(const sensor_msgs::PointCloud2::ConstPtr& ppc_msg);
+
+	// void input_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
+	// void apply_voxelgrid(void);
+	// void delete_ground(void);
+	// void euclidean_clustering(void);
+	// void publish_pointcloud(void);
 };
+
 
 
 void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr& ppc_msg)
 {
-	std::cout << "1" << std::endl;
+	//std::cout << "1" << std::endl;
 	pcl::PointCloud<pcl::PointXYZ>::Ptr test_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-	std::cout << "2" << std::endl;
+	//std::cout << "2" << std::endl;
 	pcl::fromROSMsg (*ppc_msg, *test_cloud);
 	std::cout << "get_point_cloud" << std::endl;
 	//
-	/// saaaatd::cout << "tes_seq: " << test_cloud->header.seq << std::endl;
+	/// std::cout << "tes_seq: " << test_cloud->header.seq << std::endl;
 	// std::cout << "taaes_stamp: " << test_cloud->header.stamp << std::endl;
-	//a std::cout << "tes_frame: " << test_cloud->header.frame_id << std::endl;
+	//std::cout << "tes_frame: " << test_cloud->header.frame_id << std::endl;
 
 /*初期状態を出力*/
 	sensor_msgs::PointCloud2 edit_cloud1;
@@ -108,19 +152,44 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	//seg.setModelType (pcl::SACMODEL_PLANE);//全平面抽出
 	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
 	seg.setMethodType (pcl::SAC_RANSAC);
-	seg.setMaxIterations (500);//RANSACの繰り返し回数
+	seg.setMaxIterations (1000);//RANSACの繰り返し回数
 	seg.setDistanceThreshold (0.1);//モデルとどのくらい離れていてもいいか???謎
 
 	seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
-	seg.setEpsAngle(30.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
+	seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
 
 	//int i=0;
 	//int nr_points = (int) voxeled_cloud->points.size ();
 
+	/*ポイントクラウドを複製して高さが一定以上の点のみで平面を計算できるようにする(一定以上の高さだったらNanかInfにする)*/
+
+	pcl::PointCloud<pcl::PointXYZ>::Ptr for_detecct_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::copyPointCloud(*voxeled_cloud, *for_detecct_ground_cloud);
+
+	float nan = std::numeric_limits<float>::quiet_NaN();
+
+	//std::cout << "nan_test : " << nan_test << '\n';
+
+	for(int i=0;i<for_detecct_ground_cloud->points.size();i++)
+	{
+		if(for_detecct_ground_cloud->points[i].y < camera_position_y - ground_position_y)
+		{
+			for_detecct_ground_cloud->points[i].x = nan;
+			for_detecct_ground_cloud->points[i].y = nan;
+			for_detecct_ground_cloud->points[i].z = nan;
+		}
+	}
+
 //	while (voxeled_cloud->points.size () > 0.3 * nr_points)//whileで繰り返すと複数の平面が消せる
 	//{
-	 seg.setInputCloud (voxeled_cloud);
+	 //seg.setInputCloud (voxeled_cloud);
+	 seg.setInputCloud (for_detecct_ground_cloud);
+	 //std::cout << "first::" << coefficients->values[0] << " " << coefficients->values[1] << " " << coefficients->values[2] << " " << coefficients->values[3] << std::endl;
+
 	 seg.segment (*inliers, *coefficients);
+
+	 std::cout << "second::" << coefficients->values[0] << " " << coefficients->values[1] << " " << coefficients->values[2] << " " << coefficients->values[3] << std::endl;
+
 	 if (inliers->indices.size () == 0)
 	 {
 		 std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
@@ -140,6 +209,13 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 		 view_ground_cloud->points[i].r = 255;
 		 view_ground_cloud->points[i].g = 255;
 		 view_ground_cloud->points[i].b = 255;
+
+		 if(view_ground_cloud->points[i].y < camera_position_y - ground_position_y)
+		 {
+			 view_ground_cloud->points[i].r = 0;
+			 view_ground_cloud->points[i].g = 255;
+			 view_ground_cloud->points[i].b = 0;
+		 }
 	 }
 
 	 for (int i = 0; i < inliers->indices.size(); ++i)
@@ -147,6 +223,17 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 		 view_ground_cloud->points[inliers->indices[i]].r = 255;
 		 view_ground_cloud->points[inliers->indices[i]].g = 0;
 		 view_ground_cloud->points[inliers->indices[i]].b = 0;
+
+		 //std::cout << view_ground_cloud->points[inliers->indices[i]].y << '\n';
+
+		 // if(view_ground_cloud->points[inliers->indices[i]].y < -0.5)
+		 // {
+			//  view_ground_cloud->points[inliers->indices[i]].r = 0;
+			//  view_ground_cloud->points[inliers->indices[i]].g = 255;
+			//  view_ground_cloud->points[inliers->indices[i]].b = 0;
+		 // }
+
+
 	 }
 	 /*↑ここまで色付け*/
 
@@ -244,11 +331,15 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "analysis_point_cloud");
-	AnalysisPointCloud apc;
+	ros::init(argc, argv, "analysis_pointcloud");
+	AnalysisPointCloud pp;
 	while(ros::ok()){
-		std::cout << "0" << std::endl;
-		apc.pc_queue.callOne(ros::WallDuration(1));
+		//std::cout << "0" << std::endl;
+		pp.pc_queue.callOne(ros::WallDuration(1));
+		//pp.apply_voxelgrid();
+		//pp.delete_ground();
+		//pp.euclidean_clustering();
+		//pp.publish_pointcloud();
 	}
 	return 0;
 }
