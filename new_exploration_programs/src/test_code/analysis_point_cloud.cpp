@@ -60,7 +60,7 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	pcl::fromROSMsg (*ppc_msg, *test_cloud);
 	std::cout << "get_point_cloud" << std::endl;
 	//
-	/// std::cout << "tes_seq: " << test_cloud->header.seq << std::endl;
+	/// saaaatd::cout << "tes_seq: " << test_cloud->header.seq << std::endl;
 	// std::cout << "tes_stamp: " << test_cloud->header.stamp << std::endl;
 	//a std::cout << "tes_frame: " << test_cloud->header.frame_id << std::endl;
 
