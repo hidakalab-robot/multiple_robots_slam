@@ -6,21 +6,7 @@
 #include <pcl/filters/extract_indices.h>
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
-
 #include <limits>
-
-
-/*用途不明ヘッダー*/
-//#include <pcl_conversions/pcl_conversions.h>
-//#include <pcl/point_cloud.h>
-//#include <pcl/point_types.h>
-//#include <pcl/io/pcd_io.h>
-//#include <pcl/ModelCoefficients.h>
-//#include <pcl/features/normal_3d.h>
-//#include <pcl/kdtree/kdtree.h>
-//#include <pcl/sample_consensus/method_types.h>
-//#include <pcl/sample_consensus/model_types.h>
-
 
 
 class ProcessingPointCloud
@@ -59,13 +45,10 @@ private:
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_view_ground_cloud;
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
 
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree;//何か探索用にツリーを作る
+	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree;//何か探索用にツリーを作る
 
-	std::vector<pcl::PointIndices> cluster_indices;
+	//std::vector<pcl::PointIndices> cluster_indices;
 	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-
-	//int color_list[3];
-	//int colors[12][3] = {{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};;
 
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud;
 
@@ -85,8 +68,7 @@ public:
 		coefficients(new pcl::ModelCoefficients),
 		for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>),
 		for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-		tree (new pcl::search::KdTree<pcl::PointXYZ>),
-		//colors({255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}),//色リスト
+		//tree (new pcl::search::KdTree<pcl::PointXYZ>),
 		clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
 	{
 		ppcs.setCallbackQueue(&pc_queue);
@@ -104,10 +86,9 @@ public:
 
 		nan_c = std::numeric_limits<float>::quiet_NaN();
 
-		//vg.setLeafSize (0.1f, 0.1f, 0.1f);
+		vg.setLeafSize (0.1f, 0.1f, 0.1f);
 
 		seg.setOptimizeCoefficients (true);
-		//seg.setModelType (pcl::SACMODEL_PLANE);//全平面抽出
 		seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
 		seg.setMethodType (pcl::SAC_RANSAC);
 		seg.setMaxIterations (1000);//RANSACの繰り返し回数
@@ -115,18 +96,11 @@ public:
 		seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
 		seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
 
-		//ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
-		//ec.setMinClusterSize (100);//クラスタを構成する最小の点数
-		//ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
-
-		// = {{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}}
-
-
-		//colors[12][3] = {{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
-
+		ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
+		ec.setMinClusterSize (100);//クラスタを構成する最小の点数
+		ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
 	};
 	~ProcessingPointCloud(){};
-	//void processing_pc(const sensor_msgs::PointCloud2::ConstPtr& ppc_msg);
 
 	void input_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
 	void apply_voxelgrid(void);
@@ -139,7 +113,6 @@ public:
 void ProcessingPointCloud::input_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
 {
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-	//std::cout << "2" << std::endl;
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
 	std::cout << "input_pointcloud" << std::endl;
 }
@@ -150,8 +123,6 @@ void ProcessingPointCloud::apply_voxelgrid(void)
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	//pcl::VoxelGrid<pcl::PointXYZ> vg;
 	vg.setInputCloud (input_cloud);
-	//vg.setLeafSize (0.1f, 0.1f, 0.1f);//voxel size (x,y,z)
-	vg.setLeafSize (0.1f, 0.1f, 0.1f);
 	vg.filter (*voxeled_cloud);
 	std::cout << "pointcloud_voxeled" << std::endl;
 
@@ -168,32 +139,8 @@ void ProcessingPointCloud::apply_voxelgrid(void)
 
 void ProcessingPointCloud::delete_ground(void)
 {
-	// pcl::PointCloud<pcl::PointXYZ>::Ptr ground_deleted_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-	// pcl::SACSegmentation<pcl::PointXYZ> seg;
-	// pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-	// pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-
-	// seg.setOptimizeCoefficients (true);
-	// //seg.setModelType (pcl::SACMODEL_PLANE);//全平面抽出
-	// seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
-	// seg.setMethodType (pcl::SAC_RANSAC);
-	// seg.setMaxIterations (1000);//RANSACの繰り返し回数
-	// seg.setDistanceThreshold (0.1);//モデルとどのくらい離れていてもいいか???謎
-	//
-	// seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
-	// seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
-
-	//int i=0;
-	//int nr_points = (int) voxeled_cloud->points.size ();
-
 	/*ポイントクラウドを複製して高さが一定以上の点のみで平面を計算できるようにする(一定以上の高さだったらNanかInfにする)*/
-
-	//pcl::PointCloud<pcl::PointXYZ>::Ptr for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::copyPointCloud(*voxeled_cloud, *for_detect_ground_cloud);
-
-	//float nan = std::numeric_limits<float>::quiet_NaN();
-
-	//std::cout << "nan_test : " << nan_test << '\n';
 
 	for(int i=0;i<for_detect_ground_cloud->points.size();i++)
 	{
@@ -205,25 +152,13 @@ void ProcessingPointCloud::delete_ground(void)
 		}
 	}
 
-//	while (voxeled_cloud->points.size () > 0.3 * nr_points)//whileで繰り返すと複数の平面が消せる
-	//{
-	 //seg.setInputCloud (voxeled_cloud);
 	 seg.setInputCloud (for_detect_ground_cloud);
-	 //std::cout << "first::" << coefficients->values[0] << " " << coefficients->values[1] << " " << coefficients->values[2] << " " << coefficients->values[3] << std::endl;
-
 	 seg.segment (*inliers, *coefficients);
-
-	 //std::cout << "second::" << coefficients->values[0] << " " << coefficients->values[1] << " " << coefficients->values[2] << " " << coefficients->values[3] << std::endl;
 
 	 if (inliers->indices.size () == 0)
 	 {
 		 std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-		 //break;
 	 }
-	 // else
-	 // {
-		//  std::cout << "inliers->indices.size () : " << inliers->indices.size () << std::endl;
-	 // }
 
 	 /*view_ground 推定した地面部分の色を赤で表示するだけ*/
 	 //pcl::PointCloud<pcl::PointXYZRGB>::Ptr view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -248,15 +183,6 @@ void ProcessingPointCloud::delete_ground(void)
 		 for_view_ground_cloud->points[inliers->indices[i]].r = 255;
 		 for_view_ground_cloud->points[inliers->indices[i]].g = 0;
 		 for_view_ground_cloud->points[inliers->indices[i]].b = 0;
-
-		 //std::cout << view_ground_cloud->points[inliers->indices[i]].y << '\n';
-
-		 // if(view_ground_cloud->points[inliers->indices[i]].y < -0.5)
-		 // {
-			//  view_ground_cloud->points[inliers->indices[i]].r = 0;
-			//  view_ground_cloud->points[inliers->indices[i]].g = 255;
-			//  view_ground_cloud->points[inliers->indices[i]].b = 0;
-		 // }
 	 }
 
 	 for(int i=0;i<for_view_ground_cloud->points.size();i++)
@@ -265,7 +191,6 @@ void ProcessingPointCloud::delete_ground(void)
 	 }
 
 	 pcl::toROSMsg (*for_view_ground_cloud, edit_cloud2);
-
 
 	 //pcl::ExtractIndices<pcl::PointXYZ> extract;
 	 extract.setInputCloud (voxeled_cloud);
@@ -290,20 +215,16 @@ void ProcessingPointCloud::delete_ground(void)
 
 void ProcessingPointCloud::euclidean_clustering(void)
 {
-	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
 	tree->setInputCloud (deleted_ground_cloud);
-	//std::vector<pcl::PointIndices> cluster_indices;
-	//pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-	ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
-	ec.setMinClusterSize (100);//クラスタを構成する最小の点数
-	ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
+	std::vector<pcl::PointIndices> cluster_indices;
+
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (deleted_ground_cloud);
 	ec.extract (cluster_indices);
 
 	int j = 0;
 	float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
-	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::copyPointCloud(*deleted_ground_cloud, *clustered_cloud);
 
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
@@ -334,240 +255,6 @@ void ProcessingPointCloud::publish_pointcloud(void)
 	pc_pub3.publish(edit_cloud3);
 	pc_pub4.publish(edit_cloud4);
 }
-
-
-// void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr& ppc_msg)
-// {
-// 	//std::cout << "1" << std::endl;
-// 	pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-// 	//std::cout << "2" << std::endl;
-// 	pcl::fromROSMsg (*ppc_msg, *input_cloud);
-// 	std::cout << "get_point_cloud" << std::endl;
-// 	//
-// 	/// std::cout << "tes_seq: " << test_cloud->header.seq << std::endl;
-// 	// std::cout << "taaes_stamp: " << test_cloud->header.stamp << std::endl;
-// 	//std::cout << "tes_frame: " << test_cloud->header.frame_id << std::endl;
-//
-// /*初期状態を出力*/
-// 	sensor_msgs::PointCloud2 edit_cloud1;
-// 	pcl::toROSMsg (*input_cloud, edit_cloud1);
-//
-// 	for(int i=0;i<input_cloud->points.size();i++)
-// 	{
-// 		test_cloud->points[i].x+=5.0;
-// 	}
-//
-// /*voxel_grid処理*/
-// 	pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-// 	pcl::VoxelGrid<pcl::PointXYZ> vg;
-// 	vg.setInputCloud (test_cloud);
-// 	vg.setLeafSize (0.1f, 0.1f, 0.1f);//voxel size (x,y,z)
-// 	vg.filter (*voxeled_cloud);
-//
-// /*voxel_grid時点での出力*/
-// 	// sensor_msgs::PointCloud2 edit_cloud2;
-// 	// pcl::toROSMsg (*voxeled_cloud, edit_cloud2);
-// 	//
-// 	// // std::cout << "vox_seq: " << test_cloud->header.seq << std::endl;
-// 	// // std::cout << "vox_stamp: " << test_cloud->header.stamp << std::endl;
-// 	// // std::cout << "vox_frame: " << test_cloud->header.frame_id << std::endl;
-// 	// //
-// 	//
-// 	// std::cout << "before_size: " << test_cloud->points.size() << std::endl;
-// 	// std::cout << "after_size: " << voxeled_cloud->points.size() << std::endl;
-// 	//
-// 	// for(int i=0;i<voxeled_cloud->points.size();i++)
-// 	// {
-// 	// 	voxeled_cloud->points[i].x+=5.0;
-// 	// }
-//
-// /*論文ではここで床面除去を入れてるけど、取り敢えず平面除去*/
-// /*地面除去も追加、平面抽出は繰り返さない場合一番大きい平面のみ抽出する*/
-//
-// 	pcl::PointCloud<pcl::PointXYZ>::Ptr ground_deleted_cloud (new pcl::PointCloud<pcl::PointXYZ>);
-// 	pcl::SACSegmentation<pcl::PointXYZ> seg;
-// 	pcl::PointIndices::Ptr inliers (new pcl::PointIndices);
-// 	pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients);
-// 	seg.setOptimizeCoefficients (true);
-// 	//seg.setModelType (pcl::SACMODEL_PLANE);//全平面抽出
-// 	seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
-// 	seg.setMethodType (pcl::SAC_RANSAC);
-// 	seg.setMaxIterations (1000);//RANSACの繰り返し回数
-// 	seg.setDistanceThreshold (0.1);//モデルとどのくらい離れていてもいいか???謎
-//
-// 	seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
-// 	seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
-//
-// 	//int i=0;
-// 	//int nr_points = (int) voxeled_cloud->points.size ();
-//
-// 	/*ポイントクラウドを複製して高さが一定以上の点のみで平面を計算できるようにする(一定以上の高さだったらNanかInfにする)*/
-//
-// 	pcl::PointCloud<pcl::PointXYZ>::Ptr for_detecct_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-// 	pcl::copyPointCloud(*voxeled_cloud, *for_detecct_ground_cloud);
-//
-// 	float nan = std::numeric_limits<float>::quiet_NaN();
-//
-// 	//std::cout << "nan_test : " << nan_test << '\n';
-//
-// 	for(int i=0;i<for_detecct_ground_cloud->points.size();i++)
-// 	{
-// 		if(for_detecct_ground_cloud->points[i].y < camera_position_y - ground_position_y)
-// 		{
-// 			for_detecct_ground_cloud->points[i].x = nan;
-// 			for_detecct_ground_cloud->points[i].y = nan;
-// 			for_detecct_ground_cloud->points[i].z = nan;
-// 		}
-// 	}
-//
-// //	while (voxeled_cloud->points.size () > 0.3 * nr_points)//whileで繰り返すと複数の平面が消せる
-// 	//{
-// 	 //seg.setInputCloud (voxeled_cloud);
-// 	 seg.setInputCloud (for_detecct_ground_cloud);
-// 	 //std::cout << "first::" << coefficients->values[0] << " " << coefficients->values[1] << " " << coefficients->values[2] << " " << coefficients->values[3] << std::endl;
-//
-// 	 seg.segment (*inliers, *coefficients);
-//
-// 	 std::cout << "second::" << coefficients->values[0] << " " << coefficients->values[1] << " " << coefficients->values[2] << " " << coefficients->values[3] << std::endl;
-//
-// 	 if (inliers->indices.size () == 0)
-// 	 {
-// 		 std::cout << "Could not estimate a planar model for the given dataset." << std::endl;
-// 		 //break;
-// 	 }
-// 	 else
-// 	 {
-// 		 std::cout << "inliers->indices.size () : " << inliers->indices.size () << std::endl;
-// 	 }
-//
-// 	 /*view_ground 推定した地面部分の色を赤で表示するだけ*/
-// 	 pcl::PointCloud<pcl::PointXYZRGB>::Ptr view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-// 	 pcl::copyPointCloud(*voxeled_cloud, *view_ground_cloud);
-//
-// 	 for (int i = 0; i < view_ground_cloud->points.size (); i++)
-// 	 {
-// 		 view_ground_cloud->points[i].r = 255;
-// 		 view_ground_cloud->points[i].g = 255;
-// 		 view_ground_cloud->points[i].b = 255;
-//
-// 		 if(view_ground_cloud->points[i].y < camera_position_y - ground_position_y)
-// 		 {
-// 			 view_ground_cloud->points[i].r = 0;
-// 			 view_ground_cloud->points[i].g = 255;
-// 			 view_ground_cloud->points[i].b = 0;
-// 		 }
-// 	 }
-//
-// 	 for (int i = 0; i < inliers->indices.size(); ++i)
-// 	 {
-// 		 view_ground_cloud->points[inliers->indices[i]].r = 255;
-// 		 view_ground_cloud->points[inliers->indices[i]].g = 0;
-// 		 view_ground_cloud->points[inliers->indices[i]].b = 0;
-//
-// 		 //std::cout << view_ground_cloud->points[inliers->indices[i]].y << '\n';
-//
-// 		 // if(view_ground_cloud->points[inliers->indices[i]].y < -0.5)
-// 		 // {
-// 			//  view_ground_cloud->points[inliers->indices[i]].r = 0;
-// 			//  view_ground_cloud->points[inliers->indices[i]].g = 255;
-// 			//  view_ground_cloud->points[inliers->indices[i]].b = 0;
-// 		 // }
-//
-//
-// 	 }
-// 	 /*↑ここまで色付け*/
-//
-// 	 pcl::ExtractIndices<pcl::PointXYZ> extract;
-// 	 extract.setInputCloud (voxeled_cloud);
-// 	 extract.setIndices (inliers);
-//
-// 	 extract.setNegative (true);//true:平面を削除、false:平面以外削除
-// 	 extract.filter (*ground_deleted_cloud);
-// 	 //*voxeled_cloud = *cloud_f;
-//  //}
-//
-// /*平面除去出力*/
-//
-// 	/*地面色付け出力*/
-// 	sensor_msgs::PointCloud2 edit_cloud5;
-// 	pcl::toROSMsg (*view_ground_cloud, edit_cloud5);
-//
-// 	for(int i=0;i<ground_deleted_cloud->points.size();i++)
-// 	{
-// 		ground_deleted_cloud->points[i].x+=5.0;
-// 	}
-//
-// 	/*地面削除出力*/
-// 	// sensor_msgs::PointCloud2 edit_cloud3;
-// 	// pcl::toROSMsg (*ground_deleted_cloud, edit_cloud3);
-// 	//
-// 	// for(int i=0;i<ground_deleted_cloud->points.size();i++)
-// 	// {
-// 	// 	ground_deleted_cloud->points[i].x+=5.0;
-// 	// }
-//
-// 	std::cout << "del_ground_size: " << ground_deleted_cloud->points.size() << std::endl;
-//
-// /*ユークリッドクラスタリング処理*/
-// 	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
-// 	tree->setInputCloud (ground_deleted_cloud);
-// 	//std::vector<pcl::PointIndices> cluster_indices;
-// 	//pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-// 	//ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
-// 	//ec.setMinClusterSize (100);//クラスタを構成する最小の点数
-// 	//ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
-// 	ec.setSearchMethod (tree);
-// 	ec.setInputCloud (ground_deleted_cloud);
-// 	ec.extract (cluster_indices);
-//
-// 	int j = 0;
-// 	//float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
-// 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-// 	pcl::copyPointCloud(*ground_deleted_cloud, *clustered_cloud);
-//
-// 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
-//   {
-//       for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++)
-// 			{
-// 					clustered_cloud->points[*pit].r = colors[j%12][0];
-// 					clustered_cloud->points[*pit].g = colors[j%12][1];
-// 					clustered_cloud->points[*pit].b = colors[j%12][2];
-//       }
-//       j++;
-//   }
-//
-// /*ユークリッドクラスタリング出力*/
-// 	sensor_msgs::PointCloud2 edit_cloud4;
-// 	pcl::toROSMsg (*clustered_cloud, edit_cloud4);
-//
-// 	std::cout << "edit_cloud" << std::endl;
-//
-// 	pc_pub1.publish(edit_cloud1);
-// 	//pc_pub2.publish(edit_cloud2);
-// 	//pc_pub3.publish(edit_cloud3);
-// 	pc_pub4.publish(edit_cloud4);
-// 	pc_pub5.publish(edit_cloud5);
-// 	std::cout << "publish_cloud" << std::endl;
-//
-// /*以下ごみ*/
-// 	/*for(int i=0;i<test_cloud->points.size();i++)
-// 	{
-// 		test_cloud->points[i].x+=3.0;
-// 		std::cout << test_cloud.points[i].x << ", " << test_cloud.points[i].y << ", " << test_cloud.points[i].z << std::endl;
-// 	", " << +test_cloud.points[i].r << ", " << +test_cloud.points[i].g << ", " << +test_cloud.points[i].b << std::endl;
-// 		if(!ros::ok())
-// 			break;
-// 	}*/
-//
-// 	/*for(int i=0;i<voxeled_cloud->points.size();i++)
-// 	{
-// 		std::cout << filtered_cloud->width  << '\n';
-// 		std::cout << filtered_cloud->height  << '\n';
-// 		std::cout << voxeled_cloud->points[i].x << ", " << voxeled_cloud->points[i].y << ", " << voxeled_cloud->points[i].z << std::endl;
-// 	", " << +test_cloud.points[i].r << ", " << +test_cloud.points[i].g << ", " << +test_cloud.points[i].b << std::endl;
-// }*/
-// }
-
 
 int main(int argc, char** argv)
 {
