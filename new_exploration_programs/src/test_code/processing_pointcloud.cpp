@@ -7,7 +7,9 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <limits>
-
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <Eigen/Dense>
 
 class ProcessingPointCloud
 {
@@ -40,17 +42,17 @@ private:
 	pcl::PointIndices::Ptr inliers;
 	pcl::ModelCoefficients::Ptr coefficients;
 
-	pcl::PointCloud<pcl::PointXYZ>::Ptr for_detect_ground_cloud;
+	//pcl::PointCloud<pcl::PointXYZ>::Ptr for_detect_ground_cloud;
 
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_view_ground_cloud;
+	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_view_ground_cloud;
 	pcl::ExtractIndices<pcl::PointXYZ> extract;
 
-	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree;//何か探索用にツリーを作る
+	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree;//何か探索用にツリーを作る
 
-	//std::vector<pcl::PointIndices> cluster_indices;
+	std::vector<pcl::PointIndices> cluster_indices_m;
 	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
 
-	pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud;
+	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud;
 
 
 	sensor_msgs::PointCloud2 edit_cloud1;
@@ -66,10 +68,10 @@ public:
 		deleted_ground_cloud (new pcl::PointCloud<pcl::PointXYZ>),
 		inliers(new pcl::PointIndices),
 		coefficients(new pcl::ModelCoefficients),
-		for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-		for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-		//tree (new pcl::search::KdTree<pcl::PointXYZ>),
-		clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
+		//for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>),
+		//for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+		tree (new pcl::search::KdTree<pcl::PointXYZ>)
+		//clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
 	{
 		ppcs.setCallbackQueue(&pc_queue);
 		pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_pointcloud,this);
@@ -107,6 +109,7 @@ public:
 	void delete_ground(void);
 	void euclidean_clustering(void);
 	void publish_pointcloud(void);
+	void feature_extraction(void);
 };
 
 
@@ -140,6 +143,7 @@ void ProcessingPointCloud::apply_voxelgrid(void)
 void ProcessingPointCloud::delete_ground(void)
 {
 	/*ポイントクラウドを複製して高さが一定以上の点のみで平面を計算できるようにする(一定以上の高さだったらNanかInfにする)*/
+	pcl::PointCloud<pcl::PointXYZ>::Ptr for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::copyPointCloud(*voxeled_cloud, *for_detect_ground_cloud);
 
 	for(int i=0;i<for_detect_ground_cloud->points.size();i++)
@@ -161,7 +165,7 @@ void ProcessingPointCloud::delete_ground(void)
 	 }
 
 	 /*view_ground 推定した地面部分の色を赤で表示するだけ*/
-	 //pcl::PointCloud<pcl::PointXYZRGB>::Ptr view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+	 pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 	 pcl::copyPointCloud(*voxeled_cloud, *for_view_ground_cloud);
 
 	 for (int i = 0; i < for_view_ground_cloud->points.size (); i++)
@@ -215,16 +219,28 @@ void ProcessingPointCloud::delete_ground(void)
 
 void ProcessingPointCloud::euclidean_clustering(void)
 {
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
+	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
 	tree->setInputCloud (deleted_ground_cloud);
-	std::vector<pcl::PointIndices> cluster_indices;
-
+	std::vector<pcl::PointIndices> cluster_indices;//<-何故かここで宣言しないとだめ???????
+	//std::cout << "1" << '\n';
+	//pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
 	ec.setSearchMethod (tree);
+	//std::cout << "2" << '\n';
 	ec.setInputCloud (deleted_ground_cloud);
+	//std::cout << "3" << '\n';
+	// ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
+	// ec.setMinClusterSize (100);//クラスタを構成する最小の点数
+	// ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
 	ec.extract (cluster_indices);
+
+	cluster_indices_m = cluster_indices;//インデックスをメンバ変数に保存するやつ
+
+	std::cout << "size: " << cluster_indices.size() << '\n';
+	std::cout << "size_m: " << cluster_indices_m.size() << '\n';
 
 	int j = 0;
 	float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 	pcl::copyPointCloud(*deleted_ground_cloud, *clustered_cloud);
 
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
@@ -256,6 +272,79 @@ void ProcessingPointCloud::publish_pointcloud(void)
 	pc_pub4.publish(edit_cloud4);
 }
 
+void ProcessingPointCloud::feature_extraction(void)
+{
+	/*クラスタの重心を算出*/
+	std::vector<Eigen::Vector3f> centroids;
+	//std::vector<Eigen::MatrixXf> centroidsss;
+	Eigen::Vector3f centroid;
+
+	float sum_x = 0.0;
+	float sum_y = 0.0;
+	float sum_z = 0.0;
+
+	for(int i=0;i<cluster_indices_m.size();i++)
+	{
+		//std::cout << "cluster_indices_m[" << i << "].indices.size():" << cluster_indices_m[i].indices.size() << '\n';
+		for(int j=0;j<cluster_indices_m[i].indices.size();j++)
+		{
+				std::cout << "j: " << cluster_indices_m[i].indices[j] << '\n';
+				sum_x += deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].x;
+				sum_y += deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].y;
+				sum_z += deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].z;
+		}
+		centroid << sum_x/cluster_indices_m[i].indices.size(),sum_y/cluster_indices_m[i].indices.size(),sum_z/cluster_indices_m[i].indices.size();
+		//centroids.push_back(sum_x/cluster_indices_m[i].indices.size(),sum_y/cluster_indices_m[i].indices.size(),sum_z/cluster_indices_m[i].indices.size());
+		centroids.push_back(centroid);
+		sum_x = 0;
+		sum_y = 0;
+		sum_z = 0;
+	}
+
+	/*3*3の共分散行列を作る*/
+	std::vector<Eigen::Matrix3f> vc_matrices;
+	Eigen::Matrix3f vc_matrix;
+	Eigen::Vector3f point;
+	Eigen::Vector3f p;
+	Eigen::RowVector3f p_t;
+	Eigen::Matrix3f mat_sum = Eigen::Matrix3f::Zero();
+
+	for(int i=0;i<cluster_indices_m.size();i++)
+	{
+		for(int j=0;j<cluster_indices_m[i].indices.size();j++)
+		{
+			point << deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].x,deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].y,deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].z;
+			p = point-centroids[i];
+			p_t << p(0),p(1),p(2);
+			mat_sum = mat_sum + p*p_t;
+		}
+		vc_matrix = mat_sum/cluster_indices_m[i].indices.size();
+		vc_matrices.push_back(vc_matrix);
+		mat_sum = Eigen::Matrix3f::Zero();
+	}
+
+	/*共分散行列の固有値、固有ベクトルを算出*/
+	//std::vector<Eigen::EigenSolver<Eigen::Matrix3f>> es;
+	std::vector<Eigen::Matrix3f> e_value;
+	std::vector<Eigen::Vector3f> e_vector;
+	Eigen::Matrix3f v;
+	for(int i=0;i<vc_matrices.size();i++)
+	{
+		Eigen::EigenSolver<Eigen::Matrix3f> es(vc_matrices[i]);
+		std::cout << es.eigenvalues().real()[0] << '\n';
+		std::cout << es.eigenvalues().real()[1] << '\n';
+		std::cout << es.eigenvalues().real()[2] << '\n';
+		v << es.eigenvalues().real()[0],es.eigenvalues().real()[1],es.eigenvalues().real()[2];
+		e_value.push_back(v);
+		std::cout << es.eigenvectors().col(0).real() << '\n';
+
+	}
+
+
+}
+
+
+
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "processing_pointcloud");
@@ -267,6 +356,7 @@ int main(int argc, char** argv)
 		pp.delete_ground();
 		pp.euclidean_clustering();
 		pp.publish_pointcloud();
+		pp.feature_extraction();
 	}
 	return 0;
 }

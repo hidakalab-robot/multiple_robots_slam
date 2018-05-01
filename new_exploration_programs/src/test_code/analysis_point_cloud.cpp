@@ -50,11 +50,11 @@ public:
 	{
 		ppcs.setCallbackQueue(&pc_queue);
 		pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&AnalysisPointCloud::processing_pc,this);
-		pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud1", 1);
-		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud2", 1);
-		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud3", 1);
-		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud4", 1);
-		pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
+		pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud1_t", 1);
+		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud2_t", 1);
+		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud3_t", 1);
+		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud4_t", 1);
+		pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5_t", 1);
 
 		camera_position_y = 0.41;
 		ground_position_y = 0.3;
@@ -258,13 +258,13 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 	}
 
 	/*地面削除出力*/
-	// sensor_msgs::PointCloud2 edit_cloud3;
-	// pcl::toROSMsg (*ground_deleted_cloud, edit_cloud3);
-	//
-	// for(int i=0;i<ground_deleted_cloud->points.size();i++)
-	// {
-	// 	ground_deleted_cloud->points[i].x+=5.0;
-	// }
+	sensor_msgs::PointCloud2 edit_cloud3;
+	pcl::toROSMsg (*ground_deleted_cloud, edit_cloud3);
+
+	for(int i=0;i<ground_deleted_cloud->points.size();i++)
+	{
+		ground_deleted_cloud->points[i].x+=5.0;
+	}
 
 	std::cout << "del_ground_size: " << ground_deleted_cloud->points.size() << std::endl;
 
@@ -304,7 +304,7 @@ void AnalysisPointCloud::processing_pc(const sensor_msgs::PointCloud2::ConstPtr&
 
 	pc_pub1.publish(edit_cloud1);
 	//pc_pub2.publish(edit_cloud2);
-	//pc_pub3.publish(edit_cloud3);
+	pc_pub3.publish(edit_cloud3);
 	pc_pub4.publish(edit_cloud4);
 	pc_pub5.publish(edit_cloud5);
 	std::cout << "publish_cloud" << std::endl;
