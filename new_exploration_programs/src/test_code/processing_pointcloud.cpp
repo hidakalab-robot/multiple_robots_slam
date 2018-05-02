@@ -288,7 +288,7 @@ void ProcessingPointCloud::feature_extraction(void)
 		//std::cout << "cluster_indices_m[" << i << "].indices.size():" << cluster_indices_m[i].indices.size() << '\n';
 		for(int j=0;j<cluster_indices_m[i].indices.size();j++)
 		{
-				std::cout << "j: " << cluster_indices_m[i].indices[j] << '\n';
+				//std::cout << "j: " << cluster_indices_m[i].indices[j] << '\n';
 				sum_x += deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].x;
 				sum_y += deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].y;
 				sum_z += deleted_ground_cloud->points[cluster_indices_m[i].indices[j]].z;
@@ -325,25 +325,86 @@ void ProcessingPointCloud::feature_extraction(void)
 
 	/*共分散行列の固有値、固有ベクトルを算出*/
 	//std::vector<Eigen::EigenSolver<Eigen::Matrix3f>> es;
-	std::vector<Eigen::Matrix3f> e_value;
-	std::vector<Eigen::Vector3f> e_vector;
-	Eigen::Matrix3f v;
+	//std::vector<Eigen::Matrix3f> e_value;
+	std::vector<Eigen::Vector3f> e_value;
+	float e[3];
+	float tmp;
+	//std::vector<Eigen::Vector3f> e_vector;//これは構造体にしたらいいかも
+	//Eigen::Matrix3f v;
+	Eigen::Vector3f e_v;
 	for(int i=0;i<vc_matrices.size();i++)
 	{
 		Eigen::EigenSolver<Eigen::Matrix3f> es(vc_matrices[i]);
-		std::cout << es.eigenvalues().real()[0] << '\n';
-		std::cout << es.eigenvalues().real()[1] << '\n';
-		std::cout << es.eigenvalues().real()[2] << '\n';
-		v << es.eigenvalues().real()[0],es.eigenvalues().real()[1],es.eigenvalues().real()[2];
-		e_value.push_back(v);
-		std::cout << es.eigenvectors().col(0).real() << '\n';
+		//std::cout << es.eigenvalues().real()[0] << '\n';
+		//std::cout << es.eigenvalues().real()[1] << '\n';
+		//std::cout << es.eigenvalues().real()[2] << '\n' << '\n';
+		/*ここで固有値を正規化と大きい順に並び替えする*/
+		e[0] = es.eigenvalues().real()[0];
+		e[1] = es.eigenvalues().real()[1];
+		e[2] = es.eigenvalues().real()[2];
+
+		for(int i=0;i<3-1;i++)
+		{
+			for(int j=i+1;j<3;j++)
+			{
+				if(e[i]<e[j])
+				{
+					tmp = e[i];
+					e[i] = e[i+1];
+					e[i+1] = tmp;
+				}
+			}
+		}
+
+		for(int i=0;i<3;i++)
+		{
+			e[i] = e[i]/(e[0]+e[1]+e[2]);
+		}
+
+		//v << es.eigenvalues().real()[0],es.eigenvalues().real()[1],es.eigenvalues().real()[2];
+		e_v << e[0],e[1],e[2];
+		e_value.push_back(e_v);
+		//std::cout << es.eigenvectors().col(0).real() << '\n';
 
 	}
 
+	/*とりあえず固有値ベースの特徴7個を計算して特徴ベクトルとする*/
+	std::vector<Eigen::VectorXf> feature_vectors;
+	Eigen::VectorXf feature_vector(7);
+	float linearity;
+	float planarity;
+	float scattering;
+	float omnivariance;
+	float anisotropy;
+	float eigenentropy;
+	float change_of_curvature;
 
+	for(int i=0;i<e_value.size();i++)
+	{
+		linearity = (e_value[i](0)-e_value[i](1))/e_value[i](0);
+		planarity = (e_value[i](1)-e_value[i](2))/e_value[i](0);
+		scattering = e_value[i](2)/e_value[i](0);
+		//omnivariance = pow(e1*e2*e3,(1.0/3.0));
+		omnivariance = cbrtf(e_value[i](0)*e_value[i](1)*e_value[i](2));//三重根を計算するやつ
+		anisotropy = (e_value[i](0)-e_value[i](2))/e_value[i](0);
+		eigenentropy =0;
+		for (int j=0;j<3;j++)
+		{
+			eigenentropy -= e_value[i](j)*log(e_value[i](j));
+		}
+		change_of_curvature = e_value[i](2)/(e_value[i](0)+e_value[i](1)+e_value[i](2));
+
+		std::cout << linearity << '\n';
+		std::cout << planarity << '\n';
+		std::cout << scattering << '\n';
+		std::cout << omnivariance << '\n';
+		std::cout << anisotropy << '\n';
+		std::cout << eigenentropy << '\n';
+		std::cout << change_of_curvature << '\n' << '\n';
+	}
 }
 
-
+/*最後のクラウドとインデックスをトピックにあげて別のクラスで特徴点抽出してもいいかも*/
 
 int main(int argc, char** argv)
 {
