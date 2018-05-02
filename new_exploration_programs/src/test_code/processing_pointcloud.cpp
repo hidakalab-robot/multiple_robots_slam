@@ -7,9 +7,8 @@
 #include <pcl/segmentation/sac_segmentation.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <limits>
-#include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <Eigen/Dense>
+
+//#include <Eigen/Dense>
 
 class ProcessingPointCloud
 {
@@ -401,9 +400,15 @@ void ProcessingPointCloud::feature_extraction(void)
 		std::cout << anisotropy << '\n';
 		std::cout << eigenentropy << '\n';
 		std::cout << change_of_curvature << '\n' << '\n';
+
+		feature_vector << linearity,planarity,scattering,omnivariance,anisotropy,eigenentropy,change_of_curvature;
+		feature_vectors.push_back(feature_vector);
 	}
+
 }
 
+/*計算した特徴ベクトルとクラスタリングした点群をトピックにあげたい、あと元の点群も送る必要がある*/
+/*クラスタリングした点群はいらない*/
 /*最後のクラウドとインデックスをトピックにあげて別のクラスで特徴点抽出してもいいかも*/
 
 int main(int argc, char** argv)
