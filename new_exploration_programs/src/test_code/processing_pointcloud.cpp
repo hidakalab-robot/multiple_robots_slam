@@ -8,6 +8,8 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <limits>
 
+#include <new_exploration_programs/segmented_cloud.h>
+
 //#include <Eigen/Dense>
 
 class ProcessingPointCloud
@@ -23,6 +25,7 @@ private:
 	ros::Publisher pc_pub3;
 	ros::Publisher pc_pub4;
 	ros::Publisher pc_pub5;
+	ros::Publisher seg_pub;
 
 	float camera_position_y;//カメラの高さ
 	float ground_position_y;//どのくらいの高さまで床とするか
@@ -53,11 +56,15 @@ private:
 
 	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud;
 
+	sensor_msgs::PointCloud2 orig_cloud;
+	sensor_msgs::PointCloud2 vox_cloud;
+	sensor_msgs::PointCloud2 gro_cloud;
+	sensor_msgs::PointCloud2 del_cloud;
+	sensor_msgs::PointCloud2 clu_cloud;
 
-	sensor_msgs::PointCloud2 edit_cloud1;
-	sensor_msgs::PointCloud2 edit_cloud2;
-	sensor_msgs::PointCloud2 edit_cloud3;
-	sensor_msgs::PointCloud2 edit_cloud4;
+	new_exploration_programs::segmented_cloud source_cloud;
+
+
 
 public:
 	ros::CallbackQueue pc_queue;
@@ -74,10 +81,12 @@ public:
 	{
 		ppcs.setCallbackQueue(&pc_queue);
 		pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_pointcloud,this);
-		pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud1", 1);
-		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud2", 1);
-		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud3", 1);
-		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud4", 1);
+		pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("vox_cloud", 1);
+		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
+		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
+		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("clu_cloud", 1);
+		seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/master_cloud", 1);
+		//seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
 		//pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
 
 		camera_position_y = 0.41;
@@ -109,6 +118,7 @@ public:
 	void euclidean_clustering(void);
 	void publish_pointcloud(void);
 	void feature_extraction(void);
+	void publish_segmented(void);
 };
 
 
@@ -116,6 +126,7 @@ void ProcessingPointCloud::input_pointcloud(const sensor_msgs::PointCloud2::Cons
 {
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
+	pcl::toROSMsg (*input_cloud, orig_cloud);
 	std::cout << "input_pointcloud" << std::endl;
 }
 
@@ -135,7 +146,7 @@ void ProcessingPointCloud::apply_voxelgrid(void)
 		voxeled_cloud->points[i].x+=cloud_position;
 	}
 
-	pcl::toROSMsg (*voxeled_cloud, edit_cloud1);
+	pcl::toROSMsg (*voxeled_cloud, vox_cloud);
 
 }
 
@@ -193,7 +204,7 @@ void ProcessingPointCloud::delete_ground(void)
 		 for_view_ground_cloud->points[i].x+=cloud_position;
 	 }
 
-	 pcl::toROSMsg (*for_view_ground_cloud, edit_cloud2);
+	 pcl::toROSMsg (*for_view_ground_cloud, gro_cloud);
 
 	 //pcl::ExtractIndices<pcl::PointXYZ> extract;
 	 extract.setInputCloud (voxeled_cloud);
@@ -209,7 +220,7 @@ void ProcessingPointCloud::delete_ground(void)
 		 deleted_ground_cloud->points[i].x+=2*cloud_position;
 	 }
 
-	 pcl::toROSMsg (*deleted_ground_cloud, edit_cloud3);
+	 pcl::toROSMsg (*deleted_ground_cloud, del_cloud);
 
 }
 
@@ -260,15 +271,15 @@ void ProcessingPointCloud::euclidean_clustering(void)
 		clustered_cloud->points[i].x+=cloud_position;
 	}
 
-	pcl::toROSMsg (*clustered_cloud, edit_cloud4);
+	pcl::toROSMsg (*clustered_cloud, clu_cloud);
 }
 
 void ProcessingPointCloud::publish_pointcloud(void)
 {
-	pc_pub1.publish(edit_cloud1);
-	pc_pub2.publish(edit_cloud2);
-	pc_pub3.publish(edit_cloud3);
-	pc_pub4.publish(edit_cloud4);
+	pc_pub1.publish(vox_cloud);
+	pc_pub2.publish(gro_cloud);
+	pc_pub3.publish(del_cloud);
+	pc_pub4.publish(clu_cloud);
 }
 
 void ProcessingPointCloud::feature_extraction(void)
@@ -369,7 +380,9 @@ void ProcessingPointCloud::feature_extraction(void)
 
 	/*とりあえず固有値ベースの特徴7個を計算して特徴ベクトルとする*/
 	std::vector<Eigen::VectorXf> feature_vectors;
+	//std::vector<float> feature_vectors;
 	Eigen::VectorXf feature_vector(7);
+	//float feature_vector[7][1];
 	float linearity;
 	float planarity;
 	float scattering;
@@ -407,6 +420,15 @@ void ProcessingPointCloud::feature_extraction(void)
 
 }
 
+void ProcessingPointCloud::publish_segmented(void)
+{
+	source_cloud.orig_cloud = orig_cloud;
+	source_cloud.vox_cloud = vox_cloud;
+	source_cloud.del_cloud = del_cloud;
+	source_cloud.clu_cloud = clu_cloud;
+	seg_pub.publish(source_cloud);
+}
+
 /*計算した特徴ベクトルとクラスタリングした点群をトピックにあげたい、あと元の点群も送る必要がある*/
 /*クラスタリングした点群はいらない*/
 /*最後のクラウドとインデックスをトピックにあげて別のクラスで特徴点抽出してもいいかも*/
@@ -423,6 +445,7 @@ int main(int argc, char** argv)
 		pp.euclidean_clustering();
 		pp.publish_pointcloud();
 		pp.feature_extraction();
+		pp.publish_segmented();
 	}
 	return 0;
 }
