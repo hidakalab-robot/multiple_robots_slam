@@ -9,6 +9,8 @@
 #include <limits>
 
 #include <new_exploration_programs/segmented_cloud.h>
+#include <geometry_msgs/Point.h>
+
 
 //#include <Eigen/Dense>
 
@@ -62,12 +64,16 @@ private:
 	sensor_msgs::PointCloud2 del_cloud;
 	sensor_msgs::PointCloud2 clu_cloud;
 
+	new_exploration_programs::index clu_index;
+	new_exploration_programs::f_vector clu_feature;
 	new_exploration_programs::segmented_cloud source_cloud;
+	geometry_msgs::Point clu_centroid;
 
 
 
 public:
 	ros::CallbackQueue pc_queue;
+	bool input;
 	ProcessingPointCloud()
 		:input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
 		voxeled_cloud(new pcl::PointCloud<pcl::PointXYZ>),
@@ -85,14 +91,16 @@ public:
 		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
 		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
 		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("clu_cloud", 1);
-		seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/master_cloud", 1);
-		//seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
+		//seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/master_cloud", 1);
+		seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
 		//pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
 
 		camera_position_y = 0.41;
 		ground_position_y = 0.3;
 
-		cloud_position = 5.0;
+		cloud_position = 0;
+
+		input = false;
 
 		nan_c = std::numeric_limits<float>::quiet_NaN();
 
@@ -128,6 +136,7 @@ void ProcessingPointCloud::input_pointcloud(const sensor_msgs::PointCloud2::Cons
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
 	pcl::toROSMsg (*input_cloud, orig_cloud);
 	std::cout << "input_pointcloud" << std::endl;
+	input = true;
 }
 
 
@@ -137,14 +146,14 @@ void ProcessingPointCloud::apply_voxelgrid(void)
 	//pcl::VoxelGrid<pcl::PointXYZ> vg;
 	vg.setInputCloud (input_cloud);
 	vg.filter (*voxeled_cloud);
-	std::cout << "pointcloud_voxeled" << std::endl;
+	std::cout << "pointcloud_is_voxeled" << std::endl;
 
 /*表示用*/
 
-	for(int i=0;i<voxeled_cloud->points.size();i++)
-	{
-		voxeled_cloud->points[i].x+=cloud_position;
-	}
+	// for(int i=0;i<voxeled_cloud->points.size();i++)
+	// {
+	// 	voxeled_cloud->points[i].x+=cloud_position;
+	// }
 
 	pcl::toROSMsg (*voxeled_cloud, vox_cloud);
 
@@ -199,10 +208,10 @@ void ProcessingPointCloud::delete_ground(void)
 		 for_view_ground_cloud->points[inliers->indices[i]].b = 0;
 	 }
 
-	 for(int i=0;i<for_view_ground_cloud->points.size();i++)
-	 {
-		 for_view_ground_cloud->points[i].x+=cloud_position;
-	 }
+	 // for(int i=0;i<for_view_ground_cloud->points.size();i++)
+	 // {
+		//  for_view_ground_cloud->points[i].x+=cloud_position;
+	 // }
 
 	 pcl::toROSMsg (*for_view_ground_cloud, gro_cloud);
 
@@ -213,12 +222,12 @@ void ProcessingPointCloud::delete_ground(void)
 	 extract.setNegative (true);//true:平面を削除、false:平面以外削除
 	 extract.filter (*deleted_ground_cloud);
 
-	 std::cout << "ground_deleted" << std::endl;
+	 std::cout << "ground_is_deleted" << std::endl;
 
-	 for(int i=0;i<deleted_ground_cloud->points.size();i++)
-	 {
-		 deleted_ground_cloud->points[i].x+=2*cloud_position;
-	 }
+	 // for(int i=0;i<deleted_ground_cloud->points.size();i++)
+	 // {
+		//  deleted_ground_cloud->points[i].x+=2*cloud_position;
+	 // }
 
 	 pcl::toROSMsg (*deleted_ground_cloud, del_cloud);
 
@@ -245,8 +254,8 @@ void ProcessingPointCloud::euclidean_clustering(void)
 
 	cluster_indices_m = cluster_indices;//インデックスをメンバ変数に保存するやつ
 
-	std::cout << "size: " << cluster_indices.size() << '\n';
-	std::cout << "size_m: " << cluster_indices_m.size() << '\n';
+	//std::cout << "size: " << cluster_indices.size() << '\n';
+	//std::cout << "size_m: " << cluster_indices_m.size() << '\n';
 
 	int j = 0;
 	float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
@@ -264,12 +273,12 @@ void ProcessingPointCloud::euclidean_clustering(void)
       j++;
   }
 
-	std::cout << "pointcloud_clustered" << std::endl;
+	std::cout << "pointcloud_is_clustered" << std::endl;
 
-	for(int i=0;i<clustered_cloud->points.size();i++)
-	{
-		clustered_cloud->points[i].x+=cloud_position;
-	}
+	// for(int i=0;i<clustered_cloud->points.size();i++)
+	// {
+	// 	clustered_cloud->points[i].x+=cloud_position;
+	// }
 
 	pcl::toROSMsg (*clustered_cloud, clu_cloud);
 }
@@ -293,8 +302,15 @@ void ProcessingPointCloud::feature_extraction(void)
 	float sum_y = 0.0;
 	float sum_z = 0.0;
 
+	std::vector<new_exploration_programs::index> clu_indices;
+	std::vector<geometry_msgs::Point> clu_centroids;
+
+
 	for(int i=0;i<cluster_indices_m.size();i++)
 	{
+
+		clu_index.index = cluster_indices_m[i].indices;
+		clu_indices.push_back(clu_index);
 		//std::cout << "cluster_indices_m[" << i << "].indices.size():" << cluster_indices_m[i].indices.size() << '\n';
 		for(int j=0;j<cluster_indices_m[i].indices.size();j++)
 		{
@@ -305,11 +321,20 @@ void ProcessingPointCloud::feature_extraction(void)
 		}
 		centroid << sum_x/cluster_indices_m[i].indices.size(),sum_y/cluster_indices_m[i].indices.size(),sum_z/cluster_indices_m[i].indices.size();
 		//centroids.push_back(sum_x/cluster_indices_m[i].indices.size(),sum_y/cluster_indices_m[i].indices.size(),sum_z/cluster_indices_m[i].indices.size());
+		clu_centroid.x = centroid[0];
+		clu_centroid.y = centroid[1];
+		clu_centroid.z = centroid[2];
 		centroids.push_back(centroid);
+
+		clu_centroids.push_back(clu_centroid);
+
 		sum_x = 0;
 		sum_y = 0;
 		sum_z = 0;
 	}
+
+	source_cloud.clu_indices = clu_indices;
+	source_cloud.clu_centroids = clu_centroids;
 
 	/*3*3の共分散行列を作る*/
 	std::vector<Eigen::Matrix3f> vc_matrices;
@@ -379,9 +404,9 @@ void ProcessingPointCloud::feature_extraction(void)
 	}
 
 	/*とりあえず固有値ベースの特徴7個を計算して特徴ベクトルとする*/
-	std::vector<Eigen::VectorXf> feature_vectors;
+	//std::vector<Eigen::VectorXf> feature_vectors;
 	//std::vector<float> feature_vectors;
-	Eigen::VectorXf feature_vector(7);
+	//Eigen::VectorXf feature_vector(7);
 	//float feature_vector[7][1];
 	float linearity;
 	float planarity;
@@ -390,6 +415,8 @@ void ProcessingPointCloud::feature_extraction(void)
 	float anisotropy;
 	float eigenentropy;
 	float change_of_curvature;
+
+	std::vector<new_exploration_programs::f_vector> clu_features;
 
 	for(int i=0;i<e_value.size();i++)
 	{
@@ -406,17 +433,29 @@ void ProcessingPointCloud::feature_extraction(void)
 		}
 		change_of_curvature = e_value[i](2)/(e_value[i](0)+e_value[i](1)+e_value[i](2));
 
-		std::cout << linearity << '\n';
-		std::cout << planarity << '\n';
-		std::cout << scattering << '\n';
-		std::cout << omnivariance << '\n';
-		std::cout << anisotropy << '\n';
-		std::cout << eigenentropy << '\n';
-		std::cout << change_of_curvature << '\n' << '\n';
+		// std::cout << linearity << '\n';
+		// std::cout << planarity << '\n';
+		// std::cout << scattering << '\n';
+		// std::cout << omnivariance << '\n';
+		// std::cout << anisotropy << '\n';
+		// std::cout << eigenentropy << '\n';
+		// std::cout << change_of_curvature << '\n' << '\n';
 
-		feature_vector << linearity,planarity,scattering,omnivariance,anisotropy,eigenentropy,change_of_curvature;
-		feature_vectors.push_back(feature_vector);
+		clu_feature.linearity = linearity;
+		clu_feature.planarity = planarity;
+		clu_feature.scattering = scattering;
+		clu_feature.omnivariance = omnivariance;
+		clu_feature.anisotropy = anisotropy;
+		clu_feature.eigenentropy = eigenentropy;
+		clu_feature.change_of_curvature = change_of_curvature;
+
+		clu_features.push_back(clu_feature);
+		//feature_vector << linearity,planarity,scattering,omnivariance,anisotropy,eigenentropy,change_of_curvature;
+		//feature_vectors.push_back(feature_vector);
 	}
+	source_cloud.clu_features = clu_features;
+
+	std::cout << "feature_is_extracted" << std::endl;
 
 }
 
@@ -426,6 +465,10 @@ void ProcessingPointCloud::publish_segmented(void)
 	source_cloud.vox_cloud = vox_cloud;
 	source_cloud.del_cloud = del_cloud;
 	source_cloud.clu_cloud = clu_cloud;
+
+	//source_cloud.clu_indices = clu_index;
+	//source_cloud.clu_features = clu_feature;
+
 	seg_pub.publish(source_cloud);
 }
 
@@ -440,12 +483,20 @@ int main(int argc, char** argv)
 	while(ros::ok()){
 		//std::cout << "0" << std::endl;
 		pp.pc_queue.callOne(ros::WallDuration(1));
-		pp.apply_voxelgrid();
-		pp.delete_ground();
-		pp.euclidean_clustering();
-		pp.publish_pointcloud();
-		pp.feature_extraction();
-		pp.publish_segmented();
+		if(pp.input)
+		{
+			pp.apply_voxelgrid();
+			pp.delete_ground();
+			pp.euclidean_clustering();
+			pp.publish_pointcloud();
+			pp.feature_extraction();
+			pp.publish_segmented();
+			pp.input = false;
+		}
+		else
+		{
+			std::cout << '\n' << "not input" << '\n';
+		}
 	}
 	return 0;
 }
