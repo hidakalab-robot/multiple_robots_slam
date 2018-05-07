@@ -50,7 +50,7 @@ private:
   visualization_msgs::MarkerArray matching_line_list_m;
 
   float shift_position;
-
+  float matching_threshold;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr master_cloud_for_shift;
   sensor_msgs::PointCloud2 shift_master_cloud;
@@ -72,9 +72,9 @@ public:
     input_master = false;
     input_source = false;
     changed_master = false;
-
-    shift_position = 3.0;
-    matching = false;
+    matching_threshold = 0.17;
+    shift_position = 5.0;
+    matching = true;
 
     sc_pub1 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/orig_cloud", 1);
 		sc_pub2 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/vox_cloud", 1);
@@ -150,8 +150,6 @@ void FeatureMatching::matching_calc(void)
 
   float diff_vector;
 
-  const float matching_threshold = 0.05;
-
   std::vector<Eigen::Vector2i> matching_list;
   Eigen::Vector2i matching_pair;//[0]master,[1]source
 
@@ -185,13 +183,15 @@ void FeatureMatching::matching_calc(void)
       }
     }
   }
+
+  if(matching_list_m.size()==0)
+  {
+    matching = false;
+    std::cout << "no matching cloud" << '\n';
+  }
+
   matching_list_m = matching_list;
   std::cout << '\n';
-
-  if(matching_list_m.size()>0)
-  {
-    matching = true;
-  }
 }
 
 void FeatureMatching::show_matching(void)
@@ -225,7 +225,7 @@ void FeatureMatching::show_matching(void)
   geometry_msgs::Point s_centroid;
 	geometry_msgs::Point m_centroid;
 
-  std::cout << "matching_list_m.size() : " << matching_list_m.size() << '\n';
+  //std::cout << "matching_list_m.size() : " << matching_list_m.size() << '\n';
 
   for(int i=0;i<matching_list_m.size();i++)
   {
@@ -293,14 +293,13 @@ int main(int argc, char** argv)
               fm.show_matching();
               fm.publish_matchingline();
               fm.publish_registeredcloud();
-              fm.matching = false;
             }
             else
             {
               fm.publish_registeredcloud();
             }
             fm.input_source = false;
-
+            fm.matching = true;
             if(fm.changed_master)
             {
                 break;
