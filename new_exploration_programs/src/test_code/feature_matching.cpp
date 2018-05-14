@@ -150,6 +150,9 @@ void FeatureMatching::matching_calc(void)
 
   float diff_vector;
 
+  /*重心確認用*/
+  float scx,scy,scz,mcx,mcy,mcz;
+
   std::vector<Eigen::Vector2i> matching_list;
   Eigen::Vector2i matching_pair;//[0]master,[1]source
 
@@ -176,7 +179,16 @@ void FeatureMatching::matching_calc(void)
 
       if(diff_vector < matching_threshold)
       {
-        std::cout << "[matching!!] master_cloud[" << i << "] and source_cloud[" << j << "]" << '\n';
+        mcx = master_cloud.clu_centroids[i].x;
+        mcy = master_cloud.clu_centroids[i].y;
+        mcz = master_cloud.clu_centroids[i].z;
+
+        scx = source_cloud.clu_centroids[j].x;
+        scy = source_cloud.clu_centroids[j].y;
+        scz = source_cloud.clu_centroids[j].z;
+
+        std::cout << "[matching!!] master_cloud[" << i << "] ("<< mcx << "," << mcy << "," << mcz << ") and source_cloud[" << j << "] (" << scx << "," << scy << "," << scz << ")" << '\n';
+
         matching_pair[0] = i;
         matching_pair[1] = j;
         matching_list.push_back(matching_pair);

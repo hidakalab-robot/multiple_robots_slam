@@ -20,6 +20,9 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   message_generation
+  tf2
+  #geometry2
+  tf2_sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -249,3 +252,6 @@ target_link_libraries(processing_pointcloud ${catkin_LIBRARIES})
 
 add_executable(feature_matching src/test_code/feature_matching.cpp)
 target_link_libraries(feature_matching ${catkin_LIBRARIES})
+
+add_executable(scan_matching src/test_code/scan_matching.cpp)
+target_link_libraries(scan_matching ${catkin_LIBRARIES})
