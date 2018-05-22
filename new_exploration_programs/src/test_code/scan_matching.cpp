@@ -66,21 +66,24 @@ private:
 
   //float x;
   //float z;
-  float ave_sqrt_distance;
-  float min_cost;
-
-  float dx;
-  float dz;
-  float dth;
-
-  float min_dx;
-  float min_dz;
-  float min_dth;
+  // float ave_sqrt_distance;
+  // float min_cost;
+  //
+  // float dx;
+  // float dz;
+  // float dth;
+  //
+  // float min_dx;
+  // float min_dz;
+  // float min_dth;
 
   pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree;
 
   Eigen::Matrix3f R_estimate;
   Eigen::Vector3f T_estimate;
+
+  Eigen::Matrix3f pre_R_estimate;
+  Eigen::Vector3f pre_T_estimate;
 
 public:
   ros::CallbackQueue sd_queue;
@@ -110,17 +113,22 @@ public:
 
     R_estimate = Eigen::Matrix3f::Identity();
     T_estimate = Eigen::Vector3f::Zero();
+
+    pre_R_estimate = Eigen::Matrix3f::Identity();
+    pre_T_estimate = Eigen::Vector3f::Zero();
   };
   ~ScanMatching(){};
 
   void input_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
   void input_odometry(const nav_msgs::Odometry::ConstPtr& od_msg);
   void voxeling(void);
-  void remove_unrelialbe(void);
+  void remove_unreliable(void);
+  void convert3dto2d(void);
   void icp_main(void);
   void icp_alignment(const float dx_f, const float dz_f, const float dth_f);
   void icp_correspondence(void);
-  void icp_optimizer(void);
+  void icp_optimizer(float dx,float dz,float dth,float& min_dx,float& min_dz, float& min_dth,float& min_cost);
+  //void icp_descent(float& dx_d, float& dz_d, float& dth_d);
   float icp_cost(const float dx_c, const float dz_c, const float dth_c);
   void publish_mergedcloud(void);
 };
@@ -151,13 +159,13 @@ void ScanMatching::voxeling(void)
   *input_cloud = *voxeled_input_cloud;
 }
 
-void ScanMatching::remove_unrelialbe(void)
+void ScanMatching::remove_unreliable(void)
 {
   pcl::PointCloud<pcl::PointXYZ>::Ptr remove_cloud(new pcl::PointCloud<pcl::PointXYZ>);
 
   for(int i=0;i<input_cloud->points.size();i++)
 	{
-		if(input_cloud->points[i].y > camera_position_y - ceiling_position_y && input_cloud->points[i].y < camera_position_y - floor_position_y) //&& input_cloud->points[i].z < per_range_z)
+		if(input_cloud->points[i].y > camera_position_y - ceiling_position_y && input_cloud->points[i].y < camera_position_y - floor_position_y && input_cloud->points[i].z < per_range_z)
 		{
       remove_cloud->points.push_back(input_cloud->points[i]);
 		}
@@ -169,13 +177,38 @@ void ScanMatching::remove_unrelialbe(void)
   input_cloud -> is_dense = false;
 }
 
+void ScanMatching::convert3dto2d(void)
+{
+  for(int i=0;i<input_cloud->points.size();i++)
+	{
+    input_cloud->points[i].y = camera_position_y;
+	}
+
+  vg.setLeafSize (0.2f, 0.2f, 0.2f);
+  vg.setInputCloud (input_cloud);
+  vg.filter (*voxeled_input_cloud);
+
+  *input_cloud = *voxeled_input_cloud;
+}
+
 
 void ScanMatching::icp_main(void)
 {
   if(merged_cloud->points.size() > 0)
   {
-    const float fin_threshold = 10;
+    const float fin_cost = 0.5;
 
+    float dx;
+    float dz;
+    float dth;
+
+    float min_cost;
+    float min_dx;
+    float min_dz;
+    float min_dth;
+
+    const int max_iterate = 50;
+    int count = 0;
 
     dx = -input_odom.pose.pose.position.y + pre_input_odom.pose.pose.position.y;
     dz = input_odom.pose.pose.position.x - pre_input_odom.pose.pose.position.x;
@@ -188,16 +221,55 @@ void ScanMatching::icp_main(void)
 
     icp_alignment(dx,dz,dth);
 
-    while(true)
+    min_dx = dx;
+    min_dz = dz;
+    min_dth = dth;
+    min_cost = 1000000000.0;
+
+    std::cout << "init parameter << dx:" << dx << " ,dz:" << dz << " ,dth:" << dth << '\n';
+
+    while(min_cost > fin_cost && count < max_iterate && ros::ok())
     {
+      dx = min_dx;
+      dz = min_dz;
+      dth = min_dth;
+
       icp_correspondence();//点の対応付け
-      icp_optimizer();
+
+      std::cout << "finish << icp_correspondence" << '\n';
+
+      icp_optimizer(dx,dz,dth,min_dx,min_dz,min_dth,min_cost);
+
+      std::cout << "finish << icp_optimizer" << '\n';
       icp_alignment(min_dx,min_dz,min_dth);
-      if(min_cost>fin_threshold)
-      {
-        break;
-      }
+
+      std::cout << "finish << icp_alignment" << '\n';
+      // if(min_cost>fin_cost)
+      // {
+      //   break;
+      // }
+      count++;
+      //std::cout << "process parameter << dx:" << min_dx << " ,dz:" << min_dz << " ,dth:" << min_dth << " ,min_cost:" << min_cost << '\n';
     }
+
+    std::cout << "fin parameter << dx:" << min_dx << " ,dz:" << min_dz << " ,dth:" << min_dth << '\n';
+
+    /*最適化終了後*/
+    std::cout << "finish optimize << count:" << count << " << cost:" << min_cost << '\n';
+
+    std::cout << '\n';
+
+    Eigen::Matrix3f Rf_estimate;
+    Eigen::Vector3f Tf_estimate;
+
+    Rf_estimate << cos(-min_dth),0,sin(-min_dth),0,1,0,-sin(-min_dth),0,cos(-min_dth);
+    Tf_estimate << min_dx,0,min_dz;
+
+    R_estimate = Rf_estimate * pre_R_estimate;
+    T_estimate = Tf_estimate + pre_T_estimate;
+
+    pre_R_estimate = R_estimate;
+    pre_T_estimate = T_estimate;
   }
   else
   {
@@ -225,8 +297,8 @@ void ScanMatching::icp_alignment(const float dx_f, const float dz_f, const float
   R0_estimate << cos(-dth_f),0,sin(-dth_f),0,1,0,-sin(-dth_f),0,cos(-dth_f);
   T0_estimate << dx_f,0,dz_f;
 
-  L_R_estimate = R0_estimate * R_estimate;
-  L_T_estimate = T0_estimate + T_estimate;
+  L_R_estimate = R0_estimate * pre_R_estimate;
+  L_T_estimate = T0_estimate + pre_T_estimate;
 
   for (int i=0;i<clone_input_cloud->points.size();i++)
   {
@@ -242,7 +314,7 @@ void ScanMatching::icp_alignment(const float dx_f, const float dz_f, const float
 void ScanMatching::icp_correspondence(void)//２つの点群の点を対応付ける
 {
   kdtree->setInputCloud (merged_cloud);
-  kdtree->setEpsilon(0.10);
+  //kdtree->setEpsilon(1.00);
 
   pcl::PointXYZ searchPoint;
   std::vector<int> v_nearest_point_index(1);
@@ -266,66 +338,98 @@ void ScanMatching::icp_correspondence(void)//２つの点群の点を対応付�
       nearest_point_index = v_nearest_point_index[0];
       point_distance = v_point_distance[0];
       index_list.push_back(nearest_point_index);
-      distance_list.push_back(point_distance);
+      //distance_list.push_back(point_distance);
     }
     else
     {
         index_list.push_back(-1);
-        distance_list.push_back(-1);
+        //distance_list.push_back(-1);
     }
   }
 
   /*初回のコストを計算*/
 
-  int count = 0;
-  /*対応点間の距離を計算*/
-  for(int i=0;i<distance_list.size();i++)
-  {
-    if(distance_list[i] >= 0)
-    {
-      ave_sqrt_distance += distance_list[i];
-      count++;
-    }
-  }
-
+  // int count = 0;
+  // /*対応点間の距離を計算*/
+  // for(int i=0;i<distance_list.size();i++)
+  // {
+  //   if(distance_list[i] >= 0)
+  //   {
+  //     ave_sqrt_distance += distance_list[i];
+  //     count++;
+  //   }
+  // }
+  //
   index_list_m = index_list;
-
-  min_cost = ave_sqrt_distance / (float)count;
+  //
+  // min_cost = ave_sqrt_distance / (float)count;
 
 }
 
-void ScanMatching::icp_optimizer(void)
+void ScanMatching::icp_optimizer(float dx,float dz,float dth,float& min_dx,float& min_dz, float& min_dth,float& min_cost)//(float& dx_d, float& dz_d, float& dth_d)
 {
-  float cost;
+  const float step = 0.001;
+  float pd_dx;
+  float pd_dz;
+  float pd_dth;
 
-  while(true)//
+  const float dd = 0.1;//並進微分の刻み
+  const float dr = M_PI / 180;//回転微分の刻み
+
+  float cost;
+  const float c_thre = 0.1;
+
+  //float min_dx;
+  //float min_dz;
+  //float min_dth;
+  //min_cost = 1000000000.0;
+
+  float pre_cost = min_cost;
+
+  /*最初のコスト計算*/
+  cost = icp_cost(dx,dz,dth);
+
+//  std::cout << "cal cost << " << "dx:" << dx << " ,dz:" << dz << " ,dth:" << dth << ", cost:" << cost << '\n';
+
+  while(std::abs(cost - pre_cost) > c_thre && ros::ok())
   {
-    /*dx,dz,dthを変化させる*/
-    dx *= 1;
-    dz *= 1;
-    dth *= 1;
+    pre_cost = cost;
+
+    pd_dx = (icp_cost(dx + dd,dz,dth)-cost)/dd;//コスト関数のx偏微分
+    pd_dz = (icp_cost(dx,dz+dd,dth)-cost)/dd;
+    pd_dth = (icp_cost(dx,dz,dth+dr)-cost)/dr;
+
+  //  std::cout << "cal process << " << "pd_dx:" << pd_dx << " ,pd_dz:" << pd_dz << " ,pd_dth:" << pd_dth << '\n';
+
+    dx = dx - step*pd_dx;
+    dz = dz - step*pd_dz;
+    dth = dth - step*pd_dth;
 
     cost = icp_cost(dx,dz,dth);
 
+  //  std::cout << "cal cost << " << "dx:" << dx << " ,dz:" << dz << " ,dth:" << dth << ", cost:" << cost << '\n';
+
+
     if(cost < min_cost)
     {
-      //costの変化量を計算してもいいかも
       min_cost = cost;
       min_dx = dx;
       min_dz = dz;
       min_dth = dth;
     }
 
-    if(true/*min_costが変化しなくなったら*/)
-    {
-      break;
-    }
   }
+
+  //std::cout << "*****************one cycle*****************" << '\n';
+
 }
 
 
 float ScanMatching::icp_cost(const float dx_c, const float dz_c, const float dth_c)
 {
+
+  float ave_sqrt_distance = 0;
+
   /*とりあえず位置を変える*/
   icp_alignment(dx_c,dz_c,dth_c);
 
@@ -343,10 +447,15 @@ float ScanMatching::icp_cost(const float dx_c, const float dz_c, const float dth
       diff_x = clone_input_cloud->points[i].x - merged_cloud->points[index_list_m[i]].x;
       diff_y = clone_input_cloud->points[i].y - merged_cloud->points[index_list_m[i]].y;
       diff_x = clone_input_cloud->points[i].z - merged_cloud->points[index_list_m[i]].z;
-      ave_sqrt_distance += pow(diff_x,2) + pow(diff_y,2) + pow(diff_z,2);
+
+      //std::cout << diff_x << " ," << diff_y << " ," << diff_z << '\n';
+
+      ave_sqrt_distance += std::pow(diff_x,2) + pow(diff_y,2) + pow(diff_z,2);
       count++;
     }
   }
+
+  //std::cout << "count:" << count << " ,cost:" << ave_sqrt_distance / (float)count << '\n';
 
   return ave_sqrt_distance / (float)count;
 }
@@ -354,11 +463,13 @@ float ScanMatching::icp_cost(const float dx_c, const float dz_c, const float dth
 
 void ScanMatching::publish_mergedcloud(void)
 {
-  //*merged_cloud = *voxeled_input_cloud;
+  //*merged_cloud = *input_cloud;
   pcl::toROSMsg (*merged_cloud, merged_cloud_r);
   merged_cloud_r.header.frame_id = "camera_rgb_optical_frame";
   //merged_cloud_r.header.frame_id = "odom";
   mc_pub.publish(merged_cloud_r);
+
+  std::cout << "publish point_cloud" << '\n';
 }
 
 int main(int argc, char** argv)
@@ -366,7 +477,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "scan_matching");
 	ScanMatching sm;
 
-  ros::Rate rate(2);
+  //ros::Rate rate(1);
 
   while(ros::ok()){
     sm.sd_queue.callOne(ros::WallDuration(1));
@@ -374,7 +485,8 @@ int main(int argc, char** argv)
     if(sm.input_c && sm.input_o)
     {
       sm.voxeling();
-      sm.remove_unrelialbe();
+      sm.remove_unreliable();
+      //sm.convert3dto2d();
       sm.icp_main();
 
       sm.publish_mergedcloud();
@@ -385,7 +497,7 @@ int main(int argc, char** argv)
     }
     sm.input_c = false;
     sm.input_o = false;
-    rate.sleep();
+    //rate.sleep();
   }
 	return 0;
 }
