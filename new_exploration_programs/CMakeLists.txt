@@ -250,8 +250,14 @@ target_link_libraries(pointcloud_test ${catkin_LIBRARIES})
 add_executable(processing_pointcloud src/test_code/processing_pointcloud.cpp)
 target_link_libraries(processing_pointcloud ${catkin_LIBRARIES})
 
-add_executable(feature_matching src/test_code/feature_matching.cpp)
+#add_executable(feature_matching src/test_code/feature_matching.cpp)
+#target_link_libraries(feature_matching ${catkin_LIBRARIES})
+
+add_executable(feature_matching src/test_code/feature_matching_func.cpp src/test_code/feature_matching_main.cpp)
 target_link_libraries(feature_matching ${catkin_LIBRARIES})
 
 add_executable(scan_matching src/test_code/scan_matching.cpp)
 target_link_libraries(scan_matching ${catkin_LIBRARIES})
+
+add_executable(centroid_matching src/test_code/centroid_matching.cpp src/test_code/feature_matching_func.cpp)
+target_link_libraries(centroid_matching ${catkin_LIBRARIES})

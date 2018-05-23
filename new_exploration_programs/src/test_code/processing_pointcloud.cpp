@@ -28,6 +28,7 @@ private:
 	ros::Publisher pc_pub4;
 	ros::Publisher pc_pub5;
 	ros::Publisher seg_pub;
+	ros::Publisher seg_pub2;
 
 	float camera_position_y;//カメラの高さ
 	float ground_position_y;//どのくらいの高さまで床とするか
@@ -91,7 +92,7 @@ public:
 		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
 		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
 		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("clu_cloud", 1);
-		//seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/master_cloud", 1);
+		seg_pub2 = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/master_cloud", 1);
 		seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
 		//pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
 
@@ -126,7 +127,7 @@ public:
 	void euclidean_clustering(void);
 	void publish_pointcloud(void);
 	void feature_extraction(void);
-	void publish_segmented(void);
+	virtual void publish_segmented(void);
 };
 
 
@@ -134,7 +135,8 @@ void ProcessingPointCloud::input_pointcloud(const sensor_msgs::PointCloud2::Cons
 {
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
-	pcl::toROSMsg (*input_cloud, orig_cloud);
+	//pcl::toROSMsg (*input_cloud, orig_cloud);
+	orig_cloud = *pc_msg;
 	std::cout << "input_pointcloud" << std::endl;
 	input = true;
 }
