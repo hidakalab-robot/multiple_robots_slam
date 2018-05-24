@@ -9,6 +9,8 @@
 #include <limits>
 
 #include <new_exploration_programs/segmented_cloud.h>
+#include <new_exploration_programs/matching_info.h>
+
 
 #include <visualization_msgs/MarkerArray.h>
 
@@ -43,6 +45,8 @@ private:
 
   ros::Publisher origm_pub;
   ros::Publisher origs_pub;
+
+  ros::Publisher mi_pub;
 
   new_exploration_programs::segmented_cloud source_cloud;
   new_exploration_programs::segmented_cloud master_cloud;
@@ -82,4 +86,5 @@ public:
   void publish_orig(void);
   void shift_mcloud(void);
   void store(void);
+  void publish_matchinginfo(void);
 };

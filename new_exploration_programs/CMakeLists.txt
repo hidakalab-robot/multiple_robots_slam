@@ -20,9 +20,9 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   message_generation
-  tf2
+  #tf2
   #geometry2
-  tf2_sensor_msgs
+  #tf2_sensor_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -64,6 +64,8 @@ find_package(catkin REQUIRED COMPONENTS
    f_vector.msg
    index.msg
    segmented_cloud.msg
+   matching_pair.msg
+   matching_info.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -247,13 +249,19 @@ target_link_libraries(analysis_point_cloud ${catkin_LIBRARIES})
 add_executable(pointcloud_test src/test_code/pointcloud_test.cpp)
 target_link_libraries(pointcloud_test ${catkin_LIBRARIES})
 
-add_executable(processing_pointcloud src/test_code/processing_pointcloud.cpp)
-target_link_libraries(processing_pointcloud ${catkin_LIBRARIES})
+#add_executable(processing_pointcloud src/test_code/processing_pointcloud.cpp)
+#target_link_libraries(processing_pointcloud ${catkin_LIBRARIES})
+
+add_executable(processing_source_pointcloud src/test_code/processing_source_pointcloud.cpp src/test_code/processing_pointcloud_func.cpp)
+target_link_libraries(processing_source_pointcloud ${catkin_LIBRARIES})
+
+add_executable(processing_merged_pointcloud src/test_code/processing_merged_pointcloud.cpp src/test_code/processing_pointcloud_func.cpp)
+target_link_libraries(processing_merged_pointcloud ${catkin_LIBRARIES})
 
 #add_executable(feature_matching src/test_code/feature_matching.cpp)
 #target_link_libraries(feature_matching ${catkin_LIBRARIES})
 
-add_executable(feature_matching src/test_code/feature_matching_func.cpp src/test_code/feature_matching_main.cpp)
+add_executable(feature_matching src/test_code/feature_matching_func.cpp src/test_code/feature_matching.cpp)
 target_link_libraries(feature_matching ${catkin_LIBRARIES})
 
 add_executable(scan_matching src/test_code/scan_matching.cpp)

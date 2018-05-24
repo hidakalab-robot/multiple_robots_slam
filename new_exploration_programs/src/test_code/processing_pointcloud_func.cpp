@@ -1,137 +1,54 @@
-#include <ros/ros.h>
-#include <ros/callback_queue.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/filters/voxel_grid.h>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <limits>
+#include <new_exploration_programs/processing_pointcloud.h>
 
-#include <new_exploration_programs/segmented_cloud.h>
-#include <geometry_msgs/Point.h>
-
-
-//#include <Eigen/Dense>
-
-class ProcessingPointCloud
+ProcessingPointCloud::ProcessingPointCloud()
+  :input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
+  voxeled_cloud(new pcl::PointCloud<pcl::PointXYZ>),
+  deleted_ground_cloud (new pcl::PointCloud<pcl::PointXYZ>),
+  inliers(new pcl::PointIndices),
+  coefficients(new pcl::ModelCoefficients),
+  //for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>),
+  //for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  tree (new pcl::search::KdTree<pcl::PointXYZ>)
+  //clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
 {
-private:
-	ros::NodeHandle ppcs;
-	ros::NodeHandle ppcp;
+  ppcs.setCallbackQueue(&pc_queue);
+  ppcs2.setCallbackQueue(&pc_queue2);
+  pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_source_pointcloud,this);
+  pc_sub2 = ppcs2.subscribe("/pointcloud_merger/merged_cloud",1,&ProcessingPointCloud::input_merged_pointcloud,this);
+  pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("vox_cloud", 1);
+  pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
+  pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
+  pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("clu_cloud", 1);
 
-	ros::Subscriber pc_sub;
+  seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
+  seg_pub2 = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/merged_cloud", 1);
+  //pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
 
-	ros::Publisher pc_pub1;
-	ros::Publisher pc_pub2;
-	ros::Publisher pc_pub3;
-	ros::Publisher pc_pub4;
-	ros::Publisher pc_pub5;
-	ros::Publisher seg_pub;
-	ros::Publisher seg_pub2;
+  camera_position_y = 0.41;
+  ground_position_y = 0.3;
 
-	float camera_position_y;//カメラの高さ
-	float ground_position_y;//どのくらいの高さまで床とするか
+  cloud_position = 0;
 
-	float cloud_position;//表示の時それぞれの点群をどれくらい離すか
+  input = false;
 
-	float nan_c;
+  nan_c = std::numeric_limits<float>::quiet_NaN();
 
-	/*ポイントクラウドの変数定義*/
-	pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_cloud;
-	pcl::VoxelGrid<pcl::PointXYZ> vg;
+  vg.setLeafSize (0.1f, 0.1f, 0.1f);
 
-	pcl::PointCloud<pcl::PointXYZ>::Ptr deleted_ground_cloud;
-	pcl::SACSegmentation<pcl::PointXYZ> seg;
-	pcl::PointIndices::Ptr inliers;
-	pcl::ModelCoefficients::Ptr coefficients;
+  seg.setOptimizeCoefficients (true);
+  seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
+  seg.setMethodType (pcl::SAC_RANSAC);
+  seg.setMaxIterations (1000);//RANSACの繰り返し回数
+  seg.setDistanceThreshold (0.1);//モデルとどのくらい離れていてもいいか???謎
+  seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
+  seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
 
-	//pcl::PointCloud<pcl::PointXYZ>::Ptr for_detect_ground_cloud;
-
-	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_view_ground_cloud;
-	pcl::ExtractIndices<pcl::PointXYZ> extract;
-
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree;//何か探索用にツリーを作る
-
-	std::vector<pcl::PointIndices> cluster_indices_m;
-	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-
-	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud;
-
-	sensor_msgs::PointCloud2 orig_cloud;
-	sensor_msgs::PointCloud2 vox_cloud;
-	sensor_msgs::PointCloud2 gro_cloud;
-	sensor_msgs::PointCloud2 del_cloud;
-	sensor_msgs::PointCloud2 clu_cloud;
-
-	new_exploration_programs::index clu_index;
-	new_exploration_programs::f_vector clu_feature;
-	new_exploration_programs::segmented_cloud source_cloud;
-	geometry_msgs::Point clu_centroid;
-
-
-
-public:
-	ros::CallbackQueue pc_queue;
-	bool input;
-	ProcessingPointCloud()
-		:input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-		voxeled_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-		deleted_ground_cloud (new pcl::PointCloud<pcl::PointXYZ>),
-		inliers(new pcl::PointIndices),
-		coefficients(new pcl::ModelCoefficients),
-		//for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-		//for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-		tree (new pcl::search::KdTree<pcl::PointXYZ>)
-		//clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
-	{
-		ppcs.setCallbackQueue(&pc_queue);
-		pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_pointcloud,this);
-		pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("vox_cloud", 1);
-		pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
-		pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
-		pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("clu_cloud", 1);
-		seg_pub2 = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/master_cloud", 1);
-		seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
-		//pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
-
-		camera_position_y = 0.41;
-		ground_position_y = 0.3;
-
-		cloud_position = 0;
-
-		input = false;
-
-		nan_c = std::numeric_limits<float>::quiet_NaN();
-
-		vg.setLeafSize (0.1f, 0.1f, 0.1f);
-
-		seg.setOptimizeCoefficients (true);
-		seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
-		seg.setMethodType (pcl::SAC_RANSAC);
-		seg.setMaxIterations (1000);//RANSACの繰り返し回数
-		seg.setDistanceThreshold (0.1);//モデルとどのくらい離れていてもいいか???謎
-		seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
-		seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
-
-		ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
-		ec.setMinClusterSize (100);//クラスタを構成する最小の点数
-		ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
-	};
-	~ProcessingPointCloud(){};
-
-	void input_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
-	void apply_voxelgrid(void);
-	void delete_ground(void);
-	void euclidean_clustering(void);
-	void publish_pointcloud(void);
-	void feature_extraction(void);
-	virtual void publish_segmented(void);
+  ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
+  ec.setMinClusterSize (100);//クラスタを構成する最小の点数
+  ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
 };
 
-
-void ProcessingPointCloud::input_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
+void ProcessingPointCloud::input_source_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
 {
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
@@ -141,6 +58,15 @@ void ProcessingPointCloud::input_pointcloud(const sensor_msgs::PointCloud2::Cons
 	input = true;
 }
 
+void ProcessingPointCloud::input_merged_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
+{
+	//pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);
+	pcl::fromROSMsg (*pc_msg, *input_cloud);
+	//pcl::toROSMsg (*input_cloud, orig_cloud);
+	orig_cloud = *pc_msg;
+	std::cout << "input_pointcloud" << std::endl;
+	input = true;
+}
 
 void ProcessingPointCloud::apply_voxelgrid(void)
 {
@@ -461,7 +387,7 @@ void ProcessingPointCloud::feature_extraction(void)
 
 }
 
-void ProcessingPointCloud::publish_segmented(void)
+void ProcessingPointCloud::publish_source_segmented(void)
 {
 	source_cloud.orig_cloud = orig_cloud;
 	source_cloud.vox_cloud = vox_cloud;
@@ -474,31 +400,15 @@ void ProcessingPointCloud::publish_segmented(void)
 	seg_pub.publish(source_cloud);
 }
 
-/*計算した特徴ベクトルとクラスタリングした点群をトピックにあげたい、あと元の点群も送る必要がある*/
-/*クラスタリングした点群はいらない*/
-/*最後のクラウドとインデックスをトピックにあげて別のクラスで特徴点抽出してもいいかも*/
-
-int main(int argc, char** argv)
+void ProcessingPointCloud::publish_merged_segmented(void)
 {
-	ros::init(argc, argv, "processing_pointcloud");
-	ProcessingPointCloud pp;
-	while(ros::ok()){
-		//std::cout << "0" << std::endl;
-		pp.pc_queue.callOne(ros::WallDuration(1));
-		if(pp.input)
-		{
-			pp.apply_voxelgrid();
-			pp.delete_ground();
-			pp.euclidean_clustering();
-			pp.publish_pointcloud();
-			pp.feature_extraction();
-			pp.publish_segmented();
-			pp.input = false;
-		}
-		else
-		{
-			std::cout << '\n' << "not input" << '\n';
-		}
-	}
-	return 0;
+	source_cloud.orig_cloud = orig_cloud;
+	source_cloud.vox_cloud = vox_cloud;
+	source_cloud.del_cloud = del_cloud;
+	source_cloud.clu_cloud = clu_cloud;
+
+	//source_cloud.clu_indices = clu_index;
+	//source_cloud.clu_features = clu_feature;
+
+	seg_pub2.publish(source_cloud);
 }

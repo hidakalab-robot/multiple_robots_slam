@@ -1,5 +1,113 @@
 #include <new_exploration_programs/feature_matching.h>
 
+// #include <ros/ros.h>
+// #include <ros/callback_queue.h>
+// #include <sensor_msgs/PointCloud2.h>
+// #include <pcl_ros/point_cloud.h>
+// #include <pcl/filters/voxel_grid.h>
+// #include <pcl/filters/extract_indices.h>
+// #include <pcl/segmentation/sac_segmentation.h>
+// #include <pcl/segmentation/extract_clusters.h>
+// #include <limits>
+//
+// #include <new_exploration_programs/segmented_cloud.h>
+//
+// #include <visualization_msgs/MarkerArray.h>
+//
+// class FeatureMatching
+// {
+// private:
+//   ros::NodeHandle ssc;
+// 	ros::NodeHandle smc;
+//
+//   ros::NodeHandle psc;
+// 	ros::NodeHandle pmc;
+//
+//   ros::NodeHandle prc;
+//
+//
+//   ros::Subscriber sc_sub;
+//   ros::Subscriber mc_sub;
+//
+//   ros::Publisher sc_pub1;
+// 	ros::Publisher sc_pub2;
+// 	ros::Publisher sc_pub3;
+// 	ros::Publisher sc_pub4;
+//
+//   ros::Publisher mc_pub1;
+// 	ros::Publisher mc_pub2;
+// 	ros::Publisher mc_pub3;
+// 	ros::Publisher mc_pub4;
+//
+//   ros::Publisher rsc_pub;
+//   ros::Publisher rmc_pub;
+//   ros::Publisher rsm_pub;
+//
+//   new_exploration_programs::segmented_cloud source_cloud;
+//   new_exploration_programs::segmented_cloud master_cloud;
+//
+//
+//   std::vector<Eigen::Vector2i> matching_list_m;
+//
+//   visualization_msgs::MarkerArray matching_line_list_m;
+//
+//   float shift_position;
+//   float matching_threshold;
+//
+//   pcl::PointCloud<pcl::PointXYZRGB>::Ptr master_cloud_for_shift;
+//   sensor_msgs::PointCloud2 shift_master_cloud;
+//
+// public:
+//   ros::CallbackQueue sc_queue;
+//   ros::CallbackQueue mc_queue;
+//   bool input_master;
+//   bool input_source;
+//   bool changed_master;
+//   bool matching;
+//   FeatureMatching()
+//   :master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
+//   {
+//     ssc.setCallbackQueue(&sc_queue);
+//     smc.setCallbackQueue(&mc_queue);
+// 		sc_sub = ssc.subscribe("/pointcloud_segmentation/source_cloud",1,&FeatureMatching::input_sourcecloud,this);
+//     mc_sub = smc.subscribe("/pointcloud_segmentation/master_cloud",1,&FeatureMatching::input_mastercloud,this);
+//     input_master = false;
+//     input_source = false;
+//     changed_master = false;
+//     matching_threshold = 0.17;
+//     shift_position = 5.0;
+//     matching = true;
+//
+//     sc_pub1 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/orig_cloud", 1);
+// 		sc_pub2 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/vox_cloud", 1);
+// 		sc_pub3 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/del_cloud", 1);
+// 		sc_pub4 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/clu_cloud", 1);
+//
+//     mc_pub1 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/orig_cloud", 1);
+//     mc_pub2 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/vox_cloud", 1);
+//     mc_pub3 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/del_cloud", 1);
+//     mc_pub4 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/clu_cloud", 1);
+//
+//     rsc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_segmentation_registered/source_cloud", 1);
+//     rmc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_segmentation_registered/master_cloud", 1);
+//     rsm_pub = prc.advertise<visualization_msgs::MarkerArray>("pointcloud_segmentation_registered/show_matching", 1);
+//
+//
+//   };
+//
+//   ~FeatureMatching(){};
+//
+//   void input_sourcecloud(const new_exploration_programs::segmented_cloud::ConstPtr& sc_msg);
+//   void input_mastercloud(const new_exploration_programs::segmented_cloud::ConstPtr& mc_msg);
+//   void mastercloud_test(void);
+//   void sourcecloud_test(void);
+//   void matching_calc(void);
+//   void show_matching(void);
+//   void publish_registeredcloud(void);
+//   void publish_matchingline(void);
+//   void shift_mcloud(void);
+// };
+
 FeatureMatching::FeatureMatching()
 :master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>),
 orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
@@ -25,15 +133,13 @@ orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
   mc_pub3 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/del_cloud", 1);
   mc_pub4 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/clu_cloud", 1);
 
-  rsc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_matching/source_cloud", 1);
-  rmc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_matching/merged_cloud", 1);
-  rsm_pub = prc.advertise<visualization_msgs::MarkerArray>("pointcloud_matching/show_matching", 1);
+  rsc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_segmentation_registered/source_cloud", 1);
+  rmc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_segmentation_registered/merged_cloud", 1);
+  rsm_pub = prc.advertise<visualization_msgs::MarkerArray>("pointcloud_segmentation_registered/show_matching", 1);
 
 
-  origs_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_matching/orig_source_cloud", 1);
-  origm_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_matching/orig_merged_cloud", 1);
-
-  mi_pub = prc.advertise<new_exploration_programs::matching_info>("pointcloud_matching/matching_info", 1);
+  origs_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_segmentation_registered/orig_source_cloud", 1);
+  origm_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_segmentation_registered/orig_merged_cloud", 1);
 };
 
 
@@ -48,7 +154,7 @@ void FeatureMatching::input_mastercloud(const new_exploration_programs::segmente
 {
   master_cloud = *mc_msg;
   input_master = true;
-  std::cout << "input_mergedcloud" << '\n';
+  std::cout << "input_mastercloud" << '\n';
 }
 
 void FeatureMatching::mastercloud_test(void)
@@ -137,6 +243,9 @@ void FeatureMatching::matching_calc(void)
             min_diff = diff_vector;
           }
         }
+
+
+
         // std::cout << "[matching!!] master_cloud[" << i << "] ("<< mcx << "," << mcy << "," << mcz << ") and source_cloud[" << j << "] (" << scx << "," << scy << "," << scz << ")" << '\n';
         //
         // matching_pair[0] = i;
@@ -310,20 +419,57 @@ void FeatureMatching::store(void)
 
 void FeatureMatching::publish_matchinginfo(void)
 {
-  /*ソース、マージクラウドにマッチング情報を加えてパブリッシュ*/
-  new_exploration_programs::matching_info info;
-  new_exploration_programs::matching_pair pair;
-
-  info.merged_cloud = master_cloud;
-  info.merged_cloud = source_cloud;
-
-  for(int i=0;i<matching_list_m.size();i++)
-  {
-    pair.merged_num = matching_list_m[i](0);
-    pair.source_num = matching_list_m[i](1);
-    info.matching_list.push_back(pair);
-  }
-
-  mi_pub.publish(info);
 
 }
+
+// int main(int argc, char** argv)
+// {
+// 	ros::init(argc, argv, "feature_matching");
+// 	FeatureMatching fm;
+//
+//   while(ros::ok())
+//   {
+//     fm.mc_queue.callOne(ros::WallDuration(1));
+//     if(fm.input_master)
+//     {
+//       while(ros::ok())
+//       {
+//           fm.sc_queue.callOne(ros::WallDuration(1));
+//           if(fm.input_source)
+//           {
+//             //fm.mastercloud_test();
+//             //fm.sourcecloud_test();
+//             fm.matching_calc();
+//             fm.shift_mcloud();
+//             if(fm.matching)
+//             {
+//               fm.show_matching();
+
+//               fm.publish_matchingline();
+//               fm.publish_registeredcloud();
+//             }
+//             else
+//             {
+//               fm.publish_registeredcloud();
+//             }
+//             fm.input_source = false;
+//             fm.matching = true;
+//             if(fm.changed_master)
+//             {
+//                 break;
+//             }
+//           }
+//           else
+//           {
+//             std::cout << "source_is_nothing" << '\n';
+//           }
+//       }
+//       fm.input_master = false;
+//     }
+//     else
+//     {
+//       std::cout << "master_is_nothing" << '\n';
+//     }
+// 	}
+// 	return 0;
+// }
