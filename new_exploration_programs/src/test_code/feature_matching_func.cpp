@@ -95,7 +95,8 @@ void FeatureMatching::matching_calc(void)
   float min_diff;
   int min_num;
 
-  float y_thre = 0.09;
+  //float y_thre = 0.09;
+  float y_thre = 100.0;
 
   for(int i=0;i<master_cloud.clu_indices.size();i++)
   {

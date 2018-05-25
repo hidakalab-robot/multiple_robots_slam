@@ -49,12 +49,17 @@ private:
 
   sensor_msgs::PointCloud2 merged_cloud_r;
 
-  pcl::VoxelGrid<pcl::PointXYZ> vg;
-
+  //pcl::VoxelGrid<pcl::PointXYZ> vg;
+  pcl::VoxelGrid<pcl::PointXYZRGB> vg;
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_input_cloud;
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr clone_input_cloud;
+
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr color_input_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr color_merged_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr color_voxeled_input_cloud;
 
   std::vector<int> index_list_m;
 
@@ -96,7 +101,10 @@ public:
   merged_cloud(new pcl::PointCloud<pcl::PointXYZ>),
   voxeled_input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
   clone_input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  kdtree(new pcl::search::KdTree<pcl::PointXYZ>)
+  kdtree(new pcl::search::KdTree<pcl::PointXYZ>),
+  color_input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  color_merged_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  color_voxeled_input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
   {
     ssd.setCallbackQueue(&sd_queue);
     sd_sub = ssd.subscribe("/camera/depth_registered/points",1,&ScanMatching::input_pointcloud,this);
@@ -131,12 +139,16 @@ public:
   //void icp_descent(float& dx_d, float& dz_d, float& dth_d);
   float icp_cost(const float dx_c, const float dz_c, const float dth_c);
   void publish_mergedcloud(void);
+  void odomove(void);
 };
 
 void ScanMatching::input_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
 {
   //input_msg = *pc_msg;
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
+
+  pcl::fromROSMsg (*pc_msg, *color_input_cloud);
+
 	std::cout << "input_pointcloud" << std::endl;
 	input_c = true;
 }
@@ -152,11 +164,16 @@ void ScanMatching::input_odometry(const nav_msgs::Odometry::ConstPtr& od_msg)
 
 void ScanMatching::voxeling(void)
 {
-  vg.setLeafSize (0.1f, 0.1f, 0.1f);
-  vg.setInputCloud (input_cloud);
-  vg.filter (*voxeled_input_cloud);
+  vg.setLeafSize (0.01f, 0.01f, 0.01f);
+  //vg.setInputCloud (input_cloud);
+  //vg.filter (*voxeled_input_cloud);
 
-  *input_cloud = *voxeled_input_cloud;
+  //*input_cloud = *voxeled_input_cloud;
+
+  vg.setInputCloud (color_input_cloud);
+  vg.filter (*color_voxeled_input_cloud);
+
+  *color_input_cloud = *color_voxeled_input_cloud;
 }
 
 void ScanMatching::remove_unreliable(void)
@@ -185,8 +202,8 @@ void ScanMatching::convert3dto2d(void)
 	}
 
   vg.setLeafSize (0.2f, 0.2f, 0.2f);
-  vg.setInputCloud (input_cloud);
-  vg.filter (*voxeled_input_cloud);
+  //vg.setInputCloud (input_cloud);
+  //vg.filter (*voxeled_input_cloud);
 
   *input_cloud = *voxeled_input_cloud;
 }
@@ -460,11 +477,42 @@ float ScanMatching::icp_cost(const float dx_c, const float dz_c, const float dth
   return ave_sqrt_distance / (float)count;
 }
 
+void ScanMatching::odomove(void)
+{
+
+  if(color_merged_cloud->points.size()>0)
+  {
+    float x,y,z;
+    float move_x = -input_odom.pose.pose.position.y;
+    float move_z = input_odom.pose.pose.position.x;
+    float move_s = 2*asin(input_odom.pose.pose.orientation.z);
+
+    for(int i=0;i<input_cloud->points.size();i++)
+      {
+        //std::cout << i << '\n';
+        x = color_input_cloud->points[i].x;// + move_x;
+        //std::cout << "2" << '\n';
+        z = color_input_cloud->points[i].z;// + move_z;
+        //std::cout << "3" << '\n';
+        x = x*cos(move_s)-z*sin(move_s);
+        //std::cout << "4" << '\n';
+        z = x*sin(move_s)+z*cos(move_s);
+        //std::cout << "5" << '\n';
+        color_input_cloud->points[i].x = x + move_x;
+        color_input_cloud->points[i].z = z + move_z;
+      }
+  }
+
+  *color_merged_cloud += *color_input_cloud;
+
+}
+
 
 void ScanMatching::publish_mergedcloud(void)
 {
   //*merged_cloud = *input_cloud;
-  pcl::toROSMsg (*merged_cloud, merged_cloud_r);
+  //pcl::toROSMsg (*merged_cloud, merged_cloud_r);
+  pcl::toROSMsg (*color_merged_cloud, merged_cloud_r);
   merged_cloud_r.header.frame_id = "camera_rgb_optical_frame";
   //merged_cloud_r.header.frame_id = "odom";
   mc_pub.publish(merged_cloud_r);
@@ -485,9 +533,10 @@ int main(int argc, char** argv)
     if(sm.input_c && sm.input_o)
     {
       sm.voxeling();
-      sm.remove_unreliable();
+      //sm.remove_unreliable();
       //sm.convert3dto2d();
-      sm.icp_main();
+      //sm.icp_main();
+      sm.odomove();
 
       sm.publish_mergedcloud();
     }
