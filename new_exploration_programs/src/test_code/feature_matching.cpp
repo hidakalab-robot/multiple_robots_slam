@@ -5,7 +5,6 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "feature_matching");
 	FeatureMatching fm;
 
-
 	while(ros::ok())
   {
     fm.mc_queue.callOne(ros::WallDuration(1));

@@ -316,7 +316,7 @@ void FeatureMatching::publish_matchinginfo(void)
   new_exploration_programs::matching_pair pair;
 
   info.merged_cloud = master_cloud;
-  info.merged_cloud = source_cloud;
+  info.source_cloud = source_cloud;
 
   for(int i=0;i<matching_list_m.size();i++)
   {
