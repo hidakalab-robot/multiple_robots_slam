@@ -1,0 +1,7 @@
+<launch>
+	<node pkg="new_exploration_programs" type="localmap_publisher" name="localmap_publisher" />
+	<node pkg="new_exploration_programs" type="centroid_matching" name="centroid_matching" />
+	<node pkg="new_exploration_programs" type="feature_matching" name="feature_matching" />
+	<node pkg="new_exploration_programs" type="processing_source_pointcloud" name="processing_source_pointcloud" />
+	<node pkg="new_exploration_programs" type="processing_merged_pointcloud" name="processing_merged_pointcloud" />
+</launch>

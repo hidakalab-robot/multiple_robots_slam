@@ -39,9 +39,9 @@ private:
   ros::Publisher mc_pub;
 
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr merged_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr merged_cloud;
 
   nav_msgs::Odometry input_odom;
   nav_msgs::Odometry pre_input_odom;
@@ -52,9 +52,9 @@ private:
   //pcl::VoxelGrid<pcl::PointXYZ> vg;
   pcl::VoxelGrid<pcl::PointXYZRGB> vg;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_input_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxeled_input_cloud;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr clone_input_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr clone_input_cloud;
 
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr color_input_cloud;
@@ -82,7 +82,7 @@ private:
   // float min_dz;
   // float min_dth;
 
-  pcl::search::KdTree<pcl::PointXYZ>::Ptr kdtree;
+  pcl::search::KdTree<pcl::PointXYZRGB>::Ptr kdtree;
 
   Eigen::Matrix3f R_estimate;
   Eigen::Vector3f T_estimate;
@@ -97,11 +97,11 @@ public:
   bool input_o;
 
   ScanMatching()
-  :input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  merged_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  voxeled_input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  clone_input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  kdtree(new pcl::search::KdTree<pcl::PointXYZ>),
+  :input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  merged_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  voxeled_input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  clone_input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  kdtree(new pcl::search::KdTree<pcl::PointXYZRGB>),
   color_input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
   color_merged_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
   color_voxeled_input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
@@ -178,7 +178,7 @@ void ScanMatching::voxeling(void)
 
 void ScanMatching::remove_unreliable(void)
 {
-  pcl::PointCloud<pcl::PointXYZ>::Ptr remove_cloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr remove_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
 
   for(int i=0;i<input_cloud->points.size();i++)
 	{
@@ -333,7 +333,7 @@ void ScanMatching::icp_correspondence(void)//２つの点群の点を対応付�
   kdtree->setInputCloud (merged_cloud);
   //kdtree->setEpsilon(1.00);
 
-  pcl::PointXYZ searchPoint;
+  pcl::PointXYZRGB searchPoint;
   std::vector<int> v_nearest_point_index(1);
   int nearest_point_index;
   std::vector<int> index_list;//ここに点の対応関係が入ってる//メンバーにする

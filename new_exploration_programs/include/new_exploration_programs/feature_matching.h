@@ -87,4 +87,6 @@ public:
   void shift_mcloud(void);
   void store(void);
   void publish_matchinginfo(void);
+  bool master_is_empty(void);
+  void publish_matchinginfo_empty(void);
 };

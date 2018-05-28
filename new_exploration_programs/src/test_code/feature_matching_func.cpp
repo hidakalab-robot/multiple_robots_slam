@@ -15,15 +15,15 @@ orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
   shift_position = 5.0;
   matching = true;
 
-  sc_pub1 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/orig_cloud", 1);
- 	sc_pub2 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/vox_cloud", 1);
- 	sc_pub3 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/del_cloud", 1);
- 	sc_pub4 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/clu_cloud", 1);
-
-  mc_pub1 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/orig_cloud", 1);
-  mc_pub2 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/vox_cloud", 1);
-  mc_pub3 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/del_cloud", 1);
-  mc_pub4 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/clu_cloud", 1);
+  // sc_pub1 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/orig_cloud", 1);
+ 	// sc_pub2 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/vox_cloud", 1);
+ 	// sc_pub3 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/del_cloud", 1);
+ 	// sc_pub4 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/clu_cloud", 1);
+  //
+  // mc_pub1 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/orig_cloud", 1);
+  // mc_pub2 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/vox_cloud", 1);
+  // mc_pub3 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/del_cloud", 1);
+  // mc_pub4 = pmc.advertise<sensor_msgs::PointCloud2>("master_cloud/clu_cloud", 1);
 
   rsc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_matching/source_cloud", 1);
   rmc_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_matching/merged_cloud", 1);
@@ -49,6 +49,18 @@ void FeatureMatching::input_mastercloud(const new_exploration_programs::segmente
   master_cloud = *mc_msg;
   input_master = true;
   std::cout << "input_mergedcloud" << '\n';
+}
+
+bool FeatureMatching::master_is_empty(void)
+{
+  if(master_cloud.clu_indices.size() > 0)
+  {
+    return false;
+  }
+  else
+  {
+    return true;
+  }
 }
 
 void FeatureMatching::mastercloud_test(void)
@@ -282,7 +294,9 @@ void FeatureMatching::publish_matchingline(void)
 void FeatureMatching::shift_mcloud(void)
 {
   pcl::fromROSMsg (master_cloud.clu_cloud, *master_cloud_for_shift);
+  std::cout << "100" << '\n';
   pcl::fromROSMsg (master_cloud.orig_cloud, *orig_master_cloud_for_shift);
+  std::cout << "101" << '\n';
 
   for(int i=0;i<master_cloud_for_shift->points.size();i++)
   {
@@ -295,7 +309,9 @@ void FeatureMatching::shift_mcloud(void)
   }
 
   pcl::toROSMsg (*master_cloud_for_shift, shift_master_cloud);
+  std::cout << "102" << '\n';
   pcl::toROSMsg (*orig_master_cloud_for_shift, shift_orig_master_cloud);
+  std::cout << "103" << '\n';
 }
 
 void FeatureMatching::publish_orig(void)
@@ -318,13 +334,94 @@ void FeatureMatching::publish_matchinginfo(void)
   info.merged_cloud = master_cloud;
   info.source_cloud = source_cloud;
 
+
+
+
+
+
+  // pcl::PointCloud<pcl::PointXYZRGB>::Ptr nantest_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  //
+  // pcl::fromROSMsg (source_cloud.vox_cloud, *nantest_cloud);
+  //
+  // int nancount = 0;
+  //
+  // for(int i=0;i<nantest_cloud->points.size();i++)
+  // {
+  //   if(isnan(nantest_cloud->points[i].x) || isnan(nantest_cloud->points[i].y) || isnan(nantest_cloud->points[i].z))
+  //   {
+  //     nancount++;
+  //   }
+  // }
+  // if(nancount > 0)
+  // {
+  //   std::cout << "find_nan << " << nancount << '\n';
+  // }
+  // else
+  // {
+  //   std::cout << "no_nan" << '\n';
+  // }
+  //
+  //
+  // for(int i=0;i<matching_list_m.size();i++)
+  // {
+  //   std::cout << "/* matching_pushback */" << '\n';
+  //   pair.merged_num = matching_list_m[i](0);
+  //   pair.source_num = matching_list_m[i](1);
+  //   info.matching_list.push_back(pair);
+  // }
+  //
+  //
+  // std::cout << "second" << '\n';
+  // 
+  // pcl::fromROSMsg (info.source_cloud.vox_cloud, *nantest_cloud);
+  //
+  // nancount = 0;
+  //
+  // for(int i=0;i<nantest_cloud->points.size();i++)
+  // {
+  //   if(isnan(nantest_cloud->points[i].x) || isnan(nantest_cloud->points[i].y) || isnan(nantest_cloud->points[i].z))
+  //   {
+  //     nancount++;
+  //   }
+  // }
+  // if(nancount > 0)
+  // {
+  //   std::cout << "find_nan << " << nancount << '\n';
+  // }
+  // else
+  // {
+  //   std::cout << "no_nan" << '\n';
+  // }
+
+
   for(int i=0;i<matching_list_m.size();i++)
   {
+    std::cout << "/* matching_pushback */" << '\n';
     pair.merged_num = matching_list_m[i](0);
     pair.source_num = matching_list_m[i](1);
     info.matching_list.push_back(pair);
   }
 
   mi_pub.publish(info);
+
+
+
+  std::cout << "publish_matchinginfo" << '\n';
+
+}
+
+void FeatureMatching::publish_matchinginfo_empty(void)
+{
+  /*ソース、マージクラウドにマッチング情報を加えてパブリッシュ*/
+  new_exploration_programs::matching_info info;
+  new_exploration_programs::matching_pair pair;
+
+  info.merged_cloud = master_cloud;
+  info.source_cloud = source_cloud;
+
+
+  mi_pub.publish(info);
+
+  std::cout << "publish_emptyinfo" << '\n';
 
 }

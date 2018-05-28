@@ -41,24 +41,24 @@ private:
 	float nan_c;
 
 	/*ポイントクラウドの変数定義*/
-	pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud;
-	pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_cloud;
-	pcl::VoxelGrid<pcl::PointXYZ> vg;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_cloud;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxeled_cloud;
+	pcl::VoxelGrid<pcl::PointXYZRGB> vg;
 
-	pcl::PointCloud<pcl::PointXYZ>::Ptr deleted_ground_cloud;
-	pcl::SACSegmentation<pcl::PointXYZ> seg;
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr deleted_ground_cloud;
+	pcl::SACSegmentation<pcl::PointXYZRGB> seg;
 	pcl::PointIndices::Ptr inliers;
 	pcl::ModelCoefficients::Ptr coefficients;
 
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr for_detect_ground_cloud;
 
 	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_view_ground_cloud;
-	pcl::ExtractIndices<pcl::PointXYZ> extract;
+	pcl::ExtractIndices<pcl::PointXYZRGB> extract;
 
-	pcl::search::KdTree<pcl::PointXYZ>::Ptr tree;//何か探索用にツリーを作る
+	pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree;//何か探索用にツリーを作る
 
 	std::vector<pcl::PointIndices> cluster_indices_m;
-	pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+	pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
 
 	//pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud;
 
@@ -91,4 +91,8 @@ public:
 	void feature_extraction(void);
 	void publish_source_segmented(void);
 	void publish_merged_segmented(void);
+	bool is_empty(void);
+	void publish_empty_merged(void);
+	void test_cloud(void);
+	void naninf(void);
 };

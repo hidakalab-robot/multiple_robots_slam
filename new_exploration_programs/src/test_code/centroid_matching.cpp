@@ -29,9 +29,9 @@ private:
   new_exploration_programs::matching_info info;
 
   sensor_msgs::PointCloud2 centroid_merged_cloud_r;
-  pcl::PointCloud<pcl::PointXYZ>::Ptr centroid_merged_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroid_merged_cloud;
 
-  pcl::PointCloud<pcl::PointXYZ>::Ptr match_source_cloud;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr match_source_cloud;
 
   //pcl::PointCloud<pcl::PointXYZ>::Ptr match_merged_cloud;
 
@@ -45,9 +45,9 @@ public:
   bool no_matching;
 
   CentroidMatching()
-  :centroid_merged_cloud(new pcl::PointCloud<pcl::PointXYZ>),
+  :centroid_merged_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
   //match_merged_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  match_source_cloud(new pcl::PointCloud<pcl::PointXYZ>)
+  match_source_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
   {
     smi.setCallbackQueue(&mi_queue);
     smi_sub = smi.subscribe("/pointcloud_matching/matching_info",1,&CentroidMatching::input_matchinginfo,this);
@@ -65,6 +65,8 @@ public:
   void merging_cloud(void);
   void if_onematching(void);
   //void if_nomatching(void);
+  bool is_merged_empty(void);
+  void nan_check(void);
 };
 
 
@@ -74,10 +76,14 @@ void CentroidMatching::input_matchinginfo(const new_exploration_programs::matchi
   input_info = true;
 
   pcl::fromROSMsg (info.source_cloud.vox_cloud, *match_source_cloud);
-
+  std::cout << "200" << '\n';
+  pcl::fromROSMsg (info.merged_cloud.orig_cloud, *centroid_merged_cloud);
+  std::cout << "201" << '\n';
   //pcl::fromROSMsg (info.merged_cloud.vox_cloud,, *match_merged_cloud);
 
   std::cout << "input_matchinginfo" << '\n';
+
+  std::cout << "info.matching_list.size() << " << info.matching_list.size() << '\n';
 
   if(info.matching_list.size() == 1)
   {
@@ -129,17 +135,20 @@ void CentroidMatching::centroid_vector(void)
   }
 
   angle_m = angle;
+
+  std::cout << "fin << centroid_vector" << '\n';
 }
 
 void CentroidMatching::if_onematching(void)
 {
 
+  /*ここは重心がひとつのときの回転を推定するための関数です*/
+
+
+  std::cout << "fin << if_onematching" << '\n';
+
 }
 
-// void CentroidMatching::if_nomatching(void)
-// {
-//
-// }
 
 void CentroidMatching::moving_cloud(void)
 {
@@ -165,6 +174,8 @@ void CentroidMatching::moving_cloud(void)
 
   rad /= (float)angle_m.size();
 
+
+
   Eigen::Vector3f point;
   Eigen::Vector3f a_point;
   Eigen::Matrix3f rot;
@@ -176,22 +187,100 @@ void CentroidMatching::moving_cloud(void)
   for(int i=0;i<match_source_cloud->points.size();i++)
   {
     point << match_source_cloud->points[i].x,match_source_cloud->points[i].y,match_source_cloud->points[i].z;
-    a_point = rot * point + trans;
+    //a_point = rot * point + trans;
+    a_point = rot * (point - trans);
     match_source_cloud->points[i].x = a_point(0);
     match_source_cloud->points[i].y = a_point(1);
     match_source_cloud->points[i].z = a_point(2);
   }
+
+  std::cout << "fin << moving_cloud" << '\n';
+
 }
 
 void CentroidMatching::merging_cloud(void)
 {
   *centroid_merged_cloud += *match_source_cloud;
+
+
+  std::cout << "fin << merging_cloud" << '\n';
+}
+
+bool CentroidMatching::is_merged_empty(void)
+{
+  if(info.matching_list.size() > 0)
+  {
+    //std::cout << "matching_list is empty" << '\n';
+    return false;
+  }
+  else
+  {
+    std::cout << "matching_list is empty" << '\n';
+    return true;
+  }
 }
 
 void CentroidMatching::publish_mergedcloud(void)
 {
+  centroid_merged_cloud -> width = centroid_merged_cloud -> points.size();
+  centroid_merged_cloud -> height = 1;
+  centroid_merged_cloud -> is_dense = false;
+
+  //std::cout << "isdence_b" << (int)centroid_merged_cloud -> is_dense << '\n';
+
   pcl::toROSMsg (*centroid_merged_cloud, centroid_merged_cloud_r);
+
+  centroid_merged_cloud_r.header.frame_id = "camera_rgb_optical_frame";
+  //std::cout << "isdence_a" << (int)centroid_merged_cloud_r.is_dense << '\n';
+  //centroid_merged_cloud_r.is_dense = false;
+
+  //std::cout << "isdence_aa" << (int)centroid_merged_cloud_r.is_dense << '\n';
+
+
   pmc_pub.publish(centroid_merged_cloud_r);
+}
+
+void CentroidMatching::nan_check(void)
+{
+  int s_nancount = 0;
+  int m_nancount = 0;
+
+  //centroid_merged_cloud += *match_source_cloud;
+
+  for(int i=0;i<centroid_merged_cloud->points.size();i++)
+  {
+    if(isnan(centroid_merged_cloud->points[i].x) || isnan(centroid_merged_cloud->points[i].y) || isnan(centroid_merged_cloud->points[i].z))
+    {
+      s_nancount++;
+      //std::cout << "find_nan " << nancount << '\n';
+    }
+  }
+  if(s_nancount > 0)
+  {
+    std::cout << "find_m_nan << " << s_nancount << '\n';
+  }
+  else
+  {
+    std::cout << "no_m_nan" << '\n';
+  }
+
+
+  for(int i=0;i<match_source_cloud->points.size();i++)
+  {
+    if(isnan(match_source_cloud->points[i].x) || isnan(match_source_cloud->points[i].y) || isnan(match_source_cloud->points[i].z))
+    {
+      m_nancount++;
+    }
+  }
+  if(m_nancount > 0)
+  {
+    std::cout << "find_s_nan << " << m_nancount << '\n';
+  }
+  else
+  {
+    std::cout << "no_s_nan" << '\n';
+  }
+
 }
 
 int main(int argc, char** argv)
@@ -204,21 +293,35 @@ int main(int argc, char** argv)
     cm.mi_queue.callOne(ros::WallDuration(1));
     if(cm.input_info)
     {
-      if(cm.one_matching)
+      if(cm.is_merged_empty())
       {
-        cm.if_onematching();
-        cm.moving_cloud();
+        cm.nan_check();
         cm.merging_cloud();
+        cm.nan_check();
         cm.publish_mergedcloud();
       }
-      else if(!cm.no_matching)
+      else
       {
-        /*マッチングがひとつの時ようのやつも作る*/
-        cm.centroid_vector();
-        cm.moving_cloud();
-        cm.merging_cloud();
-        cm.publish_mergedcloud();
+        if(cm.one_matching)
+        {
+          cm.if_onematching();//回転を推定
+        }
+        else if(!cm.no_matching)
+        {
+          /*マッチングがひとつの時ようのやつも作る*/
+          cm.centroid_vector();//回転を推定
+        }
+
+        if(!cm.no_matching)
+        {
+          cm.moving_cloud();//実際に点群に操作を行う
+          cm.nan_check();
+          cm.merging_cloud();//点群を合成する
+          cm.nan_check();
+          cm.publish_mergedcloud();//合成した点群を出力
+        }
       }
+
     }
     else
     {

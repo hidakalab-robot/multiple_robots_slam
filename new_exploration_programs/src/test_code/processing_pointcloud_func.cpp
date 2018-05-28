@@ -1,24 +1,24 @@
 #include <new_exploration_programs/processing_pointcloud.h>
 
 ProcessingPointCloud::ProcessingPointCloud()
-  :input_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  voxeled_cloud(new pcl::PointCloud<pcl::PointXYZ>),
-  deleted_ground_cloud (new pcl::PointCloud<pcl::PointXYZ>),
+  :input_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  voxeled_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  deleted_ground_cloud (new pcl::PointCloud<pcl::PointXYZRGB>),
   inliers(new pcl::PointIndices),
   coefficients(new pcl::ModelCoefficients),
   //for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>),
   //for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-  tree (new pcl::search::KdTree<pcl::PointXYZ>)
+  tree (new pcl::search::KdTree<pcl::PointXYZRGB>)
   //clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
 {
   ppcs.setCallbackQueue(&pc_queue);
   ppcs2.setCallbackQueue(&pc_queue2);
   pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_source_pointcloud,this);
-  pc_sub2 = ppcs2.subscribe("/pointcloud_merger/merged_cloud",1,&ProcessingPointCloud::input_merged_pointcloud,this);
-  pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("vox_cloud", 1);
-  pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
-  pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
-  pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("clu_cloud", 1);
+  pc_sub2 = ppcs2.subscribe("/centroid_matching/merged_cloud",1,&ProcessingPointCloud::input_merged_pointcloud,this);
+  pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("test_cloud", 1);
+  // pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
+  // pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
+  // pc_pub4 = ppcp.advertise<sensor_msgs::PointCloud2>("clu_cloud", 1);
 
   seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
   seg_pub2 = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/merged_cloud", 1);
@@ -68,6 +68,18 @@ void ProcessingPointCloud::input_merged_pointcloud(const sensor_msgs::PointCloud
 	input = true;
 }
 
+bool ProcessingPointCloud::is_empty(void)
+{
+  if(input_cloud -> points.size() > 0)
+  {
+    return false;
+  }
+  else
+  {
+    return true;
+  }
+}
+
 void ProcessingPointCloud::apply_voxelgrid(void)
 {
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr voxeled_cloud (new pcl::PointCloud<pcl::PointXYZ>);
@@ -83,6 +95,8 @@ void ProcessingPointCloud::apply_voxelgrid(void)
 	// 	voxeled_cloud->points[i].x+=cloud_position;
 	// }
 
+  *input_cloud = *voxeled_cloud;
+
 	pcl::toROSMsg (*voxeled_cloud, vox_cloud);
 
 }
@@ -90,8 +104,8 @@ void ProcessingPointCloud::apply_voxelgrid(void)
 void ProcessingPointCloud::delete_ground(void)
 {
 	/*ポイントクラウドを複製して高さが一定以上の点のみで平面を計算できるようにする(一定以上の高さだったらNanかInfにする)*/
-	pcl::PointCloud<pcl::PointXYZ>::Ptr for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZ>);
-	pcl::copyPointCloud(*voxeled_cloud, *for_detect_ground_cloud);
+	pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_detect_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+	pcl::copyPointCloud(*input_cloud, *for_detect_ground_cloud);
 
 	for(int i=0;i<for_detect_ground_cloud->points.size();i++)
 	{
@@ -113,7 +127,7 @@ void ProcessingPointCloud::delete_ground(void)
 
 	 /*view_ground 推定した地面部分の色を赤で表示するだけ*/
 	 pcl::PointCloud<pcl::PointXYZRGB>::Ptr for_view_ground_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-	 pcl::copyPointCloud(*voxeled_cloud, *for_view_ground_cloud);
+	 pcl::copyPointCloud(*input_cloud, *for_view_ground_cloud);
 
 	 for (int i = 0; i < for_view_ground_cloud->points.size (); i++)
 	 {
@@ -144,7 +158,7 @@ void ProcessingPointCloud::delete_ground(void)
 	 pcl::toROSMsg (*for_view_ground_cloud, gro_cloud);
 
 	 //pcl::ExtractIndices<pcl::PointXYZ> extract;
-	 extract.setInputCloud (voxeled_cloud);
+	 extract.setInputCloud (input_cloud);
 	 extract.setIndices (inliers);
 
 	 extract.setNegative (true);//true:平面を削除、false:平面以外削除
@@ -157,28 +171,43 @@ void ProcessingPointCloud::delete_ground(void)
 		//  deleted_ground_cloud->points[i].x+=2*cloud_position;
 	 // }
 
+   *input_cloud = *deleted_ground_cloud;
+
 	 pcl::toROSMsg (*deleted_ground_cloud, del_cloud);
 
 }
 
-
-
+void ProcessingPointCloud::test_cloud(void)
+{
+  sensor_msgs::PointCloud2 testcloud;
+  pcl::toROSMsg (*input_cloud, testcloud);
+  pc_pub1.publish(testcloud);
+}
 
 void ProcessingPointCloud::euclidean_clustering(void)
 {
+
+  std::cout << "300" << '\n';
 	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
-	tree->setInputCloud (deleted_ground_cloud);
+	tree->setInputCloud (input_cloud);
+  std::cout << "301" << '\n';
 	std::vector<pcl::PointIndices> cluster_indices;//<-何故かここで宣言しないとだめ???????
 	//std::cout << "1" << '\n';
 	//pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+  std::cout << "302" << '\n';
 	ec.setSearchMethod (tree);
+  std::cout << "303" << '\n';
 	//std::cout << "2" << '\n';
-	ec.setInputCloud (deleted_ground_cloud);
+	ec.setInputCloud (input_cloud);
+
+  std::cout << "304" << '\n';
 	//std::cout << "3" << '\n';
 	// ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
 	// ec.setMinClusterSize (100);//クラスタを構成する最小の点数
 	// ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
 	ec.extract (cluster_indices);
+
+  std::cout << "305" << '\n';
 
 	cluster_indices_m = cluster_indices;//インデックスをメンバ変数に保存するやつ
 
@@ -188,7 +217,7 @@ void ProcessingPointCloud::euclidean_clustering(void)
 	int j = 0;
 	float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-	pcl::copyPointCloud(*deleted_ground_cloud, *clustered_cloud);
+	pcl::copyPointCloud(*input_cloud, *clustered_cloud);
 
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
   {
@@ -394,10 +423,18 @@ void ProcessingPointCloud::publish_source_segmented(void)
 	source_cloud.del_cloud = del_cloud;
 	source_cloud.clu_cloud = clu_cloud;
 
+  //pcl::PointCloud<pcl::PointXYZRGB>::Ptr nantest_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+  //std::cout << "second nan_check" << '\n';
+  //pcl::fromROSMsg (vox_cloud, *input_cloud);
+  //pcl::fromROSMsg (source_cloud.vox_cloud, *input_cloud);
+
+
 	//source_cloud.clu_indices = clu_index;
 	//source_cloud.clu_features = clu_feature;
 
 	seg_pub.publish(source_cloud);
+
+  std::cout << "publish_segmented_source" << '\n';
 }
 
 void ProcessingPointCloud::publish_merged_segmented(void)
@@ -411,4 +448,43 @@ void ProcessingPointCloud::publish_merged_segmented(void)
 	//source_cloud.clu_features = clu_feature;
 
 	seg_pub2.publish(source_cloud);
+
+  std::cout << "publish_segmented_merged" << '\n';
+}
+
+void ProcessingPointCloud::publish_empty_merged(void)
+{
+  new_exploration_programs::segmented_cloud empty;
+	// source_cloud.orig_cloud = orig_cloud;
+	// source_cloud.vox_cloud = orig_cloud;
+	// source_cloud.del_cloud = orig_cloud;
+	// source_cloud.clu_cloud = orig_cloud;
+
+	//source_cloud.clu_indices = clu_index;
+	//source_cloud.clu_features = clu_feature;
+
+	seg_pub2.publish(empty);
+
+  std::cout << "publish_empty_merged" << '\n';
+}
+
+void ProcessingPointCloud::naninf(void)
+{
+  int nancount = 0;
+
+  for(int i=0;i<input_cloud->points.size();i++)
+  {
+    if(isnan(input_cloud->points[i].x) || isnan(input_cloud->points[i].y) || isnan(input_cloud->points[i].z))
+    {
+      nancount++;
+    }
+  }
+  if(nancount > 0)
+  {
+    std::cout << "find_nan << " << nancount << '\n';
+  }
+  else
+  {
+    std::cout << "no_nan" << '\n';
+  }
 }

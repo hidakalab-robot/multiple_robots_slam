@@ -263,3 +263,6 @@ target_link_libraries(scan_matching ${catkin_LIBRARIES})
 
 add_executable(centroid_matching src/test_code/centroid_matching.cpp src/test_code/feature_matching_func.cpp)
 target_link_libraries(centroid_matching ${catkin_LIBRARIES})
+
+add_executable(localmap_publisher src/test_code/localmap_publisher.cpp)
+target_link_libraries(localmap_publisher ${catkin_LIBRARIES})
