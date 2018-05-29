@@ -213,6 +213,12 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
+
+
+#############################
+## autonomouse_SLAM_system ##
+#############################
+
 add_executable(frontier_based_exploration src/main/frontier-based_exploration_main.cpp src/avoidance_process/avoidance_process.cpp src/avoidance_process/avoidance_process_function.cpp src/basic_process/basic_process_function.cpp src/basic_process/basic_process.cpp src/frontier_map_process/frontier_map_process.cpp src/frontier_map_process/frontier_map_process_function.cpp src/frontier_moving_process/frontier_moving_process.cpp src/frontier_moving_process/frontier_moving_process_function.cpp)
 target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
 
@@ -248,6 +254,11 @@ target_link_libraries(analysis_point_cloud ${catkin_LIBRARIES})
 
 add_executable(pointcloud_test src/test_code/pointcloud_test.cpp)
 target_link_libraries(pointcloud_test ${catkin_LIBRARIES})
+
+
+#######################################
+## create_map_system with pointcloud ##
+#######################################
 
 add_executable(processing_source_pointcloud src/test_code/processing_source_pointcloud.cpp src/test_code/processing_pointcloud_func.cpp)
 target_link_libraries(processing_source_pointcloud ${catkin_LIBRARIES})

@@ -14,7 +14,7 @@ ProcessingPointCloud::ProcessingPointCloud()
   ppcs.setCallbackQueue(&pc_queue);
   ppcs2.setCallbackQueue(&pc_queue2);
   pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_source_pointcloud,this);
-  pc_sub2 = ppcs2.subscribe("/centroid_matching/merged_cloud",1,&ProcessingPointCloud::input_merged_pointcloud,this);
+  pc_sub2 = ppcs2.subscribe("/localmap_publisher/merged_cloud",1,&ProcessingPointCloud::input_merged_pointcloud,this);
   pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("test_cloud", 1);
   // pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
   // pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
@@ -54,6 +54,10 @@ void ProcessingPointCloud::input_source_pointcloud(const sensor_msgs::PointCloud
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
 	//pcl::toROSMsg (*input_cloud, orig_cloud);
 	orig_cloud = *pc_msg;
+  row_header = pc_msg -> header;
+
+//  std::cout << "source time << " << row_header.stamp << '\n';
+
 	std::cout << "input_pointcloud" << std::endl;
 	input = true;
 }
@@ -64,18 +68,29 @@ void ProcessingPointCloud::input_merged_pointcloud(const sensor_msgs::PointCloud
 	pcl::fromROSMsg (*pc_msg, *input_cloud);
 	//pcl::toROSMsg (*input_cloud, orig_cloud);
 	orig_cloud = *pc_msg;
+  row_header = pc_msg -> header;
+
+  std::cout << "input_size << " << pc_msg -> width << '\n';
+  std::cout << "input_conv << " << input_cloud -> points.size() << '\n';
+
 	std::cout << "input_pointcloud" << std::endl;
 	input = true;
 }
 
 bool ProcessingPointCloud::is_empty(void)
 {
+  std::cout << "sub_size << " << orig_cloud.width << '\n';
+  std::cout << "conv_size << " << input_cloud -> points.size() << '\n';
+
+
   if(input_cloud -> points.size() > 0)
   {
+    std::cout << "not_empty" << '\n';
     return false;
   }
   else
   {
+    std::cout << "empty" << '\n';
     return true;
   }
 }
@@ -423,6 +438,11 @@ void ProcessingPointCloud::publish_source_segmented(void)
 	source_cloud.del_cloud = del_cloud;
 	source_cloud.clu_cloud = clu_cloud;
 
+  source_cloud.header = row_header;
+
+
+  //std::cout << "source cloud time << " << source_cloud.header.stamp << '\n';
+
   //pcl::PointCloud<pcl::PointXYZRGB>::Ptr nantest_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
   //std::cout << "second nan_check" << '\n';
   //pcl::fromROSMsg (vox_cloud, *input_cloud);
@@ -443,6 +463,8 @@ void ProcessingPointCloud::publish_merged_segmented(void)
 	source_cloud.vox_cloud = vox_cloud;
 	source_cloud.del_cloud = del_cloud;
 	source_cloud.clu_cloud = clu_cloud;
+
+  source_cloud.header = row_header;
 
 	//source_cloud.clu_indices = clu_index;
 	//source_cloud.clu_features = clu_feature;

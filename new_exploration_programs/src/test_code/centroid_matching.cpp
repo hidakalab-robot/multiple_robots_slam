@@ -143,7 +143,21 @@ void CentroidMatching::if_onematching(void)
 {
 
   /*ここは重心がひとつのときの回転を推定するための関数です*/
+  std::vector<float> angle;
+  float th;
 
+  if(angle_m.size() > 0)
+  {
+    th = angle_m[0];
+  }
+  else
+  {
+    th = 0;
+  }
+
+  angle.push_back(th);
+
+  angle_m = angle;
 
   std::cout << "fin << if_onematching" << '\n';
 
@@ -172,7 +186,7 @@ void CentroidMatching::moving_cloud(void)
     rad += angle_m[i];
   }
 
-  rad /= (float)angle_m.size();
+  rad /= (float)angle_m.size();//これっぽい
 
 
 
@@ -180,15 +194,17 @@ void CentroidMatching::moving_cloud(void)
   Eigen::Vector3f a_point;
   Eigen::Matrix3f rot;
 
-
   rot << cos(-rad),0,sin(-rad),0,1,0,-sin(-rad),0,cos(-rad);
 
+  /*回転するまえに回転中心が原点になるように移動しないと*/
+  Eigen::Vector3f offset;
+  offset << info.merged_cloud.clu_centroids[0].x,info.merged_cloud.clu_centroids[0].y,info.merged_cloud.clu_centroids[0].z;
 
   for(int i=0;i<match_source_cloud->points.size();i++)
   {
     point << match_source_cloud->points[i].x,match_source_cloud->points[i].y,match_source_cloud->points[i].z;
     //a_point = rot * point + trans;
-    a_point = rot * (point - trans);
+    a_point = (rot * (point - offset - trans)) + offset;
     match_source_cloud->points[i].x = a_point(0);
     match_source_cloud->points[i].y = a_point(1);
     match_source_cloud->points[i].z = a_point(2);
@@ -226,11 +242,17 @@ void CentroidMatching::publish_mergedcloud(void)
   centroid_merged_cloud -> height = 1;
   centroid_merged_cloud -> is_dense = false;
 
+
   //std::cout << "isdence_b" << (int)centroid_merged_cloud -> is_dense << '\n';
 
   pcl::toROSMsg (*centroid_merged_cloud, centroid_merged_cloud_r);
 
-  centroid_merged_cloud_r.header.frame_id = "camera_rgb_optical_frame";
+  centroid_merged_cloud_r.header = info.source_cloud.header;
+
+  // std::cout << "before time << " << info.header.stamp << '\n';
+  // std::cout << "after time << " << centroid_merged_cloud_r.header.stamp << '\n';
+
+  //centroid_merged_cloud_r.header.frame_id = "camera_rgb_optical_frame";
   //std::cout << "isdence_a" << (int)centroid_merged_cloud_r.is_dense << '\n';
   //centroid_merged_cloud_r.is_dense = false;
 
@@ -295,9 +317,9 @@ int main(int argc, char** argv)
     {
       if(cm.is_merged_empty())
       {
-        cm.nan_check();
+        //cm.nan_check();
         cm.merging_cloud();
-        cm.nan_check();
+        //cm.nan_check();
         cm.publish_mergedcloud();
       }
       else
@@ -315,9 +337,9 @@ int main(int argc, char** argv)
         if(!cm.no_matching)
         {
           cm.moving_cloud();//実際に点群に操作を行う
-          cm.nan_check();
+          //cm.nan_check();
           cm.merging_cloud();//点群を合成する
-          cm.nan_check();
+          //cm.nan_check();
           cm.publish_mergedcloud();//合成した点群を出力
         }
       }

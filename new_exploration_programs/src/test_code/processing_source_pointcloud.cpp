@@ -11,12 +11,12 @@ int main(int argc, char** argv)
 		{
 			pp.apply_voxelgrid();
 			pp.delete_ground();
-			pp.naninf();
+		//	pp.naninf();
 			pp.euclidean_clustering();
 			//pp.publish_pointcloud();
 			pp.feature_extraction();
 			pp.publish_source_segmented();
-			pp.naninf();
+			//pp.naninf();
 			pp.input = false;
 		}
 		else

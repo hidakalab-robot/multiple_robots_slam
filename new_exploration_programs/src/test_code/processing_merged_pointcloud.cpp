@@ -14,14 +14,14 @@ int main(int argc, char** argv)
 			if(pp.is_empty())
 			{
 				pp.publish_empty_merged();
-				std::cout << "50" << '\n';
+				std::cout << "********50**********" << '\n';
 			}
 			else
 			{
 				//pp.apply_voxelgrid();
 				std::cout << "51" << '\n';
-				pp.naninf();
-				pp.test_cloud();
+				//pp.naninf();
+				//pp.test_cloud();
 				pp.delete_ground();
 				std::cout << "52" << '\n';
 

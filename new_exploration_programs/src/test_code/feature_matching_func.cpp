@@ -42,6 +42,9 @@ void FeatureMatching::input_sourcecloud(const new_exploration_programs::segmente
   source_cloud = *sc_msg;
   input_source = true;
   std::cout << "input_sourcecloud" << '\n';
+
+  // std::cout << "info in time << " << sc_msg -> header.stamp << '\n';
+  // std::cout << "info in time2 << " << source_cloud.header.stamp << '\n';
 }
 
 void FeatureMatching::input_mastercloud(const new_exploration_programs::segmented_cloud::ConstPtr& mc_msg)
@@ -107,8 +110,8 @@ void FeatureMatching::matching_calc(void)
   float min_diff;
   int min_num;
 
-  //float y_thre = 0.09;
-  float y_thre = 100.0;
+  float y_thre = 0.09;
+  //float y_thre = 100.0;
 
   for(int i=0;i<master_cloud.clu_indices.size();i++)
   {
@@ -316,6 +319,10 @@ void FeatureMatching::shift_mcloud(void)
 
 void FeatureMatching::publish_orig(void)
 {
+  //std::cout << "orig_cloud size << " << source_cloud.orig_cloud.height*source_cloud.orig_cloud.width << '\n';
+
+  std::cout << "header info << " << '\n' << source_cloud.orig_cloud.header << '\n';
+
   origs_pub.publish(source_cloud.orig_cloud);
   origm_pub.publish(shift_orig_master_cloud);
 }
@@ -335,7 +342,7 @@ void FeatureMatching::publish_matchinginfo(void)
   info.source_cloud = source_cloud;
 
 
-
+  //std::cout << "info out time << " << info.source_cloud.header.stamp << '\n';
 
 
 
@@ -372,7 +379,7 @@ void FeatureMatching::publish_matchinginfo(void)
   //
   //
   // std::cout << "second" << '\n';
-  // 
+  //
   // pcl::fromROSMsg (info.source_cloud.vox_cloud, *nantest_cloud);
   //
   // nancount = 0;

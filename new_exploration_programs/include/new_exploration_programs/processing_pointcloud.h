@@ -11,6 +11,8 @@
 #include <new_exploration_programs/segmented_cloud.h>
 #include <geometry_msgs/Point.h>
 
+#include <std_msgs/Header.h>
+
 
 //#include <Eigen/Dense>
 
@@ -73,7 +75,7 @@ private:
 	new_exploration_programs::segmented_cloud source_cloud;
 	geometry_msgs::Point clu_centroid;
 
-
+	std_msgs::Header row_header;
 
 public:
 	ros::CallbackQueue pc_queue;

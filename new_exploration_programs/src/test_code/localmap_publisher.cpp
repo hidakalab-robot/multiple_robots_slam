@@ -11,6 +11,7 @@
 #include <new_exploration_programs/segmented_cloud.h>
 #include <new_exploration_programs/matching_info.h>
 
+#include <std_msgs/Header.h>
 
 #include <visualization_msgs/MarkerArray.h>
 
@@ -27,6 +28,8 @@ private:
   sensor_msgs::PointCloud2 localmap;
   sensor_msgs::PointCloud2 e_localmap;
 
+  std_msgs::Header row_header;
+
 public:
 
   bool input_lomap;
@@ -42,6 +45,8 @@ public:
     plm_pub2 = plm.advertise<sensor_msgs::PointCloud2>("/localmap_publisher/localmap", 1);
     input_count = 0;
     input_lomap = false;
+    e_localmap.header.frame_id = "camera_rgb_optical_frame";
+    //e_localmap.height = 0;
   };
   ~LocalmapPublisher(){};
 
@@ -49,6 +54,7 @@ public:
   void publish_localmap(void);
   void publish_notlocalmap(void);
   void publish_emptylocalmap(void);
+  void show_processtime(void);
 };
 
 void LocalmapPublisher::input_mergedcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
@@ -57,6 +63,8 @@ void LocalmapPublisher::input_mergedcloud(const sensor_msgs::PointCloud2::ConstP
   std::cout << "input_localmap" << '\n';
   input_lomap = true;
   input_count++;
+  row_header = pc_msg -> header;
+  std::cout << "input << " << input_count << " << 回目" << '\n';
 }
 
 void LocalmapPublisher::publish_localmap(void)
@@ -76,9 +84,31 @@ void LocalmapPublisher::publish_notlocalmap(void)
 
 void LocalmapPublisher::publish_emptylocalmap(void)
 {
-  plm_pub.publish(e_localmap);
+  //std::cout << "e_localmap" << e_localmap.header.frame_id << '\n';
+  e_localmap.header = row_header;
+
+  localmap = e_localmap;
+  plm_pub.publish(localmap);
+
+
+  //std::cout << "empty size" << localmap.width << '\n';
+
 
   std::cout << "publish_empty_localmap" << '\n';
+}
+
+void LocalmapPublisher::show_processtime(void)
+{
+  ros::Duration p_time = ros::Time::now() - row_header.stamp;
+  double cycle_time = p_time.toSec();
+  // std::cout << "rostimenow << " << ros::Time::now() << '\n';
+  // std::cout << "rowheadertime << " << row_header.stamp << '\n';
+
+  // std::cout << "emptycheck1 << " << localmap.header.seq << '\n';
+  // std::cout << "emptycheck2 << " << localmap.header.stamp << '\n';
+  // std::cout << "emptycheck3 << " << localmap.header.frame_id << '\n';
+
+  std::cout << "this cycle time is << " << cycle_time << " [s]"  << '\n';
 }
 
 int main(int argc, char** argv)
@@ -86,7 +116,7 @@ int main(int argc, char** argv)
 	ros::init(argc, argv, "localmap_publisher");
 	LocalmapPublisher lp;
 
-  int localmap_th = 5;
+  int localmap_th = 10;
 
 	while(ros::ok()){
 		lp.lm_queue.callOne(ros::WallDuration(1));
@@ -101,6 +131,7 @@ int main(int argc, char** argv)
       {
         lp.publish_notlocalmap();
       }
+      lp.show_processtime();
 		}
 		else
 		{
