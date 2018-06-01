@@ -27,6 +27,9 @@ private:
 
   ros::Publisher pmc_pub;
 
+  ros::Publisher mids_pub;
+  ros::Publisher midm_pub;
+
   new_exploration_programs::matching_info info;
 
   sensor_msgs::PointCloud2 centroid_merged_cloud_r;
@@ -77,6 +80,8 @@ public:
     smi.setCallbackQueue(&mi_queue);
     smi_sub = smi.subscribe("/pointcloud_matching/matching_info",1,&CentroidMatching::input_matchinginfo,this);
     pmc_pub = pmi.advertise<sensor_msgs::PointCloud2>("centroid_matching/merged_cloud", 1);
+    mids_pub = pmi.advertise<sensor_msgs::PointCloud2>("centroid_matching/middle_source_cloud", 1);
+    midm_pub = pmi.advertise<sensor_msgs::PointCloud2>("centroid_matching/middle_merged_cloud", 1);
     input_info = false;
     one_matching = false;
     no_matching = false;
@@ -101,6 +106,7 @@ public:
   void icp_estimate(int merge_num, int source_num);
   void independ_matchingcloud(int merged_num, int source_num);
   void final_transform(void);
+  void middle_publish(void);
 };
 
 
@@ -445,14 +451,20 @@ bool CentroidMatching::is_merged_empty(void)
 {
 
   /*マッチングリストではなくマージドが空だという条件が必要*/
-  if(info.matching_list.size() > 0)
+  //centroid_merged_cloud
+
+  //if(info.matching_list.size() > 0)
+  if(info.merged_cloud.orig_cloud.height > 0 && info.merged_cloud.orig_cloud.width > 0)
   {
     //std::cout << "matching_list is empty" << '\n';
+
+    std::cout << "merged_cloud is not empty" << '\n';
     return false;
   }
   else
   {
-    std::cout << "matching_list is empty" << '\n';
+    //std::cout << "matching_list is empty" << '\n';
+    std::cout << "merged_cloud is empty" << '\n';
     return true;
   }
 }
@@ -526,6 +538,30 @@ void CentroidMatching::nan_check(void)
 
 }
 
+void CentroidMatching::middle_publish(void)
+{
+  std::cout << "middle_publish" << '\n';
+
+  sensor_msgs::PointCloud2 middle_source;
+  sensor_msgs::PointCloud2 middle_merged;
+
+
+  for(int i=0;i<indi_merged_cloud_m->points.size();i++)
+  {
+    indi_merged_cloud_m->points[i].x += 5.0;
+  }
+
+  pcl::toROSMsg (*indi_merged_cloud_m, middle_merged);
+  pcl::toROSMsg (*indi_source_cloud_m, middle_source);
+
+  middle_merged.header.frame_id = "camera_rgb_optical_frame";
+  middle_source.header.frame_id = "camera_rgb_optical_frame";
+
+
+  mids_pub.publish(middle_source);
+  midm_pub.publish(middle_merged);
+}
+
 int main(int argc, char** argv)
 {
   ros::init(argc, argv, "centroid_matching");
@@ -562,7 +598,13 @@ int main(int argc, char** argv)
           //cm.nan_check();
           cm.merging_cloud();//点群を合成する
           //cm.nan_check();
+          cm.middle_publish();
           cm.publish_mergedcloud();//合成した点群を出力
+        }
+        else
+        {
+          /*mergedがnot_emptyでno_matchingときでもそのまま出力する必要がある*/
+          cm.publish_mergedcloud();
         }
       }
 
