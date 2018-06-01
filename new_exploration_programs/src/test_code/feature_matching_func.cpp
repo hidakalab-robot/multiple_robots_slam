@@ -58,10 +58,12 @@ bool FeatureMatching::master_is_empty(void)
 {
   if(master_cloud.clu_indices.size() > 0)
   {
+    std::cout << "merged is not empty" << '\n';
     return false;
   }
   else
   {
+    std::cout << "merged is empty" << '\n';
     return true;
   }
 }

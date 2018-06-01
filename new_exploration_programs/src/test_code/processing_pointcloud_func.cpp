@@ -251,7 +251,7 @@ void ProcessingPointCloud::euclidean_clustering(void)
 	// {
 	// 	clustered_cloud->points[i].x+=cloud_position;
 	// }
-
+  *input_cloud = *clustered_cloud;
 	pcl::toROSMsg (*clustered_cloud, clu_cloud);
 }
 

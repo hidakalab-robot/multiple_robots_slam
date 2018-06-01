@@ -37,6 +37,10 @@ int main(int argc, char** argv)
     {
 			if(fm.master_is_empty())
 			{
+				fm.shift_mcloud();
+				fm.publish_registeredcloud();
+				std::cout << "5" << '\n';
+				fm.publish_orig();
 				fm.publish_matchinginfo_empty();
 			}
 			else

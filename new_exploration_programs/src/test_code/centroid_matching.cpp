@@ -288,7 +288,11 @@ void CentroidMatching::moving_cloud(void)
 
   std::cout << "fin << moving_cloud" << '\n';
 
-  icp_estimate(info.matching_list[0].merged_num,info.matching_list[0].source_num);//icpで微調整
+
+  std::cout << "extract cluster for ICP" << '\n';
+
+  independ_matchingcloud(info.matching_list[0].merged_num,info.matching_list[0].source_num);
+  //icp_estimate(info.matching_list[0].merged_num,info.matching_list[0].source_num);//icpで微調整
   final_transform();
 
 }
@@ -309,9 +313,6 @@ void CentroidMatching::icp_estimate(int merged_num, int source_num)
   /*クラスタが一つでもクラスタに属してない点があるので抽出が必要でした*/
 
   /*ソースの方は事前に移動しているので抽出だけです*/
-
-  std::cout << "extract cluster for ICP" << '\n';
-  independ_matchingcloud(merged_num,source_num);
 
 
   std::cout << "icp_setup" << '\n';
@@ -418,7 +419,8 @@ void CentroidMatching::final_transform(void)
     point << for_merge_cloud->points[i].x,for_merge_cloud->points[i].y,for_merge_cloud->points[i].z;
 
     a_point = (rot * (point - offset - trans));
-    a2_point = (icp_rot_matrix * a_point) + icp_tra_vector + offset;
+    //a2_point = (icp_rot_matrix * a_point) + icp_tra_vector + offset;
+    a2_point = a_point + offset;
     for_merge_cloud->points[i].x = a2_point(0);
     for_merge_cloud->points[i].y = a2_point(1);
     for_merge_cloud->points[i].z = a2_point(2);
@@ -442,7 +444,7 @@ void CentroidMatching::merging_cloud(void)
 {
   //*centroid_merged_cloud += *match_source_cloud;
   *centroid_merged_cloud += *for_merge_cloud;
-
+  //*centroid_merged_cloud = *for_merge_cloud;
 
   std::cout << "fin << merging_cloud" << '\n';
 }

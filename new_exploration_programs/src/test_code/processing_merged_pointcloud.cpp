@@ -24,9 +24,10 @@ int main(int argc, char** argv)
 				//pp.test_cloud();
 				pp.delete_ground();
 				std::cout << "52" << '\n';
-
+				//pp.test_cloud();
 				pp.euclidean_clustering();
 				std::cout << "53" << '\n';
+				pp.test_cloud();
 				//pp.publish_pointcloud();
 				std::cout << "54" << '\n';
 				pp.feature_extraction();
