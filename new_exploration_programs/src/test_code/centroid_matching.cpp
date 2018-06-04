@@ -103,10 +103,11 @@ public:
   //void if_nomatching(void);
   bool is_merged_empty(void);
   void nan_check(void);
-  void icp_estimate(int merge_num, int source_num);
+  void icp_estimate(int merge_num, int source_num, std::vector<Eigen::Matrix4f>& all_icp_matrix);
   void independ_matchingcloud(int merged_num, int source_num);
   void final_transform(void);
   void middle_publish(void);
+  void calc_rotra(std::vector<Eigen::Matrix4f>& all_icp_matrix);
 };
 
 
@@ -291,14 +292,28 @@ void CentroidMatching::moving_cloud(void)
 
   std::cout << "extract cluster for ICP" << '\n';
 
-  independ_matchingcloud(info.matching_list[0].merged_num,info.matching_list[0].source_num);
+  int m_num;
+  int s_num;
+  std::vector<Eigen::Matrix4f> all_icp_matrix;
+
+  for(int i=0;i<info.matching_list.size();i++)
+  {
+    m_num = info.matching_list[i].merged_num;
+    s_num = info.matching_list[i].source_num;
+    independ_matchingcloud(m_num,s_num);
+    icp_estimate(m_num,s_num,all_icp_matrix);//icpで微調整
+  }
+
+  calc_rotra(all_icp_matrix);
+
+  //independ_matchingcloud(info.matching_list[0].merged_num,info.matching_list[0].source_num);
   //icp_estimate(info.matching_list[0].merged_num,info.matching_list[0].source_num);//icpで微調整
   final_transform();
 
 }
 
 
-void CentroidMatching::icp_estimate(int merged_num, int source_num)
+void CentroidMatching::icp_estimate(int merged_num, int source_num, std::vector<Eigen::Matrix4f>& all_icp_matrix)
 {
   /*ここは重心を原点にして２つの点群を合わせたあとに回転を推定する関数です*/
 
@@ -322,7 +337,7 @@ void CentroidMatching::icp_estimate(int merged_num, int source_num)
   icp.setInputSource (indi_source_cloud_m);
   icp.setInputTarget (indi_merged_cloud_m);
   // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
-  icp.setMaxCorrespondenceDistance (0.05);
+  //icp.setMaxCorrespondenceDistance (0.05);
   // Set the maximum number of iterations (criterion 1)
   icp.setMaximumIterations (50);
   // Set the transformation epsilon (criterion 2)
@@ -337,8 +352,12 @@ void CentroidMatching::icp_estimate(int merged_num, int source_num)
   Eigen::Matrix4f icp_matrix = Eigen::Matrix4f::Identity ();
   icp_matrix = icp.getFinalTransformation ().cast<float>();
 
-  icp_rot_matrix << icp_matrix(0,0),icp_matrix(0.1),icp_matrix(0.2),icp_matrix(1,0),icp_matrix(1,1),icp_matrix(1,2),icp_matrix(2,0),icp_matrix(2,1),icp_matrix(2,2);
-  icp_tra_vector << icp_matrix(0,3),icp_matrix(1,3),icp_matrix(2,3);
+  all_icp_matrix.push_back(icp_matrix);
+
+  //icp_rot_matrix << icp_matrix(0,0),icp_matrix(0.1),icp_matrix(0.2),icp_matrix(1,0),icp_matrix(1,1),icp_matrix(1,2),icp_matrix(2,0),icp_matrix(2,1),icp_matrix(2,2);
+  //icp_tra_vector << icp_matrix(0,3),icp_matrix(1,3),icp_matrix(2,3);
+
+
       /*
       R
       matrix (0, 0), matrix (0, 1), matrix (0, 2);
@@ -399,6 +418,31 @@ void CentroidMatching::independ_matchingcloud(int merged_num, int source_num)
   indi_source_cloud_m = indi_source_cloud;
 
 }
+
+void CentroidMatching::calc_rotra(std::vector<Eigen::Matrix4f>& all_icp_matrix)
+{
+  Eigen::Matrix3f sa_rot_matrix;
+  Eigen::Vector3f sa_tra_vector;
+
+  Eigen::Matrix3f lo_rot_matrix;
+  Eigen::Vector3f lo_tra_vector;
+
+  for(int i=0;i<all_icp_matrix.size();i++)
+  {
+    sa_rot_matrix << all_icp_matrix[i](0,0),all_icp_matrix[i](0.1),all_icp_matrix[i](0.2),all_icp_matrix[i](1,0),all_icp_matrix[i](1,1),all_icp_matrix[i](1,2),all_icp_matrix[i](2,0),all_icp_matrix[i](2,1),all_icp_matrix[i](2,2);
+    sa_tra_vector << all_icp_matrix[i](0,3),all_icp_matrix[i](1,3),all_icp_matrix[i](2,3);
+
+    lo_rot_matrix += sa_rot_matrix;
+    lo_tra_vector += sa_tra_vector;
+  }
+
+  lo_rot_matrix /= (float)all_icp_matrix.size();
+  lo_tra_vector /= (float)all_icp_matrix.size();
+
+  icp_rot_matrix = lo_rot_matrix;
+  icp_tra_vector = lo_tra_vector;
+}
+
 
 void CentroidMatching::final_transform(void)
 {

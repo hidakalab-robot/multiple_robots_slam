@@ -15,6 +15,8 @@ orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
   shift_position = 5.0;
   matching = true;
 
+  shift_master_cloud.header.frame_id = "camera_rgb_optical_frame";
+
   // sc_pub1 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/orig_cloud", 1);
  	// sc_pub2 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/vox_cloud", 1);
  	// sc_pub3 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/del_cloud", 1);

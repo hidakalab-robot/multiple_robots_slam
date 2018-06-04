@@ -33,7 +33,7 @@ ProcessingPointCloud::ProcessingPointCloud()
 
   nan_c = std::numeric_limits<float>::quiet_NaN();
 
-  vg.setLeafSize (0.1f, 0.1f, 0.1f);
+  vg.setLeafSize (0.05f, 0.05f, 0.05f);
 
   seg.setOptimizeCoefficients (true);
   seg.setModelType (pcl::SACMODEL_PERPENDICULAR_PLANE);//ある軸に垂直な平面を抽出
@@ -46,6 +46,12 @@ ProcessingPointCloud::ProcessingPointCloud()
   ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
   ec.setMinClusterSize (100);//クラスタを構成する最小の点数
   ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
+
+  orig_cloud.header.frame_id = "camera_rgb_optical_frame";
+	vox_cloud.header.frame_id = "camera_rgb_optical_frame";
+	gro_cloud.header.frame_id = "camera_rgb_optical_frame";
+	del_cloud.header.frame_id = "camera_rgb_optical_frame";
+	clu_cloud.header.frame_id = "camera_rgb_optical_frame";
 };
 
 void ProcessingPointCloud::input_source_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
