@@ -35,6 +35,7 @@ private:
   sensor_msgs::PointCloud2 centroid_merged_cloud_r;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr centroid_merged_cloud;
 
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr input_source_cloud;
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr match_source_cloud;
 
 
@@ -75,7 +76,8 @@ public:
   indi_source_cloud_m(new pcl::PointCloud<pcl::PointXYZRGB>),
   icpout_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
   for_merge_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-  for_icpmerged_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
+  for_icpmerged_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+  input_source_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
   {
     smi.setCallbackQueue(&mi_queue);
     smi_sub = smi.subscribe("/pointcloud_matching/matching_info",1,&CentroidMatching::input_matchinginfo,this);
@@ -111,6 +113,10 @@ public:
   void icp4allcluster(void);
   void calc_Vangle(int merged_num, int source_num);
   void moving2center(int merged_num, int source_num);
+  void nonicp_estimate(void);
+  float angle_decision(int list_num, float angle);
+  void nonicp_transform(float angle,int merged_num,int source_num);
+  void icp_transform(void);
 };
 
 
@@ -120,7 +126,9 @@ void CentroidMatching::input_matchinginfo(const new_exploration_programs::matchi
   input_info = true;
 
   //pcl::fromROSMsg (info.source_cloud.vox_cloud, *match_source_cloud);
-  pcl::fromROSMsg (info.source_cloud.clu_cloud, *match_source_cloud);
+  //pcl::fromROSMsg (info.source_cloud.clu_cloud, *match_source_cloud);
+  pcl::fromROSMsg (info.source_cloud.clu_cloud, *input_source_cloud);
+
   pcl::fromROSMsg (info.source_cloud.vox_cloud, *for_merge_cloud);
   //std::cout << "200" << '\n';
   pcl::fromROSMsg (info.merged_cloud.orig_cloud, *centroid_merged_cloud);
@@ -208,7 +216,7 @@ void CentroidMatching::icp4allcluster(void)
 }
 
 
-void CentroidMatching::noicpestimate(void)
+void CentroidMatching::nonicp_estimate(void)
 {
   /*ここは全部のクラスタでicpを使うためのメイン関数です*/
 
@@ -217,28 +225,60 @@ void CentroidMatching::noicpestimate(void)
   //std::vector<Eigen::Matrix4f> all_icp_matrix;
   float temp_angle = 0;
   std::vector<float> all_temp_angle;
+  float true_angle;
 
-  for(int i=0;i<info.matching_list.size();i++)
+  //for(int i=0;i<info.matching_list.size();i++)
+  for(int i=0;i<1;i++)
   {
     m_num = info.matching_list[i].merged_num;
     s_num = info.matching_list[i].source_num;
+
+    trans[0] = info.source_cloud.clu_centroids[s_num].x - info.merged_cloud.clu_centroids[m_num].x;
+    trans[1] = 0.0;
+    trans[2] = info.source_cloud.clu_centroids[s_num].z - info.merged_cloud.clu_centroids[m_num].z;
+
+    offset << info.merged_cloud.clu_centroids[m_num].x,0,info.merged_cloud.clu_centroids[m_num].z;
+
     if(one_matching)
     {
       if_onematching();
+      //icp_estimate(m_num,s_num);
+      //icp_transform();
+      true_angle = angle_m[0];
+
+      //icp_transform();//微調整
     }
     else
     {
       calc_Vangle(m_num,s_num);//ベクトルの内積を使って回転角度の推定
+
+      for(int j=0;j<angle_m.size();j++)
+      {
+        temp_angle += angle_m[j];
+      }
+      temp_angle /= (float)angle_m.size();
+
+      true_angle = temp_angle * angle_decision(i,temp_angle);
+
+      //nonicp_transform(true_angle,m_num,s_num);//計算した角度を使って変形する
     }
+
+    nonicp_transform(true_angle,m_num,s_num);//計算した角度を使って変形する
+
+    icp_transform();//微調整
+
+
 
     //angle_m
-    for(int i=0;i<angle_m.size();i++)
-    {
-      temp_angle += angle_m[i];
-    }
-    temp_angle = (float)angle_m.size();
+    // for(int i=0;i<angle_m.size();i++)
+    // {
+    //   temp_angle += angle_m[i];
+    // }
+    // temp_angle /= (float)angle_m.size();
+    //
+    // true_angle = temp_angle * angle_decision(i,temp_angle);
 
-    all_temp_angle.push_back(temp_angle);
+    //all_temp_angle.push_back(temp_angle);
 
     //moving2center(m_num,s_num);//指定したクラスタが原点になるように点群を移動
     //independ_matchingcloud(m_num,s_num);
@@ -250,9 +290,65 @@ void CentroidMatching::noicpestimate(void)
 
   //calc_rotra(all_icp_matrix);
 
-  final_transform();
+  //nonicp_transform();
+
+  //final_transform();
 }
 
+void CentroidMatching::nonicp_transform(float angle,int merged_num,int source_num)
+{
+  /*ここはicpで推定した回転等を全体に適用する関数です*/
+
+  rot << cos(-angle),0,sin(-angle),0,1,0,-sin(-angle),0,cos(-angle);
+
+  Eigen::Vector3f point;
+  Eigen::Vector3f a_point;
+  Eigen::Vector3f a2_point;
+
+  for(int i=0;i<for_merge_cloud->points.size();i++)
+  {
+    point << for_merge_cloud->points[i].x,for_merge_cloud->points[i].y,for_merge_cloud->points[i].z;
+
+    a_point = (rot * (point - offset - trans)) + offset;
+    //a2_point = (icp_rot_matrix * a_point) + icp_tra_vector + offset;
+    //a2_point = a_point + offset;
+    for_merge_cloud->points[i].x = a_point(0);
+    for_merge_cloud->points[i].y = a_point(1);
+    for_merge_cloud->points[i].z = a_point(2);
+  }
+}
+
+void CentroidMatching::icp_transform(void)
+{
+  std::cout << "icp_setup" << '\n';
+  pcl::IterativeClosestPoint<pcl::PointXYZRGB, pcl::PointXYZRGB> icp;
+  // Set the input source and target
+  //icp.setInputSource (del_unval_cloud);
+  icp.setInputSource (for_merge_cloud);
+  icp.setInputTarget (centroid_merged_cloud);
+  // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
+  //icp.setMaxCorrespondenceDistance (0.05);
+  // Set the maximum number of iterations (criterion 1)
+  //icp.setMaximumIterations (50);
+  // Set the transformation epsilon (criterion 2)
+  icp.setTransformationEpsilon (1e-8);
+  // Set the euclidean distance difference epsilon (criterion 3)
+  icp.setEuclideanFitnessEpsilon (1);
+
+
+  std::cout << "icp_start" << '\n';
+  icp.align (*icpout_cloud);
+
+
+  std::cout << "has converged:" << icp.hasConverged() << " score: " << icp.getFitnessScore() << std::endl;
+
+  //Eigen::Matrix4f icp_matrix = Eigen::Matrix4f::Identity ();
+  //icp_matrix = icp.getFinalTransformation ().cast<float>();
+
+  *for_merge_cloud = *icpout_cloud;
+
+  //all_icp_matrix.push_back(icp_matrix);
+}
 
 void CentroidMatching::if_onematching(void)
 {
@@ -323,11 +419,11 @@ void CentroidMatching::calc_Vangle(int merged_num, int source_num)
 
       /*回転の向きの正負を決める必要がある*/
       th = acos(mc_vector.dot(sc_vector)/(mc_vector.norm()*sc_vector.norm()));
-
-      if(sc_vector[0] < mc_vector[0])
-      {
-        th *= -1;
-      }
+      /*ベクトルがいろんな方向に行くのでよって正負を決めるのはこれじゃ無理かも*/
+      // if(sc_vector[0] < mc_vector[0])
+      // {
+      //   th *= -1;
+      // }
 
       angle.push_back(th);
     }
@@ -346,6 +442,9 @@ void CentroidMatching::moving2center(int merged_num, int source_num)
   trans[0] = info.source_cloud.clu_centroids[source_num].x - info.merged_cloud.clu_centroids[merged_num].x;
   trans[1] = 0.0;
   trans[2] = info.source_cloud.clu_centroids[source_num].z - info.merged_cloud.clu_centroids[merged_num].z;
+
+  *match_source_cloud = *input_source_cloud;
+
 
   float rad;
 
@@ -384,6 +483,77 @@ void CentroidMatching::moving2center(int merged_num, int source_num)
   std::cout << "extract cluster for ICP" << '\n';
 
 }
+
+float CentroidMatching::angle_decision(int list_num, float angle)
+{
+  /*算出したアングルの正負を決める関数です*/
+  /*原点ではない一つの重心を動かしてみて誤差が少ないほうが採用角度です*/
+
+  Eigen::Vector3f p_vector;
+  Eigen::Vector3f n_vector;
+
+  Eigen::Vector3f c_point;
+
+  Eigen::Vector3f m_point;
+  Eigen::Vector3f s_point;
+
+  Eigen::Matrix3f r;
+
+  float e_p;
+  float e_n;
+
+  int c_num;
+
+
+  if(list_num != 0)
+  {
+    c_num = 0;
+  }
+  else
+  {
+    c_num = 1;
+  }
+
+  //r << cos(-angle),0,sin(-angle),0,1,0,-sin(-angle),0,cos(-angle);
+  //m_num = info.matching_list[i].merged_num;
+  m_point << info.merged_cloud.clu_centroids[info.matching_list[c_num].merged_num].x,info.merged_cloud.clu_centroids[info.matching_list[c_num].merged_num].y,info.merged_cloud.clu_centroids[info.matching_list[c_num].merged_num].z;
+  s_point << info.source_cloud.clu_centroids[info.matching_list[c_num].source_num].x,info.source_cloud.clu_centroids[info.matching_list[c_num].source_num].y,info.source_cloud.clu_centroids[info.matching_list[c_num].source_num].z;
+  //trans
+  //offset
+
+
+  /*正の方向に回転したとき*/
+  r << cos(-angle),0,sin(-angle),0,1,0,-sin(-angle),0,cos(-angle);
+  //point << match_source_cloud->points[i].x,match_source_cloud->points[i].y,match_source_cloud->points[i].z;
+  //a_point = rot * point + trans;
+  // a_point = (rot * (point - offset - trans)) + offset;
+  c_point = (rot * (s_point - offset - trans)) + offset;//icpやる前提の重心と大体の回転だけ合わせるやつ
+
+  p_vector = c_point - m_point;
+  e_p = p_vector.norm();
+
+
+  /*負の方向に回転したとき*/
+  r << cos(angle),0,sin(angle),0,1,0,-sin(angle),0,cos(angle);
+  //point << match_source_cloud->points[i].x,match_source_cloud->points[i].y,match_source_cloud->points[i].z;
+  c_point = (rot * (s_point - offset - trans)) + offset;//icpやる前提の重心と大体の回転だけ合わせるやつ
+
+  n_vector = c_point - m_point;
+  e_n = n_vector.norm();
+
+
+  if(e_n >= e_p)
+  {
+    return 1.0;
+  }
+  else
+  {
+    return -1.0;
+  }
+
+
+}
+
 
 void CentroidMatching::independ_matchingcloud(int merged_num, int source_num)
 {
@@ -435,7 +605,7 @@ void CentroidMatching::icp_estimate(int merged_num, int source_num, std::vector<
   icp.setInputSource (indi_source_cloud_m);
   icp.setInputTarget (indi_merged_cloud_m);
   // Set the max correspondence distance to 5cm (e.g., correspondences with higher distances will be ignored)
-  //icp.setMaxCorrespondenceDistance (0.05);
+  icp.setMaxCorrespondenceDistance (0.05);
   // Set the maximum number of iterations (criterion 1)
   icp.setMaximumIterations (50);
   // Set the transformation epsilon (criterion 2)
@@ -725,7 +895,8 @@ int main(int argc, char** argv)
       {
         if(!cm.no_matching)
         {
-          cm.icp4allcluster();
+          //cm.icp4allcluster();
+          cm.nonicp_estimate();
           cm.merging_cloud();//点群を合成する
           cm.publish_mergedcloud();//合成した点群を出力
         }
