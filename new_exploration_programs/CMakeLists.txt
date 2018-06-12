@@ -272,8 +272,11 @@ target_link_libraries(feature_matching ${catkin_LIBRARIES})
 add_executable(scan_matching src/test_code/scan_matching.cpp)
 target_link_libraries(scan_matching ${catkin_LIBRARIES})
 
-add_executable(centroid_matching src/test_code/centroid_matching.cpp src/test_code/feature_matching_func.cpp)
+add_executable(centroid_matching src/test_code/centroid_matching.cpp src/test_code/centroid_matching_func.cpp)
 target_link_libraries(centroid_matching ${catkin_LIBRARIES})
 
 add_executable(localmap_publisher src/test_code/localmap_publisher.cpp)
 target_link_libraries(localmap_publisher ${catkin_LIBRARIES})
+
+add_executable(processing_rtab_source src/test_code/processing_rtab_source.cpp src/test_code/processing_pointcloud_func.cpp)
+target_link_libraries(processing_rtab_source ${catkin_LIBRARIES})

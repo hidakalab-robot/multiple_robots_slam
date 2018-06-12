@@ -22,10 +22,16 @@ private:
 	ros::NodeHandle ppcs;
 	ros::NodeHandle ppcs2;
 
+	ros::NodeHandle rtabs;
+	ros::NodeHandle rtabs2;
+
 	ros::NodeHandle ppcp;
 
 	ros::Subscriber pc_sub;
 	ros::Subscriber pc_sub2;
+
+	ros::Subscriber rtab_sub;
+	ros::Subscriber rtab_sub2;
 
 	ros::Publisher pc_pub1;
 	ros::Publisher pc_pub2;
@@ -34,6 +40,8 @@ private:
 	ros::Publisher pc_pub5;
 	ros::Publisher seg_pub;
 	ros::Publisher seg_pub2;
+
+	ros::Publisher loc_pub;
 
 	float camera_position_y;//カメラの高さ
 	float ground_position_y;//どのくらいの高さまで床とするか
@@ -80,12 +88,24 @@ private:
 public:
 	ros::CallbackQueue pc_queue;
 	ros::CallbackQueue pc_queue2;
+
+	ros::CallbackQueue rtab_queue;
+	ros::CallbackQueue rtab_queue2;
+
 	bool input;
+
+	bool input_m;
+	bool input_o;
+
 	ProcessingPointCloud();
 	virtual ~ProcessingPointCloud(){};
 
 	void input_source_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
 	void input_merged_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
+
+	void input_rtabcloudM(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
+	void input_rtabcloudO(const sensor_msgs::PointCloud2::ConstPtr& pc_msg);
+
 	void apply_voxelgrid(void);
 	void delete_ground(void);
 	void euclidean_clustering(void);
@@ -97,4 +117,6 @@ public:
 	void publish_empty_merged(void);
 	void test_cloud(void);
 	void naninf(void);
+
+	void publish_localmap(void);
 };

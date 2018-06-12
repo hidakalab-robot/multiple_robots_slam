@@ -13,8 +13,16 @@ ProcessingPointCloud::ProcessingPointCloud()
 {
   ppcs.setCallbackQueue(&pc_queue);
   ppcs2.setCallbackQueue(&pc_queue2);
+
+  rtabs.setCallbackQueue(&rtab_queue);
+  rtabs2.setCallbackQueue(&rtab_queue2);
+
   pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_source_pointcloud,this);
   pc_sub2 = ppcs2.subscribe("/localmap_publisher/merged_cloud",1,&ProcessingPointCloud::input_merged_pointcloud,this);
+
+  rtab_sub = rtabs.subscribe("/rtabmap/cloud_map",1,&ProcessingPointCloud::input_rtabcloudM,this);
+  rtab_sub2 = rtabs2.subscribe("/rtabmap/cloud_obstacles",1,&ProcessingPointCloud::input_rtabcloudO,this);
+
   pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("test_cloud", 1);
   // pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
   // pc_pub3 = ppcp.advertise<sensor_msgs::PointCloud2>("del_cloud", 1);
@@ -22,6 +30,8 @@ ProcessingPointCloud::ProcessingPointCloud()
 
   seg_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/source_cloud", 1);
   seg_pub2 = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/merged_cloud", 1);
+
+  loc_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/localmap", 1);
   //pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
 
   camera_position_y = 0.41;
@@ -30,6 +40,8 @@ ProcessingPointCloud::ProcessingPointCloud()
   cloud_position = 0;
 
   input = false;
+  input_o = false;
+  input_m = false;
 
   nan_c = std::numeric_limits<float>::quiet_NaN();
 
@@ -82,6 +94,26 @@ void ProcessingPointCloud::input_merged_pointcloud(const sensor_msgs::PointCloud
 	std::cout << "input_pointcloud" << std::endl;
 	input = true;
 }
+
+void ProcessingPointCloud::input_rtabcloudM(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
+{
+  orig_cloud = *pc_msg;
+  row_header = pc_msg -> header;
+  input_m = true;
+
+  std::cout << "input M_cloud " << std::endl;
+
+}
+
+void ProcessingPointCloud::input_rtabcloudO(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
+{
+  pcl::fromROSMsg (*pc_msg, *deleted_ground_cloud);
+  del_cloud = *pc_msg;
+  input_o = true;
+
+  std::cout << "input O_cloud " << std::endl;
+}
+
 
 bool ProcessingPointCloud::is_empty(void)
 {
@@ -210,7 +242,7 @@ void ProcessingPointCloud::euclidean_clustering(void)
 
   std::cout << "300" << '\n';
 	//pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//何か探索用にツリーを作る
-	tree->setInputCloud (input_cloud);
+	tree->setInputCloud (deleted_ground_cloud);
   std::cout << "301" << '\n';
 	std::vector<pcl::PointIndices> cluster_indices;//<-何故かここで宣言しないとだめ???????
 	//std::cout << "1" << '\n';
@@ -219,7 +251,7 @@ void ProcessingPointCloud::euclidean_clustering(void)
 	ec.setSearchMethod (tree);
   std::cout << "303" << '\n';
 	//std::cout << "2" << '\n';
-	ec.setInputCloud (input_cloud);
+	ec.setInputCloud (deleted_ground_cloud);
 
   std::cout << "304" << '\n';
 	//std::cout << "3" << '\n';
@@ -238,7 +270,7 @@ void ProcessingPointCloud::euclidean_clustering(void)
 	int j = 0;
 	float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
 	pcl::PointCloud<pcl::PointXYZRGB>::Ptr clustered_cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-	pcl::copyPointCloud(*input_cloud, *clustered_cloud);
+	pcl::copyPointCloud(*deleted_ground_cloud, *clustered_cloud);
 
 	for (std::vector<pcl::PointIndices>::const_iterator it = cluster_indices.begin (); it != cluster_indices.end (); ++it)
   {
@@ -478,6 +510,17 @@ void ProcessingPointCloud::publish_merged_segmented(void)
 	seg_pub2.publish(source_cloud);
 
   std::cout << "publish_segmented_merged" << '\n';
+}
+
+void ProcessingPointCloud::publish_localmap(void)
+{
+  source_cloud.orig_cloud = orig_cloud;
+  source_cloud.del_cloud = del_cloud;
+  source_cloud.clu_cloud = clu_cloud;
+
+  source_cloud.header = row_header;
+
+  loc_pub.publish(source_cloud);
 }
 
 void ProcessingPointCloud::publish_empty_merged(void)
