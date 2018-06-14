@@ -1,5 +1,6 @@
 #include <new_exploration_programs/processing_pointcloud.h>
 
+
 int main(int argc, char** argv)
 {
 	ros::init(argc, argv, "processing_merged_pointcloud");

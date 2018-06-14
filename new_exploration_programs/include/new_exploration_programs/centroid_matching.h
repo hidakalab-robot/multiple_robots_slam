@@ -11,6 +11,8 @@
 #include <new_exploration_programs/segmented_cloud.h>
 #include <new_exploration_programs/matching_info.h>
 
+#include <new_exploration_programs/twoPointcloud2.h>
+
 
 #include <visualization_msgs/MarkerArray.h>
 #include <pcl/registration/icp.h>
@@ -29,6 +31,10 @@ private:
 
   ros::Publisher mids_pub;
   ros::Publisher midm_pub;
+
+  ros::Publisher mrtab_pub;//実際にクラウドデータとして送る方
+  ros::Publisher mrtabM_pub;//閲覧用に２つのクラウドを出力
+  ros::Publisher mrtabO_pub;//閲覧用に２つのクラウドを出力
 
   new_exploration_programs::matching_info info;
 
@@ -60,6 +66,9 @@ private:
 
   Eigen::Matrix3f rot;//一次回転
   Eigen::Vector3f trans;//一次平行移動
+
+  sensor_msgs::PointCloud2 cloudMap;
+  sensor_msgs::PointCloud2 cloudObstacles;
 
 
 public:
@@ -93,4 +102,5 @@ public:
   float angle_decision(int list_num, float angle);
   void nonicp_transform(float angle,int merged_num,int source_num);
   void icp_transform(void);
+  void publish_mergedRtab(void);
 };

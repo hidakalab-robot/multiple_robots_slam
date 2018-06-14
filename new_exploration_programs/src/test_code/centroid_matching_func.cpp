@@ -25,6 +25,10 @@ input_source_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
   offset = Eigen::Vector3f::Zero ();
   rot = Eigen::Matrix3f::Identity ();
   trans = Eigen::Vector3f::Zero ();
+
+  mrtab_pub = pmi.advertise<new_exploration_programs::twoPointcloud2>("centroid_matching/mergedRtabCloud", 1);
+  mrtabM_pub = pmi.advertise<sensor_msgs::PointCloud2>("centroid_matching/mergedCloudMap", 1);
+  mrtabO_pub = pmi.advertise<sensor_msgs::PointCloud2>("centroid_matching/mergedCloudObstacles", 1);
 };
 
 void CentroidMatching::input_matchinginfo(const new_exploration_programs::matching_info::ConstPtr& mi_msg)
@@ -34,9 +38,20 @@ void CentroidMatching::input_matchinginfo(const new_exploration_programs::matchi
 
   //pcl::fromROSMsg (info.source_cloud.vox_cloud, *match_source_cloud);
   //pcl::fromROSMsg (info.source_cloud.clu_cloud, *match_source_cloud);
+
+  /*
+  orig_cloud /rtabmap/cloud_map
+  del_cloud /rtabmap/cloud_obstacles
+  clu_cloud クラスタリング
+  */
+
+
+
+
   pcl::fromROSMsg (info.source_cloud.clu_cloud, *input_source_cloud);
 
-  pcl::fromROSMsg (info.source_cloud.vox_cloud, *for_merge_cloud);
+  //pcl::fromROSMsg (info.source_cloud.vox_cloud, *for_merge_cloud);
+  pcl::fromROSMsg (info.source_cloud.orig_cloud, *for_merge_cloud);
   //std::cout << "200" << '\n';
   pcl::fromROSMsg (info.merged_cloud.orig_cloud, *centroid_merged_cloud);
   pcl::fromROSMsg (info.merged_cloud.clu_cloud, *for_icpmerged_cloud);
@@ -223,6 +238,19 @@ void CentroidMatching::nonicp_transform(float angle,int merged_num,int source_nu
     for_merge_cloud->points[i].y = a_point(1);
     for_merge_cloud->points[i].z = a_point(2);
   }
+
+  for(int i=0;i<input_source_cloud->points.size();i++)
+  {
+    point << input_source_cloud->points[i].x,input_source_cloud->points[i].y,input_source_cloud->points[i].z;
+
+    a_point = (rot * (point - offset - trans)) + offset;
+    //a2_point = (icp_rot_matrix * a_point) + icp_tra_vector + offset;
+    //a2_point = a_point + offset;
+    input_source_cloud->points[i].x = a_point(0);
+    input_source_cloud->points[i].y = a_point(1);
+    input_source_cloud->points[i].z = a_point(2);
+  }
+
 }
 
 void CentroidMatching::icp_transform(void)
@@ -249,10 +277,15 @@ void CentroidMatching::icp_transform(void)
 
   std::cout << "has converged:" << icp.hasConverged() << " score: " << icp.getFitnessScore() << std::endl;
 
-  //Eigen::Matrix4f icp_matrix = Eigen::Matrix4f::Identity ();
-  //icp_matrix = icp.getFinalTransformation ().cast<float>();
-
   *for_merge_cloud = *icpout_cloud;
+
+
+  Eigen::Matrix4f icp_matrix = Eigen::Matrix4f::Identity ();
+  icp_matrix = icp.getFinalTransformation ().cast<float>();
+
+  pcl::transformPointCloud (*input_source_cloud, *icpout_cloud, icp_matrix);
+
+  *input_source_cloud = *icpout_cloud;
 
   //all_icp_matrix.push_back(icp_matrix);
 }
@@ -588,7 +621,12 @@ void CentroidMatching::merging_cloud(void)
 {
   //*centroid_merged_cloud += *match_source_cloud;
   *centroid_merged_cloud += *for_merge_cloud;
+
+  *for_icpmerged_cloud += *input_source_cloud;
   //*centroid_merged_cloud = *for_merge_cloud;
+
+
+
 
   std::cout << "fin << merging_cloud" << '\n';
 }
@@ -612,6 +650,37 @@ void CentroidMatching::publish_mergedcloud(void)
 }
 
 
+void CentroidMatching::publish_mergedRtab(void)
+{
+
+  /*ここで*/
+
+  centroid_merged_cloud -> width = centroid_merged_cloud -> points.size();
+  centroid_merged_cloud -> height = 1;
+  centroid_merged_cloud -> is_dense = false;
+
+  for_icpmerged_cloud -> width = for_icpmerged_cloud -> points.size();
+  for_icpmerged_cloud -> height = 1;
+  for_icpmerged_cloud -> is_dense = false;
+
+  // centroid_merged_cloud
+  // for_icpmerged_cloud
+
+  pcl::toROSMsg (*centroid_merged_cloud, cloudMap);
+  pcl::toROSMsg (*for_icpmerged_cloud, cloudObstacles);
+
+  cloudMap.header = info.source_cloud.header;
+  cloudObstacles.header = info.source_cloud.header;
+
+
+  new_exploration_programs::twoPointcloud2 merged_rtab;
+  merged_rtab.merged_cloudMap = cloudMap;
+  merged_rtab.merged_cloudObstacles = cloudObstacles;
+
+  mrtab_pub.publish(merged_rtab);
+  mrtabM_pub.publish(cloudMap);
+  mrtabO_pub.publish(cloudObstacles);
+}
 
 
 /*ここからデバッグ用関数*/

@@ -6,8 +6,8 @@ orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
 {
   ssc.setCallbackQueue(&sc_queue);
   smc.setCallbackQueue(&mc_queue);
- 	sc_sub = ssc.subscribe("/pointcloud_segmentation/source_cloud",1,&FeatureMatching::input_sourcecloud,this);
-  mc_sub = smc.subscribe("/pointcloud_segmentation/merged_cloud",1,&FeatureMatching::input_mastercloud,this);
+ 	//sc_sub = ssc.subscribe("/pointcloud_segmentation/source_cloud",1,&FeatureMatching::input_sourcecloud,this);
+  //mc_sub = smc.subscribe("/pointcloud_segmentation/merged_cloud",1,&FeatureMatching::input_mastercloud,this);
   input_master = false;
   input_source = false;
   changed_master = false;
@@ -36,6 +36,9 @@ orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
   origm_pub = prc.advertise<sensor_msgs::PointCloud2>("pointcloud_matching/orig_merged_cloud", 1);
 
   mi_pub = prc.advertise<new_exploration_programs::matching_info>("pointcloud_matching/matching_info", 1);
+
+  sc_sub = ssc.subscribe("/pointcloud_segmentation/localmap",1,&FeatureMatching::input_sourcecloud,this);
+  mc_sub = smc.subscribe("/pointcloud_segmentation/mastermap",1,&FeatureMatching::input_mastercloud,this);
 };
 
 

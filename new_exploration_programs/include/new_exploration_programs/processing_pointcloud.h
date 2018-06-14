@@ -13,6 +13,8 @@
 
 #include <std_msgs/Header.h>
 
+#include <new_exploration_programs/twoPointcloud2.h>
+
 
 //#include <Eigen/Dense>
 
@@ -25,6 +27,8 @@ private:
 	ros::NodeHandle rtabs;
 	ros::NodeHandle rtabs2;
 
+	ros::NodeHandle rtabsm;
+
 	ros::NodeHandle ppcp;
 
 	ros::Subscriber pc_sub;
@@ -32,6 +36,8 @@ private:
 
 	ros::Subscriber rtab_sub;
 	ros::Subscriber rtab_sub2;
+
+	ros::Subscriber rtab_subm;
 
 	ros::Publisher pc_pub1;
 	ros::Publisher pc_pub2;
@@ -42,6 +48,8 @@ private:
 	ros::Publisher seg_pub2;
 
 	ros::Publisher loc_pub;
+
+	ros::Publisher mas_pub;
 
 	float camera_position_y;//カメラの高さ
 	float ground_position_y;//どのくらいの高さまで床とするか
@@ -92,6 +100,8 @@ public:
 	ros::CallbackQueue rtab_queue;
 	ros::CallbackQueue rtab_queue2;
 
+	ros::CallbackQueue rtab_queuem;
+
 	bool input;
 
 	bool input_m;
@@ -119,4 +129,10 @@ public:
 	void naninf(void);
 
 	void publish_localmap(void);
+
+	void input_rtabMaster(const new_exploration_programs::twoPointcloud2::ConstPtr& pc_msg);
+
+	void publish_mastermap(void);
+
+	bool publishJudge(void);
 };

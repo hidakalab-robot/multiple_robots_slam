@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_conversions
   pcl_ros
   message_generation
+	std_srvs
   #tf2
   #geometry2
   #tf2_sensor_msgs
@@ -66,6 +67,7 @@ find_package(catkin REQUIRED COMPONENTS
    segmented_cloud.msg
    matching_pair.msg
    matching_info.msg
+	 twoPointcloud2.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -280,3 +282,12 @@ target_link_libraries(localmap_publisher ${catkin_LIBRARIES})
 
 add_executable(processing_rtab_source src/test_code/processing_rtab_source.cpp src/test_code/processing_pointcloud_func.cpp)
 target_link_libraries(processing_rtab_source ${catkin_LIBRARIES})
+
+add_executable(merging_sourceAndMaster src/test_code/merging_sourceAndMaster.cpp src/test_code/centroid_matching_func.cpp)
+target_link_libraries(merging_sourceAndMaster ${catkin_LIBRARIES})
+
+add_executable(processing_rtab_masterMap src/test_code/processing_rtab_masterMap.cpp src/test_code/processing_pointcloud_func.cpp)
+target_link_libraries(processing_rtab_masterMap ${catkin_LIBRARIES})
+
+add_executable(matching_rtabSourceMaster src/test_code/feature_matching_func.cpp src/test_code/matching_rtabSourceMaster.cpp)
+target_link_libraries(matching_rtabSourceMaster ${catkin_LIBRARIES})

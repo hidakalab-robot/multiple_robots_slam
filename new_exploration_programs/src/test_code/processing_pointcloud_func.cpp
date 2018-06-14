@@ -17,11 +17,15 @@ ProcessingPointCloud::ProcessingPointCloud()
   rtabs.setCallbackQueue(&rtab_queue);
   rtabs2.setCallbackQueue(&rtab_queue2);
 
+  rtabsm.setCallbackQueue(&rtab_queuem);
+
   pc_sub = ppcs.subscribe("/camera/depth_registered/points",1,&ProcessingPointCloud::input_source_pointcloud,this);
   pc_sub2 = ppcs2.subscribe("/localmap_publisher/merged_cloud",1,&ProcessingPointCloud::input_merged_pointcloud,this);
 
   rtab_sub = rtabs.subscribe("/rtabmap/cloud_map",1,&ProcessingPointCloud::input_rtabcloudM,this);
   rtab_sub2 = rtabs2.subscribe("/rtabmap/cloud_obstacles",1,&ProcessingPointCloud::input_rtabcloudO,this);
+
+  rtab_subm = rtabsm.subscribe("centroid_matching/mergedRtabCloud",1,&ProcessingPointCloud::input_rtabMaster,this);
 
   pc_pub1 = ppcp.advertise<sensor_msgs::PointCloud2>("test_cloud", 1);
   // pc_pub2 = ppcp.advertise<sensor_msgs::PointCloud2>("gro_cloud", 1);
@@ -33,6 +37,8 @@ ProcessingPointCloud::ProcessingPointCloud()
 
   loc_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/localmap", 1);
   //pc_pub5 = ppcp.advertise<sensor_msgs::PointCloud2>("edit_cloud5", 1);
+
+  mas_pub = ppcp.advertise<new_exploration_programs::segmented_cloud>("pointcloud_segmentation/mastermap", 1);
 
   camera_position_y = 0.41;
   ground_position_y = 0.3;
@@ -111,8 +117,26 @@ void ProcessingPointCloud::input_rtabcloudO(const sensor_msgs::PointCloud2::Cons
   del_cloud = *pc_msg;
   input_o = true;
 
+  std::cout << "cloud size: " << deleted_ground_cloud -> points.size() << '\n';
+
+
   std::cout << "input O_cloud " << std::endl;
 }
+
+
+void ProcessingPointCloud::input_rtabMaster(const new_exploration_programs::twoPointcloud2::ConstPtr& pc_msg)
+{
+  orig_cloud = pc_msg -> merged_cloudMap;
+  del_cloud = pc_msg -> merged_cloudObstacles;
+  pcl::fromROSMsg (del_cloud, *deleted_ground_cloud);
+
+  row_header = pc_msg -> header;
+  input = true;
+
+  std::cout << "input rtabMaster " << std::endl;
+
+}
+
 
 
 bool ProcessingPointCloud::is_empty(void)
@@ -265,7 +289,7 @@ void ProcessingPointCloud::euclidean_clustering(void)
 	cluster_indices_m = cluster_indices;//インデックスをメンバ変数に保存するやつ
 
 	//std::cout << "size: " << cluster_indices.size() << '\n';
-	//std::cout << "size_m: " << cluster_indices_m.size() << '\n';
+	std::cout << "size_m: " << cluster_indices_m.size() << '\n';
 
 	int j = 0;
 	float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};//色リスト
@@ -523,6 +547,17 @@ void ProcessingPointCloud::publish_localmap(void)
   loc_pub.publish(source_cloud);
 }
 
+void ProcessingPointCloud::publish_mastermap(void)
+{
+  source_cloud.orig_cloud = orig_cloud;
+  source_cloud.del_cloud = del_cloud;
+  source_cloud.clu_cloud = clu_cloud;
+
+  source_cloud.header = row_header;
+
+  mas_pub.publish(source_cloud);
+}
+
 void ProcessingPointCloud::publish_empty_merged(void)
 {
   new_exploration_programs::segmented_cloud empty;
@@ -558,4 +593,23 @@ void ProcessingPointCloud::naninf(void)
   {
     std::cout << "no_nan" << '\n';
   }
+}
+
+bool ProcessingPointCloud::publishJudge(void)
+{
+  /*ここはソースマップが完成したという判断をするための関数です*/
+  /*完成したときにtrueを返します*/
+  //std::cout << "cloud size: " << deleted_ground_cloud -> points.size() << '\n';
+
+  int allow_size = 10000;
+
+  if(deleted_ground_cloud -> points.size() > allow_size)
+  {
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+
 }

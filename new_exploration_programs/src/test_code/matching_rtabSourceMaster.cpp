@@ -2,7 +2,7 @@
 
 int main(int argc, char** argv)
 {
-	ros::init(argc, argv, "feature_matching");
+	ros::init(argc, argv, "matching_rtabSourceMaster");
 	FeatureMatching fm;
 
 	/*一回目はソースだけで行けるようにする*/
@@ -25,14 +25,23 @@ int main(int argc, char** argv)
     }
   }
 
+	/*マスターを受け取ったあと、ソースの方ができるまで待つ*/
 
 	while(ros::ok())
   {
     fm.mc_queue.callOne(ros::WallDuration(1));
 		fm.sc_queue.callOne(ros::WallDuration(1));
 
-    if(fm.input_master && fm.input_source)
+    if(fm.input_master)
     {
+			std::cout << "700" << '\n';
+			while(!fm.input_source && ros::ok())
+			{
+				fm.sc_queue.callOne(ros::WallDuration(1));
+				std::cout << "701" << '\n';
+			}
+
+			std::cout << "702" << '\n';
 			if(fm.master_is_empty())
 			{
 				fm.shift_mcloud();
@@ -67,7 +76,7 @@ int main(int argc, char** argv)
 				fm.publish_matchinginfo();
 				std::cout << "7" << '\n';
 			}
-
+			std::cout << "703" << '\n';
       fm.input_source = false;
 		 	fm.input_master = false;
       fm.matching = true;
@@ -77,61 +86,6 @@ int main(int argc, char** argv)
       std::cout << "merged_or_source_is_nothing" << '\n';
     }
   }
-
-
-	// while(ros::ok())
-  // {
-  //   fm.mc_queue.callOne(ros::WallDuration(1));
-  //   if(fm.input_master)
-  //   {
-  //     while(ros::ok())
-  //     {
-  //         fm.sc_queue.callOne(ros::WallDuration(1));
-  //         if(fm.input_source)
-  //         {
-  //           //fm.mastercloud_test();
-  //           //fm.sourcecloud_test();
-  //           fm.matching_calc();
-  //           fm.shift_mcloud();
-  //           if(fm.matching)
-  //           {
-  //             //while(true)
-  //             //{
-  //               fm.show_matching();
-  //               fm.publish_matchingline();
-  //               fm.publish_registeredcloud();
-  //               fm.publish_orig();
-  //             //  std::cin >> t;
-  //               //if(t > 0)
-  //             //    break;
-  //             //}
-	//
-  //           }
-  //           else
-  //           {
-  //             fm.publish_registeredcloud();
-  //             fm.publish_orig();
-  //           }
-  //           fm.input_source = false;
-  //           fm.matching = true;
-  //           fm.store();
-  //           if(fm.changed_master)
-  //           {
-  //               break;
-  //           }
-  //         }
-  //         else
-  //         {
-  //           std::cout << "source_is_nothing" << '\n';
-  //         }
-  //     }
-  //     fm.input_master = false;
-  //   }
-  //   else
-  //   {
-  //     std::cout << "master_is_nothing" << '\n';
-  //   }
-	// }
 
 	return 0;
 }
