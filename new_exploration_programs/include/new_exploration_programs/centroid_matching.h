@@ -70,6 +70,8 @@ private:
   sensor_msgs::PointCloud2 cloudMap;
   sensor_msgs::PointCloud2 cloudObstacles;
 
+  pcl::VoxelGrid<pcl::PointXYZRGB> vg;
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr voxelizeCloud;
 
 public:
   ros::CallbackQueue mi_queue;//マッチング情報を受けとる
@@ -103,4 +105,5 @@ public:
   void nonicp_transform(float angle,int merged_num,int source_num);
   void icp_transform(void);
   void publish_mergedRtab(void);
+  void voxelize(void);
 };

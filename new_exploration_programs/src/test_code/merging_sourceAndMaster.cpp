@@ -28,6 +28,7 @@ int main(int argc, char** argv)
           cm.nonicp_estimate();
           cm.merging_cloud();//点群を合成する
           //cm.publish_mergedcloud();//合成した点群を出力
+          cm.voxelize();
           cm.publish_mergedRtab();
         }
         else

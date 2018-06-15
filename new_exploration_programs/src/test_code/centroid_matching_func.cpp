@@ -9,7 +9,8 @@ indi_source_cloud_m(new pcl::PointCloud<pcl::PointXYZRGB>),
 icpout_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
 for_merge_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
 for_icpmerged_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
-input_source_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
+input_source_cloud(new pcl::PointCloud<pcl::PointXYZRGB>),
+voxelizeCloud(new pcl::PointCloud<pcl::PointXYZRGB>)
 {
   smi.setCallbackQueue(&mi_queue);
   smi_sub = smi.subscribe("/pointcloud_matching/matching_info",1,&CentroidMatching::input_matchinginfo,this);
@@ -29,6 +30,9 @@ input_source_cloud(new pcl::PointCloud<pcl::PointXYZRGB>)
   mrtab_pub = pmi.advertise<new_exploration_programs::twoPointcloud2>("centroid_matching/mergedRtabCloud", 1);
   mrtabM_pub = pmi.advertise<sensor_msgs::PointCloud2>("centroid_matching/mergedCloudMap", 1);
   mrtabO_pub = pmi.advertise<sensor_msgs::PointCloud2>("centroid_matching/mergedCloudObstacles", 1);
+
+  vg.setLeafSize (0.05f, 0.05f, 0.05f);
+
 };
 
 void CentroidMatching::input_matchinginfo(const new_exploration_programs::matching_info::ConstPtr& mi_msg)
@@ -845,5 +849,22 @@ void CentroidMatching::moving_cloud(void)
   //independ_matchingcloud(info.matching_list[0].merged_num,info.matching_list[0].source_num);
   //icp_estimate(info.matching_list[0].merged_num,info.matching_list[0].source_num);//icpで微調整
   final_transform();
+
+}
+
+void CentroidMatching::voxelize(void)
+{
+  /*ここはマージしたあとにvoxelをかける関数です*/
+  vg.setInputCloud (centroid_merged_cloud);
+  vg.filter (*voxelizeCloud);
+  std::cout << "pointcloud_is_voxeled" << std::endl;
+
+  *centroid_merged_cloud = *voxelizeCloud;
+
+
+  vg.setInputCloud (for_icpmerged_cloud);
+  vg.filter (*voxelizeCloud);
+
+  *for_icpmerged_cloud = *voxelizeCloud;
 
 }

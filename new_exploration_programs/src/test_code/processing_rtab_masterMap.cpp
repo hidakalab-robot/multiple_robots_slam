@@ -16,7 +16,6 @@ int main(int argc, char** argv)
 			pp.euclidean_clustering();
 			pp.feature_extraction();
 			pp.publish_mastermap();
-
 		}
 		else
 		{

@@ -61,7 +61,9 @@ ProcessingPointCloud::ProcessingPointCloud()
   seg.setAxis(Eigen::Vector3f (0.0,1.0,0.0));//法線ベクトル
   seg.setEpsAngle(15.0f * (M_PI/180.0f));//許容出来る平面の傾きラジアン
 
-  ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
+  //ec.setClusterTolerance (0.2);//同じクラスタとみなす距離
+
+  ec.setClusterTolerance (0.1);//同じクラスタとみなす距離
   ec.setMinClusterSize (100);//クラスタを構成する最小の点数
   ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
 
