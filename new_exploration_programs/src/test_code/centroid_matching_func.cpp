@@ -160,10 +160,14 @@ void CentroidMatching::nonicp_estimate(void)
     s_num = info.matching_list[i].source_num;
 
     trans[0] = info.source_cloud.clu_centroids[s_num].x - info.merged_cloud.clu_centroids[m_num].x;
-    trans[1] = 0.0;
-    trans[2] = info.source_cloud.clu_centroids[s_num].z - info.merged_cloud.clu_centroids[m_num].z;
+    //trans[1] = 0.0;
+    //trans[2] = info.source_cloud.clu_centroids[s_num].z - info.merged_cloud.clu_centroids[m_num].z;
 
-    offset << info.merged_cloud.clu_centroids[m_num].x,0,info.merged_cloud.clu_centroids[m_num].z;
+    trans[1] = info.source_cloud.clu_centroids[s_num].y - info.merged_cloud.clu_centroids[m_num].y;
+    trans[2] = 0.0;
+
+    //offset << info.merged_cloud.clu_centroids[m_num].x,0,info.merged_cloud.clu_centroids[m_num].z;
+    offset << info.merged_cloud.clu_centroids[m_num].x,info.merged_cloud.clu_centroids[m_num].y,0;
 
     if(one_matching)
     {
@@ -191,7 +195,7 @@ void CentroidMatching::nonicp_estimate(void)
 
     nonicp_transform(true_angle,m_num,s_num);//計算した角度を使って変形する
 
-    icp_transform();//微調整
+    //icp_transform();//微調整
 
 
 
@@ -225,7 +229,8 @@ void CentroidMatching::nonicp_transform(float angle,int merged_num,int source_nu
 {
   /*ここはicpで推定した回転等を全体に適用する関数です*/
 
-  rot << cos(-angle),0,sin(-angle),0,1,0,-sin(-angle),0,cos(-angle);
+  //rot << cos(-angle),0,sin(-angle),0,1,0,-sin(-angle),0,cos(-angle);
+  rot << cos(angle),-sin(angle),0,sin(angle),cos(angle),0,0,0,1;
 
   Eigen::Vector3f point;
   Eigen::Vector3f a_point;
@@ -350,11 +355,12 @@ void CentroidMatching::calc_Vangle(int merged_num, int source_num)
     // sc_vector[2] = info.source_cloud.clu_centroids[info.matching_list[i].source_num].z - info.source_cloud.clu_centroids[source_num].z;
 
     mc_vector[0] = info.merged_cloud.clu_centroids[info.matching_list[i].merged_num].x - info.merged_cloud.clu_centroids[merged_num].x;
-    mc_vector[1] = info.merged_cloud.clu_centroids[info.matching_list[i].merged_num].z - info.merged_cloud.clu_centroids[merged_num].z;
+    //mc_vector[1] = info.merged_cloud.clu_centroids[info.matching_list[i].merged_num].z - info.merged_cloud.clu_centroids[merged_num].z;
+    mc_vector[1] = info.merged_cloud.clu_centroids[info.matching_list[i].merged_num].y - info.merged_cloud.clu_centroids[merged_num].y;
 
     sc_vector[0] = info.source_cloud.clu_centroids[info.matching_list[i].source_num].x - info.source_cloud.clu_centroids[source_num].x;
-    sc_vector[1] = info.source_cloud.clu_centroids[info.matching_list[i].source_num].z - info.source_cloud.clu_centroids[source_num].z;
-
+    //sc_vector[1] = info.source_cloud.clu_centroids[info.matching_list[i].source_num].z - info.source_cloud.clu_centroids[source_num].z;
+    sc_vector[1] = info.source_cloud.clu_centroids[info.matching_list[i].source_num].y - info.source_cloud.clu_centroids[source_num].y;
 
     if(info.matching_list[i].merged_num != merged_num)
     {
@@ -467,20 +473,23 @@ float CentroidMatching::angle_decision(int list_num, float angle)
 
 
   /*正の方向に回転したとき*/
-  r << cos(-angle),0,sin(-angle),0,1,0,-sin(-angle),0,cos(-angle);
+  //r << cos(-angle),0,sin(-angle),0,1,0,-sin(-angle),0,cos(-angle);
+  r << cos(angle),-sin(angle),0,sin(angle),cos(angle),0,0,0,1;
+
   //point << match_source_cloud->points[i].x,match_source_cloud->points[i].y,match_source_cloud->points[i].z;
   //a_point = rot * point + trans;
   // a_point = (rot * (point - offset - trans)) + offset;
-  c_point = (rot * (s_point - offset - trans)) + offset;//icpやる前提の重心と大体の回転だけ合わせるやつ
+  c_point = (r * (s_point - offset - trans)) + offset;//icpやる前提の重心と大体の回転だけ合わせるやつ
 
   p_vector = c_point - m_point;
   e_p = p_vector.norm();
 
 
   /*負の方向に回転したとき*/
-  r << cos(angle),0,sin(angle),0,1,0,-sin(angle),0,cos(angle);
+  //r << cos(angle),0,sin(angle),0,1,0,-sin(angle),0,cos(angle);
+  r << cos(-angle),-sin(-angle),0,sin(-angle),cos(-angle),0,0,0,1;
   //point << match_source_cloud->points[i].x,match_source_cloud->points[i].y,match_source_cloud->points[i].z;
-  c_point = (rot * (s_point - offset - trans)) + offset;//icpやる前提の重心と大体の回転だけ合わせるやつ
+  c_point = (r * (s_point - offset - trans)) + offset;//icpやる前提の重心と大体の回転だけ合わせるやつ
 
   n_vector = c_point - m_point;
   e_n = n_vector.norm();

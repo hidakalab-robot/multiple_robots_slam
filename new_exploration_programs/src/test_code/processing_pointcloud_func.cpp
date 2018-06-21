@@ -67,11 +67,17 @@ ProcessingPointCloud::ProcessingPointCloud()
   ec.setMinClusterSize (100);//クラスタを構成する最小の点数
   ec.setMaxClusterSize (15000);//クラスタを構成する最大の点数
 
-  orig_cloud.header.frame_id = "camera_rgb_optical_frame";
-	vox_cloud.header.frame_id = "camera_rgb_optical_frame";
-	gro_cloud.header.frame_id = "camera_rgb_optical_frame";
-	del_cloud.header.frame_id = "camera_rgb_optical_frame";
-	clu_cloud.header.frame_id = "camera_rgb_optical_frame";
+  // orig_cloud.header.frame_id = "camera_rgb_optical_frame";
+	// vox_cloud.header.frame_id = "camera_rgb_optical_frame";
+	// gro_cloud.header.frame_id = "camera_rgb_optical_frame";
+	// del_cloud.header.frame_id = "camera_rgb_optical_frame";
+	// clu_cloud.header.frame_id = "camera_rgb_optical_frame";
+
+  orig_cloud.header.frame_id = "map";
+	vox_cloud.header.frame_id = "map";
+	gro_cloud.header.frame_id = "map";
+	del_cloud.header.frame_id = "map";
+	clu_cloud.header.frame_id = "map";
 };
 
 void ProcessingPointCloud::input_source_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
@@ -108,6 +114,8 @@ void ProcessingPointCloud::input_rtabcloudM(const sensor_msgs::PointCloud2::Cons
   orig_cloud = *pc_msg;
   row_header = pc_msg -> header;
   input_m = true;
+
+  std::cout << "header << " << row_header.frame_id << '\n';
 
   std::cout << "input M_cloud " << std::endl;
 
@@ -399,6 +407,7 @@ void ProcessingPointCloud::feature_extraction(void)
 	//std::vector<Eigen::Matrix3f> e_value;
 	std::vector<Eigen::Vector3f> e_value;
 	float e[3];
+  float n_e[3];
 	float tmp;
 	//std::vector<Eigen::Vector3f> e_vector;//これは構造体にしたらいいかも
 	//Eigen::Matrix3f v;
@@ -429,11 +438,15 @@ void ProcessingPointCloud::feature_extraction(void)
 
 		for(int i=0;i<3;i++)
 		{
-			e[i] = e[i]/(e[0]+e[1]+e[2]);
+			//e[i] = e[i]/(e[0]+e[1]+e[2]);
+
+      //n_e[i] = e[i]/(e[0]+e[1]+e[2]);
+      n_e[i] = e[i]/(e[0]+e[2]);
 		}
 
 		//v << es.eigenvalues().real()[0],es.eigenvalues().real()[1],es.eigenvalues().real()[2];
-		e_v << e[0],e[1],e[2];
+		//e_v << e[0],e[1],e[2];
+    e_v << n_e[0],n_e[1],n_e[2];
 		e_value.push_back(e_v);
 		//std::cout << es.eigenvectors().col(0).real() << '\n';
 
@@ -603,7 +616,7 @@ bool ProcessingPointCloud::publishJudge(void)
   /*完成したときにtrueを返します*/
   //std::cout << "cloud size: " << deleted_ground_cloud -> points.size() << '\n';
 
-  int allow_size = 10000;
+  int allow_size = 5000;
 
   if(deleted_ground_cloud -> points.size() > allow_size)
   {

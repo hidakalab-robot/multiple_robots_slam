@@ -15,7 +15,8 @@ orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
   shift_position = 5.0;
   matching = true;
 
-  shift_master_cloud.header.frame_id = "camera_rgb_optical_frame";
+  //shift_master_cloud.header.frame_id = "camera_rgb_optical_frame";
+  shift_master_cloud.header.frame_id = "map";
 
   // sc_pub1 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/orig_cloud", 1);
  	// sc_pub2 = psc.advertise<sensor_msgs::PointCloud2>("source_cloud/vox_cloud", 1);
@@ -117,7 +118,7 @@ void FeatureMatching::matching_calc(void)
   float min_diff;
   int min_num;
 
-  float y_thre = 0.09;
+  float y_thre = 0.5;
   //float y_thre = 100.0;
 
   for(int i=0;i<master_cloud.clu_indices.size();i++)
@@ -142,7 +143,8 @@ void FeatureMatching::matching_calc(void)
       if(diff_vector < matching_threshold)
       {
 
-        if(std::abs(master_cloud.clu_centroids[i].y - source_cloud.clu_centroids[j].y) < y_thre)
+        //if(std::abs(master_cloud.clu_centroids[i].y - source_cloud.clu_centroids[j].y) < y_thre)
+        if(std::abs(master_cloud.clu_centroids[i].z - source_cloud.clu_centroids[j].z) < y_thre)
         {
           if(diff_vector < min_diff)
           {
@@ -247,11 +249,11 @@ void FeatureMatching::show_matching(void)
   // }
   // pcl::toROSMsg (*master_cloud_for_shift, shift_master_cloud);
 
-
   visualization_msgs::Marker matching_line;
   visualization_msgs::MarkerArray matching_line_list;
 
-  matching_line.header.frame_id = "camera_rgb_optical_frame";
+  //matching_line.header.frame_id = "camera_rgb_optical_frame";
+  matching_line.header.frame_id = "map";
   matching_line.header.stamp = ros::Time::now();
   matching_line.ns = "matching_line";
   matching_line.type = visualization_msgs::Marker::LINE_LIST;
@@ -262,7 +264,7 @@ void FeatureMatching::show_matching(void)
 	matching_line.color.g = 0.0f;
 	matching_line.color.b = 0.0f;
 	matching_line.color.a = 1.0;
-	matching_line.lifetime = ros::Duration(0.5);
+	matching_line.lifetime = ros::Duration(3);
 
   geometry_msgs::Point s_centroid;
 	geometry_msgs::Point m_centroid;
