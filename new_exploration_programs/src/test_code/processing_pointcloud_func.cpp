@@ -616,7 +616,7 @@ bool ProcessingPointCloud::publishJudge(void)
   /*完成したときにtrueを返します*/
   //std::cout << "cloud size: " << deleted_ground_cloud -> points.size() << '\n';
 
-  int allow_size = 5000;
+  int allow_size = 10000;
 
   if(deleted_ground_cloud -> points.size() > allow_size)
   {

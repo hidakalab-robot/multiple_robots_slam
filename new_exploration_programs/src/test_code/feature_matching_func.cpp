@@ -40,6 +40,8 @@ orig_master_cloud_for_shift(new pcl::PointCloud<pcl::PointXYZRGB>)
 
   sc_sub = ssc.subscribe("/pointcloud_segmentation/localmap",1,&FeatureMatching::input_sourcecloud,this);
   mc_sub = smc.subscribe("/pointcloud_segmentation/mastermap",1,&FeatureMatching::input_mastercloud,this);
+
+  out_count = 0;
 };
 
 
@@ -440,4 +442,90 @@ void FeatureMatching::publish_matchinginfo_empty(void)
 
   std::cout << "publish_emptyinfo" << '\n';
 
+}
+
+
+void FeatureMatching::output_fullSource(void)
+{
+  /*ここはソース点群の全体を出力する関数です*/
+  //source_cloud.orig_cloud;//これは地面あり
+  //source_cloud.del_cloud;//これは地面なし
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr fullCloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::fromROSMsg (source_cloud.del_cloud, *fullCloud);
+
+  fullCloud->width = fullCloud->points.size();
+  fullCloud->height = 1;
+  fullCloud->is_dense = false;
+
+  std::string a = "pcd_out/full_cloud/fullCloud";
+
+  std::ostringstream oss;
+  oss << out_count;
+  std::string b = oss.str();;
+
+  std::string c = ".pcd";
+
+
+  std::string filename = a + b + c;
+
+  pcl::io::savePCDFileASCII (filename, *fullCloud);
+  std::cout << "output fullCloud" << '\n';
+
+}
+
+void FeatureMatching::output_segSource(void)
+{
+  /*ここはソース点群をクラスタリングしたやつを出力する関数*/
+  //source_cloud.del_cloud;//これは地面なし
+  //source_cloud.clu_indices//クラスタリングの目次
+  //int clu_count = 0;
+
+  std::string a = "pcd_out/seg_cloud/segCloud";
+
+  std::ostringstream oss;
+  oss << out_count;
+  std::string b = oss.str();
+
+  std::string c = "_";
+
+  std::string d;
+
+  std::string e = ".pcd";
+
+
+  std::string filename;
+
+
+  pcl::PointCloud<pcl::PointXYZ>::Ptr fullCloud(new pcl::PointCloud<pcl::PointXYZ>);
+  pcl::fromROSMsg (source_cloud.del_cloud, *fullCloud);
+
+
+  for(int i=0;i<source_cloud.clu_indices.size();i++)
+  {
+    pcl::PointCloud<pcl::PointXYZ>::Ptr segCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    for(int j=0;j<source_cloud.clu_indices[i].index.size();j++)
+    {
+      /*ここはクラスタリングした点群ごとにpcl型で出力*/
+      segCloud->points.push_back(fullCloud -> points[source_cloud.clu_indices[i].index[j]]);
+
+      segCloud->points[j].y += 5.0;
+
+    }
+
+    /*ここでクラウドサイズの指定*/
+    segCloud->width = segCloud->points.size();
+    segCloud->height = 1;
+    segCloud->is_dense = false;
+
+    std::ostringstream os2;
+    os2 << i;
+    d = os2.str();
+    filename = a + b + c + d + e;
+    pcl::io::savePCDFileASCII (filename, *segCloud);
+  }
+
+  std::cout << "output segCloud" << '\n';
+
+  out_count++;
 }

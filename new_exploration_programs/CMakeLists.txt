@@ -291,3 +291,9 @@ target_link_libraries(processing_rtab_masterMap ${catkin_LIBRARIES})
 
 add_executable(matching_rtabSourceMaster src/test_code/feature_matching_func.cpp src/test_code/matching_rtabSourceMaster.cpp)
 target_link_libraries(matching_rtabSourceMaster ${catkin_LIBRARIES})
+
+add_executable(shot_feature_test src/test_code/shot_feature_test.cpp src/test_code/shot_feature_test.cpp)
+target_link_libraries(shot_feature_test ${catkin_LIBRARIES})
+
+add_executable(pcd_output src/test_code/feature_matching_func.cpp src/test_code/pcd_output.cpp)
+target_link_libraries(pcd_output ${catkin_LIBRARIES})

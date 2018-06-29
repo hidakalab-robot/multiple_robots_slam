@@ -14,6 +14,9 @@
 
 #include <visualization_msgs/MarkerArray.h>
 
+#include <pcl/io/pcd_io.h>
+#include <sstream>
+
 class FeatureMatching
 {
 private:
@@ -64,6 +67,8 @@ private:
   sensor_msgs::PointCloud2 shift_master_cloud;
   sensor_msgs::PointCloud2 shift_orig_master_cloud;
 
+  int out_count;
+
 public:
   ros::CallbackQueue sc_queue;
   ros::CallbackQueue mc_queue;
@@ -89,4 +94,7 @@ public:
   void publish_matchinginfo(void);
   bool master_is_empty(void);
   void publish_matchinginfo_empty(void);
+
+  void output_segSource(void);
+  void output_fullSource(void);
 };
