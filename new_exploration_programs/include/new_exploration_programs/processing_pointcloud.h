@@ -15,7 +15,8 @@
 
 #include <new_exploration_programs/twoPointcloud2.h>
 
-
+#include <pcl/io/pcd_io.h>
+#include <sstream>
 //#include <Eigen/Dense>
 
 class ProcessingPointCloud
@@ -135,4 +136,7 @@ public:
 	void publish_mastermap(void);
 
 	bool publishJudge(void);
+
+	void include_master(std::string m_filename);
+	void include_source(std::string s_filename);
 };

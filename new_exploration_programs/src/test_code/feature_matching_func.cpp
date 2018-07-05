@@ -295,6 +295,10 @@ void FeatureMatching::show_matching(void)
 
 void FeatureMatching::publish_registeredcloud(void)
 {
+  source_cloud.clu_cloud.header.frame_id = "map";
+  shift_master_cloud.header.frame_id = "map";
+
+
   rsc_pub.publish(source_cloud.clu_cloud);
   rmc_pub.publish(shift_master_cloud);
   //rsm_pub.publish(matching_line_list_m);
@@ -333,6 +337,8 @@ void FeatureMatching::publish_orig(void)
   //std::cout << "orig_cloud size << " << source_cloud.orig_cloud.height*source_cloud.orig_cloud.width << '\n';
 
   std::cout << "header info << " << '\n' << source_cloud.orig_cloud.header << '\n';
+
+
 
   origs_pub.publish(source_cloud.orig_cloud);
   origm_pub.publish(shift_orig_master_cloud);

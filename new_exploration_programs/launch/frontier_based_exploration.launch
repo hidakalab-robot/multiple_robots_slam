@@ -7,7 +7,7 @@
 	<node pkg="new_exploration_programs" type="odom_marker" name="odom_marker" />
 
 	<arg name="rotate" default="true"/>
-	<node pkg="new_exploration_programs" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
+	<node pkg="new_exploration_programs" type="frontier_based_exploration" name="frontier_based_exploration" output="screen" launch-prefix="gnome-terminal -x gdb --args">
 		<param name="rotate_param" type="bool" value="$(arg rotate)"/>
 	</node>
 </launch>

@@ -297,3 +297,6 @@ target_link_libraries(shot_feature_test ${catkin_LIBRARIES})
 
 add_executable(pcd_output src/test_code/feature_matching_func.cpp src/test_code/pcd_output.cpp)
 target_link_libraries(pcd_output ${catkin_LIBRARIES})
+
+add_executable(processer_for_matchingTest src/test_code/processing_pointcloud_func.cpp src/test_code/processer_for_matchingTest.cpp)
+target_link_libraries(processer_for_matchingTest ${catkin_LIBRARIES})

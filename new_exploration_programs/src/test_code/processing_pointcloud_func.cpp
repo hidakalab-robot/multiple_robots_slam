@@ -80,6 +80,26 @@ ProcessingPointCloud::ProcessingPointCloud()
 	clu_cloud.header.frame_id = "map";
 };
 
+void ProcessingPointCloud::include_master(std::string m_filename)
+{
+  //std::string m_filename = "pcd_out/full_cloud/fullCloud0.pcd";
+  pcl::io::loadPCDFile (m_filename, *deleted_ground_cloud);
+  pcl::toROSMsg (*deleted_ground_cloud, del_cloud);
+
+  std::cout << "cloud size: " << deleted_ground_cloud -> points.size() << '\n';
+
+}
+
+void ProcessingPointCloud::include_source(std::string s_filename)
+{
+  //std::string s_filename = "pcd_out/full_cloud/fullCloud0.pcd";
+  pcl::io::loadPCDFile (s_filename, *deleted_ground_cloud);
+  pcl::toROSMsg (*deleted_ground_cloud, del_cloud);
+
+  std::cout << "cloud size: " << deleted_ground_cloud -> points.size() << '\n';
+
+}
+
 void ProcessingPointCloud::input_source_pointcloud(const sensor_msgs::PointCloud2::ConstPtr& pc_msg)
 {
 	//pcl::PointCloud<pcl::PointXYZ>::Ptr input_cloud (new pcl::PointCloud<pcl::PointXYZ>);

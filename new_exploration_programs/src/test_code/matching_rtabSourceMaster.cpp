@@ -1,3 +1,4 @@
+
 #include <new_exploration_programs/feature_matching.h>
 
 int main(int argc, char** argv)
@@ -6,7 +7,7 @@ int main(int argc, char** argv)
 	FeatureMatching fm;
 
 	/*一回目はソースだけで行けるようにする*/
-
+/*
 	while(ros::ok())
   {
 		fm.sc_queue.callOne(ros::WallDuration(1));
@@ -24,7 +25,7 @@ int main(int argc, char** argv)
       std::cout << "source_is_nothing" << '\n';
     }
   }
-
+*/
 	/*マスターを受け取ったあと、ソースの方ができるまで待つ*/
 
 	while(ros::ok())

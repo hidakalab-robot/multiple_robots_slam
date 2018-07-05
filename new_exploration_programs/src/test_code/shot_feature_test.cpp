@@ -34,7 +34,9 @@
 #include <pcl/common/transforms.h>
 #include <pcl/console/parse.h>
 
-typedef pcl::PointXYZRGBA PointType;
+#include <pcl/keypoints/iss_3d.h>
+
+typedef pcl::PointXYZ PointType;
 typedef pcl::Normal NormalType;
 typedef pcl::ReferenceFrame RFType;
 typedef pcl::SHOT352 DescriptorType;
@@ -230,27 +232,51 @@ main (int argc, char *argv[])
 
 
   /*ローカルマップに合わせたパラメータ*/
-  model_ss_ = 0.1f;
-  scene_ss_ = 0.1f;
-  rf_rad_ = 0.15f;
-  descr_rad_ = 0.2f;
-  cg_size_ = 0.1f;
-  cg_thresh_ = 50.0f;
+  use_hough_ = true;
 
+  model_ss_ = 0.1f;//キーポイント抽出の間隔(今回はダウンサンプリングするときのボクセルグリッドのサイズ)
+  scene_ss_ = 0.1f;//キーポイント抽出の間隔(今回はダウンサンプリングするときのボクセルグリッドのサイズ)
+  rf_rad_ = 0.3f;//重要っぽい//BOARD-LRFの半径//平面フィッティングするときに使う点群の半径//いじっても対応点の数には影響ない//でもマッチングしなくなる
+  descr_rad_ = 0.4f;//各キーポイント周りのデスクプリタの抽出//キーポイントの周りのどれくらい情報を使うか//いじると対応点の数が変わる//マッチングにも影響あり
+  cg_size_ = 0.2f;//ハフ空間に設定する各ビンのサイズ//輪郭を表す直線のサイズ//大きい方が判定が甘くなる?//ある程度大きい方がいい
+  cg_thresh_ = 5.0f;//モデルインスタンスの存在をシーンクラウドに推論するために必要なHough空間内の最小票数を設定します。//要は一致判定のしきい値なので小さいほどゆるい
+
+
+  /*良さ気パラメータ*//*同じ点群内であれば結構良い成果*/
   // model_ss_ = 0.1f;
   // scene_ss_ = 0.1f;
-  // rf_rad_ = 0.15f;
-  // descr_rad_ = 0.2f;
-  // cg_size_ = 0.1f;
-  // cg_thresh_ = 50.0f;
-
-
-  // model_ss_ = 0.2f;
-  // scene_ss_ = 0.6f;
   // rf_rad_ = 0.3f;
   // descr_rad_ = 0.4f;
   // cg_size_ = 0.2f;
-  // cg_thresh_ = 100.0f;
+  // cg_thresh_ = 5.0f;
+
+
+
+  bool iss_key = false;
+
+  /*issパラメータ*/
+
+  double iss_salient_radius_;
+  double iss_non_max_radius_;
+  double iss_gamma_21_ (0.975);
+  double iss_gamma_32_ (0.975);
+  double iss_min_neighbors_ (5);
+  int iss_threads_ (4);
+
+  // Fill in the model cloud
+
+  double model_resolution = 0.03;
+
+  // Compute model_resolution
+
+  iss_salient_radius_ = 6 * model_resolution;
+  iss_non_max_radius_ = 4 * model_resolution;
+
+  iss_gamma_21_ = 0.975;
+  iss_gamma_32_  = 0.975;
+  iss_min_neighbors_ = 5;
+  iss_threads_ = 4;
+
 
 
   //
@@ -270,31 +296,64 @@ main (int argc, char *argv[])
   //  Downsample Clouds to Extract keypoints
   //
 
-  //pcl::UniformSampling<PointType> uniform_sampling;
-  pcl::VoxelGrid<PointType> uniform_sampling;
-  uniform_sampling.setInputCloud (model);
-  //uniform_sampling.setRadiusSearch (model_ss_);
-  uniform_sampling.setLeafSize (model_ss_,model_ss_,model_ss_);
-  uniform_sampling.filter (*model_keypoints);
-  std::cout << "Model total points: " << model->size () << "; Selected Keypoints: " << model_keypoints->size () << std::endl;
+  //キーポイントを抽出しているだけなので他の方法でも良い
 
-  uniform_sampling.setInputCloud (scene);
-  //uniform_sampling.setRadiusSearch (scene_ss_);
-  uniform_sampling.setLeafSize (scene_ss_,scene_ss_,scene_ss_);
-  uniform_sampling.filter (*scene_keypoints);
-  std::cout << "Scene total points: " << scene->size () << "; Selected Keypoints: " << scene_keypoints->size () << std::endl;
+  if(iss_key)
+  {
+    pcl::search::KdTree<PointType>::Ptr s_tree (new pcl::search::KdTree<PointType> ());
+    pcl::search::KdTree<PointType>::Ptr m_tree (new pcl::search::KdTree<PointType> ());
+    // Fill in the model cloud
+    //
+    // Compute keypoints
+    //
+    pcl::ISSKeypoint3D<PointType, PointType> iss_detector;
 
-  //sleep(5);
-  //*model_keypoints = *model;
-  //*scene_keypoints = *scene;
+    iss_detector.setSalientRadius (iss_salient_radius_);
+    iss_detector.setNonMaxRadius (iss_non_max_radius_);
+    iss_detector.setThreshold21 (iss_gamma_21_);
+    iss_detector.setThreshold32 (iss_gamma_32_);
+    iss_detector.setMinNeighbors (iss_min_neighbors_);
+    iss_detector.setNumberOfThreads (iss_threads_);
+
+
+
+    iss_detector.setSearchMethod (m_tree);
+    iss_detector.setInputCloud (model);
+    iss_detector.compute (*model_keypoints);
+
+    std::cout << "Model total points: " << model->size () << "; Selected Keypoints: " << model_keypoints->size () << std::endl;
+
+    iss_detector.setSearchMethod (s_tree);
+    iss_detector.setInputCloud (scene);
+    iss_detector.compute (*scene_keypoints);
+
+    std::cout << "Scene total points: " << scene->size () << "; Selected Keypoints: " << scene_keypoints->size () << std::endl;
+  }
+  else
+  {
+    //pcl::UniformSampling<PointType> uniform_sampling;
+    pcl::VoxelGrid<PointType> uniform_sampling;
+    uniform_sampling.setInputCloud (model);
+    //uniform_sampling.setRadiusSearch (model_ss_);
+    uniform_sampling.setLeafSize (model_ss_,model_ss_,model_ss_);
+    uniform_sampling.filter (*model_keypoints);
+    std::cout << "Model total points: " << model->size () << "; Selected Keypoints: " << model_keypoints->size () << std::endl;
+
+    uniform_sampling.setInputCloud (scene);
+    //uniform_sampling.setRadiusSearch (scene_ss_);
+    uniform_sampling.setLeafSize (scene_ss_,scene_ss_,scene_ss_);
+    uniform_sampling.filter (*scene_keypoints);
+    std::cout << "Scene total points: " << scene->size () << "; Selected Keypoints: " << scene_keypoints->size () << std::endl;
+  }
+
 
 
   //
   //  Compute Descriptor for keypoints
   //
   pcl::SHOTEstimationOMP<PointType, NormalType, DescriptorType> descr_est;
+  //pcl::SHOTColorEstimationOMP//色情報も使ってそう
   descr_est.setRadiusSearch (descr_rad_);
-
   descr_est.setInputCloud (model_keypoints);
   descr_est.setInputNormals (model_normals);
   descr_est.setSearchSurface (model);
@@ -318,14 +377,15 @@ main (int argc, char *argv[])
   //  For each scene keypoint descriptor, find nearest neighbor into the model keypoints descriptor cloud and add it to the correspondences vector.
   for (size_t i = 0; i < scene_descriptors->size (); ++i)
   {
-    std::vector<int> neigh_indices (1);
-    std::vector<float> neigh_sqr_dists (1);
+    std::vector<int> neigh_indices (1);//要素数1で初期化
+    std::vector<float> neigh_sqr_dists (1);//要素数1で初期化
     if (!pcl_isfinite (scene_descriptors->at (i).descriptor[0])) //skipping NaNs
     {
       continue;
     }
     int found_neighs = match_search.nearestKSearch (scene_descriptors->at (i), 1, neigh_indices, neigh_sqr_dists);
     if(found_neighs == 1 && neigh_sqr_dists[0] < 0.25f) //  add match only if the squared descriptor distance is less than 0.25 (SHOT descriptor distances are between 0 and 1 by design)
+    //平方和記述子距離が0.25未満の場合にのみ一致を追加する（SHOT記述子距離は設計上0と1の間である）
     {
       pcl::Correspondence corr (neigh_indices[0], static_cast<int> (i), neigh_sqr_dists[0]);
       model_scene_corrs->push_back (corr);
