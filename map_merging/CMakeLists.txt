@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  sensor_msgs
   message_generation
 )
 
@@ -52,7 +53,13 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-   PartnerRobot.msg
+   TowMap.msg
+   Index.msg
+   Cluster.msg
+   EigenValueFeature.msg
+   FeatureExtraction.msg
+   PairNumber.msg
+   Match.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -72,7 +79,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   geometry_msgs   nav_msgs   std_msgs
+   geometry_msgs   nav_msgs   std_msgs  sensor_msgs map_merging
  )
 
 ################################################
@@ -105,9 +112,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
+  INCLUDE_DIRS include
 #  LIBRARIES map_merging
-  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs message_runtime
+  CATKIN_DEPENDS geometry_msgs nav_msgs roscpp rospy std_msgs sensor_msgs message_runtime
 #  DEPENDS system_lib
 )
 
@@ -118,7 +125,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+ include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -200,6 +207,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(map_merging src/map_merging.cpp)
-target_link_libraries(map_merging ${catkin_LIBRARIES})
+#add_executable(map_merging src/map_merging.cpp)
+#target_link_libraries(map_merging ${catkin_LIBRARIES})
 
