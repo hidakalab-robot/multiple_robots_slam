@@ -207,6 +207,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-#add_executable(map_merging src/map_merging.cpp)
-#target_link_libraries(map_merging ${catkin_LIBRARIES})
+add_executable(combining_rtabmap src/source_combining_rtabmap.cpp)
+target_link_libraries(combining_rtabmap ${catkin_LIBRARIES})
 
