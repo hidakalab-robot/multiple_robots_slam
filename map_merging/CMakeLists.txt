@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   sensor_msgs
   message_generation
+	pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -207,6 +208,11 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(combining_rtabmap src/source_combining_rtabmap.cpp)
-target_link_libraries(combining_rtabmap ${catkin_LIBRARIES})
+add_executable(source_combining_rtabmap src/source_combining_rtabmap.cpp)
+target_link_libraries(source_combining_rtabmap ${catkin_LIBRARIES})
 
+add_executable(source_clustering_euclidean src/source_clustering_euclidean.cpp)
+target_link_libraries(source_clustering_euclidean ${catkin_LIBRARIES})
+
+add_executable(source_extracting_eigenvalue_feature src/source_extracting_eigenvalue_feature.cpp)
+target_link_libraries(source_extracting_eigenvalue_feature ${catkin_LIBRARIES})

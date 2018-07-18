@@ -54,7 +54,7 @@ Combining::Combining()
   subO = sO.subscribe("/rtabmap/cloud_obstacles",1,&Combining::inputObstacles,this);
   subM = sM.subscribe("/rtabmap/cloud_map",1,&Combining::inputMap,this);
 
-  pubCombine = pC.advertise<map_merging::TowMap>("combine/combined_map", 1);
+  pubCombine = pC.advertise<map_merging::TowMap>("map_merging/sCombining", 1);
 
   vC = v.serviceClient<std_srvs::Empty>("/rtabmap/reset");
 

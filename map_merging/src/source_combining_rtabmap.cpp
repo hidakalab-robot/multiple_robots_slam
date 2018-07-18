@@ -2,7 +2,7 @@
 
 int main (int argc, char** argv)
 {
-  ros::init(argc, argv, "combining_rtabmap");
+  ros::init(argc, argv, "source_combining_rtabmap");
 
   Combining com;
 
