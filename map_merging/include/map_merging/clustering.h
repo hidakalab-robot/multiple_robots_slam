@@ -11,10 +11,15 @@ class Clustering
 {
 private:
 
-  ros::NodeHandle sC;
-  ros::NodeHandle pC;
-  ros::Subscriber subC;
-  ros::Publisher pubC;
+  ros::NodeHandle sC1;
+  ros::NodeHandle pC1;
+  ros::Subscriber subC1;
+  ros::Publisher pubC1;
+
+  ros::NodeHandle sC2;
+  ros::NodeHandle pC2;
+  ros::Subscriber subC2;
+  ros::Publisher pubC2;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr inputCloud;
 
@@ -30,8 +35,8 @@ private:
 
 public:
 
-  ros::CallbackQueue queueC;
-
+  ros::CallbackQueue queueC1;
+  ros::CallbackQueue queueC2;
 
   Clustering();
 	~Clustering(){};
@@ -42,16 +47,21 @@ public:
   void euclideanClustering(void);
   void coloring(void);
   void ListAndCentroid(void);
-  void clusterPublisher(void);
+  void clusterPublisher1(void);
+  void clusterPublisher2(void);
 };
 
 Clustering::Clustering()
 :inputCloud(new pcl::PointCloud<pcl::PointXYZRGB>),
 tree(new pcl::search::KdTree<pcl::PointXYZRGB>)
 {
-  sC.setCallbackQueue(&queueC);
-  subC = sC.subscribe("map_merging/sCombining",1,&Clustering::inputCombine,this);
-  pubC = pC.advertise<map_merging::Cluster>("map_merging/sClustering", 1);
+  sC1.setCallbackQueue(&queueC1);
+  subC1 = sC1.subscribe("map_merging/sCombining",1,&Clustering::inputCombine,this);
+  pubC1 = pC1.advertise<map_merging::Cluster>("map_merging/sClustering", 1);
+
+  sC2.setCallbackQueue(&queueC2);
+  subC2 = sC2.subscribe("map_merging/mCombining",1,&Clustering::inputCombine,this);
+  pubC2 = pC2.advertise<map_merging::Cluster>("map_merging/mClustering", 1);
 
   input = false;
 
@@ -161,9 +171,16 @@ void Clustering::ListAndCentroid(void)
 	clu.centroids = cluCentroids;
 }
 
-void Clustering::clusterPublisher(void)
+void Clustering::clusterPublisher1(void)
 {
   clu.header.stamp = ros::Time::now();
-  pubC.publish(clu);
+  pubC1.publish(clu);
+  std::cout << "published" << '\n';
+}
+
+void Clustering::clusterPublisher2(void)
+{
+  clu.header.stamp = ros::Time::now();
+  pubC2.publish(clu);
   std::cout << "published" << '\n';
 }

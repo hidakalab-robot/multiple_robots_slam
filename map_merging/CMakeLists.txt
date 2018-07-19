@@ -216,3 +216,15 @@ target_link_libraries(source_clustering_euclidean ${catkin_LIBRARIES})
 
 add_executable(source_extracting_eigenvalue_feature src/source_extracting_eigenvalue_feature.cpp)
 target_link_libraries(source_extracting_eigenvalue_feature ${catkin_LIBRARIES})
+
+add_executable(matching_eigenvalue_feature src/matching_eigenvalue_feature.cpp)
+target_link_libraries(matching_eigenvalue_feature ${catkin_LIBRARIES})
+
+add_executable(matching_shot_feature src/matching_shot_feature.cpp)
+target_link_libraries(matching_shot_feature ${catkin_LIBRARIES})
+
+add_executable(merged_clustering_euclidean src/merged_clustering_euclidean.cpp)
+target_link_libraries(merged_clustering_euclidean ${catkin_LIBRARIES})
+
+add_executable(merged_extracting_eigenvalue_feature src/merged_extracting_eigenvalue_feature.cpp)
+target_link_libraries(merged_extracting_eigenvalue_feature ${catkin_LIBRARIES})

@@ -8,12 +8,12 @@ int main (int argc, char** argv)
 
   while(ros::ok())
   {
-    fea.queueC.callOne(ros::WallDuration(1));
+    fea.queueC1.callOne(ros::WallDuration(1));
 
     if(fea.isInput())
     {
       fea.featureExtraction();
-      fea.featurePublisher();
+      fea.featurePublisher1();
     }
     else
     {
