@@ -44,12 +44,12 @@ FeatureExtracting::FeatureExtracting()
 :inputCloud(new pcl::PointCloud<pcl::PointXYZRGB>)
 {
   sC1.setCallbackQueue(&queueC1);
-  subC1 = sC1.subscribe("map_merging/sClustering",1,&FeatureExtracting::inputCluster,this);
-  pubF1 = pF1.advertise<map_merging::FeatureExtraction>("map_merging/sFeature", 1);
+  subC1 = sC1.subscribe("/map_merging/sClustering",1,&FeatureExtracting::inputCluster,this);
+  pubF1 = pF1.advertise<map_merging::FeatureExtraction>("/map_merging/sFeature", 1);
 
   sC2.setCallbackQueue(&queueC2);
-  subC2 = sC2.subscribe("map_merging/mClustering",1,&FeatureExtracting::inputCluster,this);
-  pubF2 = pF2.advertise<map_merging::FeatureExtraction>("map_merging/mFeature", 1);
+  subC2 = sC2.subscribe("/map_merging/mClustering",1,&FeatureExtracting::inputCluster,this);
+  pubF2 = pF2.advertise<map_merging::FeatureExtraction>("/map_merging/mFeature", 1);
 
 
   input = false;

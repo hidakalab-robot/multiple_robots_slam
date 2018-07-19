@@ -56,12 +56,12 @@ Clustering::Clustering()
 tree(new pcl::search::KdTree<pcl::PointXYZRGB>)
 {
   sC1.setCallbackQueue(&queueC1);
-  subC1 = sC1.subscribe("map_merging/sCombining",1,&Clustering::inputCombine,this);
-  pubC1 = pC1.advertise<map_merging::Cluster>("map_merging/sClustering", 1);
+  subC1 = sC1.subscribe("/map_merging/sCombining",1,&Clustering::inputCombine,this);
+  pubC1 = pC1.advertise<map_merging::Cluster>("/map_merging/sClustering", 1);
 
   sC2.setCallbackQueue(&queueC2);
-  subC2 = sC2.subscribe("map_merging/mCombining",1,&Clustering::inputCombine,this);
-  pubC2 = pC2.advertise<map_merging::Cluster>("map_merging/mClustering", 1);
+  subC2 = sC2.subscribe("/map_merging/mCombining",1,&Clustering::inputCombine,this);
+  pubC2 = pC2.advertise<map_merging::Cluster>("/map_merging/mClustering", 1);
 
   input = false;
 

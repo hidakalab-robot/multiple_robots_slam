@@ -60,7 +60,7 @@ EigenValueMatching::EigenValueMatching()
   subS = sS.subscribe("/map_merging/sFeature",1,&EigenValueMatching::inputSource,this);
   subM = sM.subscribe("/map_merging/mFeature",1,&EigenValueMatching::inputMerged,this);
 
-  pubEigenMatch = pE.advertise<map_merging::Match>("map_merging/eigenValueMatching", 1);
+  pubEigenMatch = pE.advertise<map_merging::Match>("/map_merging/eigenValueMatching", 1);
 
   inputS = false;
   inputM = false;

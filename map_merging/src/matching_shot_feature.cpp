@@ -12,7 +12,7 @@ int main (int argc, char** argv)
 
     if(shot.isInput())
     {
-      shot.cluster2Scene();
+      shot.cluster2LinkCluster();
       if(shot.isMatch())
       {
         shot.shotPublisher();

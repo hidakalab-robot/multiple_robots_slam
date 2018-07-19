@@ -15,6 +15,7 @@
 #include <pcl/common/transforms.h>
 
 #include <map_merging/Match.h>
+#include <map_merging/PairNumber.h>
 
 typedef pcl::PointXYZRGB PointType;
 typedef pcl::Normal NormalType;
@@ -91,7 +92,7 @@ mCloud (new pcl::PointCloud<PointType>())
 
   subE = sE.subscribe("/map_merging/eigenValueMatching",1,&ShotMatching::inputEigenMatch,this);
 
-  pubShotMatch = pS.advertise<map_merging::Match>("map_merging/shotMatching", 1);
+  pubShotMatch = pS.advertise<map_merging::Match>("/map_merging/shotMatching", 1);
 
   input = false;
   matching = false;
@@ -166,6 +167,28 @@ void ShotMatching::cluster2Scene(void)
 void ShotMatching::cluster2LinkCluster(void)
 {
   /*リストにあるクラスタごとに関連付けされたクラスタとSHOTマッチング*/
+  pcl::fromROSMsg (sMatch.mergedMap.cloudObstacles, *mCloud);
+  pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
+
+  std::vector<map_merging::PairNumber> matchList;
+
+  for(int i=0;i<sMatch.matchList.size();i++)
+  {
+    loadCluster(sMatch.matchList[i].sourceNumber,true);
+    loadCluster(sMatch.matchList[i].mergedNumber,false);
+    calcMatch();
+    if(isMatch())
+    {
+      matchList.push_back(sMatch.matchList[i]);
+    }
+  }
+
+  if(matchList.size()>0)
+  {
+    matching = true;
+  }
+
+  sMatch.matchList = matchList;
 
 }
 

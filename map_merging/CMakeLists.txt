@@ -228,3 +228,9 @@ target_link_libraries(merged_clustering_euclidean ${catkin_LIBRARIES})
 
 add_executable(merged_extracting_eigenvalue_feature src/merged_extracting_eigenvalue_feature.cpp)
 target_link_libraries(merged_extracting_eigenvalue_feature ${catkin_LIBRARIES})
+
+add_executable(merged_managing_map src/merged_managing_map.cpp)
+target_link_libraries(merged_managing_map ${catkin_LIBRARIES})
+
+add_executable(merging_map src/merging_map.cpp)
+target_link_libraries(merging_map ${catkin_LIBRARIES})
