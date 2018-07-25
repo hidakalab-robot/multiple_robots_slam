@@ -66,6 +66,7 @@ EigenValueMatching::EigenValueMatching()
 
 void EigenValueMatching::inputSource(const map_merging::FeatureExtraction::ConstPtr& sSMsg)
 {
+  eMatch.sourceMap.header = sSMsg -> cluHeader;
   eMatch.sourceMap.cloudMap = sSMsg -> cloudMap;
   eMatch.sourceMap.cloudObstacles = sSMsg -> cloudObstacles;
   eMatch.sourceMap.cloudColor = sSMsg -> cloudColor;
@@ -81,6 +82,7 @@ void EigenValueMatching::inputSource(const map_merging::FeatureExtraction::Const
 
 void EigenValueMatching::inputMerged(const map_merging::FeatureExtraction::ConstPtr& sMMsg)
 {
+  eMatch.mergedMap.header = sMMsg -> cluHeader;
   eMatch.mergedMap.cloudMap = sMMsg -> cloudMap;
   eMatch.mergedMap.cloudObstacles = sMMsg -> cloudObstacles;
   eMatch.mergedMap.cloudColor = sMMsg -> cloudColor;

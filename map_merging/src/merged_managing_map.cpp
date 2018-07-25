@@ -18,6 +18,10 @@ int main (int argc, char** argv)
       }
       man.MapPublisher();
     }
+    else
+    {
+      std::cout << "not input" << '\n';
+    }
   }
 
   return 0;

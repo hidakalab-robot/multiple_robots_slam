@@ -7,6 +7,8 @@
 #include <map_merging/TowMap.h>
 #include <map_merging/Cluster.h>
 
+#include <std_msgs/Empty.h>
+
 class Clustering
 {
 private:
@@ -21,6 +23,12 @@ private:
   ros::Subscriber subC2;
   ros::Publisher pubC2;
 
+  ros::NodeHandle sR1;
+  ros::Subscriber subR1;
+
+  ros::NodeHandle sR2;
+  ros::Subscriber subR2;
+
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr inputCloud;
 
   pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree;
@@ -33,10 +41,15 @@ private:
 
   bool input;
 
+  bool inputR;
+
 public:
 
   ros::CallbackQueue queueC1;
   ros::CallbackQueue queueC2;
+
+  ros::CallbackQueue queueR1;
+  ros::CallbackQueue queueR2;
 
   Clustering();
 	~Clustering(){};
@@ -49,6 +62,9 @@ public:
   void ListAndCentroid(void);
   void clusterPublisher1(void);
   void clusterPublisher2(void);
+
+  void ReceiveCheck(const std_msgs::Empty::ConstPtr& msg);
+  bool isInputR(void);
 };
 
 Clustering::Clustering()
@@ -63,7 +79,14 @@ tree(new pcl::search::KdTree<pcl::PointXYZRGB>)
   subC2 = sC2.subscribe("/map_merging/combining/mCombining",1,&Clustering::inputCombine,this);
   pubC2 = pC2.advertise<map_merging::Cluster>("/map_merging/clustering/mClustering", 1);
 
+  sR1.setCallbackQueue(&queueR1);
+  subR1 = sR1.subscribe("/map_merging/clustering/sReceiveCheck",1,&Clustering::ReceiveCheck,this);
+
+  sR2.setCallbackQueue(&queueR2);
+  subR2 = sR2.subscribe("/map_merging/clustering/mReceiveCheck",1,&Clustering::ReceiveCheck,this);
+
   input = false;
+  inputR = false;
 
   ec.setClusterTolerance (0.1);//同じクラスタとみなす距離
   ec.setMinClusterSize (100);//クラスタを構成する最小の点数
@@ -90,6 +113,7 @@ bool Clustering::isInput(void)
 void Clustering::resetFlag(void)
 {
   input = false;
+  inputR = false;
 }
 
 void Clustering::euclideanClustering(void)
@@ -174,13 +198,47 @@ void Clustering::ListAndCentroid(void)
 void Clustering::clusterPublisher1(void)
 {
   clu.header.stamp = ros::Time::now();
-  pubC1.publish(clu);
-  std::cout << "published" << '\n';
+  while(ros::ok())
+  {
+    queueR1.callOne(ros::WallDuration(1));
+    if(isInputR())
+    {
+      std::cout << "received" << '\n';
+      break;
+    }
+    else
+    {
+      pubC1.publish(clu);
+      std::cout << "published" << '\n';
+    }
+  }
 }
 
 void Clustering::clusterPublisher2(void)
 {
   clu.header.stamp = ros::Time::now();
-  pubC2.publish(clu);
-  std::cout << "published" << '\n';
+  while(ros::ok())
+  {
+    queueR2.callOne(ros::WallDuration(1));
+    if(isInputR())
+    {
+      std::cout << "received" << '\n';
+      break;
+    }
+    else
+    {
+      pubC2.publish(clu);
+      std::cout << "published" << '\n';
+    }
+  }
+}
+
+void Clustering::ReceiveCheck(const std_msgs::Empty::ConstPtr& msg)
+{
+  inputR = true;
+}
+
+bool Clustering::isInputR(void)
+{
+  return inputR;
 }

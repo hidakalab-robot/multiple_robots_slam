@@ -1,0 +1,16 @@
+<launch>
+	<node pkg="map_merging" type="source_combining_rtabmap" name="source_combining_rtabmap" />
+	<node pkg="map_merging" type="source_clustering_euclidean" name="source_clustering_euclidean" />
+	<node pkg="map_merging" type="source_extracting_eigenvalue_feature" name="source_extracting_eigenvalue_feature" />
+
+	<node pkg="map_merging" type="merged_managing_map" name="merged_managing_map" />
+	<node pkg="map_merging" type="merged_clustering_euclidean" name="merged_clustering_euclidean" />
+	<node pkg="map_merging" type="merged_extracting_eigenvalue_feature" name="merged_extracting_eigenvalue_feature" />
+
+
+	<node pkg="map_merging" type="matching_eigenvalue_feature" name="matching_eigenvalue_feature" />
+	<node pkg="map_merging" type="matching_shot_feature" name="matching_shot_feature" />
+	<node pkg="map_merging" type="matching_final_matching" name="matching_final_matching" />
+
+	<!-- <node pkg="map_merging" type="merging_map_merging" name="merging_map_merging" /> -->
+</launch>

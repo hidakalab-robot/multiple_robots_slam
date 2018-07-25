@@ -57,6 +57,7 @@ FeatureExtracting::FeatureExtracting()
 
 void FeatureExtracting::inputCluster(const map_merging::Cluster::ConstPtr& sCMsg)
 {
+  feaExt.cluHeader = sCMsg -> header;
   feaExt.cloudMap = sCMsg -> cloudMap;
   feaExt.cloudObstacles = sCMsg -> cloudObstacles;
   feaExt.cloudColor = sCMsg -> cloudColor;
@@ -66,6 +67,8 @@ void FeatureExtracting::inputCluster(const map_merging::Cluster::ConstPtr& sCMsg
   pcl::fromROSMsg (sCMsg -> cloudObstacles, *inputCloud);
 
   std::cout << "input cluster" << '\n';
+
+  input = true;
 }
 
 bool FeatureExtracting::isInput(void)
@@ -193,14 +196,14 @@ void FeatureExtracting::featureExtraction(void)
 
 void FeatureExtracting::featurePublisher1(void)
 {
-  feaExt.header.stamp = ros::Time::now();
+  feaExt.extHeader.stamp = ros::Time::now();
   pubF1.publish(feaExt);
   std::cout << "published" << '\n';
 }
 
 void FeatureExtracting::featurePublisher2(void)
 {
-  feaExt.header.stamp = ros::Time::now();
+  feaExt.extHeader.stamp = ros::Time::now();
   pubF2.publish(feaExt);
   std::cout << "published" << '\n';
 }

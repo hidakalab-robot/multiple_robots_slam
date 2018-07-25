@@ -9,6 +9,8 @@
 #include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <std_msgs/Empty.h>
+
 class FinalMatching
 {
 private:
@@ -31,6 +33,12 @@ private:
 
   ros::NodeHandle pC2;
   ros::Publisher pubC2;
+
+  ros::NodeHandle pR1;
+  ros::Publisher pubR1;
+
+  ros::NodeHandle pR2;
+  ros::Publisher pubR2;
 
   bool inputE;
   bool inputS;
@@ -60,6 +68,7 @@ public:
   void echoClouds(void);
   void finalMatchProcess(void);
   void finalMatchPublisher(void);
+  void receiveReport(void);
 };
 
 FinalMatching::FinalMatching()
@@ -75,8 +84,11 @@ FinalMatching::FinalMatching()
 
   pubL = pL.advertise<visualization_msgs::MarkerArray>("/map_merging/visualization/Matching", 1);
 
-  pubC1 = pC1.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/MatchSourceCloud", 1);
-  pubC2 = pC2.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/MatchMergedCloud", 1);
+  pubC1 = pC1.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/matchSourceCloud", 1);
+  pubC2 = pC2.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/matchMergedCloud", 1);
+
+  pubR1 = pR1.advertise<std_msgs::Empty>("/map_merging/clustering/sReceiveCheck", 1);
+  pubR2 = pR2.advertise<std_msgs::Empty>("/map_merging/clustering/mReceiveCheck", 1);
 
   inputE = false;
   inputS = false;
@@ -117,14 +129,28 @@ void FinalMatching::resetFlag(void)
 bool FinalMatching::isSameCluster(void)
 {
   /*クラスタについているheaderの時刻を見て二種類のマッチングが同じ時刻のクラスタを処理してたらtrue*/
+  std::cout << "eigen source stamp >>"  << inputEigen.sourceMap.header.stamp << '\n';
+  std::cout << "shot source stamp >>"  << inputShot.sourceMap.header.stamp << '\n';
+  std::cout << "eigen merged stamp >>"  << inputEigen.mergedMap.header.stamp << '\n';
+  std::cout << "shot merged stamp >>"  << inputShot.mergedMap.header.stamp << '\n';
   if((inputEigen.sourceMap.header.stamp == inputShot.sourceMap.header.stamp) && (inputEigen.mergedMap.header.stamp == inputShot.mergedMap.header.stamp))
   {
+    std::cout << "same" << '\n';
     return true;
   }
   else
   {
+    std::cout << "not same" << '\n';
     return false;
   }
+}
+
+void FinalMatching::receiveReport(void)
+{
+  std_msgs::Empty e;
+
+  pubR1.publish(e);
+  pubR2.publish(e);
 }
 
 void FinalMatching::echoClouds(void)

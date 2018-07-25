@@ -51,6 +51,8 @@ private:
   bool inputM;
   bool matching;
 
+  bool skip;
+
 
   //shot parameters
   bool use_hough_;
@@ -96,6 +98,8 @@ public:
   void loadCluster(int clusterNum, bool isSource);
   void calcMatch(void);
   void setOutputData(std::vector<map_merging::PairNumber> &list, int clusterNum);
+  bool isSkip(void);
+  void setSkip(bool arg);
 };
 
 ShotMatching::ShotMatching()
@@ -124,6 +128,8 @@ mCloud (new pcl::PointCloud<PointType>())
 
   inputS = false;
   inputM = false;
+
+  skip = false;
 
   matching = false;
 
@@ -191,6 +197,16 @@ void ShotMatching::resetFlag(void)
 // {
 //   return matching;
 // }
+
+void ShotMatching::setSkip(bool arg)
+{
+  skip = arg;
+}
+
+bool ShotMatching::isSkip(void)
+{
+  return skip;
+}
 
 void ShotMatching::shotPublisher(void)
 {

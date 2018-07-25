@@ -13,9 +13,19 @@ int main (int argc, char** argv)
 
     if(shot.isInputS() && shot.isInputM())
     {
-      shot.includeCloud();
-      shot.cluster2Scene();
-      shot.shotPublisher();
+      if(!shot.isSkip())
+      {
+        shot.includeCloud();
+        shot.cluster2Scene();
+        shot.shotPublisher();
+        shot.setSkip(true);
+        //usleep(500000);
+      }
+      else
+      {
+        shot.setSkip(false);
+      }
+
     }
     else
     {
