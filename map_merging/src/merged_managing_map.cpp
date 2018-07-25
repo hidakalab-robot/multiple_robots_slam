@@ -12,7 +12,10 @@ int main (int argc, char** argv)
 
     if(man.isInput())
     {
-      man.combinedMapPublisher();
+      while(ros::ok())
+      {
+        man.combinedMapPublisher();
+      }
       man.MapPublisher();
     }
   }

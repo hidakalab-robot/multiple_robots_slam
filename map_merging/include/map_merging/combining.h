@@ -97,14 +97,20 @@ void Combining::combinedMapPublisher(void)
     cMap.header.stamp = ros::Time::now();
     if(firstProccess)
     {
-      pubCombine.publish(cMap);
+
+      pubFirst.publish(cMap);
       std::cout << "first published" << '\n';
       firstProccess = false;
     }
     else
     {
-      pubCombine.publish(cMap);
-      std::cout << "published" << '\n';
+      while(ros::ok())
+      {
+        pubCombine.publish(cMap);
+        std::cout << "published" << '\n';
+      }
+      //pubCombine.publish(cMap);
+      //std::cout << "published" << '\n';
     }
 
     resetMap();

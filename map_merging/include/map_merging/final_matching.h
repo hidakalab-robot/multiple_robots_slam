@@ -184,7 +184,7 @@ void FinalMatching::echoMatch(int type)
       matchLine.color.b = 1.0f;
       break;
     default:
-      std::cout << "echoMatch arg error" << '\n';
+      std::cout << "echoMatch arg error : " << type << '\n';
       return;
   }
 
@@ -195,13 +195,21 @@ void FinalMatching::echoMatch(int type)
 
   for(int i=0;i<input.matchList.size();i++)
   {
-    sCentroid.x = input.sourceMap.centroids[input.matchList[i].sourceNumber].x - shiftPos;
-    sCentroid.y = input.sourceMap.centroids[input.matchList[i].sourceNumber].y;
-    sCentroid.z = input.sourceMap.centroids[input.matchList[i].sourceNumber].z;
+    //sCentroid.x = input.sourceMap.centroids[input.matchList[i].sourceNumber].x - shiftPos;
+    //sCentroid.y = input.sourceMap.centroids[input.matchList[i].sourceNumber].y;
+    //sCentroid.z = input.sourceMap.centroids[input.matchList[i].sourceNumber].z;
 
-    mCentroid.x = input.mergedMap.centroids[input.matchList[i].mergedNumber].x;
-    mCentroid.y = input.mergedMap.centroids[input.matchList[i].mergedNumber].y;
-    mCentroid.z = input.mergedMap.centroids[input.matchList[i].mergedNumber].z;
+    sCentroid.x = input.matchList[i].sourceCentroid.x - shiftPos;
+    sCentroid.y = input.matchList[i].sourceCentroid.y;
+    sCentroid.z = input.matchList[i].sourceCentroid.z;
+
+    //mCentroid.x = input.mergedMap.centroids[input.matchList[i].mergedNumber].x;
+    //mCentroid.y = input.mergedMap.centroids[input.matchList[i].mergedNumber].y;
+    //mCentroid.z = input.mergedMap.centroids[input.matchList[i].mergedNumber].z;
+
+    mCentroid.x = input.matchList[i].mergedCentroid.x;
+    mCentroid.y = input.matchList[i].mergedCentroid.y;
+    mCentroid.z = input.matchList[i].mergedCentroid.z;
 
     matchLine.id = i;
     matchLine.points.push_back(sCentroid);

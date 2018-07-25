@@ -17,6 +17,7 @@
 #include <map_merging/Match.h>
 #include <map_merging/PairNumber.h>
 
+
 typedef pcl::PointXYZRGB PointType;
 typedef pcl::Normal NormalType;
 typedef pcl::ReferenceFrame RFType;
@@ -37,7 +38,15 @@ private:
 
   map_merging::Match sMatch;
 
-  bool input;
+  map_merging::Cluster sCluster;
+  map_merging::Cluster mCluster;
+
+  Eigen::Matrix3f rotation;
+  Eigen::Vector3f translation;
+
+  std_msgs::Int8 matchType;
+
+  //bool input;
   bool inputS;
   bool inputM;
   bool matching;
@@ -71,19 +80,22 @@ public:
   ShotMatching();
 	~ShotMatching(){};
 
-  void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
+  //void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
   void inputSource(const map_merging::Cluster::ConstPtr& sSMsg);
   void inputMerged(const map_merging::Cluster::ConstPtr& sMMsg);
-  bool isInput(void);
+  //bool isInput(void);
+  bool isInputS(void);
+  bool isInputM(void);
+  void includeCloud(void);
   void resetFlag(void);
-  bool isMatch(void);
+  //bool isMatch(void);
   void shotPublisher(void);
   void cluster2Scene(void);
-  void cluster2LinkCluster(void);
-  void cluster2AllCluster(void);
+  //void cluster2LinkCluster(void);
+  //void cluster2AllCluster(void);
   void loadCluster(int clusterNum, bool isSource);
   void calcMatch(void);
-
+  void setOutputData(std::vector<map_merging::PairNumber> &list, int clusterNum);
 };
 
 ShotMatching::ShotMatching()
@@ -108,7 +120,7 @@ mCloud (new pcl::PointCloud<PointType>())
 
   pubShotMatch = pS.advertise<map_merging::Match>("/map_merging/matching/shotMatching", 1);
 
-  input = false;
+  //input = false;
 
   inputS = false;
   inputM = false;
@@ -126,44 +138,66 @@ mCloud (new pcl::PointCloud<PointType>())
 
 void ShotMatching::inputSource(const map_merging::Cluster::ConstPtr& sSMsg)
 {
-
+  sCluster = *sSMsg;
+  inputS = true;
+  std::cout << "input source" << '\n';
 }
 
 void ShotMatching::inputMerged(const map_merging::Cluster::ConstPtr& sMMsg)
 {
-
+  mCluster = *sMMsg;
+  inputM = true;
+  std::cout << "input merged" << '\n';
 }
 
-void ShotMatching::inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg)
+void ShotMatching::includeCloud(void)
 {
-  sMatch = *sEMsg;
-
-  input = true;
-
-
-  std::cout << "input EigenMatch" << '\n';
+  pcl::fromROSMsg (sCluster.cloudObstacles, *sCloud);
+  pcl::fromROSMsg (mCluster.cloudObstacles, *mCloud);
 }
 
-bool ShotMatching::isInput(void)
+// void ShotMatching::inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg)
+// {
+//   sMatch = *sEMsg;
+//
+//   input = true;
+//
+//   std::cout << "input EigenMatch" << '\n';
+// }
+
+// bool ShotMatching::isInput(void)
+// {
+//   return input;
+// }
+
+bool ShotMatching::isInputS(void)
 {
-  return input;
+  return inputS;
+}
+
+bool ShotMatching::isInputM(void)
+{
+  return inputM;
 }
 
 void ShotMatching::resetFlag(void)
 {
-  input = false;
+  //input = false;
+  inputS = false;
+  inputM = false;
 }
 
-bool ShotMatching::isMatch(void)
-{
-  return matching;
-}
+// bool ShotMatching::isMatch(void)
+// {
+//   return matching;
+// }
 
 void ShotMatching::shotPublisher(void)
 {
+  sMatch.matchType.data = 1;
+  sMatch.sourceMap = sCluster;
+  sMatch.mergedMap = mCluster;
   sMatch.header.stamp = ros::Time::now();
-
-  /*マッチリストもここで入れる*/
 
   pubShotMatch.publish(sMatch);
   std::cout << "published" << '\n';
@@ -172,97 +206,163 @@ void ShotMatching::shotPublisher(void)
 void ShotMatching::cluster2Scene(void)
 {
   /*リストにあるクラスタごとにシーン全体とSHOTマッチング*/
-  pcl::fromROSMsg (sMatch.mergedMap.cloudObstacles, *scene);
-  pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
-
-  for(int i=0;i<sMatch.matchList.size();i++)
-  {
-    loadCluster(sMatch.matchList[i].sourceNumber,true);
-    calcMatch();
-    if(isMatch())
-    {
-      /*マッチリストの件*/
-    }
-  }
-
-  if(/*編集したマッチリストのサイズが1以上*/true)
-  {
-    matching = true;
-  }
-
-}
-
-void ShotMatching::cluster2LinkCluster(void)
-{
-  /*リストにあるクラスタごとに関連付けされたクラスタとSHOTマッチング*/
-  /*関連付けされてなかったら全部やる*/
-  pcl::fromROSMsg (sMatch.mergedMap.cloudObstacles, *mCloud);
-  pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
+  /*sCloudとmCloudに入ってる*/
+  *scene = *mCloud;//シーンがsCloudにある
+  //*modelにマッチングするcloudを入れる(sCloudの中から)
+  //クラスタの数//sCluster.clusterList.size()
 
   std::vector<map_merging::PairNumber> matchList;
 
-  for(int i=0;i<sMatch.matchList.size();i++)
+  for(int i=0;i<sCluster.clusterList.size();i++)
   {
-    loadCluster(sMatch.matchList[i].sourceNumber,true);
-    loadCluster(sMatch.matchList[i].mergedNumber,false);
-    calcMatch();
-    if(isMatch())
+    loadCluster(i,true);//ここでi番目のクラスタが*modelに入る
+    calcMatch();//ここでsceneとmodelのマッチングをする
+    if(matching)
     {
-      matchList.push_back(sMatch.matchList[i]);
+      setOutputData(matchList,i);//マッチングの結果がrotationとtranslationに出てくるので
     }
   }
 
-  if(matchList.size()>0)
-  {
-    matching = true;
-  }
-
   sMatch.matchList = matchList;
+  // for(int i=0;i<sMatch.matchList.size();i++)
+  // {
+  //   loadCluster(sMatch.matchList[i].sourceNumber,true);
+  //   calcMatch();
+  //   if(isMatch())
+  //   {
+  //     /*マッチリストの件*/
+  //   }
+  // }
+  //
+  // if(/*編集したマッチリストのサイズが1以上*/true)
+  // {
+  //   matching = true;
+  // }
 
 }
 
-void ShotMatching::cluster2AllCluster(void)
-{
-  /*リストにあるクラスタごとにシーンにあるクラスタ全てとSHOTマッチング*/
-
-}
+// void ShotMatching::cluster2LinkCluster(void)
+// {
+//   /*リストにあるクラスタごとに関連付けされたクラスタとSHOTマッチング*/
+//   /*関連付けされてなかったら全部やる*/
+//   pcl::fromROSMsg (sMatch.mergedMap.cloudObstacles, *mCloud);
+//   pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
+//
+//   std::vector<map_merging::PairNumber> matchList;
+//
+//   for(int i=0;i<sMatch.matchList.size();i++)
+//   {
+//     loadCluster(sMatch.matchList[i].sourceNumber,true);
+//     loadCluster(sMatch.matchList[i].mergedNumber,false);
+//     calcMatch();
+//     if(isMatch())
+//     {
+//       matchList.push_back(sMatch.matchList[i]);
+//     }
+//   }
+//
+//   if(matchList.size()>0)
+//   {
+//     matching = true;
+//   }
+//
+//   sMatch.matchList = matchList;
+//
+// }
+//
+// void ShotMatching::cluster2AllCluster(void)
+// {
+//   /*リストにあるクラスタごとにシーンにあるクラスタ全てとSHOTマッチング*/
+//
+// }
 
 void ShotMatching::loadCluster(int clusterNum, bool isSource)
 {
   //クラスタの番号とどっちのクラウドkaを受け取ってその番号のクラスタをpcl形式で作成する
 
   pcl::PointCloud<PointType>::Ptr cluster (new pcl::PointCloud<PointType>());
+  /*読み込みの際に重心が原点になるようにする*/
+  geometry_msgs::Point centroid;
 
   if(isSource)
   {
-    pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
+    //pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
 
-    for(int i=0;i<sMatch.sourceMap.clusterList[clusterNum].index.size();i++)
+
+    for(int i=0;i<sCluster.clusterList[clusterNum].index.size();i++)
     {
       //sourceCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]].x;
       //sourceCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]].y;
       //sourceCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]].z;
 
-      cluster -> points.push_back(sCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]]);
+      cluster -> points.push_back(sCloud->points[sCluster.clusterList[clusterNum].index[i]]);
     }
+
+    for(int i=0; i<cluster->points.size();i++)
+    {
+      cluster -> points[i].x -= sCluster.centroids[clusterNum].x;
+      cluster -> points[i].y -= sCluster.centroids[clusterNum].y;
+      cluster -> points[i].z -= sCluster.centroids[clusterNum].z;
+    }
+
     *model = *cluster;
   }
   else
   {
-    pcl::fromROSMsg (sMatch.mergedMap.cloudObstacles, *mCloud);
+    //pcl::fromROSMsg (sMatch.mergedMap.cloudObstacles, *mCloud);
 
-    for(int i=0;i<sMatch.mergedMap.clusterList[clusterNum].index.size();i++)
+    for(int i=0;i<mCluster.clusterList[clusterNum].index.size();i++)
     {
       //sourceCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]].x;
       //sourceCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]].y;
       //sourceCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]].z;
 
-      cluster -> points.push_back(mCloud->points[sMatch.mergedMap.clusterList[clusterNum].index[i]]);
+      cluster -> points.push_back(mCloud->points[mCluster.clusterList[clusterNum].index[i]]);
     }
+
+    for(int i=0; i<cluster->points.size();i++)
+    {
+      cluster -> points[i].x -= mCluster.centroids[clusterNum].x;
+      cluster -> points[i].y -= mCluster.centroids[clusterNum].y;
+      cluster -> points[i].z -= mCluster.centroids[clusterNum].z;
+    }
+
     *scene = *cluster;
   }
 
 }
+
+void ShotMatching::setOutputData(std::vector<map_merging::PairNumber> &list ,int clusterNum)
+{
+  map_merging::PairNumber pair;
+
+  geometry_msgs::Point centroid;
+
+  centroid = sCluster.centroids[clusterNum];
+
+  pair.sourceCentroid = centroid;
+
+  centroid.x = translation(0);
+  centroid.y = translation(1);
+  centroid.z = translation(2);
+
+  pair.mergedCentroid = centroid;
+
+  std::vector<float> rot;
+  for(int i=0;i<3;i++)
+  {
+    for(int j=0;j<3;j++)
+    {
+      rot.push_back(rotation(i,j));
+    }
+  }
+
+  pair.rotation = rot;
+
+  list.push_back(pair);
+
+}
+
 
 void ShotMatching::calcMatch(void)
 {
@@ -395,36 +495,47 @@ void ShotMatching::calcMatch(void)
     gc_clusterer.recognize (rototranslations, clustered_corrs);
   }
 
-  if(rototranslations.size() > 0)
-  {
-    matching = true;
-  }
-  else
-  {
-    matching = false;
-  }
+  // if(rototranslations.size() > 0)
+  // {
+  //   matching = true;
+  // }
+  // else
+  // {
+  //   matching = false;
+  // }
 
 
 
   //
   //  Output results
   //
-  std::cout << "Model instances found: " << rototranslations.size () << std::endl;
-  for (size_t i = 0; i < rototranslations.size (); ++i)
+
+  if(rototranslations.size () > 0)
   {
-    std::cout << "\n    Instance " << i + 1 << ":" << std::endl;
-    std::cout << "        Correspondences belonging to this instance: " << clustered_corrs[i].size () << std::endl;
-
-    // Print the rotation matrix and translation vector
-    Eigen::Matrix3f rotation = rototranslations[i].block<3,3>(0, 0);
-    Eigen::Vector3f translation = rototranslations[i].block<3,1>(0, 3);
-
-    printf ("\n");
-    printf ("            | %6.3f %6.3f %6.3f | \n", rotation (0,0), rotation (0,1), rotation (0,2));
-    printf ("        R = | %6.3f %6.3f %6.3f | \n", rotation (1,0), rotation (1,1), rotation (1,2));
-    printf ("            | %6.3f %6.3f %6.3f | \n", rotation (2,0), rotation (2,1), rotation (2,2));
-    printf ("\n");
-    printf ("        t = < %0.3f, %0.3f, %0.3f >\n", translation (0), translation (1), translation (2));
+    matching = true;
+    rotation = rototranslations[0].block<3,3>(0, 0);
+    translation = rototranslations[0].block<3,1>(0, 3);
   }
+  else
+  {
+    matching = false;
+  }
+  // std::cout << "Model instances found: " << rototranslations.size () << std::endl;
+  // for (size_t i = 0; i < rototranslations.size (); ++i)
+  // {
+  //   std::cout << "\n    Instance " << i + 1 << ":" << std::endl;
+  //   std::cout << "        Correspondences belonging to this instance: " << clustered_corrs[i].size () << std::endl;
+  //
+  //   // Print the rotation matrix and translation vector
+  //   Eigen::Matrix3f rotation = rototranslations[i].block<3,3>(0, 0);
+  //   Eigen::Vector3f translation = rototranslations[i].block<3,1>(0, 3);
+  //
+  //   printf ("\n");
+  //   printf ("            | %6.3f %6.3f %6.3f | \n", rotation (0,0), rotation (0,1), rotation (0,2));
+  //   printf ("        R = | %6.3f %6.3f %6.3f | \n", rotation (1,0), rotation (1,1), rotation (1,2));
+  //   printf ("            | %6.3f %6.3f %6.3f | \n", rotation (2,0), rotation (2,1), rotation (2,2));
+  //   printf ("\n");
+  //   printf ("        t = < %0.3f, %0.3f, %0.3f >\n", translation (0), translation (1), translation (2));
+  // }
 
 }

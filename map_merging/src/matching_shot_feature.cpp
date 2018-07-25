@@ -8,19 +8,25 @@ int main (int argc, char** argv)
 
   while(ros::ok())
   {
-    //shot.queueE.callOne(ros::WallDuration(1));
+    shot.queueS.callOne(ros::WallDuration(1));
+    shot.queueM.callOne(ros::WallDuration(1));
 
-    if(shot.isInput())
+    if(shot.isInputS() && shot.isInputM())
     {
-      shot.cluster2LinkCluster();
-      if(shot.isMatch())
-      {
-        shot.shotPublisher();
-      }
+      shot.includeCloud();
+      shot.cluster2Scene();
+      shot.shotPublisher();
     }
     else
     {
-      std::cout << "not input" << '\n';
+      if(!shot.isInputS())
+      {
+        std::cout << "not input source" << '\n';
+      }
+      if(!shot.isInputM())
+      {
+        std::cout << "not input merged" << '\n';
+      }
     }
     shot.resetFlag();
   }

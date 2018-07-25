@@ -6,9 +6,6 @@
 #include <map_merging/PairNumber.h>
 #include <map_merging/Match.h>
 
-#define SOURCE eMatch.sourceMap
-#define MERGED eMatch.mergedMap
-
 class EigenValueMatching
 {
 private:
@@ -144,12 +141,12 @@ void EigenValueMatching::calcMatch(void)
 
   float zThre = 0.5;
 
-  for(int i=0;i<MERGED.clusterList.size();i++)
+  for(int i=0;i<eMatch.mergedMap.clusterList.size();i++)
   {
     minDiff = 100.0;
     minNum = -1;
 
-    for(int j=0;j<SOURCE.clusterList.size();j++)
+    for(int j=0;j<eMatch.sourceMap.clusterList.size();j++)
     {
       diffLinearity = mFeature[i].linearity - sFeature[j].linearity;
       diffPlanarity = mFeature[i].planarity - sFeature[j].planarity;
@@ -163,17 +160,17 @@ void EigenValueMatching::calcMatch(void)
 
       if(diffVector < matchThreshold)
       {
-        if(std::abs(MERGED.centroids[i].z - SOURCE.centroids[j].z) < zThre)
+        if(std::abs(eMatch.mergedMap.centroids[i].z - eMatch.sourceMap.centroids[j].z) < zThre)
         {
           if(diffVector < minDiff)
           {
-            mcX = MERGED.centroids[i].x;
-            mcY = MERGED.centroids[i].y;
-            mcZ = MERGED.centroids[i].z;
+            mcX = eMatch.mergedMap.centroids[i].x;
+            mcY = eMatch.mergedMap.centroids[i].y;
+            mcZ = eMatch.mergedMap.centroids[i].z;
 
-            scX = SOURCE.centroids[j].x;
-            scY = SOURCE.centroids[j].y;
-            scZ = SOURCE.centroids[j].z;
+            scX = eMatch.sourceMap.centroids[j].x;
+            scY = eMatch.sourceMap.centroids[j].y;
+            scZ = eMatch.sourceMap.centroids[j].z;
 
             minNum = j;
             minDiff = diffVector;
@@ -198,8 +195,9 @@ void EigenValueMatching::calcMatch(void)
 
   map_merging::PairNumber matchPair;
   std::vector<map_merging::PairNumber> matchList;
+  geometry_msgs::Point centroid;
 
-  for(int i=0;i<SOURCE.clusterList.size();i++)
+  for(int i=0;i<eMatch.sourceMap.clusterList.size();i++)
   {
     minDiff = 100.0;
     minNum = -1;
@@ -219,6 +217,17 @@ void EigenValueMatching::calcMatch(void)
     {
       matchPair.mergedNumber = minNum;
       matchPair.sourceNumber = i;
+
+      centroid.x = eMatch.sourceMap.centroids[i].x;
+      centroid.y = eMatch.sourceMap.centroids[i].y;
+      centroid.z = eMatch.sourceMap.centroids[i].z;
+      matchPair.sourceCentroid = centroid;
+
+      centroid.x = eMatch.mergedMap.centroids[minNum].x;
+      centroid.y = eMatch.mergedMap.centroids[minNum].y;
+      centroid.z = eMatch.mergedMap.centroids[minNum].z;
+      matchPair.mergedCentroid = centroid;
+
       matchList.push_back(matchPair);
     }
   }
@@ -226,7 +235,7 @@ void EigenValueMatching::calcMatch(void)
   for(int i=0;i<matchList.size();i++)
   {
     std::cout << "[true-matching!!] master_cloud[" << matchList[i].mergedNumber << "]" <<  " and source_cloud[" << matchList[i].sourceNumber << "]" << '\n';
-    std::cout << "[centroid_z_diff] " << std::abs(MERGED.centroids[matchList[i].mergedNumber].z - SOURCE.centroids[matchList[i].sourceNumber].z) << '\n';
+    std::cout << "[centroid_z_diff] " << std::abs(eMatch.mergedMap.centroids[matchList[i].mergedNumber].z - eMatch.sourceMap.centroids[matchList[i].sourceNumber].z) << '\n';
   }
 
 
@@ -247,6 +256,7 @@ void EigenValueMatching::calcMatch(void)
 
 void EigenValueMatching::emPublisher(void)
 {
+  eMatch.matchType.data = 0;
   eMatch.header.stamp = ros::Time::now();
   pubEigenMatch.publish(eMatch);
   std::cout << "published" << '\n';
