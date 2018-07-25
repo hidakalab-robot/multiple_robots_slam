@@ -232,5 +232,8 @@ target_link_libraries(merged_extracting_eigenvalue_feature ${catkin_LIBRARIES})
 add_executable(merged_managing_map src/merged_managing_map.cpp)
 target_link_libraries(merged_managing_map ${catkin_LIBRARIES})
 
-add_executable(merging_map src/merging_map.cpp)
-target_link_libraries(merging_map ${catkin_LIBRARIES})
+add_executable(merging_map_merging src/merging_map_merging.cpp)
+target_link_libraries(merging_map_merging ${catkin_LIBRARIES})
+
+add_executable(matching_final_matching src/matching_final_matching.cpp)
+target_link_libraries(matching_final_matching ${catkin_LIBRARIES})

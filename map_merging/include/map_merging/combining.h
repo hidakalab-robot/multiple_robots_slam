@@ -10,6 +10,7 @@ private:
   ros::NodeHandle sM;
 
   ros::NodeHandle pC;
+  ros::NodeHandle pF;
 
   ros::NodeHandle v;
 
@@ -17,6 +18,7 @@ private:
 	ros::Subscriber subM;
 
   ros::Publisher pubCombine;
+  ros::Publisher pubFirst;
 
   ros::ServiceClient vC;
 
@@ -26,6 +28,8 @@ private:
 
   bool inputO;
 	bool inputM;
+
+  bool firstProccess;
 
   int ALLOW_SIZE;
 
@@ -54,12 +58,15 @@ Combining::Combining()
   subO = sO.subscribe("/rtabmap/cloud_obstacles",1,&Combining::inputObstacles,this);
   subM = sM.subscribe("/rtabmap/cloud_map",1,&Combining::inputMap,this);
 
-  pubCombine = pC.advertise<map_merging::TowMap>("/map_merging/sCombining", 1);
+  pubCombine = pC.advertise<map_merging::TowMap>("/map_merging/combining/sCombining", 1);
+  pubFirst = pF.advertise<map_merging::TowMap>("/map_merging/merging/mergedMap", 1);
 
   vC = v.serviceClient<std_srvs::Empty>("/rtabmap/reset");
 
   inputO = false;
   inputM = false;
+
+  firstProccess = true;
 
   ALLOW_SIZE = 10000;
 }
@@ -88,8 +95,18 @@ void Combining::combinedMapPublisher(void)
   if(cMap.cloudObstacles.height * cMap.cloudObstacles.width > ALLOW_SIZE)
   {
     cMap.header.stamp = ros::Time::now();
-    pubCombine.publish(cMap);
-    std::cout << "published" << '\n';
+    if(firstProccess)
+    {
+      pubCombine.publish(cMap);
+      std::cout << "first published" << '\n';
+      firstProccess = false;
+    }
+    else
+    {
+      pubCombine.publish(cMap);
+      std::cout << "published" << '\n';
+    }
+
     resetMap();
   }
   else

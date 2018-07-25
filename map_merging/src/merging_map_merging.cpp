@@ -2,7 +2,7 @@
 
 int main (int argc, char** argv)
 {
-  ros::init(argc, argv, "merging_map");
+  ros::init(argc, argv, "merging_map_merging");
 
   Merging mer;
 

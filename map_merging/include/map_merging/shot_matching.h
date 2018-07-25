@@ -25,14 +25,21 @@ typedef pcl::SHOT352 DescriptorType;
 class ShotMatching
 {
 private:
-  ros::NodeHandle sE;
+  ros::NodeHandle sS;
+  ros::NodeHandle sM;
+
   ros::NodeHandle pS;
-  ros::Subscriber subE;
+
+  ros::Subscriber subS;
+  ros::Subscriber subM;
+
   ros::Publisher pubShotMatch;
 
   map_merging::Match sMatch;
 
   bool input;
+  bool inputS;
+  bool inputM;
   bool matching;
 
 
@@ -58,12 +65,15 @@ private:
   pcl::PointCloud<PointType>::Ptr mCloud;
 
 public:
-  ros::CallbackQueue queueE;
+  ros::CallbackQueue queueS;
+  ros::CallbackQueue queueM;
 
   ShotMatching();
 	~ShotMatching(){};
 
   void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
+  void inputSource(const map_merging::Cluster::ConstPtr& sSMsg);
+  void inputMerged(const map_merging::Cluster::ConstPtr& sMMsg);
   bool isInput(void);
   void resetFlag(void);
   bool isMatch(void);
@@ -88,13 +98,21 @@ scene_descriptors (new pcl::PointCloud<DescriptorType>()),
 sCloud (new pcl::PointCloud<PointType>()),
 mCloud (new pcl::PointCloud<PointType>())
 {
-  sE.setCallbackQueue(&queueE);
+  sS.setCallbackQueue(&queueS);
+  //subE = sE.subscribe("/map_merging/eigenValueMatching",1,&ShotMatching::inputEigenMatch,this);
+  subS = sS.subscribe("/map_merging/clustering/sClustering",1,&ShotMatching::inputSource,this);
 
-  subE = sE.subscribe("/map_merging/eigenValueMatching",1,&ShotMatching::inputEigenMatch,this);
+  sM.setCallbackQueue(&queueM);
+  subM = sM.subscribe("/map_merging/clustering/mClustering",1,&ShotMatching::inputMerged,this);
 
-  pubShotMatch = pS.advertise<map_merging::Match>("/map_merging/shotMatching", 1);
+
+  pubShotMatch = pS.advertise<map_merging::Match>("/map_merging/matching/shotMatching", 1);
 
   input = false;
+
+  inputS = false;
+  inputM = false;
+
   matching = false;
 
   use_hough_ = true;
@@ -104,6 +122,16 @@ mCloud (new pcl::PointCloud<PointType>())
   descr_rad_ = 0.02f;
   cg_size_ = 0.01f;
   cg_thresh_ = 5.0f;
+}
+
+void ShotMatching::inputSource(const map_merging::Cluster::ConstPtr& sSMsg)
+{
+
+}
+
+void ShotMatching::inputMerged(const map_merging::Cluster::ConstPtr& sMMsg)
+{
+
 }
 
 void ShotMatching::inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg)
@@ -167,6 +195,7 @@ void ShotMatching::cluster2Scene(void)
 void ShotMatching::cluster2LinkCluster(void)
 {
   /*リストにあるクラスタごとに関連付けされたクラスタとSHOTマッチング*/
+  /*関連付けされてなかったら全部やる*/
   pcl::fromROSMsg (sMatch.mergedMap.cloudObstacles, *mCloud);
   pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
 

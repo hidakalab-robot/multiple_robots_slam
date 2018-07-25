@@ -33,8 +33,8 @@ public:
 Merging::Merging()
 {
   sS.setCallbackQueue(&queueS);
-  subS = sS.subscribe("/map_merging/shotMatching",1,&Merging::inputShot,this);
-  pubMerged = pM.advertise<map_merging::TowMap>("/map_merging/mergedMap", 1);
+  subS = sS.subscribe("/map_merging/matching/finalMatching",1,&Merging::inputShot,this);
+  pubMerged = pM.advertise<map_merging::TowMap>("/map_merging/merging/mergedMap", 1);
 }
 
 void Merging::inputShot(const map_merging::Match::ConstPtr& sSMsg)

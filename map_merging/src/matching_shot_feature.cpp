@@ -8,7 +8,7 @@ int main (int argc, char** argv)
 
   while(ros::ok())
   {
-    shot.queueE.callOne(ros::WallDuration(1));
+    //shot.queueE.callOne(ros::WallDuration(1));
 
     if(shot.isInput())
     {

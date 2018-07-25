@@ -39,11 +39,11 @@ Managing::Managing()
 {
   sM.setCallbackQueue(&queueM);
 
-  subM = sM.subscribe("/map_merging/mergedMap",1,&Managing::inputMerged,this);
+  subM = sM.subscribe("/map_merging/merging/mergedMap",1,&Managing::inputMerged,this);
 
-  pubCombine = pC.advertise<map_merging::TowMap>("/map_merging/mCombining", 1);
-  pubObstacles = pO.advertise<sensor_msgs::PointCloud2>("/map_merging/cloudObstacles", 1);
-  pubMap = pM.advertise<sensor_msgs::PointCloud2>("/map_merging/cloudMap", 1);
+  pubCombine = pC.advertise<map_merging::TowMap>("/map_merging/combining/mCombining", 1);
+  pubObstacles = pO.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/mergedCloudObstacles", 1);
+  pubMap = pM.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/mergedCloudMap", 1);
 
   input = false;
 }

@@ -57,10 +57,10 @@ EigenValueMatching::EigenValueMatching()
   sS.setCallbackQueue(&queueS);
   sM.setCallbackQueue(&queueM);
 
-  subS = sS.subscribe("/map_merging/sFeature",1,&EigenValueMatching::inputSource,this);
-  subM = sM.subscribe("/map_merging/mFeature",1,&EigenValueMatching::inputMerged,this);
+  subS = sS.subscribe("/map_merging/feature/sFeature",1,&EigenValueMatching::inputSource,this);
+  subM = sM.subscribe("/map_merging/feature/mFeature",1,&EigenValueMatching::inputMerged,this);
 
-  pubEigenMatch = pE.advertise<map_merging::Match>("/map_merging/eigenValueMatching", 1);
+  pubEigenMatch = pE.advertise<map_merging::Match>("/map_merging/matching/eigenValueMatching", 1);
 
   inputS = false;
   inputM = false;
@@ -192,6 +192,7 @@ void EigenValueMatching::calcMatch(void)
     }
 
   }
+
 
   /*誤マッチングを削除*/
 
