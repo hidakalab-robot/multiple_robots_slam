@@ -36,6 +36,9 @@ private:
 
   ros::Publisher pubShotMatch;
 
+  ros::NodeHandle pTest;
+  ros::Publisher pubTest;
+
   map_merging::Match sMatch;
 
   map_merging::Cluster sCluster;
@@ -44,7 +47,7 @@ private:
   Eigen::Matrix3f rotation;
   Eigen::Vector3f translation;
 
-  std_msgs::Int8 matchType;
+  //std_msgs::Int8 matchType;
 
   //bool input;
   bool inputS;
@@ -75,6 +78,8 @@ private:
   pcl::PointCloud<PointType>::Ptr sCloud;
   pcl::PointCloud<PointType>::Ptr mCloud;
 
+  sensor_msgs::PointCloud2 testCloud;
+
 public:
   ros::CallbackQueue queueS;
   ros::CallbackQueue queueM;
@@ -100,6 +105,7 @@ public:
   void setOutputData(std::vector<map_merging::PairNumber> &list, int clusterNum);
   bool isSkip(void);
   void setSkip(bool arg);
+  void checkCloud(void);
 };
 
 ShotMatching::ShotMatching()
@@ -124,6 +130,8 @@ mCloud (new pcl::PointCloud<PointType>())
 
   pubShotMatch = pS.advertise<map_merging::Match>("/map_merging/matching/shotMatching", 1);
 
+  pubTest = pTest.advertise<sensor_msgs::PointCloud2>("/map_merging/test/testCloud", 1);
+
   //input = false;
 
   inputS = false;
@@ -134,12 +142,20 @@ mCloud (new pcl::PointCloud<PointType>())
   matching = false;
 
   use_hough_ = true;
-  model_ss_ = 0.01f;
-  scene_ss_ = 0.03f;
-  rf_rad_ = 0.015f;
-  descr_rad_ = 0.02f;
-  cg_size_ = 0.01f;
-  cg_thresh_ = 5.0f;
+
+  model_ss_ = 0.1f;//キーポイント抽出の間隔(今回はダウンサンプリングするときのボクセルグリッドのサイズ)
+  scene_ss_ = 0.1f;//キーポイント抽出の間隔(今回はダウンサンプリングするときのボクセルグリッドのサイズ)
+  rf_rad_ = 0.3f;//重要っぽい//BOARD-LRFの半径//平面フィッティングするときに使う点群の半径//いじっても対応点の数には影響ない//でもマッチングしなくなる
+  descr_rad_ = 0.4f;//各キーポイント周りのデスクプリタの抽出//キーポイントの周りのどれくらい情報を使うか//いじると対応点の数が変わる//マッチングにも影響あり
+  cg_size_ = 0.2f;//ハフ空間に設定する各ビンのサイズ//輪郭を表す直線のサイズ//大きい方が判定が甘くなる?//ある程度大きい方がいい
+  cg_thresh_ = 5.0f;//モデルインスタンスの存在をシーンクラウドに推論するために必要なHough空間内の最小票数を設定します。//要は一致判定のしきい値なので小さいほどゆるい
+
+  // model_ss_ = 0.01f;
+  // scene_ss_ = 0.03f;
+  // rf_rad_ = 0.015f;
+  // descr_rad_ = 0.02f;
+  // cg_size_ = 0.01f;
+  // cg_thresh_ = 5.0f;
 }
 
 void ShotMatching::inputSource(const map_merging::Cluster::ConstPtr& sSMsg)
@@ -232,6 +248,7 @@ void ShotMatching::cluster2Scene(void)
   for(int i=0;i<sCluster.clusterList.size();i++)
   {
     loadCluster(i,true);//ここでi番目のクラスタが*modelに入る
+    checkCloud();
     calcMatch();//ここでsceneとmodelのマッチングをする
     if(matching)
     {
@@ -255,6 +272,15 @@ void ShotMatching::cluster2Scene(void)
   //   matching = true;
   // }
 
+}
+
+void ShotMatching::checkCloud(void)
+{
+  pcl::toROSMsg (*model, testCloud);
+
+  testCloud.header.frame_id = "map";
+
+  pubTest.publish(testCloud);
 }
 
 // void ShotMatching::cluster2LinkCluster(void)
@@ -303,8 +329,6 @@ void ShotMatching::loadCluster(int clusterNum, bool isSource)
   if(isSource)
   {
     //pcl::fromROSMsg (sMatch.sourceMap.cloudObstacles, *sCloud);
-
-
     for(int i=0;i<sCluster.clusterList[clusterNum].index.size();i++)
     {
       //sourceCloud->points[sMatch.sourceMap.clusterList[clusterNum].index[i]].x;
@@ -321,7 +345,15 @@ void ShotMatching::loadCluster(int clusterNum, bool isSource)
       cluster -> points[i].z -= sCluster.centroids[clusterNum].z;
     }
 
+    /*cloudの設定をする*/
+    cluster -> width = cluster -> points.size();
+    cluster -> height = 1;
+    cluster -> is_dense = false;
+
+
+
     *model = *cluster;
+
   }
   else
   {
@@ -528,12 +560,14 @@ void ShotMatching::calcMatch(void)
 
   if(rototranslations.size () > 0)
   {
+    std::cout << "****Matching!!****" << '\n';
     matching = true;
     rotation = rototranslations[0].block<3,3>(0, 0);
     translation = rototranslations[0].block<3,1>(0, 3);
   }
   else
   {
+    std::cout << "****No Matching****" << '\n';
     matching = false;
   }
   // std::cout << "Model instances found: " << rototranslations.size () << std::endl;

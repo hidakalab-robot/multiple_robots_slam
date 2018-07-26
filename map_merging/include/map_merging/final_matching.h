@@ -43,7 +43,9 @@ private:
   bool inputE;
   bool inputS;
 
-  float shiftPos;
+  //float shiftPos;
+  float SHIFT_POS;
+
 
   map_merging::Match inputEigen;
   map_merging::Match inputShot;
@@ -93,7 +95,7 @@ FinalMatching::FinalMatching()
   inputE = false;
   inputS = false;
 
-  shiftPos = 5.0;
+  SHIFT_POS = 5.0;
 }
 
 void FinalMatching::inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg)
@@ -160,7 +162,7 @@ void FinalMatching::echoClouds(void)
 
   for(int i=0;i<inputSource -> points.size();i++)
   {
-    inputSource -> points[i].x -= shiftPos;
+    inputSource -> points[i].x -= SHIFT_POS;
   }
 
   sensor_msgs::PointCloud2 shiftSource;
@@ -221,11 +223,11 @@ void FinalMatching::echoMatch(int type)
 
   for(int i=0;i<input.matchList.size();i++)
   {
-    //sCentroid.x = input.sourceMap.centroids[input.matchList[i].sourceNumber].x - shiftPos;
+    //sCentroid.x = input.sourceMap.centroids[input.matchList[i].sourceNumber].x - SHIFT_POS;
     //sCentroid.y = input.sourceMap.centroids[input.matchList[i].sourceNumber].y;
     //sCentroid.z = input.sourceMap.centroids[input.matchList[i].sourceNumber].z;
 
-    sCentroid.x = input.matchList[i].sourceCentroid.x - shiftPos;
+    sCentroid.x = input.matchList[i].sourceCentroid.x - SHIFT_POS;
     sCentroid.y = input.matchList[i].sourceCentroid.y;
     sCentroid.z = input.matchList[i].sourceCentroid.z;
 

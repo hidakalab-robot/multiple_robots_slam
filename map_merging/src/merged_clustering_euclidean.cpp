@@ -1,27 +1,28 @@
-#include <map_merging/clustering.h>
+#include <map_merging/euclidean_clustering.h>
 
 int main (int argc, char** argv)
 {
   ros::init(argc, argv, "merged_clustering_euclidean");
 
-  Clustering clu;
+  //Clustering clu;
+  EuclideanClustering ec;
 
   while(ros::ok())
   {
-    clu.queueC2.callOne(ros::WallDuration(1));
+    ec.queueC2.callOne(ros::WallDuration(1));
 
-    if(clu.isInput())
+    if(ec.isInput())
     {
-      clu.euclideanClustering();
-      clu.coloring();
-      clu.ListAndCentroid();
-      clu.clusterPublisher2();
+      ec.euclideanClustering();
+      ec.coloring();
+      ec.ListAndCentroid();
+      ec.clusterPublisher2();
     }
     else
     {
       std::cout << "not input" << '\n';
     }
-    clu.resetFlag();
+    ec.resetFlag();
   }
 
   return 0;
