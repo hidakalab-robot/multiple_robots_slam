@@ -13,21 +13,21 @@ class EuclideanClustering
 {
 private:
 
-  ros::NodeHandle sC1;
-  ros::NodeHandle pC1;
-  ros::Subscriber subC1;
-  ros::Publisher pubC1;
+  ros::NodeHandle sC;
+  ros::NodeHandle pC;
+  ros::Subscriber subC;
+  ros::Publisher pubC;
 
-  ros::NodeHandle sC2;
-  ros::NodeHandle pC2;
-  ros::Subscriber subC2;
-  ros::Publisher pubC2;
+  //ros::NodeHandle sC2;
+  //ros::NodeHandle pC2;
+  //ros::Subscriber subC2;
+  //ros::Publisher pubC2;
 
-  ros::NodeHandle sR1;
-  ros::Subscriber subR1;
+  ros::NodeHandle sR;
+  ros::Subscriber subR;
 
-  ros::NodeHandle sR2;
-  ros::Subscriber subR2;
+  //ros::NodeHandle sR2;
+  //ros::Subscriber subR2;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr inputCloud;
 
@@ -45,13 +45,14 @@ private:
 
 public:
 
-  ros::CallbackQueue queueC1;
-  ros::CallbackQueue queueC2;
+  ros::CallbackQueue queueC;
+  //ros::CallbackQueue queueC2;
 
-  ros::CallbackQueue queueR1;
-  ros::CallbackQueue queueR2;
+  ros::CallbackQueue queueR;
+  //ros::CallbackQueue queueR2;
 
-  EuclideanClustering();
+  EuclideanClustering(int nodeType);//nodeType 0:source, 1:merged
+  //EuclideanClustering();
 	~EuclideanClustering(){};
 
   void inputCombine(const map_merging::TowMap::ConstPtr& sCMsg);
@@ -60,30 +61,32 @@ public:
   void euclideanClustering(void);
   void coloring(void);
   void ListAndCentroid(void);
-  void clusterPublisher1(void);
-  void clusterPublisher2(void);
+  void clusterPublisher(void);
+  //void clusterPublisher2(void);
 
   void ReceiveCheck(const std_msgs::Empty::ConstPtr& msg);
   bool isInputR(void);
 };
 
-EuclideanClustering::EuclideanClustering()
+EuclideanClustering::EuclideanClustering(int nodeType)
 :inputCloud(new pcl::PointCloud<pcl::PointXYZRGB>),
 tree(new pcl::search::KdTree<pcl::PointXYZRGB>)
 {
-  sC1.setCallbackQueue(&queueC1);
-  subC1 = sC1.subscribe("/map_merging/combining/sCombining",1,&EuclideanClustering::inputCombine,this);
-  pubC1 = pC1.advertise<map_merging::Cluster>("/map_merging/clustering/sClustering", 1);
+  sC.setCallbackQueue(&queueC);
+  sR.setCallbackQueue(&queueR);
 
-  sC2.setCallbackQueue(&queueC2);
-  subC2 = sC2.subscribe("/map_merging/combining/mCombining",1,&EuclideanClustering::inputCombine,this);
-  pubC2 = pC2.advertise<map_merging::Cluster>("/map_merging/clustering/mClustering", 1);
-
-  sR1.setCallbackQueue(&queueR1);
-  subR1 = sR1.subscribe("/map_merging/clustering/sReceiveCheck",1,&EuclideanClustering::ReceiveCheck,this);
-
-  sR2.setCallbackQueue(&queueR2);
-  subR2 = sR2.subscribe("/map_merging/clustering/mReceiveCheck",1,&EuclideanClustering::ReceiveCheck,this);
+  if(nodeType == 0)
+  {
+    subC = sC.subscribe("/map_merging/combining/sCombining",1,&EuclideanClustering::inputCombine,this);
+    pubC = pC.advertise<map_merging::Cluster>("/map_merging/clustering/sClustering", 1);
+    subR = sR.subscribe("/map_merging/clustering/sReceiveCheck",1,&EuclideanClustering::ReceiveCheck,this);
+  }
+  else if(nodeType == 1)
+  {
+    subC = sC.subscribe("/map_merging/combining/mCombining",1,&EuclideanClustering::inputCombine,this);
+    pubC = pC.advertise<map_merging::Cluster>("/map_merging/clustering/mClustering", 1);
+    subR = sR.subscribe("/map_merging/clustering/mReceiveCheck",1,&EuclideanClustering::ReceiveCheck,this);
+  }
 
   input = false;
   inputR = false;
@@ -195,12 +198,12 @@ void EuclideanClustering::ListAndCentroid(void)
 	clu.centroids = cluCentroids;
 }
 
-void EuclideanClustering::clusterPublisher1(void)
+void EuclideanClustering::clusterPublisher(void)
 {
   clu.header.stamp = ros::Time::now();
   while(ros::ok())
   {
-    queueR1.callOne(ros::WallDuration(1));
+    queueR.callOne(ros::WallDuration(1));
     if(isInputR())
     {
       std::cout << "received" << '\n';
@@ -208,12 +211,12 @@ void EuclideanClustering::clusterPublisher1(void)
     }
     else
     {
-      pubC1.publish(clu);
+      pubC.publish(clu);
       std::cout << "published" << '\n';
     }
   }
 }
-
+/*
 void EuclideanClustering::clusterPublisher2(void)
 {
   clu.header.stamp = ros::Time::now();
@@ -232,7 +235,7 @@ void EuclideanClustering::clusterPublisher2(void)
     }
   }
 }
-
+*/
 void EuclideanClustering::ReceiveCheck(const std_msgs::Empty::ConstPtr& msg)
 {
   inputR = true;

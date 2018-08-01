@@ -185,7 +185,7 @@ void FinalMatching::echoMatch(int type)
   matchLine.pose.orientation.w = 1.0;
   matchLine.scale.x = 0.1;
   matchLine.color.a = 1.0;
-  matchLine.lifetime = ros::Duration(3);
+  matchLine.lifetime = ros::Duration(0);
 
   /*表示するマッチングの種類によっての設定*/
   map_merging::Match input;
@@ -264,7 +264,17 @@ void FinalMatching::finalMatchProcess(void)
   std::vector<map_merging::PairNumber> finalPairList;
   map_merging::PairNumber pair;
 
+  for(int i=0;i<inputEigen.matchList.size();i++)
+  {
+    std::cout << "固有値の方のsource重心表示 << " << inputEigen.matchList[i].sourceCentroid.x << "," << inputEigen.matchList[i].sourceCentroid.y << "," << inputEigen.matchList[i].sourceCentroid.z << '\n';
+    std::cout << "固有値の方のmerged重心表示 << " << inputEigen.matchList[i].mergedCentroid.x << "," << inputEigen.matchList[i].mergedCentroid.y << "," << inputEigen.matchList[i].mergedCentroid.z << '\n';
+  }
 
+  for(int i=0;i<inputShot.matchList.size();i++)
+  {
+    std::cout << "SHOTの方のsource重心表示 << " << inputShot.matchList[i].sourceCentroid.x << "," << inputShot.matchList[i].sourceCentroid.y << "," << inputShot.matchList[i].sourceCentroid.z << '\n';
+    std::cout << "SHOTの方のmerged重心表示 << " << inputShot.matchList[i].mergedCentroid.x << "," << inputShot.matchList[i].mergedCentroid.y << "," << inputShot.matchList[i].mergedCentroid.z << '\n';
+  }
 
   //finalMatch.matchList =
 }

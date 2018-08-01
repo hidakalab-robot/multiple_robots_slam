@@ -9,15 +9,15 @@
 class FeatureExtracting
 {
 private:
-  ros::NodeHandle sC1;
-  ros::NodeHandle pF1;
-  ros::Subscriber subC1;
-  ros::Publisher pubF1;
+  ros::NodeHandle sC;
+  ros::NodeHandle pF;
+  ros::Subscriber subC;
+  ros::Publisher pubF;
 
-  ros::NodeHandle sC2;
-  ros::NodeHandle pF2;
-  ros::Subscriber subC2;
-  ros::Publisher pubF2;
+//  ros::NodeHandle sC2;
+//  ros::NodeHandle pF2;
+  //ros::Subscriber subC2;
+  //ros::Publisher pubF2;
 
   map_merging::FeatureExtraction feaExt;
 
@@ -26,31 +26,35 @@ private:
   bool input;
 
 public:
-  ros::CallbackQueue queueC1;
-  ros::CallbackQueue queueC2;
+  ros::CallbackQueue queueC;
+  //ros::CallbackQueue queueC2;
 
-  FeatureExtracting();
+  FeatureExtracting(int nodeType);//nodeType 0:source, 1:merged
 	~FeatureExtracting(){};
 
   void inputCluster(const map_merging::Cluster::ConstPtr& sCMsg);
   bool isInput(void);
   void resetFlag(void);
   void featureExtraction(void);
-  void featurePublisher1(void);
-  void featurePublisher2(void);
+  void featurePublisher(void);
+  //void featurePublisher2(void);
 };
 
-FeatureExtracting::FeatureExtracting()
+FeatureExtracting::FeatureExtracting(int nodeType)
 :inputCloud(new pcl::PointCloud<pcl::PointXYZRGB>)
 {
-  sC1.setCallbackQueue(&queueC1);
-  subC1 = sC1.subscribe("/map_merging/clustering/sClustering",1,&FeatureExtracting::inputCluster,this);
-  pubF1 = pF1.advertise<map_merging::FeatureExtraction>("/map_merging/feature/sFeature", 1);
+  sC.setCallbackQueue(&queueC);
 
-  sC2.setCallbackQueue(&queueC2);
-  subC2 = sC2.subscribe("/map_merging/clustering/mClustering",1,&FeatureExtracting::inputCluster,this);
-  pubF2 = pF2.advertise<map_merging::FeatureExtraction>("/map_merging/feature/mFeature", 1);
-
+  if(nodeType == 0)
+  {
+    subC = sC.subscribe("/map_merging/clustering/sClustering",1,&FeatureExtracting::inputCluster,this);
+    pubF = pF.advertise<map_merging::FeatureExtraction>("/map_merging/feature/sFeature", 1);
+  }
+  else if(nodeType == 1)
+  {
+    subC = sC.subscribe("/map_merging/clustering/mClustering",1,&FeatureExtracting::inputCluster,this);
+    pubF = pF.advertise<map_merging::FeatureExtraction>("/map_merging/feature/mFeature", 1);
+  }
 
   input = false;
 }
@@ -194,16 +198,17 @@ void FeatureExtracting::featureExtraction(void)
 
 }
 
-void FeatureExtracting::featurePublisher1(void)
+void FeatureExtracting::featurePublisher(void)
 {
   feaExt.extHeader.stamp = ros::Time::now();
-  pubF1.publish(feaExt);
+  pubF.publish(feaExt);
   std::cout << "published" << '\n';
 }
-
+/*
 void FeatureExtracting::featurePublisher2(void)
 {
   feaExt.extHeader.stamp = ros::Time::now();
   pubF2.publish(feaExt);
   std::cout << "published" << '\n';
 }
+*/

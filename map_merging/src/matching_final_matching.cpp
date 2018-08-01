@@ -16,7 +16,7 @@ int main (int argc, char** argv)
       if(fm.isSameCluster())//読み込んだマッチング結果が同じ時刻の点群についてやったものか確認
       {
         fm.receiveReport();
-        //fm.finalMatchProcess();
+        fm.finalMatchProcess();
         fm.echoClouds();
         fm.echoMatch(0);
         fm.echoMatch(1);

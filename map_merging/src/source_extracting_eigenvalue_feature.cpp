@@ -4,16 +4,16 @@ int main (int argc, char** argv)
 {
   ros::init(argc, argv, "source_extracting_eigenvalue_feature");
 
-  FeatureExtracting fea;
+  FeatureExtracting fea(0);//nodeType 0:source, 1:merged
 
   while(ros::ok())
   {
-    fea.queueC1.callOne(ros::WallDuration(1));
+    fea.queueC.callOne(ros::WallDuration(1));
 
     if(fea.isInput())
     {
       fea.featureExtraction();
-      fea.featurePublisher1();
+      fea.featurePublisher();
     }
     else
     {

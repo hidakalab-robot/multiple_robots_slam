@@ -5,18 +5,18 @@ int main (int argc, char** argv)
   ros::init(argc, argv, "source_clustering_euclidean");
 
   //Clustering clu;
-  EuclideanClustering ec;
+  EuclideanClustering ec(0);//nodeType 0:source, 1:merged
 
   while(ros::ok())
   {
-    ec.queueC1.callOne(ros::WallDuration(1));
+    ec.queueC.callOne(ros::WallDuration(1));
 
     if(ec.isInput())
     {
       ec.euclideanClustering();
       ec.coloring();
       ec.ListAndCentroid();
-      ec.clusterPublisher1();
+      ec.clusterPublisher();
     }
     else
     {
