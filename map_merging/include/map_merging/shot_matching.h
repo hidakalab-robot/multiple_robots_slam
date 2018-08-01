@@ -239,7 +239,7 @@ void ShotMatching::cluster2Scene(void)
 {
   /*リストにあるクラスタごとにシーン全体とSHOTマッチング*/
   /*sCloudとmCloudに入ってる*/
-  *scene = *mCloud;//シーンがsCloudにある
+  *scene = *mCloud;//シーンがmCloudにある
   //*modelにマッチングするcloudを入れる(sCloudの中から)
   //クラスタの数//sCluster.clusterList.size()
 
@@ -384,17 +384,47 @@ void ShotMatching::setOutputData(std::vector<map_merging::PairNumber> &list ,int
 {
   map_merging::PairNumber pair;
 
+  pair.sourceNumber = clusterNum;
+
   geometry_msgs::Point centroid;
 
   centroid = sCluster.centroids[clusterNum];
-
   pair.sourceCentroid = centroid;
+
 
   centroid.x = translation(0);
   centroid.y = translation(1);
   centroid.z = translation(2);
 
   pair.mergedCentroid = centroid;
+
+  /*マッチングした重心と、マージドのクラスタの重心の間で一番小さいやつをマッチングしたマージドの番号にする*/
+  /*重いか？？？？？*/
+  /*どれくらい合ってるのか不明*/
+
+  float min = 100000000;
+  int minI;
+  float diff;
+  float dX;
+  float dY;
+  float dZ;
+
+  for(int i=0;i<mCluster.centroids.size();i++)
+  {
+    dX = centroid.x - mCluster.centroids[i].x;
+    dY = centroid.y - mCluster.centroids[i].y;
+    dZ = centroid.z - mCluster.centroids[i].z;
+
+    diff = dX*dX + dY*dY + dZ*dZ;
+
+    if(diff < min)
+    {
+      min = diff;
+      minI = i;
+    }
+  }
+
+  pair.mergedNumber = minI;
 
   std::vector<float> rot;
   for(int i=0;i<3;i++)

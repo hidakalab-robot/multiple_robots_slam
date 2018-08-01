@@ -258,22 +258,42 @@ void FinalMatching::finalMatchProcess(void)
   /*処理結果を新たなMatch型の変数に格納 finalMatch*/
   /*
   両方にマッチングがあり、andしても無くならなければand
-  両方にマッチングがあるが、andするとなくなる場合orで信頼度が高い方？？？
+  両方にマッチングがあるが、andするとなくなる場合orで信頼度が高い方、もしくは、できる場合は誤マッチング除去の処理
   片方にしか無ければ、それを採用(するしかない)
+
+  両方の同じソースから別のマージドへのマッチングがあった場合、誤マッチング除去の処理を使う
+  両方の同じマージドへ別のソースがあった場合、同様
+
+  一致の判断、ソースはナンバーがあるからできるけど、マージドはナンバーがないので重心間の距離がしきい値以下
+  //もしくは、マージド側の重心と一番近いクラスタをの番号として設定(一応受信データには入ってる)
+
   */
+
   std::vector<map_merging::PairNumber> finalPairList;
   map_merging::PairNumber pair;
+
+  /*両方にマッチングがあるか確認*/
+
+  /*ソース、もしくはマージドが被っていないか確認*/
+
+  /*被っていた奴に関しては両方被っているかどうか確認*/
+
+  /*両方かぶっていた場合、それを採用*/
+
+
 
   for(int i=0;i<inputEigen.matchList.size();i++)
   {
     std::cout << "固有値の方のsource重心表示 << " << inputEigen.matchList[i].sourceCentroid.x << "," << inputEigen.matchList[i].sourceCentroid.y << "," << inputEigen.matchList[i].sourceCentroid.z << '\n';
     std::cout << "固有値の方のmerged重心表示 << " << inputEigen.matchList[i].mergedCentroid.x << "," << inputEigen.matchList[i].mergedCentroid.y << "," << inputEigen.matchList[i].mergedCentroid.z << '\n';
+    std::cout << "クラスタ番号 << ( " << inputEigen.matchList[i].sourceNumber << "," << inputEigen.matchList[i].mergedNumber << " )"  << '\n';
   }
 
   for(int i=0;i<inputShot.matchList.size();i++)
   {
     std::cout << "SHOTの方のsource重心表示 << " << inputShot.matchList[i].sourceCentroid.x << "," << inputShot.matchList[i].sourceCentroid.y << "," << inputShot.matchList[i].sourceCentroid.z << '\n';
     std::cout << "SHOTの方のmerged重心表示 << " << inputShot.matchList[i].mergedCentroid.x << "," << inputShot.matchList[i].mergedCentroid.y << "," << inputShot.matchList[i].mergedCentroid.z << '\n';
+    std::cout << "クラスタ番号 << ( " << inputShot.matchList[i].sourceNumber << "," << inputShot.matchList[i].mergedNumber << " )"  << '\n';
   }
 
   //finalMatch.matchList =

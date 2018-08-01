@@ -17,11 +17,11 @@ int main (int argc, char** argv)
       {
         fm.receiveReport();
         fm.finalMatchProcess();
+        //fm.finalMatchPublisher();
         fm.echoClouds();
         fm.echoMatch(0);
         fm.echoMatch(1);
         //fm.echoMatch(2);
-        //fm.finalMatchPublisher();
       }
     }
     else
