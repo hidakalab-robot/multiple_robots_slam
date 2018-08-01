@@ -3,6 +3,7 @@
 #include <ros/callback_queue.h>
 
 #include <map_merging/Match.h>
+#include <map_merging/PairNumber.h>
 
 #include <visualization_msgs/MarkerArray.h>
 
@@ -189,7 +190,8 @@ void FinalMatching::echoMatch(int type)
   /*表示するマッチングの種類によっての設定*/
   map_merging::Match input;
 
-  switch (type) {
+  switch (type)
+  {
     case 0:
       input = inputEigen;
       matchLine.ns = "EigenValue";
@@ -253,12 +255,27 @@ void FinalMatching::finalMatchProcess(void)
 {
   /*全てのマッチング結果を考慮した何らかの処理*/
   /*例えば or や and などの処理*/
-  /*処理結果を新たなMatch型の変数に格納*/
+  /*処理結果を新たなMatch型の変数に格納 finalMatch*/
+  /*
+  両方にマッチングがあり、andしても無くならなければand
+  両方にマッチングがあるが、andするとなくなる場合orで信頼度が高い方？？？
+  片方にしか無ければ、それを採用(するしかない)
+  */
+  std::vector<map_merging::PairNumber> finalPairList;
+  map_merging::PairNumber pair;
+
+
+
+  //finalMatch.matchList =
 }
 
 void FinalMatching::finalMatchPublisher(void)
 {
   finalMatch.header.stamp = ros::Time::now();
+  finalMatch.matchType = 2;
+  finalMatch.sourceMap = inputEigen.sourceMap;
+  finalMatch.mergedMap = inputEigen.mergedMap;
+
   pubM.publish(finalMatch);
   std::cout << "published" << '\n';
 }

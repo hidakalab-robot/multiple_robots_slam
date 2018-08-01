@@ -209,31 +209,41 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(source_combining_rtabmap src/source_combining_rtabmap.cpp)
+add_dependencies(source_combining_rtabmap ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(source_combining_rtabmap ${catkin_LIBRARIES})
 
 add_executable(source_clustering_euclidean src/source_clustering_euclidean.cpp)
+add_dependencies(source_clustering_euclidean ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(source_clustering_euclidean ${catkin_LIBRARIES})
 
 add_executable(source_extracting_eigenvalue_feature src/source_extracting_eigenvalue_feature.cpp)
+add_dependencies(source_extracting_eigenvalue_feature ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(source_extracting_eigenvalue_feature ${catkin_LIBRARIES})
 
 add_executable(matching_eigenvalue_feature src/matching_eigenvalue_feature.cpp)
+add_dependencies(matching_eigenvalue_feature ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(matching_eigenvalue_feature ${catkin_LIBRARIES})
 
 add_executable(matching_shot_feature src/matching_shot_feature.cpp)
+add_dependencies(matching_shot_feature ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(matching_shot_feature ${catkin_LIBRARIES})
 
 add_executable(merged_clustering_euclidean src/merged_clustering_euclidean.cpp)
+add_dependencies(merged_clustering_euclidean ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(merged_clustering_euclidean ${catkin_LIBRARIES})
 
 add_executable(merged_extracting_eigenvalue_feature src/merged_extracting_eigenvalue_feature.cpp)
+add_dependencies(merged_extracting_eigenvalue_feature ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(merged_extracting_eigenvalue_feature ${catkin_LIBRARIES})
 
 add_executable(merged_managing_map src/merged_managing_map.cpp)
+add_dependencies(merged_managing_map ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(merged_managing_map ${catkin_LIBRARIES})
 
 add_executable(merging_map_merging src/merging_map_merging.cpp)
+add_dependencies(merging_map_merging ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(merging_map_merging ${catkin_LIBRARIES})
 
 add_executable(matching_final_matching src/matching_final_matching.cpp)
+add_dependencies(matching_final_matching ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(matching_final_matching ${catkin_LIBRARIES})

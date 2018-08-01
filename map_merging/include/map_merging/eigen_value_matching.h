@@ -408,12 +408,11 @@ void EigenValueMatching::testMatch(void)
     }
     //ここから上で決めた初期のマッチングポイントを基準として制約をつけたやつをする
 
-
 }
 
 void EigenValueMatching::emPublisher(void)
 {
-  eMatch.matchType.data = 0;
+  eMatch.matchType = 0;
   eMatch.header.stamp = ros::Time::now();
   pubEigenMatch.publish(eMatch);
   std::cout << "published" << '\n';
