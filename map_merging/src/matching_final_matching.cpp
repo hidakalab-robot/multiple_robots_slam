@@ -10,8 +10,9 @@ int main (int argc, char** argv)
   {
     fm.queueE.callOne(ros::WallDuration(1));
     fm.queueS.callOne(ros::WallDuration(1));
+    fm.queueN.callOne(ros::WallDuration(1));
 
-    if(fm.isInputE() && fm.isInputS())
+    if(fm.isInputE() && fm.isInputS() && fm.isInputN())
     {
       if(fm.isSameCluster())//読み込んだマッチング結果が同じ時刻の点群についてやったものか確認
       {
@@ -22,6 +23,7 @@ int main (int argc, char** argv)
         fm.echoMatch(0);
         fm.echoMatch(1);
         //fm.echoMatch(2);
+        fm.echoMatch(3);
       }
     }
     else

@@ -14,6 +14,7 @@ int main (int argc, char** argv)
     if(evm.isInputS() && evm.isInputM())
     {
       evm.calcMatch();
+      evm.missMatchDetection();
       if(evm.isMatch())
       {
         evm.emPublisher();

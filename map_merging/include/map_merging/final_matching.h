@@ -22,6 +22,8 @@ private:
   ros::NodeHandle sS;
   ros::Subscriber subS;
 
+  ros::NodeHandle sN;
+  ros::Subscriber subN;
 
   ros::NodeHandle pM;
   ros::Publisher pubM;
@@ -43,6 +45,7 @@ private:
 
   bool inputE;
   bool inputS;
+  bool inputN;
 
   //float shiftPos;
   float SHIFT_POS;
@@ -50,6 +53,7 @@ private:
 
   map_merging::Match inputEigen;
   map_merging::Match inputShot;
+  map_merging::Match inputNoMissEigen;
 
   map_merging::Match finalMatch;
 
@@ -57,14 +61,17 @@ public:
 
   ros::CallbackQueue queueE;
   ros::CallbackQueue queueS;
+  ros::CallbackQueue queueN;
 
   FinalMatching();
   ~FinalMatching(){};
 
   void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
   void inputShotMatch(const map_merging::Match::ConstPtr& sSMsg);
+  void inputNoMissEigenMatch(const map_merging::Match::ConstPtr& sNMsg);
   bool isInputE(void);
   bool isInputS(void);
+  bool isInputN(void);
   void resetFlag(void);
   bool isSameCluster(void);
   void echoMatch(int type);
@@ -82,6 +89,8 @@ FinalMatching::FinalMatching()
   sS.setCallbackQueue(&queueS);
   subS = sS.subscribe("/map_merging/matching/shotMatching",1,&FinalMatching::inputShotMatch,this);
 
+  sN.setCallbackQueue(&queueN);
+  subN = sN.subscribe("/map_merging/matching/eigenValueMatchingNoMiss",1,&FinalMatching::inputNoMissEigenMatch,this);
 
   pubM = pM.advertise<map_merging::Match>("/map_merging/matching/finalMatching", 1);
 
@@ -113,6 +122,13 @@ void FinalMatching::inputShotMatch(const map_merging::Match::ConstPtr& sSMsg)
   std::cout << "input SHOT" << '\n';
 }
 
+void FinalMatching::inputNoMissEigenMatch(const map_merging::Match::ConstPtr& sNMsg)
+{
+  inputNoMissEigen = *sNMsg;
+  inputN = true;
+  std::cout << "input NoMiss" << '\n';
+}
+
 bool FinalMatching::isInputE(void)
 {
   return inputE;
@@ -123,10 +139,16 @@ bool FinalMatching::isInputS(void)
   return inputS;
 }
 
+bool FinalMatching::isInputN(void)
+{
+  return inputN;
+}
+
 void FinalMatching::resetFlag(void)
 {
   inputE = false;
   inputS = false;
+  inputN = false;
 }
 
 bool FinalMatching::isSameCluster(void)
@@ -212,6 +234,13 @@ void FinalMatching::echoMatch(int type)
       matchLine.color.r = 0.0f;
       matchLine.color.g = 0.0f;
       matchLine.color.b = 1.0f;
+      break;
+    case 3:
+      input = inputNoMissEigen;
+      matchLine.ns = "NoMissEigen";
+      matchLine.color.r = 1.0f;
+      matchLine.color.g = 1.0f;
+      matchLine.color.b = 0.0f;
       break;
     default:
       std::cout << "echoMatch arg error : " << type << '\n';
