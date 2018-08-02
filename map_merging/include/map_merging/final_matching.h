@@ -21,10 +21,10 @@ private:
 
   ros::NodeHandle sS;
   ros::Subscriber subS;
-
+/*
   ros::NodeHandle sN;
   ros::Subscriber subN;
-
+*/
   ros::NodeHandle pM;
   ros::Publisher pubM;
 
@@ -45,7 +45,7 @@ private:
 
   bool inputE;
   bool inputS;
-  bool inputN;
+  //bool inputN;
 
   //float shiftPos;
   float SHIFT_POS;
@@ -53,7 +53,7 @@ private:
 
   map_merging::Match inputEigen;
   map_merging::Match inputShot;
-  map_merging::Match inputNoMissEigen;
+  //map_merging::Match inputNoMissEigen;
 
   map_merging::Match finalMatch;
 
@@ -61,17 +61,17 @@ public:
 
   ros::CallbackQueue queueE;
   ros::CallbackQueue queueS;
-  ros::CallbackQueue queueN;
+  //ros::CallbackQueue queueN;
 
   FinalMatching();
   ~FinalMatching(){};
 
   void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
   void inputShotMatch(const map_merging::Match::ConstPtr& sSMsg);
-  void inputNoMissEigenMatch(const map_merging::Match::ConstPtr& sNMsg);
+  //void inputNoMissEigenMatch(const map_merging::Match::ConstPtr& sNMsg);
   bool isInputE(void);
   bool isInputS(void);
-  bool isInputN(void);
+  //bool isInputN(void);
   void resetFlag(void);
   bool isSameCluster(void);
   void echoMatch(int type);
@@ -79,6 +79,7 @@ public:
   void finalMatchProcess(void);
   void finalMatchPublisher(void);
   void receiveReport(void);
+  void missMatchDetection(std::vector<map_merging::PairNumber> &finalPairList);
 };
 
 FinalMatching::FinalMatching()
@@ -89,8 +90,8 @@ FinalMatching::FinalMatching()
   sS.setCallbackQueue(&queueS);
   subS = sS.subscribe("/map_merging/matching/shotMatching",1,&FinalMatching::inputShotMatch,this);
 
-  sN.setCallbackQueue(&queueN);
-  subN = sN.subscribe("/map_merging/matching/eigenValueMatchingNoMiss",1,&FinalMatching::inputNoMissEigenMatch,this);
+  //sN.setCallbackQueue(&queueN);
+  //subN = sN.subscribe("/map_merging/matching/eigenValueMatchingNoMiss",1,&FinalMatching::inputNoMissEigenMatch,this);
 
   pubM = pM.advertise<map_merging::Match>("/map_merging/matching/finalMatching", 1);
 
@@ -121,14 +122,14 @@ void FinalMatching::inputShotMatch(const map_merging::Match::ConstPtr& sSMsg)
   inputS = true;
   std::cout << "input SHOT" << '\n';
 }
-
+/*
 void FinalMatching::inputNoMissEigenMatch(const map_merging::Match::ConstPtr& sNMsg)
 {
   inputNoMissEigen = *sNMsg;
   inputN = true;
   std::cout << "input NoMiss" << '\n';
 }
-
+*/
 bool FinalMatching::isInputE(void)
 {
   return inputE;
@@ -138,17 +139,17 @@ bool FinalMatching::isInputS(void)
 {
   return inputS;
 }
-
+/*
 bool FinalMatching::isInputN(void)
 {
   return inputN;
 }
-
+*/
 void FinalMatching::resetFlag(void)
 {
   inputE = false;
   inputS = false;
-  inputN = false;
+  //inputN = false;
 }
 
 bool FinalMatching::isSameCluster(void)
@@ -235,13 +236,13 @@ void FinalMatching::echoMatch(int type)
       matchLine.color.g = 0.0f;
       matchLine.color.b = 1.0f;
       break;
-    case 3:
+    /*case 3:
       input = inputNoMissEigen;
       matchLine.ns = "NoMissEigen";
       matchLine.color.r = 1.0f;
       matchLine.color.g = 1.0f;
       matchLine.color.b = 0.0f;
-      break;
+      break;*/
     default:
       std::cout << "echoMatch arg error : " << type << '\n';
       return;
@@ -299,33 +300,288 @@ void FinalMatching::finalMatchProcess(void)
   */
 
   std::vector<map_merging::PairNumber> finalPairList;
-  map_merging::PairNumber pair;
+  //map_merging::PairNumber pair;
+
+  bool flagAnd = false;
 
   /*両方にマッチングがあるか確認*/
+  if((inputEigen.matchList.size() > 0) && (inputShot.matchList.size() > 0))
+  {
+    /*ソース、マージドが被っていないか確認*/
+    std::cout << "pointX" << '\n';
+    for(int i=0;i<inputEigen.matchList.size();i++)
+    {
+      std::cout << "pointX-1" << '\n';
+      for(int j=0;j<inputShot.matchList.size();j++)
+      {
+        std::cout << "pointX-2" << '\n';
+        if((inputEigen.matchList[i].sourceNumber == inputShot.matchList[j].sourceNumber) && (inputEigen.matchList[i].mergedNumber == inputShot.matchList[j].mergedNumber))
+        {
+          std::cout << "pointX-3" << '\n';
+          finalPairList.push_back(inputShot.matchList[j]);
+          flagAnd = true;
+        }
+      }
+    }
+  }
+  else if(inputEigen.matchList.size() > 0)
+  {
+    /*EigenMatchしかない場合*/
+    std::cout << "pointY" << '\n';
+    finalMatch = inputEigen;
+    return;
+  }
+  else
+  {
+    /*ShotMatchしかない場合*/
+    std::cout << "pointZ" << '\n';
+    finalMatch = inputShot;
+    return;
+  }
 
-  /*ソース、もしくはマージドが被っていないか確認*/
+  /*全部のやつを合わせた誤マッチングの検出のやつ*/
+  if(!flagAnd)
+  {
+    std::cout << "pointW" << '\n';
+    missMatchDetection(finalPairList);
+  }
+
+  finalMatch.matchList = finalPairList;
+
 
   /*被っていた奴に関しては両方被っているかどうか確認*/
 
   /*両方かぶっていた場合、それを採用*/
 
 
-
+/*
   for(int i=0;i<inputEigen.matchList.size();i++)
   {
     std::cout << "固有値の方のsource重心表示 << " << inputEigen.matchList[i].sourceCentroid.x << "," << inputEigen.matchList[i].sourceCentroid.y << "," << inputEigen.matchList[i].sourceCentroid.z << '\n';
     std::cout << "固有値の方のmerged重心表示 << " << inputEigen.matchList[i].mergedCentroid.x << "," << inputEigen.matchList[i].mergedCentroid.y << "," << inputEigen.matchList[i].mergedCentroid.z << '\n';
-    std::cout << "クラスタ番号 << ( " << inputEigen.matchList[i].sourceNumber << "," << inputEigen.matchList[i].mergedNumber << " )"  << '\n';
+    std::cout << "クラスタ番号 << ( " << inputEigen.matchList[i].sourceNumber << "," << inputEigen.matchList[i].mergedNumber << " )" << '\n'  << '\n';
   }
-
+  */
+/*
+  for(int i=0;i<inputNoMissEigen.matchList.size();i++)
+  {
+    std::cout << "真固有値の方のsource重心表示 << " << inputNoMissEigen.matchList[i].sourceCentroid.x << "," << inputNoMissEigen.matchList[i].sourceCentroid.y << "," << inputNoMissEigen.matchList[i].sourceCentroid.z << '\n';
+    std::cout << "真固有値の方のmerged重心表示 << " << inputNoMissEigen.matchList[i].mergedCentroid.x << "," << inputNoMissEigen.matchList[i].mergedCentroid.y << "," << inputNoMissEigen.matchList[i].mergedCentroid.z << '\n';
+    std::cout << "クラスタ番号 << ( " << inputNoMissEigen.matchList[i].sourceNumber << "," << inputNoMissEigen.matchList[i].mergedNumber << " )" << '\n' << '\n';
+  }
+*/
+/*
   for(int i=0;i<inputShot.matchList.size();i++)
   {
     std::cout << "SHOTの方のsource重心表示 << " << inputShot.matchList[i].sourceCentroid.x << "," << inputShot.matchList[i].sourceCentroid.y << "," << inputShot.matchList[i].sourceCentroid.z << '\n';
     std::cout << "SHOTの方のmerged重心表示 << " << inputShot.matchList[i].mergedCentroid.x << "," << inputShot.matchList[i].mergedCentroid.y << "," << inputShot.matchList[i].mergedCentroid.z << '\n';
-    std::cout << "クラスタ番号 << ( " << inputShot.matchList[i].sourceNumber << "," << inputShot.matchList[i].mergedNumber << " )"  << '\n';
+    std::cout << "クラスタ番号 << ( " << inputShot.matchList[i].sourceNumber << "," << inputShot.matchList[i].mergedNumber << " )" << '\n' << '\n';
+  }
+*/
+
+}
+
+void FinalMatching::missMatchDetection(std::vector<map_merging::PairNumber> &finalPairList)
+{
+  /*calcMatchで初めのマッチングをした後に、それのミスマッチを探す*/
+
+  /*マッチリスト中の各重心間ベクトル(全て)を計算*/
+  std::vector<Eigen::Vector3f> sourceVectors;//ソース地図中のベクトルを格納
+  Eigen::Vector3f sVector;//計算用
+  std::vector<Eigen::Vector3f> mergedVectors;//マージ地図中のベクトルを格納
+  Eigen::Vector3f mVector;//計算用
+  //std::vector<Eigen::Vector3f> diffVectors;//ソース中とマージド中のベクトルの差を格納
+  std::vector<float> diffVectors;//ソース中とマージド中のベクトルの差を格納
+  Eigen::Vector3f dVector;//計算用
+
+  std::vector<Eigen::Vector2i> pairNumbers;//ベクトルを計算するときに使ったマッチングペアの番号
+  Eigen::Vector2i pNum;//計算用
+
+  map_merging::Match orMatch;
+
+  orMatch = inputEigen;
+  std::vector<map_merging::PairNumber> orList;
+  orList = inputEigen.matchList;
+  for(int i=0;i<inputShot.matchList.size();i++)
+  {
+    orList.push_back(inputShot.matchList[i]);
   }
 
-  //finalMatch.matchList =
+  orMatch.matchList = orList;
+
+  for(int i=0;i<orMatch.matchList.size();i++)
+  {
+    for(int j=i+1;j<orMatch.matchList.size();j++)
+    {
+      sVector << orMatch.matchList[i].sourceCentroid.x - orMatch.matchList[j].sourceCentroid.x, orMatch.matchList[i].sourceCentroid.y - orMatch.matchList[j].sourceCentroid.y, orMatch.matchList[i].sourceCentroid.z - orMatch.matchList[j].sourceCentroid.z;
+      mVector << orMatch.matchList[i].mergedCentroid.x - orMatch.matchList[j].mergedCentroid.x, orMatch.matchList[i].mergedCentroid.y - orMatch.matchList[j].mergedCentroid.y, orMatch.matchList[i].mergedCentroid.z - orMatch.matchList[j].mergedCentroid.z;
+
+      sourceVectors.push_back(sVector);
+      mergedVectors.push_back(mVector);
+
+      dVector = sVector - mVector;
+      diffVectors.push_back(dVector.norm());
+
+      pNum << i, j;
+      pairNumbers.push_back(pNum);
+    }
+  }
+  //ここまでで重心間ベクトルとベクトルの差を計算
+
+  /*ベクトルの差を見て正しそうかを検討//しきい値を使って判断*/
+
+  const float normThreshold = 0.3;
+
+  const int size = orMatch.matchList.size();
+
+  int matchEvaluation[size] = {};//マッチが正しいかどうかを記述しておく//1:合ってる -1:間違ってる 0:不明
+
+  for(int i=0;i<diffVectors.size();i++)
+  {
+    /*すでに判定が行われているマッチングについては処理を行わないようにする*/
+    std::cout << "diffVectors[" << i << "] << " << diffVectors[i] <<  '\n';
+    std::cout << "pairNumbers[" << i << "] << (" << pairNumbers[i][0] << "," << pairNumbers[i][1] << ")" << '\n';
+
+    if((matchEvaluation[pairNumbers[i][0]] != 0) && (matchEvaluation[pairNumbers[i][1]] != 0))
+    {
+      std::cout << "skip!!" << '\n';
+      continue;
+    }
+
+    if(diffVectors[i] > normThreshold)//差のノルムとしきい値を比較
+    {
+      /*i番の差を計算するのに使われているマッチングを使った別のマッチングを見る*/
+      /*pairNumbers[i][0]とpairNumbers[i][1]を見る*/
+      /*まず、matchEvaluationを見て、すでにどちらかの判定がでてないか見る*/
+      std::cout << "pointA" << '\n';
+      if((matchEvaluation[pairNumbers[i][0]] == 1) || (matchEvaluation[pairNumbers[i][1]] == 1))
+      {
+        /*片方に合ってる判定が出てればもう片方が間違っている*/
+        if(matchEvaluation[pairNumbers[i][0]] == 1)
+        {
+          matchEvaluation[pairNumbers[i][1]] = -1;
+          std::cout << "pointA-1" << '\n';
+        }
+        else
+        {
+          matchEvaluation[pairNumbers[i][0]] = -1;
+          std::cout << "pointA-2" << '\n';
+        }
+      }
+      else/*どちらにも合っている判定がないので周りのベクトルと比較*/
+      {
+        std::cout << "pointB" << '\n';
+        /*片方が間違っていることがわかってればもう片方について調べる*/
+        if(matchEvaluation[pairNumbers[i][0]] == -1)
+        {
+          //pairNumbers[i][1]について調べる//pairNumbers[i][1]を使った他のマッチングを見る
+          for(int j=0;j<diffVectors.size();j++)
+          {
+            if(i == j)
+            {
+              continue;
+            }
+            if((pairNumbers[j][0] == pairNumbers[i][1]) || (pairNumbers[j][1] == pairNumbers[i][1]))
+            {
+              /*pairNumbers[i][1]を使った他のマッチングが合ってるかどうか判断*/
+              if(diffVectors[j] <= normThreshold)
+              {
+                matchEvaluation[pairNumbers[i][1]] == 1;
+                std::cout << "pointB-1" << '\n';
+                break;
+              }
+            }
+          }
+        }
+        else if(matchEvaluation[pairNumbers[i][1]] == -1)
+        {
+          //pairNumbers[i][0]について調べる
+          std::cout << "pointC" << '\n';
+          for(int j=0;j<diffVectors.size();j++)
+          {
+            if(i == j)
+            {
+              continue;
+            }
+            if((pairNumbers[j][0] == pairNumbers[i][0]) || (pairNumbers[j][1] == pairNumbers[i][0]))
+            {
+              /*pairNumbers[i][1]を使った他のマッチングが合ってるかどうか判断*/
+              if(diffVectors[j] <= normThreshold)
+              {
+                matchEvaluation[pairNumbers[i][0]] == 1;
+                std::cout << "pointC-1" << '\n';
+                break;
+              }
+            }
+          }
+        }
+        else /*両方不明のとき*/
+        {
+          std::cout << "pointD" << '\n';
+          for(int j=0;j<diffVectors.size();j++)
+          {
+            if(i == j)
+            {
+              continue;
+            }
+            if((pairNumbers[j][0] == pairNumbers[i][1]) || (pairNumbers[j][1] == pairNumbers[i][1]))
+            {
+              /*pairNumbers[i][1]を使った他のマッチングが合ってるかどうか判断*/
+              if(diffVectors[j] <= normThreshold)
+              {
+                matchEvaluation[pairNumbers[i][1]] == 1;
+                std::cout << "pointD-1" << '\n';
+                break;
+              }
+            }
+          }
+          for(int j=0;j<diffVectors.size();j++)
+          {
+            if(i == j)
+            {
+              continue;
+            }
+            if((pairNumbers[j][0] == pairNumbers[i][0]) || (pairNumbers[j][1] == pairNumbers[i][0]))
+            {
+              /*pairNumbers[i][1]を使った他のマッチングが合ってるかどうか判断*/
+              if(diffVectors[j] <= normThreshold)
+              {
+                matchEvaluation[pairNumbers[i][0]] == 1;
+                std::cout << "pointD-2" << '\n';
+                break;
+              }
+            }
+          }
+        }
+      }
+    }
+    else//ベクトルの計算に使われたマッチングが合ってそうなので、そのように記述
+    {
+      /*pairNumbers[i][0]とpairNumbers[i][1]はどちらも合ってそう*/
+      std::cout << "pointE" << '\n';
+      matchEvaluation[pairNumbers[i][0]] = 1;
+      matchEvaluation[pairNumbers[i][1]] = 1;
+    }
+  }
+
+  /*ここまでで、matchEvaluationに合ってそうなマッチングの番号が入ったのでそれを使ってリストを作成*/
+  //std::vector<map_merging::PairNumber> noMissMatchList;//正しいと判定された物のみ格納
+
+  for(int i=0;i<orMatch.matchList.size();i++)
+  {
+    std::cout << "matchEvaluation[" << i << "] << " << matchEvaluation[i] << '\n';
+    if(matchEvaluation[i] == 1)
+    {
+      finalPairList.push_back(orMatch.matchList[i]);
+    }
+  }
+
+  /*これで正しいマッチング結果のみが入ったリストができたはず*/
+  //orMatchNoMiss = orMatch;
+  //orMatchNoMiss.matchList = noMissMatchList;
+
+  //orMatch.matchList = noMissMatchList;
+
 }
 
 void FinalMatching::finalMatchPublisher(void)

@@ -13,20 +13,20 @@ private:
   ros::NodeHandle sM;
 
   ros::NodeHandle pE;
-  ros::NodeHandle pEN;
+  //ros::NodeHandle pEN;
 
   ros::Subscriber subS;
 	ros::Subscriber subM;
 
   ros::Publisher pubEigenMatch;
-  ros::Publisher pubEigenMatchNoMiss;
+  //ros::Publisher pubEigenMatchNoMiss;
 
   std::vector<map_merging::EigenValueFeature> sFeature;
   std::vector<map_merging::EigenValueFeature> mFeature;
 
 
   map_merging::Match eMatch;
-  map_merging::Match eMatchNoMiss;
+  //map_merging::Match eMatchNoMiss;
 
   bool inputS;
 	bool inputM;
@@ -61,7 +61,7 @@ EigenValueMatching::EigenValueMatching()
   subM = sM.subscribe("/map_merging/feature/mFeature",1,&EigenValueMatching::inputMerged,this);
 
   pubEigenMatch = pE.advertise<map_merging::Match>("/map_merging/matching/eigenValueMatching", 1);
-  pubEigenMatchNoMiss = pEN.advertise<map_merging::Match>("/map_merging/matching/eigenValueMatchingNoMiss", 1);
+  //pubEigenMatchNoMiss = pEN.advertise<map_merging::Match>("/map_merging/matching/eigenValueMatchingNoMiss", 1);
 
   inputS = false;
   inputM = false;
@@ -444,10 +444,10 @@ void EigenValueMatching::missMatchDetection(void)
   }
 
   /*これで正しいマッチング結果のみが入ったリストができたはず*/
-  eMatchNoMiss = eMatch;
-  eMatchNoMiss.matchList = noMissMatchList;
+  //eMatchNoMiss = eMatch;
+  //eMatchNoMiss.matchList = noMissMatchList;
 
-  //eMatch.matchList = noMissMatchList;
+  eMatch.matchList = noMissMatchList;
 
 }
 //
@@ -609,10 +609,10 @@ void EigenValueMatching::emPublisher(void)
   eMatch.matchType = 0;
   eMatch.header.stamp = ros::Time::now();
 
-  eMatchNoMiss.matchType = 3;
-  eMatchNoMiss.header.stamp = ros::Time::now();
+  //eMatchNoMiss.matchType = 3;
+  //eMatchNoMiss.header.stamp = ros::Time::now();
 
   pubEigenMatch.publish(eMatch);
-  pubEigenMatchNoMiss.publish(eMatchNoMiss);
+  //pubEigenMatchNoMiss.publish(eMatchNoMiss);
   std::cout << "published" << '\n';
 }
