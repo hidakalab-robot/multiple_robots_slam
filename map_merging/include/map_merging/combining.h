@@ -2,6 +2,7 @@
 #include <ros/callback_queue.h>
 #include <map_merging/TowMap.h>
 #include <std_srvs/Empty.h>
+#include <map_merging/ProcessTime.h>
 
 class Combining
 {
@@ -12,6 +13,8 @@ private:
   ros::NodeHandle pC;
   ros::NodeHandle pF;
 
+  ros::NodeHandle pT;
+
   ros::NodeHandle v;
 
   ros::Subscriber subO;
@@ -19,6 +22,8 @@ private:
 
   ros::Publisher pubCombine;
   ros::Publisher pubFirst;
+  ros::Publisher pubTime;
+  map_merging::ProcessTime processTime;
 
   ros::ServiceClient vC;
 
@@ -63,6 +68,7 @@ Combining::Combining()
 
   pubCombine = pC.advertise<map_merging::TowMap>("/map_merging/combining/sCombining", 1);
   pubFirst = pF.advertise<map_merging::TowMap>("/map_merging/merging/mergedMap", 1);
+  pubTime = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/sCombining", 1);
 
   vC = v.serviceClient<std_srvs::Empty>("/rtabmap/reset");
 
@@ -72,6 +78,8 @@ Combining::Combining()
   firstProccess = true;
 
   ALLOW_SIZE = 10000;
+
+  processTime.processName = "SourceCombining";
 }
 
 void Combining::inputObstacles(const sensor_msgs::PointCloud2::ConstPtr& sOMsg)
@@ -98,10 +106,15 @@ void Combining::combinedMapPublisher(void)
   if(cMap.cloudObstacles.height * cMap.cloudObstacles.width > ALLOW_SIZE)
   {
     cMap.header.stamp = ros::Time::now();
+    /*処理時間計算*/
+    ros::Duration time;
+    time = cMap.header.stamp - cMap.cloudObstacles.header.stamp;
+    processTime.processTime = time.toSec();
+
     if(firstProccess)
     {
-
       pubFirst.publish(cMap);
+      pubTime.publish(processTime);
       std::cout << "first published" << '\n';
       firstProccess = false;
     }
@@ -110,6 +123,7 @@ void Combining::combinedMapPublisher(void)
       while(ros::ok())
       {
         pubCombine.publish(cMap);
+        pubTime.publish(processTime);
         std::cout << "published" << '\n';
       }
     }

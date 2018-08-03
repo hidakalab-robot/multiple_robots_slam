@@ -11,6 +11,7 @@
 #include <sensor_msgs/PointCloud2.h>
 
 #include <std_msgs/Empty.h>
+#include <map_merging/ProcessTime.h>
 
 class FinalMatching
 {
@@ -34,22 +35,34 @@ private:
   ros::NodeHandle pC2;
   ros::Publisher pubC2;
 
+  ros::NodeHandle pCC1;
+  ros::Publisher pubCC1;
+
+  ros::NodeHandle pCC2;
+  ros::Publisher pubCC2;
+
   ros::NodeHandle pR1;
   ros::Publisher pubR1;
 
   ros::NodeHandle pR2;
   ros::Publisher pubR2;
 
+  ros::NodeHandle pT;
+  ros::Publisher pubT;
+
   bool inputE;
   bool inputS;
 
   float SHIFT_POS;
 
-
   map_merging::Match inputEigen;
   map_merging::Match inputShot;
 
   map_merging::Match finalMatch;
+
+
+  map_merging::ProcessTime processTime;
+  ros::Time start;
 
   void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
   void inputShotMatch(const map_merging::Match::ConstPtr& sSMsg);
@@ -91,13 +104,20 @@ FinalMatching::FinalMatching()
   pubC1 = pC1.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/matchSourceCloud", 1);
   pubC2 = pC2.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/matchMergedCloud", 1);
 
+  pubCC1 = pC1.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/colorSourceCloud", 1);
+  pubCC2 = pC2.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/colorMergedCloud", 1);
+
   pubR1 = pR1.advertise<std_msgs::Empty>("/map_merging/clustering/sReceiveCheck", 1);
   pubR2 = pR2.advertise<std_msgs::Empty>("/map_merging/clustering/mReceiveCheck", 1);
+
+  pubT = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/finalMatching", 1);
 
   inputE = false;
   inputS = false;
 
   SHIFT_POS = 5.0;
+
+  processTime.processName = "FinalMatching";
 }
 
 void FinalMatching::inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg)
@@ -133,10 +153,12 @@ void FinalMatching::resetFlag(void)
 bool FinalMatching::isSameCluster(void)
 {
   /*クラスタについているheaderの時刻を見て二種類のマッチングが同じ時刻のクラスタを処理してたらtrue*/
+  /*
   std::cout << "eigen source stamp >>"  << inputEigen.sourceMap.header.stamp << '\n';
   std::cout << "shot source stamp >>"  << inputShot.sourceMap.header.stamp << '\n';
   std::cout << "eigen merged stamp >>"  << inputEigen.mergedMap.header.stamp << '\n';
   std::cout << "shot merged stamp >>"  << inputShot.mergedMap.header.stamp << '\n';
+  */
   if((inputEigen.sourceMap.header.stamp == inputShot.sourceMap.header.stamp) && (inputEigen.mergedMap.header.stamp == inputShot.mergedMap.header.stamp))
   {
     std::cout << "same" << '\n';
@@ -172,6 +194,19 @@ void FinalMatching::echoClouds(void)
 
   pubC1.publish(shiftSource);
   pubC2.publish(inputEigen.mergedMap.cloudObstacles);
+
+
+  pcl::fromROSMsg (inputEigen.sourceMap.cloudColor, *inputSource);
+
+  for(int i=0;i<inputSource -> points.size();i++)
+  {
+    inputSource -> points[i].x -= SHIFT_POS;
+  }
+
+  pcl::toROSMsg (*inputSource, shiftSource);
+
+  pubCC1.publish(shiftSource);
+  pubCC2.publish(inputEigen.mergedMap.cloudColor);
 
 }
 
@@ -246,6 +281,8 @@ void FinalMatching::echoMatch(int type)
 
 void FinalMatching::finalMatchProcess(void)
 {
+  start = ros::Time::now();
+
   /*全てのマッチング結果を考慮した何らかの処理*/
   /*例えば or や and などの処理*/
   /*処理結果を新たなMatch型の変数に格納 finalMatch*/
@@ -517,6 +554,16 @@ void FinalMatching::finalMatchPublisher(void)
   finalMatch.sourceMap = inputEigen.sourceMap;
   finalMatch.mergedMap = inputEigen.mergedMap;
 
+  /*処理時間計算*/
+  ros::Duration time;
+  time = finalMatch.header.stamp - start;
+  processTime.processTime = time.toSec();
+  time = finalMatch.header.stamp - inputEigen.header.stamp;
+  processTime.sourceProcessTime = time.toSec();
+  time = finalMatch.header.stamp - inputShot.header.stamp;
+  processTime.mergedProcessTime = time.toSec();
+
   pubM.publish(finalMatch);
+  pubT.publish(processTime);
   std::cout << "published" << '\n';
 }

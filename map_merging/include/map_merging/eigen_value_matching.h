@@ -5,6 +5,7 @@
 #include <map_merging/FeatureExtraction.h>
 #include <map_merging/PairNumber.h>
 #include <map_merging/Match.h>
+#include <map_merging/ProcessTime.h>
 
 class EigenValueMatching
 {
@@ -14,15 +15,23 @@ private:
 
   ros::NodeHandle pE;
 
+  ros::NodeHandle pT;
+
   ros::Subscriber subS;
 	ros::Subscriber subM;
 
   ros::Publisher pubEigenMatch;
+  ros::Publisher pubTime;
 
   std::vector<map_merging::EigenValueFeature> sFeature;
   std::vector<map_merging::EigenValueFeature> mFeature;
 
   map_merging::Match eMatch;
+  map_merging::ProcessTime processTime;
+
+  ros::Time start;
+  ros::Time sHederTime;
+  ros::Time mHederTime;
 
   bool inputS;
 	bool inputM;
@@ -38,7 +47,6 @@ public:
 
   EigenValueMatching();
 	~EigenValueMatching(){};
-
 
   bool isInputS(void);
   bool isInputM(void);
@@ -59,9 +67,13 @@ EigenValueMatching::EigenValueMatching()
 
   pubEigenMatch = pE.advertise<map_merging::Match>("/map_merging/matching/eigenValueMatching", 1);
 
+  pubTime = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/eigenValueMatching", 1);
+
   inputS = false;
   inputM = false;
   matching = false;
+
+  processTime.processName = "EigenValueMatching";
 }
 
 void EigenValueMatching::inputSource(const map_merging::FeatureExtraction::ConstPtr& sSMsg)
@@ -72,6 +84,8 @@ void EigenValueMatching::inputSource(const map_merging::FeatureExtraction::Const
   eMatch.sourceMap.cloudColor = sSMsg -> cloudColor;
   eMatch.sourceMap.clusterList = sSMsg -> clusterList;
   eMatch.sourceMap.centroids = sSMsg -> centroids;
+
+  sHederTime = sSMsg -> extHeader.stamp;
 
   sFeature = sSMsg -> featureList;
 
@@ -88,6 +102,8 @@ void EigenValueMatching::inputMerged(const map_merging::FeatureExtraction::Const
   eMatch.mergedMap.cloudColor = sMMsg -> cloudColor;
   eMatch.mergedMap.clusterList = sMMsg -> clusterList;
   eMatch.mergedMap.centroids = sMMsg -> centroids;
+
+  mHederTime = sMMsg -> extHeader.stamp;
 
   mFeature = sMMsg -> featureList;
 
@@ -119,6 +135,8 @@ bool EigenValueMatching::isMatch(void)
 
 void EigenValueMatching::calcMatch(void)
 {
+  start = ros::Time::now();
+
   //ソースクラウド
   float diffLinearity;
 	float diffPlanarity;
@@ -449,6 +467,16 @@ void EigenValueMatching::emPublisher(void)
   eMatch.matchType = 0;
   eMatch.header.stamp = ros::Time::now();
 
+  /*処理時間計算*/
+  ros::Duration time;
+  time = eMatch.header.stamp - start;
+  processTime.processTime = time.toSec();
+  time = eMatch.header.stamp - sHederTime;
+  processTime.sourceProcessTime = time.toSec();
+  time = eMatch.header.stamp - mHederTime;
+  processTime.mergedProcessTime = time.toSec();
+
   pubEigenMatch.publish(eMatch);
+  pubTime.publish(processTime);
   std::cout << "published" << '\n';
 }

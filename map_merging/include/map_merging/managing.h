@@ -4,6 +4,8 @@
 #include <map_merging/TowMap.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <map_merging/ProcessTime.h>
+
 class Managing
 {
 private:
@@ -17,6 +19,11 @@ private:
   ros::Publisher pubCombine;
   ros::Publisher pubObstacles;
   ros::Publisher pubMap;
+
+  ros::NodeHandle pT;
+  ros::Publisher pubT;
+  map_merging::ProcessTime processTime;
+  ros::Time headerTime;
 
   map_merging::TowMap cMap;
 
@@ -46,12 +53,16 @@ Managing::Managing()
   pubObstacles = pO.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/mergedCloudObstacles", 1);
   pubMap = pM.advertise<sensor_msgs::PointCloud2>("/map_merging/visualization/mergedCloudMap", 1);
 
+  pubT = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/mCombining", 1);
+  processTime.processName = "MergedCombining";
   input = false;
 }
 
 void Managing::inputMerged(const map_merging::TowMap::ConstPtr& sMMsg)
 {
   cMap = *sMMsg;
+
+  headerTime = sMMsg -> header.stamp;
 
   input = true;
 
@@ -71,7 +82,14 @@ void Managing::resetFlag(void)
 void Managing::combinedMapPublisher(void)
 {
   cMap.header.stamp = ros::Time::now();
+
+  /*処理時間計算*/
+  ros::Duration time;
+  time = cMap.header.stamp - headerTime;
+  processTime.processTime = time.toSec();
+
   pubCombine.publish(cMap);
+  pubT.publish(processTime);
   std::cout << "published" << '\n';
 }
 

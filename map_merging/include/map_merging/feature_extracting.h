@@ -6,6 +6,8 @@
 #include <map_merging/Cluster.h>
 #include <map_merging/FeatureExtraction.h>
 
+#include <map_merging/ProcessTime.h>
+
 class FeatureExtracting
 {
 private:
@@ -13,6 +15,11 @@ private:
   ros::NodeHandle pF;
   ros::Subscriber subC;
   ros::Publisher pubF;
+
+  ros::NodeHandle pT;
+  ros::Publisher pubT;
+  map_merging::ProcessTime processTime;
+  ros::Time headerTime;
 
   map_merging::FeatureExtraction feaExt;
 
@@ -43,11 +50,15 @@ FeatureExtracting::FeatureExtracting(int nodeType)
   {
     subC = sC.subscribe("/map_merging/clustering/sClustering",1,&FeatureExtracting::inputCluster,this);
     pubF = pF.advertise<map_merging::FeatureExtraction>("/map_merging/feature/sFeature", 1);
+    pubT = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/sFeature", 1);
+    processTime.processName = "SourceFeatureExtraction";
   }
   else if(nodeType == 1)
   {
     subC = sC.subscribe("/map_merging/clustering/mClustering",1,&FeatureExtracting::inputCluster,this);
     pubF = pF.advertise<map_merging::FeatureExtraction>("/map_merging/feature/mFeature", 1);
+    pubT = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/mFeature", 1);
+    processTime.processName = "mergedFeatureExtraction";
   }
 
   input = false;
@@ -61,6 +72,8 @@ void FeatureExtracting::inputCluster(const map_merging::Cluster::ConstPtr& sCMsg
   feaExt.cloudColor = sCMsg -> cloudColor;
   feaExt.clusterList = sCMsg -> clusterList;
   feaExt.centroids = sCMsg -> centroids;
+
+  headerTime = sCMsg -> header.stamp;
 
   pcl::fromROSMsg (sCMsg -> cloudObstacles, *inputCloud);
 
@@ -195,6 +208,12 @@ void FeatureExtracting::featureExtraction(void)
 void FeatureExtracting::featurePublisher(void)
 {
   feaExt.extHeader.stamp = ros::Time::now();
+
+  /*処理時間計算*/
+  ros::Duration time;
+  time = feaExt.extHeader.stamp - headerTime;
+  processTime.processTime = time.toSec();
   pubF.publish(feaExt);
+  pubT.publish(processTime);
   std::cout << "published" << '\n';
 }

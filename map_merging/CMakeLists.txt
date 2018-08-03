@@ -61,6 +61,7 @@ find_package(catkin REQUIRED COMPONENTS
    FeatureExtraction.msg
    PairNumber.msg
    Match.msg
+	 ProcessTime.msg
  )
 
 ## Generate services in the 'srv' folder

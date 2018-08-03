@@ -17,6 +17,7 @@
 #include <map_merging/Match.h>
 #include <map_merging/PairNumber.h>
 
+#include <map_merging/ProcessTime.h>
 
 typedef pcl::PointXYZRGB PointType;
 typedef pcl::Normal NormalType;
@@ -38,6 +39,11 @@ private:
 
   ros::NodeHandle pTest;
   ros::Publisher pubTest;
+
+  ros::NodeHandle pTime;
+  ros::Publisher pubTime;
+  ros::Time start;
+  map_merging::ProcessTime processTime;
 
   map_merging::Match sMatch;
 
@@ -122,6 +128,8 @@ mCloud (new pcl::PointCloud<PointType>())
   pubShotMatch = pS.advertise<map_merging::Match>("/map_merging/matching/shotMatching", 1);
   pubTest = pTest.advertise<sensor_msgs::PointCloud2>("/map_merging/test/testCloud", 1);
 
+  pubTime = pTime.advertise<map_merging::ProcessTime>("/map_merging/processTime/shotMatching", 1);
+
   inputS = false;
   inputM = false;
 
@@ -135,8 +143,16 @@ mCloud (new pcl::PointCloud<PointType>())
   scene_ss_ = 0.1f;//キーポイント抽出の間隔(今回はダウンサンプリングするときのボクセルグリッドのサイズ)
   rf_rad_ = 0.4f;//重要っぽい//BOARD-LRFの半径//平面フィッティングするときに使う点群の半径//いじっても対応点の数には影響ない//でもマッチングしなくなる
   descr_rad_ = 0.4f;//各キーポイント周りのデスクプリタの抽出//キーポイントの周りのどれくらい情報を使うか//いじると対応点の数が変わる//マッチングにも影響あり
-  cg_size_ = 0.3f;//ハフ空間に設定する各ビンのサイズ//輪郭を表す直線のサイズ//大きい方が判定が甘くなる?//ある程度大きい方がいい
-  cg_thresh_ = 3.0f;//モデルインスタンスの存在をシーンクラウドに推論するために必要なHough空間内の最小票数を設定します。//要は一致判定のしきい値なので小さいほどゆるい
+  cg_size_ = 0.25f;//ハフ空間に設定する各ビンのサイズ//輪郭を表す直線のサイズ//大きい方が判定が甘くなる?//ある程度大きい方がいい
+  cg_thresh_ = 4.0f;//モデルインスタンスの存在をシーンクラウドに推論するために必要なHough空間内の最小票数を設定します。//要は一致判定のしきい値なので小さいほどゆるい
+
+
+  // model_ss_ = 0.1f;
+  // scene_ss_ = 0.1f;
+  // rf_rad_ = 0.3f;
+  // descr_rad_ = 0.4f;
+  // cg_size_ = 0.2f;
+  // cg_thresh_ = 5.0f;
 
   // model_ss_ = 0.01f;
   // scene_ss_ = 0.03f;
@@ -144,6 +160,7 @@ mCloud (new pcl::PointCloud<PointType>())
   // descr_rad_ = 0.02f;
   // cg_size_ = 0.01f;
   // cg_thresh_ = 5.0f;
+  processTime.processName = "ShotMatching";
 }
 
 void ShotMatching::inputSource(const map_merging::Cluster::ConstPtr& sSMsg)
@@ -162,6 +179,7 @@ void ShotMatching::inputMerged(const map_merging::Cluster::ConstPtr& sMMsg)
 
 void ShotMatching::includeCloud(void)
 {
+  start = ros::Time::now();
   pcl::fromROSMsg (sCluster.cloudObstacles, *sCloud);
   pcl::fromROSMsg (mCluster.cloudObstacles, *mCloud);
 }
@@ -199,7 +217,17 @@ void ShotMatching::shotPublisher(void)
   sMatch.mergedMap = mCluster;
   sMatch.header.stamp = ros::Time::now();
 
+  /*処理時間計算*/
+  ros::Duration time;
+  time = sMatch.header.stamp - start;
+  processTime.processTime = time.toSec();
+  time = sMatch.header.stamp - sCluster.header.stamp;
+  processTime.sourceProcessTime = time.toSec();
+  time = sMatch.header.stamp - mCluster.header.stamp;
+  processTime.mergedProcessTime = time.toSec();
+
   pubShotMatch.publish(sMatch);
+  pubTime.publish(processTime);
   std::cout << "published" << '\n';
 }
 

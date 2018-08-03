@@ -9,6 +9,8 @@
 
 #include <std_msgs/Empty.h>
 
+#include <map_merging/ProcessTime.h>
+
 class EuclideanClustering
 {
 private:
@@ -20,6 +22,11 @@ private:
 
   ros::NodeHandle sR;
   ros::Subscriber subR;
+
+  ros::NodeHandle pT;
+  ros::Publisher pubT;
+  map_merging::ProcessTime processTime;
+  ros::Time headerTime;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr inputCloud;
 
@@ -69,12 +76,16 @@ tree(new pcl::search::KdTree<pcl::PointXYZRGB>)
     subC = sC.subscribe("/map_merging/combining/sCombining",1,&EuclideanClustering::inputCombine,this);
     pubC = pC.advertise<map_merging::Cluster>("/map_merging/clustering/sClustering", 1);
     subR = sR.subscribe("/map_merging/clustering/sReceiveCheck",1,&EuclideanClustering::ReceiveCheck,this);
+    pubT = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/sClustering", 1);
+    processTime.processName = "SourceClustering";
   }
   else if(nodeType == 1)
   {
     subC = sC.subscribe("/map_merging/combining/mCombining",1,&EuclideanClustering::inputCombine,this);
     pubC = pC.advertise<map_merging::Cluster>("/map_merging/clustering/mClustering", 1);
     subR = sR.subscribe("/map_merging/clustering/mReceiveCheck",1,&EuclideanClustering::ReceiveCheck,this);
+    pubT = pT.advertise<map_merging::ProcessTime>("/map_merging/processTime/mClustering", 1);
+    processTime.processName = "MergedClustering";
   }
 
   input = false;
@@ -92,6 +103,7 @@ void EuclideanClustering::inputCombine(const map_merging::TowMap::ConstPtr& sCMs
   clu.cloudObstacles = sCMsg -> cloudObstacles;
   clu.cloudMap = sCMsg -> cloudMap;
 
+  headerTime = sCMsg -> header.stamp;
 
   input = true;
   std::cout << "input combined map" << '\n';
@@ -190,6 +202,12 @@ void EuclideanClustering::ListAndCentroid(void)
 void EuclideanClustering::clusterPublisher(void)
 {
   clu.header.stamp = ros::Time::now();
+
+  /*処理時間計算*/
+  ros::Duration time;
+  time = clu.header.stamp - headerTime;
+  processTime.processTime = time.toSec();
+
   while(ros::ok())
   {
     queueR.callOne(ros::WallDuration(1));
@@ -201,6 +219,7 @@ void EuclideanClustering::clusterPublisher(void)
     else
     {
       pubC.publish(clu);
+      pubT.publish(processTime);
       std::cout << "published" << '\n';
     }
   }
