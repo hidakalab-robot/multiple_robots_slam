@@ -33,6 +33,10 @@ private:
 
   int ALLOW_SIZE;
 
+  void inputObstacles(const sensor_msgs::PointCloud2::ConstPtr& sOMsg);
+  void inputMap(const sensor_msgs::PointCloud2::ConstPtr& sMMsg);
+  void resetMap(void);
+
 public:
   ros::CallbackQueue queueO;
 	ros::CallbackQueue queueM;
@@ -40,13 +44,12 @@ public:
   Combining();
 	~Combining(){};
 
-  void inputObstacles(const sensor_msgs::PointCloud2::ConstPtr& sOMsg);
-  void inputMap(const sensor_msgs::PointCloud2::ConstPtr& sMMsg);
+
   void combinedMapPublisher(void);
   bool isInputO(void);
   bool isInputM(void);
   void resetFlag(void);
-  void resetMap(void);
+
 
 };
 
@@ -109,8 +112,6 @@ void Combining::combinedMapPublisher(void)
         pubCombine.publish(cMap);
         std::cout << "published" << '\n';
       }
-      //pubCombine.publish(cMap);
-      //std::cout << "published" << '\n';
     }
 
     resetMap();

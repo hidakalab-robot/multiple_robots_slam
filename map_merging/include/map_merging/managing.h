@@ -22,13 +22,14 @@ private:
 
   bool input;
 
+  void inputMerged(const map_merging::TowMap::ConstPtr& sMMsg);
+
 public:
   ros::CallbackQueue queueM;
 
   Managing();
 	~Managing(){};
 
-  void inputMerged(const map_merging::TowMap::ConstPtr& sMMsg);
   bool isInput(void);
   void resetFlag(void);
   void combinedMapPublisher(void);

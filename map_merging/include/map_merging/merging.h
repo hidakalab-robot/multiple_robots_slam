@@ -16,6 +16,7 @@ private:
   map_merging::TowMap merged;
 
   bool input;
+  void inputShot(const map_merging::Match::ConstPtr& sSMsg);
 
 public:
   ros::CallbackQueue queueS;
@@ -23,7 +24,6 @@ public:
   Merging();
 	~Merging(){};
 
-  void inputShot(const map_merging::Match::ConstPtr& sSMsg);
   bool isInput(void);
   void resetFlag(void);
   void mergedPublisher(void);
@@ -63,5 +63,5 @@ void Merging::mergedPublisher(void)
 
 void Merging::mergingFunction(void)
 {
-
+  /*何らかのマージング処理*/
 }

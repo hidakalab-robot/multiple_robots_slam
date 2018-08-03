@@ -22,6 +22,8 @@ int main (int argc, char** argv)
     {
       std::cout << "not input" << '\n';
     }
+
+    //man.resetFlag();
   }
 
   return 0;

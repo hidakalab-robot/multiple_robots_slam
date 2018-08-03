@@ -14,30 +14,24 @@ private:
   ros::Subscriber subC;
   ros::Publisher pubF;
 
-//  ros::NodeHandle sC2;
-//  ros::NodeHandle pF2;
-  //ros::Subscriber subC2;
-  //ros::Publisher pubF2;
-
   map_merging::FeatureExtraction feaExt;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr inputCloud;
 
   bool input;
 
+  void inputCluster(const map_merging::Cluster::ConstPtr& sCMsg);
+
 public:
   ros::CallbackQueue queueC;
-  //ros::CallbackQueue queueC2;
 
   FeatureExtracting(int nodeType);//nodeType 0:source, 1:merged
 	~FeatureExtracting(){};
 
-  void inputCluster(const map_merging::Cluster::ConstPtr& sCMsg);
   bool isInput(void);
   void resetFlag(void);
   void featureExtraction(void);
   void featurePublisher(void);
-  //void featurePublisher2(void);
 };
 
 FeatureExtracting::FeatureExtracting(int nodeType)
@@ -204,11 +198,3 @@ void FeatureExtracting::featurePublisher(void)
   pubF.publish(feaExt);
   std::cout << "published" << '\n';
 }
-/*
-void FeatureExtracting::featurePublisher2(void)
-{
-  feaExt.extHeader.stamp = ros::Time::now();
-  pubF2.publish(feaExt);
-  std::cout << "published" << '\n';
-}
-*/

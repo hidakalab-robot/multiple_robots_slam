@@ -19,13 +19,11 @@ int main (int argc, char** argv)
         shot.cluster2Scene();
         shot.shotPublisher();
         shot.setSkip(true);
-        //usleep(500000);
       }
       else
       {
         shot.setSkip(false);
       }
-
     }
     else
     {

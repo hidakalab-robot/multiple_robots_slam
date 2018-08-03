@@ -4,7 +4,6 @@ int main (int argc, char** argv)
 {
   ros::init(argc, argv, "merged_clustering_euclidean");
 
-  //Clustering clu;
   EuclideanClustering ec(1);//nodeType 0:source, 1:merged
 
   while(ros::ok())

@@ -21,10 +21,7 @@ private:
 
   ros::NodeHandle sS;
   ros::Subscriber subS;
-/*
-  ros::NodeHandle sN;
-  ros::Subscriber subN;
-*/
+
   ros::NodeHandle pM;
   ros::Publisher pubM;
 
@@ -45,33 +42,30 @@ private:
 
   bool inputE;
   bool inputS;
-  //bool inputN;
 
-  //float shiftPos;
   float SHIFT_POS;
 
 
   map_merging::Match inputEigen;
   map_merging::Match inputShot;
-  //map_merging::Match inputNoMissEigen;
 
   map_merging::Match finalMatch;
+
+  void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
+  void inputShotMatch(const map_merging::Match::ConstPtr& sSMsg);
+  void missMatchDetection(std::vector<map_merging::PairNumber> &finalPairList);
 
 public:
 
   ros::CallbackQueue queueE;
   ros::CallbackQueue queueS;
-  //ros::CallbackQueue queueN;
 
   FinalMatching();
   ~FinalMatching(){};
 
-  void inputEigenMatch(const map_merging::Match::ConstPtr& sEMsg);
-  void inputShotMatch(const map_merging::Match::ConstPtr& sSMsg);
-  //void inputNoMissEigenMatch(const map_merging::Match::ConstPtr& sNMsg);
+
   bool isInputE(void);
   bool isInputS(void);
-  //bool isInputN(void);
   void resetFlag(void);
   bool isSameCluster(void);
   void echoMatch(int type);
@@ -79,7 +73,7 @@ public:
   void finalMatchProcess(void);
   void finalMatchPublisher(void);
   void receiveReport(void);
-  void missMatchDetection(std::vector<map_merging::PairNumber> &finalPairList);
+
 };
 
 FinalMatching::FinalMatching()
@@ -89,9 +83,6 @@ FinalMatching::FinalMatching()
 
   sS.setCallbackQueue(&queueS);
   subS = sS.subscribe("/map_merging/matching/shotMatching",1,&FinalMatching::inputShotMatch,this);
-
-  //sN.setCallbackQueue(&queueN);
-  //subN = sN.subscribe("/map_merging/matching/eigenValueMatchingNoMiss",1,&FinalMatching::inputNoMissEigenMatch,this);
 
   pubM = pM.advertise<map_merging::Match>("/map_merging/matching/finalMatching", 1);
 
@@ -122,14 +113,7 @@ void FinalMatching::inputShotMatch(const map_merging::Match::ConstPtr& sSMsg)
   inputS = true;
   std::cout << "input SHOT" << '\n';
 }
-/*
-void FinalMatching::inputNoMissEigenMatch(const map_merging::Match::ConstPtr& sNMsg)
-{
-  inputNoMissEigen = *sNMsg;
-  inputN = true;
-  std::cout << "input NoMiss" << '\n';
-}
-*/
+
 bool FinalMatching::isInputE(void)
 {
   return inputE;
@@ -139,17 +123,11 @@ bool FinalMatching::isInputS(void)
 {
   return inputS;
 }
-/*
-bool FinalMatching::isInputN(void)
-{
-  return inputN;
-}
-*/
+
 void FinalMatching::resetFlag(void)
 {
   inputE = false;
   inputS = false;
-  //inputN = false;
 }
 
 bool FinalMatching::isSameCluster(void)
@@ -236,13 +214,6 @@ void FinalMatching::echoMatch(int type)
       matchLine.color.g = 0.0f;
       matchLine.color.b = 1.0f;
       break;
-    /*case 3:
-      input = inputNoMissEigen;
-      matchLine.ns = "NoMissEigen";
-      matchLine.color.r = 1.0f;
-      matchLine.color.g = 1.0f;
-      matchLine.color.b = 0.0f;
-      break;*/
     default:
       std::cout << "echoMatch arg error : " << type << '\n';
       return;
@@ -255,17 +226,9 @@ void FinalMatching::echoMatch(int type)
 
   for(int i=0;i<input.matchList.size();i++)
   {
-    //sCentroid.x = input.sourceMap.centroids[input.matchList[i].sourceNumber].x - SHIFT_POS;
-    //sCentroid.y = input.sourceMap.centroids[input.matchList[i].sourceNumber].y;
-    //sCentroid.z = input.sourceMap.centroids[input.matchList[i].sourceNumber].z;
-
     sCentroid.x = input.matchList[i].sourceCentroid.x - SHIFT_POS;
     sCentroid.y = input.matchList[i].sourceCentroid.y;
     sCentroid.z = input.matchList[i].sourceCentroid.z;
-
-    //mCentroid.x = input.mergedMap.centroids[input.matchList[i].mergedNumber].x;
-    //mCentroid.y = input.mergedMap.centroids[input.matchList[i].mergedNumber].y;
-    //mCentroid.z = input.mergedMap.centroids[input.matchList[i].mergedNumber].z;
 
     mCentroid.x = input.matchList[i].mergedCentroid.x;
     mCentroid.y = input.matchList[i].mergedCentroid.y;
@@ -298,9 +261,7 @@ void FinalMatching::finalMatchProcess(void)
   //もしくは、マージド側の重心と一番近いクラスタをの番号として設定(一応受信データには入ってる)
 
   */
-
   std::vector<map_merging::PairNumber> finalPairList;
-  //map_merging::PairNumber pair;
 
   bool flagAnd = false;
 
@@ -347,37 +308,6 @@ void FinalMatching::finalMatchProcess(void)
   }
 
   finalMatch.matchList = finalPairList;
-
-
-  /*被っていた奴に関しては両方被っているかどうか確認*/
-
-  /*両方かぶっていた場合、それを採用*/
-
-
-/*
-  for(int i=0;i<inputEigen.matchList.size();i++)
-  {
-    std::cout << "固有値の方のsource重心表示 << " << inputEigen.matchList[i].sourceCentroid.x << "," << inputEigen.matchList[i].sourceCentroid.y << "," << inputEigen.matchList[i].sourceCentroid.z << '\n';
-    std::cout << "固有値の方のmerged重心表示 << " << inputEigen.matchList[i].mergedCentroid.x << "," << inputEigen.matchList[i].mergedCentroid.y << "," << inputEigen.matchList[i].mergedCentroid.z << '\n';
-    std::cout << "クラスタ番号 << ( " << inputEigen.matchList[i].sourceNumber << "," << inputEigen.matchList[i].mergedNumber << " )" << '\n'  << '\n';
-  }
-  */
-/*
-  for(int i=0;i<inputNoMissEigen.matchList.size();i++)
-  {
-    std::cout << "真固有値の方のsource重心表示 << " << inputNoMissEigen.matchList[i].sourceCentroid.x << "," << inputNoMissEigen.matchList[i].sourceCentroid.y << "," << inputNoMissEigen.matchList[i].sourceCentroid.z << '\n';
-    std::cout << "真固有値の方のmerged重心表示 << " << inputNoMissEigen.matchList[i].mergedCentroid.x << "," << inputNoMissEigen.matchList[i].mergedCentroid.y << "," << inputNoMissEigen.matchList[i].mergedCentroid.z << '\n';
-    std::cout << "クラスタ番号 << ( " << inputNoMissEigen.matchList[i].sourceNumber << "," << inputNoMissEigen.matchList[i].mergedNumber << " )" << '\n' << '\n';
-  }
-*/
-/*
-  for(int i=0;i<inputShot.matchList.size();i++)
-  {
-    std::cout << "SHOTの方のsource重心表示 << " << inputShot.matchList[i].sourceCentroid.x << "," << inputShot.matchList[i].sourceCentroid.y << "," << inputShot.matchList[i].sourceCentroid.z << '\n';
-    std::cout << "SHOTの方のmerged重心表示 << " << inputShot.matchList[i].mergedCentroid.x << "," << inputShot.matchList[i].mergedCentroid.y << "," << inputShot.matchList[i].mergedCentroid.z << '\n';
-    std::cout << "クラスタ番号 << ( " << inputShot.matchList[i].sourceNumber << "," << inputShot.matchList[i].mergedNumber << " )" << '\n' << '\n';
-  }
-*/
 
 }
 
@@ -577,10 +507,6 @@ void FinalMatching::missMatchDetection(std::vector<map_merging::PairNumber> &fin
   }
 
   /*これで正しいマッチング結果のみが入ったリストができたはず*/
-  //orMatchNoMiss = orMatch;
-  //orMatchNoMiss.matchList = noMissMatchList;
-
-  //orMatch.matchList = noMissMatchList;
 
 }
 

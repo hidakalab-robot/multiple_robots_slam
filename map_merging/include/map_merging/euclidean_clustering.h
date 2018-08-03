@@ -18,16 +18,8 @@ private:
   ros::Subscriber subC;
   ros::Publisher pubC;
 
-  //ros::NodeHandle sC2;
-  //ros::NodeHandle pC2;
-  //ros::Subscriber subC2;
-  //ros::Publisher pubC2;
-
   ros::NodeHandle sR;
   ros::Subscriber subR;
-
-  //ros::NodeHandle sR2;
-  //ros::Subscriber subR2;
 
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr inputCloud;
 
@@ -43,29 +35,26 @@ private:
 
   bool inputR;
 
+  ros::CallbackQueue queueR;
+
+  void inputCombine(const map_merging::TowMap::ConstPtr& sCMsg);
+  void ReceiveCheck(const std_msgs::Empty::ConstPtr& msg);
+  bool isInputR(void);
+
 public:
 
   ros::CallbackQueue queueC;
-  //ros::CallbackQueue queueC2;
-
-  ros::CallbackQueue queueR;
-  //ros::CallbackQueue queueR2;
 
   EuclideanClustering(int nodeType);//nodeType 0:source, 1:merged
-  //EuclideanClustering();
 	~EuclideanClustering(){};
 
-  void inputCombine(const map_merging::TowMap::ConstPtr& sCMsg);
   bool isInput(void);
   void resetFlag(void);
   void euclideanClustering(void);
   void coloring(void);
   void ListAndCentroid(void);
   void clusterPublisher(void);
-  //void clusterPublisher2(void);
 
-  void ReceiveCheck(const std_msgs::Empty::ConstPtr& msg);
-  bool isInputR(void);
 };
 
 EuclideanClustering::EuclideanClustering(int nodeType)
@@ -216,26 +205,7 @@ void EuclideanClustering::clusterPublisher(void)
     }
   }
 }
-/*
-void EuclideanClustering::clusterPublisher2(void)
-{
-  clu.header.stamp = ros::Time::now();
-  while(ros::ok())
-  {
-    queueR2.callOne(ros::WallDuration(1));
-    if(isInputR())
-    {
-      std::cout << "received" << '\n';
-      break;
-    }
-    else
-    {
-      pubC2.publish(clu);
-      std::cout << "published" << '\n';
-    }
-  }
-}
-*/
+
 void EuclideanClustering::ReceiveCheck(const std_msgs::Empty::ConstPtr& msg)
 {
   inputR = true;
