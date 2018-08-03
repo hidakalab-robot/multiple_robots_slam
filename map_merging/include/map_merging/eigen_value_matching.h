@@ -257,7 +257,7 @@ void EigenValueMatching::calcMatch(void)
     std::cout << "[centroid_z_diff] " << std::abs(eMatch.mergedMap.centroids[matchList[i].mergedNumber].z - eMatch.sourceMap.centroids[matchList[i].sourceNumber].z) << '\n';
   }
 
-
+/*
   if(matchList.size()>0)
   {
     matching = true;
@@ -268,7 +268,7 @@ void EigenValueMatching::calcMatch(void)
     matching = false;
     std::cout << "no matching cloud" << '\n';
   }
-
+*/
   eMatch.matchList = matchList;
 
 }
@@ -276,6 +276,12 @@ void EigenValueMatching::calcMatch(void)
 void EigenValueMatching::missMatchDetection(void)
 {
   /*calcMatchで初めのマッチングをした後に、それのミスマッチを探す*/
+
+  /*マッチリストが一つしかないときは終了*/
+  if(eMatch.matchList.size() < 3)
+  {
+    return;
+  }
 
   /*マッチリスト中の各重心間ベクトル(全て)を計算*/
   std::vector<Eigen::Vector3f> sourceVectors;//ソース地図中のベクトルを格納
@@ -310,7 +316,7 @@ void EigenValueMatching::missMatchDetection(void)
 
   /*ベクトルの差を見て正しそうかを検討//しきい値を使って判断*/
 
-  const float normThreshold = 0.3;
+  const float normThreshold = 0.35;
 
   const int size = eMatch.matchList.size();
 

@@ -15,10 +15,10 @@ int main (int argc, char** argv)
     {
       evm.calcMatch();
       evm.missMatchDetection();
-      if(evm.isMatch())
-      {
+      //if(evm.isMatch())
+      //{
         evm.emPublisher();
-      }
+      //}
     }
     else
     {

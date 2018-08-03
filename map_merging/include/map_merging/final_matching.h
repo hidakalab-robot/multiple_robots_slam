@@ -397,7 +397,7 @@ void FinalMatching::missMatchDetection(std::vector<map_merging::PairNumber> &fin
 
   /*ベクトルの差を見て正しそうかを検討//しきい値を使って判断*/
 
-  const float normThreshold = 0.3;
+  const float normThreshold = 0.35;
 
   const int size = orMatch.matchList.size();
 
