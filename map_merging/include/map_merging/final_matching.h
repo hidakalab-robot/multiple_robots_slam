@@ -401,7 +401,13 @@ void FinalMatching::missMatchDetection(std::vector<map_merging::PairNumber> &fin
 
   const int size = orMatch.matchList.size();
 
-  int matchEvaluation[size] = {};//マッチが正しいかどうかを記述しておく//1:合ってる -1:間違ってる 0:不明
+  //int matchEvaluation[size] = {};//マッチが正しいかどうかを記述しておく//1:合ってる -1:間違ってる 0:不明
+  int matchEvaluation[size];
+
+  for(int i=0;i<size;i++)
+  {
+    matchEvaluation[i] = 0;
+  }
 
   for(int i=0;i<diffVectors.size();i++)
   {
