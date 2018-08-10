@@ -186,7 +186,7 @@ void FinalMatching::echoClouds(void)
 
   for(int i=0;i<inputSource -> points.size();i++)
   {
-    inputSource -> points[i].x -= SHIFT_POS;
+    inputSource -> points[i].y -= SHIFT_POS;
   }
 
   sensor_msgs::PointCloud2 shiftSource;
@@ -200,7 +200,7 @@ void FinalMatching::echoClouds(void)
 
   for(int i=0;i<inputSource -> points.size();i++)
   {
-    inputSource -> points[i].x -= SHIFT_POS;
+    inputSource -> points[i].y -= SHIFT_POS;
   }
 
   pcl::toROSMsg (*inputSource, shiftSource);
@@ -261,8 +261,8 @@ void FinalMatching::echoMatch(int type)
 
   for(int i=0;i<input.matchList.size();i++)
   {
-    sCentroid.x = input.matchList[i].sourceCentroid.x - SHIFT_POS;
-    sCentroid.y = input.matchList[i].sourceCentroid.y;
+    sCentroid.x = input.matchList[i].sourceCentroid.x;// - SHIFT_POS;
+    sCentroid.y = input.matchList[i].sourceCentroid.y - SHIFT_POS;
     sCentroid.z = input.matchList[i].sourceCentroid.z;
 
     mCentroid.x = input.matchList[i].mergedCentroid.x;

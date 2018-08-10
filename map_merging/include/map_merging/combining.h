@@ -34,6 +34,8 @@ private:
   bool inputO;
 	bool inputM;
 
+  bool twoCloud;
+
   bool firstProccess;
 
   int ALLOW_SIZE;
@@ -79,6 +81,8 @@ Combining::Combining()
 
   ALLOW_SIZE = 10000;
 
+  twoCloud = true;
+
   processTime.processName = "SourceCombining";
 }
 
@@ -120,15 +124,26 @@ void Combining::combinedMapPublisher(void)
     }
     else
     {
-      while(ros::ok())
+      if(twoCloud)
       {
         pubCombine.publish(cMap);
         pubTime.publish(processTime);
         std::cout << "published" << '\n';
       }
+      else
+      {
+        while(ros::ok())
+        {
+          pubCombine.publish(cMap);
+          pubTime.publish(processTime);
+          std::cout << "published" << '\n';
+        }
+      }
     }
-
-    resetMap();
+    if(!twoCloud)
+    {
+      resetMap();
+    }
   }
   else
   {

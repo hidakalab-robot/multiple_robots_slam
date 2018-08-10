@@ -42,6 +42,8 @@ private:
 
   bool inputR;
 
+  float ceilingHeight;
+
   ros::CallbackQueue queueR;
 
   void inputCombine(const map_merging::TowMap::ConstPtr& sCMsg);
@@ -61,7 +63,7 @@ public:
   void coloring(void);
   void ListAndCentroid(void);
   void clusterPublisher(void);
-
+  void deleteCeiling(void);//クラスタリングの前
 };
 
 EuclideanClustering::EuclideanClustering(int nodeType)
@@ -90,6 +92,8 @@ tree(new pcl::search::KdTree<pcl::PointXYZRGB>)
 
   input = false;
   inputR = false;
+
+  ceilingHeight = 2.5;
 
   ec.setClusterTolerance (0.1);//同じクラスタとみなす距離
   ec.setMinClusterSize (100);//クラスタを構成する最小の点数
@@ -233,4 +237,31 @@ void EuclideanClustering::ReceiveCheck(const std_msgs::Empty::ConstPtr& msg)
 bool EuclideanClustering::isInputR(void)
 {
   return inputR;
+}
+
+void EuclideanClustering::deleteCeiling(void)
+{
+  /*天井が邪魔なので消します*/
+  /*天井の高さceilingHeight*/
+
+  pcl::PointCloud<pcl::PointXYZRGB>::Ptr tempInputCloud (new pcl::PointCloud<pcl::PointXYZRGB>);
+
+  for(int i=0;i<inputCloud->points.size();i++)
+  {
+    if((inputCloud->points[i].z < ceilingHeight) && (inputCloud->points[i].z > -0.05))
+    {
+      tempInputCloud->points.push_back(inputCloud->points[i]);
+    }
+  }
+
+  //tempInputCloud -> width = tempInputCloud -> points.size();
+  //tempInputCloud -> height = 1;
+  //tempInputCloud -> is_dense = false;
+
+  //*inputCloud = *tempInputCloud;
+
+  inputCloud -> points = tempInputCloud -> points;
+  inputCloud -> width = tempInputCloud -> points.size();
+  inputCloud -> height = 1;
+  inputCloud -> is_dense = false;
 }

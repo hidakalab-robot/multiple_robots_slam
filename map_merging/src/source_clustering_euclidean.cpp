@@ -12,6 +12,7 @@ int main (int argc, char** argv)
 
     if(ec.isInput())
     {
+      ec.deleteCeiling();
       ec.euclideanClustering();
       ec.coloring();
       ec.ListAndCentroid();
