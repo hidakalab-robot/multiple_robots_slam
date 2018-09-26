@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>multi_turtlebot_launch</name>
+  <name>roscore_communication</name>
   <version>0.0.0</version>
-  <description>The multi_turtlebot_launch package</description>
+  <description>The roscore_communication package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/multi_turtlebot_launch</url> -->
+  <!-- <url type="website">http://wiki.ros.org/roscore_communication</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -55,23 +55,11 @@
   <build_export_depend>roscpp</build_export_depend>
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
+  <exec_depend>multimaster_sync_fkie</exec_depend>
+  <exec_depend>multimaster_discovery_fkie</exec_depend>
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-
-  <exec_depend>rtabmap_ros</exec_depend>
-  <exec_depend>turtlebot_description</exec_depend>
-  <exec_depend>nodelet</exec_depend>
-  <exec_depend>laptop_battery_monitor</exec_depend>
-  <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>diagnostic_aggregator</exec_depend>
-  <exec_depend>move_base</exec_depend>
-  <exec_depend>turtlebot_bringup</exec_depend>
-  <exec_depend>turtlebot_navigation</exec_depend>
-  <exec_depend>tf2_ros</exec_depend>
-
-  
-  
 
 
   <!-- The export tag contains other, unspecified, tags -->
