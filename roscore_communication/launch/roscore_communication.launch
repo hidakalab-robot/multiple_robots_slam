@@ -1,12 +1,13 @@
 <launch>
 	<arg name="robot_name"/>
-	<group ns="$(srg robot_name)">
-		<node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery">
-			<param name="_mcast_gruop" value="224.0.0.1"/>
-		</node>
+	<group ns="$(arg robot_name)">
 
-		<node pkg="master_sync_fkie" type="master_sync" name="master_sync">
-			<rosparam param="sync_topics">['/robot*/map']</rosparam>
-		</node>
+		<include file="$(find roscore_communication)/launch/includes/discovery.launch.xml">
+			<arg name="_mcast_group" value="224.0.0.1"/>
+		</include>
+
+		<include file="$(find roscore_communication)/launch/includes/sync.launch.xml">
+			<arg name="sync_topics" value="['/robot*/map']"/>
+		</include>
 	</group>
 </launch>
