@@ -1,6 +1,6 @@
 <launch>
 	<arg name="sync_topics"/>
 	<node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen">
-		<param name="sync_topics" value="$(arg sync_topics)"/>
+		<rosparam param="sync_topics" subst_value="true">$(arg sync_topics)</rosparam>
 	</node>
 </launch>
