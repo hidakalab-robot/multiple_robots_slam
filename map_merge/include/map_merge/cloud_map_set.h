@@ -1,0 +1,136 @@
+#include <ros/ros.h>
+#include <ros/callback_queue.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <map_merge/RobotPose.h>
+#include <map_merge/AllRobotData.h>
+
+class CloudMapSet
+{
+private:
+  ros::NodeHandle cmm;
+
+  ros::NodeHandle s1;
+  ros::NodeHandle s2;
+
+  ros::NodeHandle p;
+
+  ros::Subscriber sub1;
+  ros::Subscriber sub2;
+
+  ros::Publisher pub;
+
+  map_merge::RobotPose robot1Pose;
+  map_merge::RobotPose robot2Pose;
+
+  double robot1X;
+  double robot1Y;
+  double robot1Yaw;
+
+  double robot2X;
+  double robot2Y;
+  double robot2Yaw;
+
+  sensor_msgs::PointCloud2 robot1Map;
+  sensor_msgs::PointCloud2 robot2Map;
+
+  bool input1;
+  bool input2;
+
+  void callback1(const sensor_msgs::PointCloud2::ConstPtr& msg);
+  void callback2(const sensor_msgs::PointCloud2::ConstPtr& msg);
+
+public:
+  ros::CallbackQueue queue1;
+  ros::CallbackQueue queue2;
+
+  CloudMapSet();
+  ~CloudMapSet(){};
+
+  bool isInput1(void);
+  bool isInput2(void);
+  void resetFlag(void);
+
+  void dataPublish(void);
+
+};
+
+CloudMapSet::CloudMapSet()
+:cmm("~")
+{
+  s1.setCallbackQueue(&queue1);
+  s2.setCallbackQueue(&queue2);
+
+  sub1 = s1.subscribe("/robot1/cloud_obstacles",1,&CloudMapSet::callback1,this);
+  sub2 = s2.subscribe("/robot2/cloud_obstacles",1,&CloudMapSet::callback2,this);
+
+  pub = p.advertise<map_merge::AllRobotData>("/map_merge/all_robot_data", 1);
+
+  cmm.getParam("robot1_init_x", robot1X);
+  cmm.getParam("robot1_init_y", robot1Y);
+  cmm.getParam("robot1_init_yaw", robot1Yaw);
+
+  cmm.getParam("robot2_init_x", robot2X);
+  cmm.getParam("robot2_init_y", robot2Y);
+  cmm.getParam("robot2_init_yaw", robot2Yaw);
+
+
+  input1 = false;
+  input2 = false;
+}
+
+void CloudMapSet::callback1(const sensor_msgs::PointCloud2::ConstPtr& msg)
+{
+  robot1Map = *msg;
+  input1 = true;
+}
+
+void CloudMapSet::callback2(const sensor_msgs::PointCloud2::ConstPtr& msg)
+{
+  robot2Map = *msg;
+  input2 = true;
+}
+
+bool CloudMapSet::isInput1(void)
+{
+  return input1;
+}
+
+bool CloudMapSet::isInput2(void)
+{
+  return input2;
+}
+
+void CloudMapSet::resetFlag(void)
+{
+  std::cout << "robot1 << " << robot1X << ", " << robot1Y << ", " << robot1Yaw << '\n';
+  std::cout << "robot2 << " << robot2X << ", " << robot2Y << ", " << robot2Yaw << '\n';
+
+  input1 = false;
+  input2 = false;
+}
+
+void CloudMapSet::dataPublish(void)
+{
+  map_merge::AllRobotData data;
+  std::vector<map_merge::RobotPose> poses;
+  std::vector<sensor_msgs::PointCloud2> maps;
+
+  robot1Pose.x = robot1X;
+  robot1Pose.y = robot1Y;
+  robot1Pose.yaw = robot1Yaw;
+
+  robot2Pose.x = robot2X;
+  robot2Pose.y = robot2Y;
+  robot2Pose.yaw = robot2Yaw;
+
+  poses.push_back(robot1Pose);
+  poses.push_back(robot2Pose);
+
+  maps.push_back(robot1Map);
+  maps.push_back(robot2Map);
+
+  data.poses = poses;
+  data.maps = maps;
+
+  pub.publish(data);
+}
