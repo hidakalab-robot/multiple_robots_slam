@@ -7,7 +7,7 @@
 		</include>
 
 		<include file="$(find roscore_communication)/launch/includes/sync.launch.xml">
-			<arg name="sync_topics" value="['/robot*/map']"/>
+			<arg name="sync_topics" value="['/robot*/map','/robot*/map_updates']"/>
 		</include>
 	</group>
 </launch>

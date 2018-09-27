@@ -4,7 +4,6 @@
   <arg name="init_y"/>
   <arg name="init_yaw"/>
 
-  <group ns="$(arg robot_name)">
     <node pkg="tf" type="static_transform_publisher" name="map_merged_broadcaster" args="$(arg init_x) $(arg init_y) 0 $(arg init_yaw) 0 0 /$(arg robot_name)/merge_map /$(arg robot_name)/map 100"/>
-  </group>
+
 </launch>
