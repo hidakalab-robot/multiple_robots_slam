@@ -157,6 +157,7 @@ void MapMerge::mapMerging()
         std::lock_guard<std::mutex> s_lock(subscription.mutex);
         grids.push_back(subscription.readonly_map);
         transforms.push_back(subscription.initial_pose);
+	std::cout << "subscription.initial_pose << " << subscription.initial_pose << "\n";
       }
     }
     // we don't need to lock here, because when have_initial_poses_ is true we
@@ -337,6 +338,8 @@ bool MapMerge::getInitPose(const std::string& name,
                       pose.translation.z) &&
       ros::param::get(ros::names::append(merging_namespace, "init_pose_yaw"),
                       yaw);
+
+  std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n"; 
 
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);

@@ -112,6 +112,7 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
     if ((q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w) <
         std::numeric_limits<double>::epsilon()) {
       // represents invalid transform
+      std::cout << "unknown point" << "\n";
       transforms_buf.emplace_back();
       continue;
     }
@@ -120,6 +121,9 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
     double b = q.x * q.y * s + q.z * q.w * s;
     double tx = it->translation.x;
     double ty = it->translation.y;
+
+    std::cout << "tx : " << tx << "ty : " << ty << "\n";
+
     cv::Mat transform = cv::Mat::eye(3, 3, CV_64F);
     transform.at<double>(0, 0) = transform.at<double>(1, 1) = a;
     transform.at<double>(1, 0) = b;
@@ -131,10 +135,21 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
   }
 
   if (transforms_buf.size() != images_.size()) {
+    std::cout << "return false" << "\n";
     return false;
   }
+  for(int i=0;i<transforms_buf.size();i++)
+  {
+    std::cout << transforms_buf[i] << "\n";
+  }
+
   std::swap(transforms_, transforms_buf);
 
+  for(int i=0;i<transforms_.size();i++)
+  {
+    std::cout << transforms_[i] << "\n";
+  }
+  std::cout << "return true" << "\n";
   return true;
 }
 
