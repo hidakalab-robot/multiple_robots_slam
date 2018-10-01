@@ -9,6 +9,10 @@
   <arg name="robot2_init_y" default="0.0"/>
   <arg name="robot2_init_yaw" default="0.0"/>
 
+  <arg name="map_resolution" default="0.05"/>
+
+  <arg name="affine" default="-1.0"/>
+
   <group ns="$(arg robot_name)">
     <include if="$(eval arg('robot_name') == 'robot1')" file="$(find map_merge)/launch/includes/map_merge_tf_publisher.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
@@ -27,12 +31,12 @@
     <include if="$(eval arg('robot_name') == 'robot1')" file="$(find map_merge)/launch/includes/map_merge.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
 
-      <arg name="robot1_init_x" value="$(eval arg ('robot1_init_x') / -0.05)"/>
-      <arg name="robot1_init_y" value="$(eval arg ('robot1_init_y') / -0.05)"/>
+      <arg name="robot1_init_x" value="$(eval arg ('robot1_init_x') / arg ('map_resolution') * arg ('affine'))"/>
+      <arg name="robot1_init_y" value="$(eval arg ('robot1_init_y') / arg ('map_resolution') * arg ('affine'))"/>
       <arg name="robot1_init_yaw" value="$(arg robot1_init_yaw)"/>
 
-      <arg name="robot2_init_x" value="$(eval arg ('robot2_init_x') / -0.05)"/>
-      <arg name="robot2_init_y" value="$(eval arg ('robot2_init_y') / -0.05)"/>
+      <arg name="robot2_init_x" value="$(eval arg ('robot2_init_x') / arg ('map_resolution') * arg ('affine'))"/>
+      <arg name="robot2_init_y" value="$(eval arg ('robot2_init_y') / arg ('map_resolution') * arg ('affine'))"/>
       <arg name="robot2_init_yaw" value="$(arg robot2_init_yaw)"/>
 
       <arg name="map_num" value="1"/>
@@ -42,12 +46,12 @@
     <include if="$(eval arg('robot_name') == 'robot2')" file="$(find map_merge)/launch/includes/map_merge.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
 
-      <arg name="robot1_init_x" value="$(eval arg ('robot1_init_x') / -0.05)"/>
-      <arg name="robot1_init_y" value="$(eval arg ('robot1_init_y') / -0.05)"/>
+      <arg name="robot1_init_x" value="$(eval arg ('robot1_init_x') / arg ('map_resolution') * arg ('affine'))"/>
+      <arg name="robot1_init_y" value="$(eval arg ('robot1_init_y') / arg ('map_resolution') * arg ('affine'))"/>
       <arg name="robot1_init_yaw" value="$(arg robot1_init_yaw)"/>
 
-      <arg name="robot2_init_x" value="$(eval arg ('robot2_init_x') / -0.05)"/>
-      <arg name="robot2_init_y" value="$(eval arg ('robot2_init_y') / -0.05)"/>
+      <arg name="robot2_init_x" value="$(eval arg ('robot2_init_x') / arg ('map_resolution') * arg ('affine'))"/>
+      <arg name="robot2_init_y" value="$(eval arg ('robot2_init_y') / arg ('map_resolution') * arg ('affine'))"/>
       <arg name="robot2_init_yaw" value="$(arg robot2_init_yaw)"/>
 
       <arg name="map_num" value="2"/>
