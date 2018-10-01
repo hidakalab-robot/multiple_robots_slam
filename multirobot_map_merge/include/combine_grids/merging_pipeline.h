@@ -59,7 +59,7 @@ public:
   void feed(InputIt grids_begin, InputIt grids_end);
   bool estimateTransforms(FeatureType feature = FeatureType::AKAZE,
                           double confidence = 1.0);
-  nav_msgs::OccupancyGrid::Ptr composeGrids();
+  nav_msgs::OccupancyGrid::Ptr composeGrids(int map_num);
 
   std::vector<geometry_msgs::Transform> getTransforms() const;
   template <typename InputIt>
@@ -86,6 +86,7 @@ void MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
   for (InputIt it = grids_begin; it != grids_end; ++it) {
     if (*it && !(*it)->data.empty()) {
       grids_.push_back(*it);
+      std::cout << "grids_" << (*it) -> info << '\n';
       /* convert to opencv images. it creates only a view for opencv and does
        * not copy or own actual data. */
       images_.emplace_back((*it)->info.height, (*it)->info.width, CV_8UC1,

@@ -49,14 +49,21 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
 {
   ROS_ASSERT(transform.type() == CV_64F);
   cv::Mat H;
-  invertAffineTransform(transform.rowRange(0, 2), H);
-  cv::Rect roi = warpRoi(grid, H);
+  std::cout << "transform\n" << transform << '\n';
+  invertAffineTransform(transform.rowRange(0, 2), H);//Hに逆アフィン
+  cv::Rect roi = warpRoi(grid, H);//アフィンの逆でrectを移動
   // shift top left corner for warp affine (otherwise the image is cropped)
-  H.at<double>(0, 2) -= roi.tl().x;
-  H.at<double>(1, 2) -= roi.tl().y;
+  std::cout << "before_H\n" << H << '\n';
+  std::cout << "warp_roi\n" << roi << '\n';
+  H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
+  H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
+  std::cout << "after_H\n" << H << '\n';
+  std::cout << "warp_affine" << '\n';
   warpAffine(grid, warped_grid, H, roi.size(), cv::INTER_NEAREST,
              cv::BORDER_CONSTANT,
-             cv::Scalar::all(255) /* this is -1 for signed char */);
+             cv::Scalar::all(255) /* this is -1 for signed char */);//grid:前景 warped:背景 H:前景の移動行列
+  std::cout << "roi_size << " << roi.size() << '\n';
+  std::cout << "warped_grid_size << " << warped_grid.size() << '\n';
   ROS_ASSERT(roi.size() == warped_grid.size());
 
   return roi;

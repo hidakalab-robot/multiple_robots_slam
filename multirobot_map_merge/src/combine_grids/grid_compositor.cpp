@@ -62,12 +62,27 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
     sizes.push_back(roi.size());
   }
 
+  for(int i=0;i<corners.size();i++)
+  {
+    std::cout << "before_corner" << '\n';
+    std::cout << corners[i] << '\n';
+  }
+
   std::cout << "fix" << '\n';
 
-  cv::Point fix{30,0};
+  //cv::Point fix{30,0};
 
-  corners[1] = fix;
+  //corners[1] = fix;
 
+  for (auto& roi : rois) {
+    std::cout << "roi\n" << roi << '\n';
+  }
+
+  for(int i=0;i<corners.size();i++)
+  {
+    std::cout << "after_corner" << '\n';
+    std::cout << corners[i] << '\n';
+  }
 
   cv::Rect dst_roi = cv::detail::resultRoi(corners, sizes);
 
