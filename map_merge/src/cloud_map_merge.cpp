@@ -13,6 +13,7 @@ int main (int argc, char** argv)
     if(mm.isInput())
     {
       mm.merge();
+      mm.publish();
     }
     else
     {

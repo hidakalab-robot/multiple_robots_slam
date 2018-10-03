@@ -5,7 +5,7 @@
             "includePath": [
                 "${workspaceFolder}/**",
                 "/opt/ros/kinetic/include/",
-                "/home/rosdesk/catkin_ws/devel/include"
+                "~/catkin_ws/devel/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

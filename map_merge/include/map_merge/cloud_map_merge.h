@@ -17,8 +17,9 @@ private:
     ros::Subscriber sub;
     ros::Publisher pub;
     map_merge::AllRobotData robotData;
-
+    sensor_msgs::PointCloud2 pubCloud;
     std::string subTopic;
+    std::string mergeMapFrame;
     //std::string pubTopic;
 
     bool input;
@@ -35,6 +36,7 @@ public:
     void merge(void);
     bool isInput(void);
     void resetFlag(void);
+    void publish(void);
 
 };
 
@@ -44,6 +46,7 @@ CloudMapMerge::CloudMapMerge()
     input = false;
     s.setCallbackQueue(&queue);
     cmm.getParam("sub_topic", subTopic);
+    cmm.getParam("merge_map_frame", mergeMapFrame);
     sub = s.subscribe(subTopic,1,&CloudMapMerge::callback,this);
     pub = p.advertise<sensor_msgs::PointCloud2>("cloud_map_merge/merge_map", 1);
 }
@@ -95,4 +98,18 @@ void CloudMapMerge::merge(void)
         *mergedCloud += *transCloud;
 
     }
+
+    mergedCloud -> width = mergedCloud -> points.size();
+    mergedCloud -> height = 1;
+    mergedCloud -> is_dense = false;
+    pcl::toROSMsg (*mergedCloud, pubCloud);
+
+
+}
+
+void CloudMapMerge::publish(void)
+{
+    pubCloud.header.stamp = ros::Time::now();
+    pubCloud.header.frame_id = mergeMapFrame;
+    pub.publish(pubCloud);
 }

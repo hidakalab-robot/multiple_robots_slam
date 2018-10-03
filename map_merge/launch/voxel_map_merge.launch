@@ -17,6 +17,7 @@
 
   <node pkg="map_merge" type="cloud_map_merge" name="cloud_map_merge" output="screen">
     <param name="sub_topic" value="/$(arg robot_name)/cloud_map_merge/all_robot_data"/>
+    <param name="merge_map_frame" value="/$(arg robot_name)/merge_map"/>
   </node>
 </group>
 </launch>
