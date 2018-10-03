@@ -72,7 +72,8 @@
 	  <param name="Grid/FromDepth" type="string" value="true"/>
           <param name="odom_frame_id" type="string" value="/$(arg robot_name)/odom"/>
 	  <param name="map_frame_id" type="string" value="/$(arg robot_name)/map"/>
-	 	
+	  <param name="grid_size" type="double" value="200"/>
+
 	  <!-- inputs -->
 	  <remap from="scan"            to="/$(arg robot_name)/scan"/>
 	  <remap from="rgb/image"       to="$(arg rgb_topic)"/>

@@ -43,6 +43,9 @@
 #include <opencv2/stitching/detail/motion_estimators.hpp>
 #include "estimation_internal.h"
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 namespace combine_grids
 {
 bool MergingPipeline::estimateTransforms(FeatureType feature_type,
@@ -148,10 +151,17 @@ static inline bool isIdentity(const cv::Mat& matrix)
   return cv::countNonZero(diff) == 0;
 }
 
-nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids()
+nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
 {
   ROS_ASSERT(images_.size() == transforms_.size());
   ROS_ASSERT(images_.size() == grids_.size());
+
+  std::cout << "in composeGrid" << '\n';
+  std::cout << transforms_.size() << '\n';
+  for(int i=0;i<transforms_.size();i++)
+  {
+    std::cout << transforms_[i] << '\n';
+  }
 
   if (images_.empty()) {
     return nullptr;
@@ -164,17 +174,41 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids()
   std::vector<cv::Rect> rois;
   rois.reserve(images_.size());
 
+
   for (size_t i = 0; i < images_.size(); ++i) {
     if (!transforms_[i].empty() && !images_[i].empty()) {
       imgs_warped.emplace_back();
       rois.emplace_back(
           warper.warp(images_[i], transforms_[i], imgs_warped.back()));
+      std::cout << "for\n" << transforms_[i] << '\n';
     }
   }
 
+  std::cout << "imgs_warped_size << " << imgs_warped.size() << '\n';
+
+  std::cout << "warp1" << '\n';
+  //cv::imshow("imgs_warped_1",imgs_warped[0]);
+  //cv::waitKey(1);
+
+  std::cout << "warp2" << '\n';
+  //cv::imshow("imgs_warped_2",imgs_warped[1]);
+  //cv::waitKey(1);
+
+  // std::cout << "rois1" << '\n';
+  // cv::imshow("rois_1",rois[0]);
+  // cv::waitKey(1);
+  //
+  // std::cout << "rois2" << '\n';
+  // cv::imshow("rois_2",imgs_warped[1]);
+  // cv::waitKey(1);
+
+
   if (imgs_warped.empty()) {
+    std::cout << "nullptr" << '\n';
     return nullptr;
   }
+
+
 
   ROS_DEBUG("compositing result grid");
   nav_msgs::OccupancyGrid::Ptr result;
@@ -200,10 +234,12 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids()
   }
 
   // set grid origin to its centre
-  result->info.origin.position.x =
-      -(result->info.width / 2.0) * double(result->info.resolution);
-  result->info.origin.position.y =
-      -(result->info.height / 2.0) * double(result->info.resolution);
+  result->info.origin.position.x = grids_[map_num-1]->info.origin.position.x;
+      //-(result->info.width / 2.0) * double(result->info.resolution);
+      //-10.525;
+  result->info.origin.position.y = grids_[map_num-1]->info.origin.position.y;
+      //-(result->info.height / 2.0) * double(result->info.resolution);
+      //-10.525;
   result->info.origin.orientation.w = 1.0;
 
   return result;

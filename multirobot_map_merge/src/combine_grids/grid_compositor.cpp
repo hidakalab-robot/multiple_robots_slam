@@ -55,11 +55,38 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   corners.reserve(grids.size());
   std::vector<cv::Size> sizes;
   sizes.reserve(grids.size());
+
   for (auto& roi : rois) {
+    std::cout << "roi\n" << roi << '\n';
     corners.push_back(roi.tl());
     sizes.push_back(roi.size());
   }
+
+  for(int i=0;i<corners.size();i++)
+  {
+    std::cout << "before_corner" << '\n';
+    std::cout << corners[i] << '\n';
+  }
+
+  std::cout << "fix" << '\n';
+
+  //cv::Point fix{30,0};
+
+  //corners[1] = fix;
+
+  for (auto& roi : rois) {
+    std::cout << "roi\n" << roi << '\n';
+  }
+
+  for(int i=0;i<corners.size();i++)
+  {
+    std::cout << "after_corner" << '\n';
+    std::cout << corners[i] << '\n';
+  }
+
   cv::Rect dst_roi = cv::detail::resultRoi(corners, sizes);
+
+  std::cout << "fix_end" << '\n';
 
   result_grid->info.width = static_cast<uint>(dst_roi.width);
   result_grid->info.height = static_cast<uint>(dst_roi.height);

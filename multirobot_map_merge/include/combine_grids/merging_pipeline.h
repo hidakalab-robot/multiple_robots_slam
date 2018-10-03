@@ -59,7 +59,7 @@ public:
   void feed(InputIt grids_begin, InputIt grids_end);
   bool estimateTransforms(FeatureType feature = FeatureType::AKAZE,
                           double confidence = 1.0);
-  nav_msgs::OccupancyGrid::Ptr composeGrids();
+  nav_msgs::OccupancyGrid::Ptr composeGrids(int map_num);
 
   std::vector<geometry_msgs::Transform> getTransforms() const;
   template <typename InputIt>
@@ -86,6 +86,7 @@ void MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
   for (InputIt it = grids_begin; it != grids_end; ++it) {
     if (*it && !(*it)->data.empty()) {
       grids_.push_back(*it);
+      std::cout << "grids_" << (*it) -> info << '\n';
       /* convert to opencv images. it creates only a view for opencv and does
        * not copy or own actual data. */
       images_.emplace_back((*it)->info.height, (*it)->info.width, CV_8UC1,
@@ -112,6 +113,7 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
     if ((q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w) <
         std::numeric_limits<double>::epsilon()) {
       // represents invalid transform
+      std::cout << "unknown point" << "\n";
       transforms_buf.emplace_back();
       continue;
     }
@@ -120,6 +122,9 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
     double b = q.x * q.y * s + q.z * q.w * s;
     double tx = it->translation.x;
     double ty = it->translation.y;
+
+    std::cout << "tx : " << tx << "ty : " << ty << "\n";
+
     cv::Mat transform = cv::Mat::eye(3, 3, CV_64F);
     transform.at<double>(0, 0) = transform.at<double>(1, 1) = a;
     transform.at<double>(1, 0) = b;
@@ -131,10 +136,21 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
   }
 
   if (transforms_buf.size() != images_.size()) {
+    std::cout << "return false" << "\n";
     return false;
   }
+  for(int i=0;i<transforms_buf.size();i++)
+  {
+    std::cout << transforms_buf[i] << "\n";
+  }
+
   std::swap(transforms_, transforms_buf);
 
+  for(int i=0;i<transforms_.size();i++)
+  {
+    std::cout << transforms_[i] << "\n";
+  }
+  std::cout << "return true" << "\n";
   return true;
 }
 

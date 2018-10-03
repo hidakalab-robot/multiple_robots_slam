@@ -9,6 +9,7 @@
 <arg name="robot2_init_x"/>
 <arg name="robot2_init_y"/>
 <arg name="robot2_init_yaw"/>
+<arg name="map_num"/>
 
 <group ns="/robot1/map_merge">
   <param name="init_pose_x" value="$(arg robot1_init_x)"/>
@@ -34,6 +35,7 @@
     <param name="discovery_rate" value="0.05"/>
     <param name="estimation_rate" value="0.5"/>
     <param name="estimation_confidence" value="1.0"/>
+    <param name="map_num" value="$(arg map_num)"/>
   </node>
 
 </launch>

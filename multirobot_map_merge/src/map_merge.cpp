@@ -50,6 +50,8 @@ MapMerge::MapMerge() : subscriptions_size_(0)
   std::string frame_id;
   std::string merged_map_topic;
 
+  private_nh.param("map_num", map_num,0);
+
   private_nh.param("merging_rate", merging_rate_, 4.0);
   private_nh.param("discovery_rate", discovery_rate_, 0.05);
   private_nh.param("estimation_rate", estimation_rate_, 0.5);
@@ -157,6 +159,7 @@ void MapMerge::mapMerging()
         std::lock_guard<std::mutex> s_lock(subscription.mutex);
         grids.push_back(subscription.readonly_map);
         transforms.push_back(subscription.initial_pose);
+	std::cout << "subscription.initial_pose << " << subscription.initial_pose << "\n";
       }
     }
     // we don't need to lock here, because when have_initial_poses_ is true we
@@ -168,7 +171,7 @@ void MapMerge::mapMerging()
   nav_msgs::OccupancyGridPtr merged_map;
   {
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
-    merged_map = pipeline_.composeGrids();
+    merged_map = pipeline_.composeGrids(map_num);
   }
   if (!merged_map) {
     return;
@@ -337,6 +340,8 @@ bool MapMerge::getInitPose(const std::string& name,
                       pose.translation.z) &&
       ros::param::get(ros::names::append(merging_namespace, "init_pose_yaw"),
                       yaw);
+
+  std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
 
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);
