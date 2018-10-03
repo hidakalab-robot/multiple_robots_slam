@@ -7,7 +7,7 @@
 class CloudMapSet
 {
 private:
-  ros::NodeHandle cmm;
+  ros::NodeHandle cms;
 
   ros::NodeHandle s1;
   ros::NodeHandle s2;
@@ -29,6 +29,8 @@ private:
   double robot2X;
   double robot2Y;
   double robot2Yaw;
+
+  int robotNum;
 
   sensor_msgs::PointCloud2 robot1Map;
   sensor_msgs::PointCloud2 robot2Map;
@@ -55,7 +57,7 @@ public:
 };
 
 CloudMapSet::CloudMapSet()
-:cmm("~")
+:cms("~")
 {
   s1.setCallbackQueue(&queue1);
   s2.setCallbackQueue(&queue2);
@@ -63,15 +65,17 @@ CloudMapSet::CloudMapSet()
   sub1 = s1.subscribe("/robot1/cloud_obstacles",1,&CloudMapSet::callback1,this);
   sub2 = s2.subscribe("/robot2/cloud_obstacles",1,&CloudMapSet::callback2,this);
 
-  pub = p.advertise<map_merge::AllRobotData>("/map_merge/all_robot_data", 1);
+  pub = p.advertise<map_merge::AllRobotData>("/cloud_map_merge/all_robot_data", 1);
 
-  cmm.getParam("robot1_init_x", robot1X);
-  cmm.getParam("robot1_init_y", robot1Y);
-  cmm.getParam("robot1_init_yaw", robot1Yaw);
+  cms.getParam("robot1_init_x", robot1X);
+  cms.getParam("robot1_init_y", robot1Y);
+  cms.getParam("robot1_init_yaw", robot1Yaw);
 
-  cmm.getParam("robot2_init_x", robot2X);
-  cmm.getParam("robot2_init_y", robot2Y);
-  cmm.getParam("robot2_init_yaw", robot2Yaw);
+  cms.getParam("robot2_init_x", robot2X);
+  cms.getParam("robot2_init_y", robot2Y);
+  cms.getParam("robot2_init_yaw", robot2Yaw);
+
+  cms.getParam("robot_num",robotNum);
 
 
   input1 = false;

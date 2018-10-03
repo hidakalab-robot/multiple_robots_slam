@@ -11,7 +11,6 @@ void pose_frame_editer(const geometry_msgs::PoseStamped::ConstPtr& msg)
 
   pub_pose.header.stamp = ros::Time::now();
   pub_pose.header.frame_id = my_mergemap_frame;
-
   p_pub.publish(pub_pose);
 }
 

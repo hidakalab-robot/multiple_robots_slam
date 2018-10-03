@@ -1,33 +1,32 @@
-#include <ros/ros.h>
 #include <map_merge/cloud_map_set.h>
 
 int main (int argc, char** argv)
 {
   ros::init(argc, argv, "cloud_map_set");
 
-  CloudMapSet mm;
+  CloudMapSet ms;
 
   while(ros::ok())
   {
-    mm.queue1.callOne(ros::WallDuration(1));
-    mm.queue2.callOne(ros::WallDuration(1));
+    ms.queue1.callOne(ros::WallDuration(1));
+    ms.queue2.callOne(ros::WallDuration(1));
 
-    if(mm.isInput1() && mm.isInput2())
+    if(ms.isInput1() && ms.isInput2())
     {
-      mm.dataPublish();
+      ms.dataPublish();
     }
     else
     {
-      if(!mm.isInput1())
+      if(!ms.isInput1())
       {
         std::cout << "not input robot1" << '\n';
       }
-      if(!mm.isInput2())
+      if(!ms.isInput2())
       {
         std::cout << "not input robot2" << '\n';
       }
     }
-    mm.resetFlag();
+    ms.resetFlag();
   }
   return 0;
 }

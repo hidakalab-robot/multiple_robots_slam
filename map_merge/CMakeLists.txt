@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
 	sensor_msgs
+  pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
@@ -204,3 +205,7 @@ include_directories(
 add_executable(cloud_map_set src/cloud_map_set.cpp)
 add_dependencies(cloud_map_set ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(cloud_map_set ${catkin_LIBRARIES})
+
+add_executable(cloud_map_merge src/cloud_map_merge.cpp)
+add_dependencies(cloud_map_merge ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(cloud_map_merge ${catkin_LIBRARIES})

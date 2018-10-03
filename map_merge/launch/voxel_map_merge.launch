@@ -11,7 +11,12 @@
     <param name="robot2_init_x" value="1.5"/>
     <param name="robot2_init_y" value="2.5"/>
     <param name="robot2_init_yaw" value="3.5"/>
+
+    <param name="robot_num" value="1"/>
   </node>
 
+  <node pkg="map_merge" type="cloud_map_merge" name="cloud_map_merge" output="screen">
+    <param name="sub_topic" value="/$(arg robot_name)/cloud_map_merge/all_robot_data"/>
+  </node>
 </group>
 </launch>
