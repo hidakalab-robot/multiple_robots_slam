@@ -1,8 +1,6 @@
 # multiple_robots_slam
 
-## This packages used to do multiple-robots SLAM and need ros-kinetic
-
-## This packages need ros-kinetic
+## This packages need ros-kinetic and are used to do multiple-robots SLAM
 
 #### "robot_name" require robot-number (ex. robot1, robot2, etc.)
 #### "other_robot_name" require robot-number of wanting to know pose (ex. robot1, robot2, etc.)
