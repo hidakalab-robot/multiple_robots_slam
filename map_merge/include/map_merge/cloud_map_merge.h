@@ -71,6 +71,7 @@ void CloudMapMerge::resetFlag(void)
 void CloudMapMerge::checkOverlap(void)
 {
     /*ここでマップの重なりを検出してposesの書き換えを行う*/
+    /*どこが重なってるか分かったら、その部分だけ抽出したクラウドを作る*/
 }
 
 void CloudMapMerge::merge(void)
