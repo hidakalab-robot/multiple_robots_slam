@@ -1,3 +1,5 @@
 # multiple_robots_slam
 
-## This packages need ros-kinetic
+## This packages used to do multiple-robots SLAM
+
+### This packages need ros-kinetic
