@@ -1,3 +1,0 @@
-new_exploration_programs/segmented_cloud merged_cloud
-new_exploration_programs/segmented_cloud source_cloud
-new_exploration_programs/matching_pair[] matching_list

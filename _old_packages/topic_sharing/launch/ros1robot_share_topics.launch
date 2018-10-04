@@ -1,4 +1,0 @@
-<launch>
-	<node pkg="topic_sharing" type="ros1robot_convert_topics2share" name="ros1robot_convert_topics2share" />
-	<node pkg="topic_sharing" type="ros1robot_share_topics" name="ros1robot_share_topics" />
-</launch>

@@ -1,6 +1,0 @@
-<launch>
-	<node pkg="new_exploration_programs" type="merging_sourceAndMaster" name="merging_sourceAndMaster" />
-	<node pkg="new_exploration_programs" type="matching_rtabSourceMaster" name="matching_rtabSourceMaster" />
-	<node pkg="new_exploration_programs" type="processing_rtab_source" name="processing_rtab_source" />
-	<node pkg="new_exploration_programs" type="processing_rtab_masterMap" name="processing_rtab_masterMap" />
-</launch>
