@@ -209,7 +209,6 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   }
 
 
-
   ROS_DEBUG("compositing result grid");
   nav_msgs::OccupancyGrid::Ptr result;
   internal::GridCompositor compositor;

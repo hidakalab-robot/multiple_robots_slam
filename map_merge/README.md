@@ -7,5 +7,5 @@
 * merging maps
 
 ```
-$ roslaunch multi_turtlebot_launch minimal.launch robot_name:=robot1
+$ roslaunch map_merge map_merge.launch robot_name:=robot1
 ```
