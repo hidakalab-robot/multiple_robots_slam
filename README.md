@@ -9,24 +9,24 @@
 
 - multi SLAM procedure
 
-  - bringup
+1. bringup
 
 ```
 $ roslaunch multi_turtlebot_launch minimal.launch robot_name:=robot1
 ```
 
-  - rtabmap
+2. rtabmap
 
 ```
 $ roslaunch multi_turtlebot_launch mapping.launch robot_name:=robot1
 ```
 
-  - share topics and get other-robot pose
+3. share topics and get other-robot pose (Wait until all masters are displayed in "ROS masters obtained")
 ```
 $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot1 other_robot_name:=robot2
 ```
 
-  - merging maps
+4. merging maps
 
 ```
 $ roslaunch multi_turtlebot_launch minimal.launch robot_name:=robot1
