@@ -1,6 +1,6 @@
 # map_merge
 
-## This package is used to merge maps
+## These packages are used to merge maps
 
 ### "robot_name" require robot-number (ex. robot1, robot2, etc.)
 
