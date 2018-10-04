@@ -1,18 +1,25 @@
 <launch>
   <arg name="robot_name"/>
 
+  <arg name="robot1_init_x"/>
+  <arg name="robot1_init_y"/>
+  <arg name="robot1_init_yaw"/>
+
+  <arg name="robot2_init_x"/>
+  <arg name="robot2_init_y"/>
+  <arg name="robot2_init_yaw"/>
+
   <group ns="$(arg robot_name)">
 
   <node pkg="map_merge" type="cloud_map_set" name="cloud_map_set" output="screen">
-    <param name="robot1_init_x" value="1.0"/>
-    <param name="robot1_init_y" value="2.0"/>
-    <param name="robot1_init_yaw" value="3.0"/>
+    <param name="robot1_init_x" value="0.0"/>
+    <param name="robot1_init_y" value="0.0"/>
+    <param name="robot1_init_yaw" value="0.0"/>
 
     <param name="robot2_init_x" value="1.5"/>
-    <param name="robot2_init_y" value="2.5"/>
-    <param name="robot2_init_yaw" value="3.5"/>
+    <param name="robot2_init_y" value="0.0"/>
+    <param name="robot2_init_yaw" value="0.0"/>
 
-    <param name="robot_num" value="1"/>
   </node>
 
   <node pkg="map_merge" type="cloud_map_merge" name="cloud_map_merge" output="screen">

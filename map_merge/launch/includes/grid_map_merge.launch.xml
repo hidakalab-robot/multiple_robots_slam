@@ -25,7 +25,7 @@
   <param name="init_pose_yaw" value="$(arg robot2_init_yaw)"/>
 </group>
 
-  <node pkg="multirobot_map_merge" type="map_merge" respawn="false" name="map_merge" output="screen">
+  <node pkg="multirobot_map_merge" type="map_merge" respawn="false" name="grid_map_merge" output="screen">
     <param name="robot_map_topic" value="map"/>
     <param name="robot_namespace" value=""/>
     <param name="merged_map_topic" value="merge_map"/>

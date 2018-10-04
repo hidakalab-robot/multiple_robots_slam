@@ -62,10 +62,10 @@ CloudMapSet::CloudMapSet()
   s1.setCallbackQueue(&queue1);
   s2.setCallbackQueue(&queue2);
 
-  sub1 = s1.subscribe("/robot1/cloud_obstacles",1,&CloudMapSet::callback1,this);
-  sub2 = s2.subscribe("/robot2/cloud_obstacles",1,&CloudMapSet::callback2,this);
+  sub1 = s1.subscribe("/robot1/rtabmap/cloud_obstacles",1,&CloudMapSet::callback1,this);
+  sub2 = s2.subscribe("/robot2/rtabmap/cloud_obstacles",1,&CloudMapSet::callback2,this);
 
-  pub = p.advertise<map_merge::AllRobotData>("/cloud_map_merge/all_robot_data", 1);
+  pub = p.advertise<map_merge::AllRobotData>("cloud_map_merge/all_robot_data", 1);
 
   cms.getParam("robot1_init_x", robot1X);
   cms.getParam("robot1_init_y", robot1Y);
