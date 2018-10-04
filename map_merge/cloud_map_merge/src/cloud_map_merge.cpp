@@ -1,4 +1,4 @@
-#include <map_merge/cloud_map_merge.h>
+#include <cloud_map_merge/cloud_map_merge.h>
 
 int main (int argc, char** argv)
 {

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(map_merge)
+project(cloud_map_merge)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   message_generation
 	sensor_msgs
   pcl_ros
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -54,6 +55,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    RobotPose.msg
    AllRobotData.msg
+   Overlap.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -75,6 +77,7 @@ find_package(catkin REQUIRED COMPONENTS
    DEPENDENCIES
    std_msgs
 	 sensor_msgs
+   geometry_msgs
  )
 
 ################################################
@@ -109,7 +112,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES map_merge
-  CATKIN_DEPENDS roscpp rospy std_msgs sensor_msgs message_runtime
+  CATKIN_DEPENDS roscpp rospy std_msgs sensor_msgs message_runtime geometry_msgs
 #  DEPENDS system_lib
 )
 

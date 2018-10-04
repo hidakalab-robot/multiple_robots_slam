@@ -233,10 +233,10 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   }
 
   // set grid origin to its centre
-  result->info.origin.position.x = grids_[map_num-1]->info.origin.position.x;
+  result->info.origin.position.x = grids_[map_num - 1]->info.origin.position.x;
       //-(result->info.width / 2.0) * double(result->info.resolution);
       //-10.525;
-  result->info.origin.position.y = grids_[map_num-1]->info.origin.position.y;
+  result->info.origin.position.y = grids_[map_num - 1]->info.origin.position.y;
       //-(result->info.height / 2.0) * double(result->info.resolution);
       //-10.525;
   result->info.origin.orientation.w = 1.0;

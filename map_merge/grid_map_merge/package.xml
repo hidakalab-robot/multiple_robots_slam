@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>multirobot_map_merge</name>
+  <name>grid_map_merge</name>
   <version>2.1.1</version>
 
   <description>Merging multiple maps without knowledge of initial
@@ -19,6 +19,7 @@
   <depend>nav_msgs</depend>
   <depend>map_msgs</depend>
   <depend>tf2_geometry_msgs</depend>
+  <depend>cloud_map_merge</depend>
 
   <test_depend>roslaunch</test_depend>
   <test_depend>rosunit</test_depend>

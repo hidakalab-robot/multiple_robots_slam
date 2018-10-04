@@ -50,6 +50,7 @@ class GridCompositor
 public:
   nav_msgs::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids,
                                        const std::vector<cv::Rect>& rois);
+  void publishOverlap(const std::vector<cv::Rect>& rois, const cv::Rect& dst_roi);
 };
 
 }  // namespace internal

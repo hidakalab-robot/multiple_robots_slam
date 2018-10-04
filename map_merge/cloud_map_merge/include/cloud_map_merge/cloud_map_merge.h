@@ -1,8 +1,8 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <map_merge/RobotPose.h>
-#include <map_merge/AllRobotData.h>
+#include <cloud_map_merge/RobotPose.h>
+#include <cloud_map_merge/AllRobotData.h>
 #include <pcl_ros/point_cloud.h>
 
 class CloudMapMerge
@@ -16,7 +16,7 @@ private:
 
     ros::Subscriber sub;
     ros::Publisher pub;
-    map_merge::AllRobotData robotData;
+    cloud_map_merge::AllRobotData robotData;
     sensor_msgs::PointCloud2 pubCloud;
     std::string subTopic;
     std::string mergeMapFrame;
@@ -24,7 +24,7 @@ private:
 
     bool input;
 
-    void callback(const map_merge::AllRobotData::ConstPtr& msg);
+    void callback(const cloud_map_merge::AllRobotData::ConstPtr& msg);
 
 public:
     ros::CallbackQueue queue;
@@ -51,7 +51,7 @@ CloudMapMerge::CloudMapMerge()
     pub = p.advertise<sensor_msgs::PointCloud2>("cloud_map_merge/merge_map", 1);
 }
 
-void CloudMapMerge::callback(const map_merge::AllRobotData::ConstPtr& msg)
+void CloudMapMerge::callback(const cloud_map_merge::AllRobotData::ConstPtr& msg)
 {
     robotData = *msg;
     input = true;

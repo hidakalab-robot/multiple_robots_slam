@@ -1,8 +1,8 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <sensor_msgs/PointCloud2.h>
-#include <map_merge/RobotPose.h>
-#include <map_merge/AllRobotData.h>
+#include <cloud_map_merge/RobotPose.h>
+#include <cloud_map_merge/AllRobotData.h>
 
 class CloudMapSet
 {
@@ -19,8 +19,8 @@ private:
 
   ros::Publisher pub;
 
-  map_merge::RobotPose robot1Pose;
-  map_merge::RobotPose robot2Pose;
+  cloud_map_merge::RobotPose robot1Pose;
+  cloud_map_merge::RobotPose robot2Pose;
 
   double robot1X;
   double robot1Y;
@@ -65,7 +65,7 @@ CloudMapSet::CloudMapSet()
   sub1 = s1.subscribe("/robot1/rtabmap/cloud_obstacles",1,&CloudMapSet::callback1,this);
   sub2 = s2.subscribe("/robot2/rtabmap/cloud_obstacles",1,&CloudMapSet::callback2,this);
 
-  pub = p.advertise<map_merge::AllRobotData>("cloud_map_merge/all_robot_data", 1);
+  pub = p.advertise<cloud_map_merge::AllRobotData>("cloud_map_merge/all_robot_data", 1);
 
   cms.getParam("robot1_init_x", robot1X);
   cms.getParam("robot1_init_y", robot1Y);
@@ -115,8 +115,8 @@ void CloudMapSet::resetFlag(void)
 
 void CloudMapSet::dataPublish(void)
 {
-  map_merge::AllRobotData data;
-  std::vector<map_merge::RobotPose> poses;
+  cloud_map_merge::AllRobotData data;
+  std::vector<cloud_map_merge::RobotPose> poses;
   std::vector<sensor_msgs::PointCloud2> maps;
 
   robot1Pose.x = robot1X;

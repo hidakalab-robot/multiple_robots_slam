@@ -38,7 +38,11 @@
 
 #include <opencv2/stitching/detail/util.hpp>
 
+#include <cloud_map_merge/Overlap.h>
+
 #include <ros/assert.h>
+
+#include <ros/ros.h>
 
 namespace combine_grids
 {
@@ -88,6 +92,10 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 
   std::cout << "fix_end" << '\n';
 
+  /*このへんでマップの重なりを検知する*/
+
+  //publishOverlap(rois,dst_roi);
+
   result_grid->info.width = static_cast<uint>(dst_roi.width);
   result_grid->info.height = static_cast<uint>(dst_roi.height);
   result_grid->data.resize(static_cast<size_t>(dst_roi.area()), -1);
@@ -106,6 +114,90 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   }
 
   return result_grid;
+}
+
+void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const cv::Rect& dst_roi)
+{
+  /*重ねる前後の情報からどのマップのどの場所が重なっているか調べる*/
+
+  cloud_map_merge::Overlap overlap;
+
+  ros::Publisher pubOverlap;
+  ros::NodeHandle p;
+  pubOverlap = p.advertise<cloud_map_merge::Overlap>("overlap", 1);
+
+  /*xyの大きさを比較*/
+  int sumX = 0;
+  int sumY = 0;
+
+  for(int i;i<rois.size();i++)
+  {
+    sumX += rois[i].size().width;
+    sumY += rois[i].size().height;
+  }
+    
+  int diffX = sumX - dst_roi.size().width;
+  int diffY = sumY - dst_roi.size().height;
+
+  if(diffX > 0 || diffY > 0)
+  {
+    /*二つのマップの位置関係を調べる*/
+    int left;
+    int top;
+    int right;
+    int bottom;
+
+    for(int i=0;i<rois.size() - 1;i++)
+    {
+      cv::Point diff_tl;
+      cv::Point diff_br;
+
+      diff_tl = rois[i].tl() - rois[i + 1].tl();
+      diff_br = rois[i].br() - rois[i + 1].br();
+
+      if(diff_tl.x > 0){left = i + 1;}
+      else{left = i;}
+      if(diff_tl.y > 0){top = i + 1;}
+      else{top = i;}
+      if(diff_br.x > 0){right = i;}
+      else{right = i;}
+      if(diff_br.y > 0){bottom = i;}
+      else{bottom = i;}
+
+      /*1が右の場合*/
+      //if(left = )
+
+        /*1が上*/
+        //overlap.from_map = 0;
+        //overlap.to_map
+
+        /*1が下*/
+
+        /*1が中*/
+
+        /*1が外*/
+
+      /*1が左の場合*/
+
+        /*1が上*/
+
+        /*1が下*/
+
+        /*1が中*/
+
+        /*1が外*/
+
+
+    }
+
+  }
+  else
+  {
+    pubOverlap.publish(overlap);
+  }
+  
+
+
 }
 
 }  // namespace internal

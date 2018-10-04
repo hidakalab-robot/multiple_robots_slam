@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(multirobot_map_merge)
+project(grid_map_merge)
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roscpp
   tf2_geometry_msgs
+  cloud_map_merge
 )
 
 find_package(Boost REQUIRED COMPONENTS thread)
@@ -32,6 +33,7 @@ catkin_package(
     map_msgs
     nav_msgs
     tf2_geometry_msgs
+    cloud_map_merge
 )
 
 ###########
@@ -63,11 +65,11 @@ add_library(combine_grids STATIC
 add_dependencies(combine_grids ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(combine_grids ${OpenCV_LIBRARIES})
 
-add_executable(map_merge
+add_executable(grid_map_merge
   src/map_merge.cpp
 )
-add_dependencies(map_merge ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(map_merge combine_grids ${catkin_LIBRARIES})
+add_dependencies(grid_map_merge ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(grid_map_merge combine_grids ${catkin_LIBRARIES})
 
 #############
 ## Install ##
@@ -75,7 +77,7 @@ target_link_libraries(map_merge combine_grids ${catkin_LIBRARIES})
 
 # install nodes, installing combine_grids should not be necessary,
 # but lets make catkin_lint happy
-install(TARGETS combine_grids map_merge
+install(TARGETS combine_grids grid_map_merge
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
