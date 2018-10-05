@@ -26,7 +26,7 @@
          $ roslaunch rtabmap_ros demo_turtlebot_rviz.launch
   -->
   
-  <arg name="robot_name"/>
+  <arg name="robot_name" default="robot1"/>
 
   <arg name="database_path"     default="rtabmap.db"/>
   <arg name="rgbd_odometry"     default="true"/>
