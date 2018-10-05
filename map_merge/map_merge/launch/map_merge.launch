@@ -27,7 +27,7 @@
       </include>
 
 
-      <include if="$(arg server)" file="$(find map_merge)/launch/includes/grid_map_merge.launch.xml">
+      <include unless="$(arg server)" file="$(find map_merge)/launch/includes/grid_map_merge.launch.xml">
         <arg name="robot_name" value="$(arg robot_name)"/>
         <arg name="robot1_init_x" value="$(eval arg ('robot1_init_x') / arg ('map_resolution') * arg ('affine'))"/>
         <arg name="robot1_init_y" value="$(eval arg ('robot1_init_y') / arg ('map_resolution') * arg ('affine'))"/>
@@ -49,7 +49,7 @@
         <arg name="init_yaw" value="$(arg robot2_init_yaw)"/>
       </include>
 
-     <include if="$(arg server)" file="$(find map_merge)/launch/includes/grid_map_merge.launch.xml">
+     <include unless="$(arg server)" file="$(find map_merge)/launch/includes/grid_map_merge.launch.xml">
         <arg name="robot_name" value="$(arg robot_name)"/>
 
         <arg name="robot1_init_x" value="$(eval arg ('robot1_init_x') / arg ('map_resolution') * arg ('affine'))"/>
@@ -65,7 +65,7 @@
       </include>
     </group>
 
-    <include if="$(arg server)" file="$(find map_merge)/launch/includes/cloud_map_merge.launch.xml">
+    <include unless="$(arg server)" file="$(find map_merge)/launch/includes/cloud_map_merge.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
 
       <arg name="robot1_init_x" value="$(arg robot1_init_x)"/>

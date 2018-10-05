@@ -1,0 +1,51 @@
+<launch>
+  <arg name="robot_name" default="server"/>
+
+  <arg name="robot1_init_x" default="0.0"/>
+  <arg name="robot1_init_y" default="0.0"/>
+  <arg name="robot1_init_yaw" default="0.0"/>
+
+  <arg name="robot2_init_x" default="1.5"/>
+  <arg name="robot2_init_y" default="0.0"/>
+  <arg name="robot2_init_yaw" default="0.0"/>
+
+  <arg name="map_resolution" default="0.05"/>
+
+  <arg name="affine" default="-1.0"/>
+
+  <group ns="$(arg robot_name)">
+
+      <include file="$(find map_merge)/launch/includes/map_merge_tf_publisher.launch.xml">
+        <arg name="robot_name" value="$(arg robot_name)"/>
+        <arg name="init_x" value="0.0"/>
+        <arg name="init_y" value="0.0"/>
+        <arg name="init_yaw" value="0.0"/>
+      </include>
+
+
+      <include file="$(find map_merge)/launch/includes/grid_map_merge.launch.xml">
+        <arg name="robot_name" value="$(arg robot_name)"/>
+        <arg name="robot1_init_x" value="$(eval arg ('robot1_init_x') / arg ('map_resolution') * arg ('affine'))"/>
+        <arg name="robot1_init_y" value="$(eval arg ('robot1_init_y') / arg ('map_resolution') * arg ('affine'))"/>
+        <arg name="robot1_init_yaw" value="$(arg robot1_init_yaw)"/>
+        <arg name="robot2_init_x" value="$(eval arg ('robot2_init_x') / arg ('map_resolution') * arg ('affine'))"/>
+        <arg name="robot2_init_y" value="$(eval arg ('robot2_init_y') / arg ('map_resolution') * arg ('affine'))"/>
+        <arg name="robot2_init_yaw" value="$(arg robot2_init_yaw)"/>
+        <arg name="map_num" value="1"/>
+      </include>
+
+
+    <include file="$(find map_merge)/launch/includes/cloud_map_merge.launch.xml">
+      <arg name="robot_name" value="$(arg robot_name)"/>
+
+      <arg name="robot1_init_x" value="$(arg robot1_init_x)"/>
+      <arg name="robot1_init_y" value="$(arg robot1_init_y)"/>
+      <arg name="robot1_init_yaw" value="$(arg robot1_init_yaw)"/>
+
+      <arg name="robot2_init_x" value="$(arg robot2_init_x)"/>
+      <arg name="robot2_init_y" value="$(arg robot2_init_y)"/>
+      <arg name="robot2_init_yaw" value="$(arg robot2_init_yaw)"/>
+    </include>
+
+  </group>
+</launch>
