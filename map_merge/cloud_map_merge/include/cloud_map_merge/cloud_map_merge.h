@@ -20,7 +20,7 @@ private:
     sensor_msgs::PointCloud2 pubCloud;
     std::string subTopic;
     std::string mergeMapFrame;
-    //std::string pubTopic;
+    std::string pubTopic;
 
     bool input;
 
@@ -46,9 +46,10 @@ CloudMapMerge::CloudMapMerge()
     input = false;
     s.setCallbackQueue(&queue);
     cmm.getParam("sub_topic", subTopic);
+    cmm.getParam("pub_topic", pubTopic);
     cmm.getParam("merge_map_frame", mergeMapFrame);
     sub = s.subscribe(subTopic,1,&CloudMapMerge::callback,this);
-    pub = p.advertise<sensor_msgs::PointCloud2>("cloud_map_merge/merge_map", 1);
+    pub = p.advertise<sensor_msgs::PointCloud2>(pubTopic, 1);
 }
 
 void CloudMapMerge::callback(const cloud_map_merge::AllRobotData::ConstPtr& msg)

@@ -328,7 +328,7 @@ bool MapMerge::isRobotMapTopic(const ros::master::TopicInfo& topic)
 bool MapMerge::getInitPose(const std::string& name,
                            geometry_msgs::Transform& pose)
 {
-  std::string merging_namespace = ros::names::append(name, "map_merge");
+  std::string merging_namespace = ros::names::append(name, "grid_map_merge");
   double yaw = 0.0;
 
   bool success =
