@@ -28,7 +28,7 @@
   <node pkg="grid_map_merge" type="grid_map_merge" respawn="false" name="grid_map_merge" output="screen">
     <param name="robot_map_topic" value="map"/>
     <param name="robot_namespace" value=""/>
-    <param name="merged_map_topic" value="$(arg robot_name)/grid_map_merge/merge_map"/>
+    <param name="merged_map_topic" value="/$(arg robot_name)/grid_map_merge/merge_map"/>
     <param name="world_frame" value="$(arg robot_name)/merge_map"/>
     <param name="known_init_poses" value="true"/>
     <param name="merging_rate" value="1.0"/>
