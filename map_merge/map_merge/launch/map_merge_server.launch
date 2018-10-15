@@ -25,7 +25,7 @@
 
       <include file="$(find map_merge)/launch/includes/map_merge_tf_publisher.launch.xml">
         <arg name="robot_name" value="$(arg robot_name)"/>
-        <arg name="init_x" value="1.5"/>
+        <arg name="init_x" value="0.0"/>
         <arg name="init_y" value="0.0"/>
         <arg name="init_yaw" value="0.0"/>
       </include>

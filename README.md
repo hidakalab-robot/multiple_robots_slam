@@ -29,3 +29,46 @@ $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot
 ```
 $ roslaunch map_merge map_merge.launch robot_name:=robot1
 ```
+
+- for expriment commands (two robots + server)
+
+  - robot1
+
+    ```
+    $ roslaunch multi_turtlebot_launch minimal.launch robot_name:=robot1
+
+    $ roslaunch multi_turtlebot_launch mapping.launch robot_name:=robot1
+
+    $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot1 server:=true
+
+    $ roslaunch map_merge map_merge.launch robot_name:=robot1 server:=true
+    ```
+
+  - robot2
+
+    ```
+    $ roslaunch multi_turtlebot_launch minimal.launch robot_name:=robot2
+
+    $ roslaunch multi_turtlebot_launch mapping.launch robot_name:=robot2
+
+    $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot2 server:=true
+
+    $ roslaunch map_merge map_merge.launch robot_name:=robot2 server:=true
+    ```
+  - server
+
+    ```
+    $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot1 server:=true
+
+    $ roslaunch roscore_communication get_robot_pose.launch robot_name:=server other_robot_name:=robot1
+
+    $ roslaunch roscore_communication get_robot_pose.launch robot_name:=server other_robot_name:=robot2
+
+    $ roslaunch map_merge map_merge_server.launch
+
+    $ roslaunch multi_turtlebot_launch teleop.launch robot_name:=server control_robot_name:=robot1
+
+    $ roslaunch multi_turtlebot_launch teleop.launch robot_name:=server control_robot_name:=robot2
+
+    $ rviz
+    ```
