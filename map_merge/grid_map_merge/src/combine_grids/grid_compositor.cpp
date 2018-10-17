@@ -42,7 +42,6 @@
 
 #include <ros/assert.h>
 
-#include <ros/ros.h>
 
 namespace combine_grids
 {
@@ -100,9 +99,8 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   cloud_map_merge::OverlapArray overlaps;
   //std::vector<cloud_map_merge::Overlap> localOverlaps;
 
-  ros::Publisher pubOverlap;
-  ros::NodeHandle p;
-  pubOverlap = p.advertise<cloud_map_merge::OverlapArray>("overlap", 1);
+  //ros::Publisher pubOverlap;
+  //ros::NodeHandle p;
 
   for (int i=0;i<rois.size()-1;i++)
   {
@@ -110,9 +108,15 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
     arg_rois[1] = rois[i+1];
     publishOverlap(arg_rois,i,i+1,overlaps);
   }
-
+  std::cout << "overlaps\n" << overlaps << std::endl;
   //overlaps.overlapArray = localOverlaps;
   overlaps.header.stamp = ros::Time::now();
+  std::cout << "publish overlap" << std::endl;
+
+  //これを入れないとpublish出来ないため一時的にいれてる
+  //ほんとは最初のコンストラクタでpublisherを宣言するのが良い
+  sleep(1);
+
   pubOverlap.publish(overlaps);
 
   result_grid->info.width = static_cast<uint>(dst_roi.width);
@@ -137,6 +141,8 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 
 void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int& num_a, const int& num_b, cloud_map_merge::OverlapArray& overlaps)
 {
+
+  std::cout << "*********overlap********" << std::endl;
 
   cloud_map_merge::Overlap overlap;
 
