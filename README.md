@@ -4,6 +4,7 @@
 
 #### "robot_name" require robot-number (ex. robot1, robot2, etc.)
 #### "other_robot_name" require robot-number of wanting to know pose (ex. robot1, robot2, etc.)
+#### "control_robot_name" require robot-number of wanting to teleoperate (ex. robot1, robot2, etc.)
 
 - multi SLAM procedure
 
@@ -30,7 +31,7 @@ $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot
 $ roslaunch map_merge map_merge.launch robot_name:=robot1
 ```
 
-- for expriment commands (two robots + server)
+- commands for expriment (two robots + server)
 
   - robot1
 
