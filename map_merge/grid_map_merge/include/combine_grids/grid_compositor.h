@@ -41,6 +41,8 @@
 
 #include <opencv2/core/utility.hpp>
 
+#include <cloud_map_merge/OverlapArray.h>
+
 namespace combine_grids
 {
 namespace internal
@@ -50,7 +52,7 @@ class GridCompositor
 public:
   nav_msgs::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids,
                                        const std::vector<cv::Rect>& rois);
-  void publishOverlap(const std::vector<cv::Rect>& rois, const int& num_a, const int& num_b);
+  void publishOverlap(const std::vector<cv::Rect>& rois, const int& num_a, const int& num_b, cloud_map_merge::OverlapArray& overlaps);
 };
 
 }  // namespace internal

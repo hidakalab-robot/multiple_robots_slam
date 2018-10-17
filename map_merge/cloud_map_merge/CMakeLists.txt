@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
    RobotPose.msg
    AllRobotData.msg
    Overlap.msg
+   OverlapArray.msg
  )
 
 ## Generate services in the 'srv' folder
