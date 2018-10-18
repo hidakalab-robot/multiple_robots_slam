@@ -48,7 +48,7 @@ namespace combine_grids
 namespace internal
 {
 nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
-    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois)
+    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<int>& mapOrder)
 {
   ROS_ASSERT(grids.size() == rois.size());
 
@@ -106,9 +106,9 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   {
     arg_rois[0] = rois[i];
     arg_rois[1] = rois[i+1];
-    publishOverlap(arg_rois,i,i+1,overlaps);
+    publishOverlap(arg_rois,mapOrder[i],mapOrder[i+1],overlaps);
   }
-  std::cout << "overlaps\n" << overlaps << std::endl;
+  //std::cout << "overlaps\n" << overlaps << std::endl;
   //overlaps.overlapArray = localOverlaps;
   overlaps.header.stamp = ros::Time::now();
   std::cout << "publish overlap" << std::endl;
@@ -146,28 +146,33 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
 
   cloud_map_merge::Overlap overlap;
 
-  std::vector<int> map_num;
+  std::vector<int> order;
+  std::vector<geometry_msgs::Point> size;
   std::vector<geometry_msgs::Point> tl;
   std::vector<geometry_msgs::Point> br;
   std::vector<geometry_msgs::Point> rect_tl;
   std::vector<geometry_msgs::Point> rect_br;
 
-  map_num.resize(2);
+  order.resize(2);
+  size.resize(2);
   tl.resize(2);
   br.resize(2);
   rect_tl.resize(2);
   rect_br.resize(2);
 
-  map_num[0] = num_a;
-  map_num[1] = num_b;
+  order[0] = num_a;
+  order[1] = num_b;
 
   for(int i=0;i<2;i++)
   {
-    rect_tl[i].x = rois[i].x;
-    rect_tl[i].y = rois[i].y;
+    size[i].x = rois[i].size().width;
+    size[i].y = rois[i].size().height;
 
-    rect_br[i].x = rois[i].x;
-    rect_br[i].y = rois[i].y;
+    rect_tl[i].x = rois[i].tl().x;
+    rect_tl[i].y = rois[i].tl().y;
+
+    rect_br[i].x = rois[i].br().x;
+    rect_br[i].y = rois[i].br().y;
   }
 
   //レフトトップの座標値の差
@@ -185,8 +190,13 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
   int over_wt;
   int over_ht;
 
-  diff_x = rois[1].x - rois[0].x;
-  diff_y = rois[1].y - rois[0].y;
+  //diff_x = rois[1].x - rois[0].x;
+  //diff_y = rois[1].y - rois[0].y;
+  diff_x = rois[1].tl().x - rois[0].tl().x;
+  diff_y = rois[1].tl().y - rois[0].tl().y;
+
+  std::cout << "diff_x << " << diff_x << std::endl;
+  std::cout << "diff_y << " << diff_y << std::endl;
 
   //二つの地図の位置関係をチェック
   if(diff_x > 0)
@@ -208,9 +218,17 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
     top = 1;
     bottom = 0;
   }
+
+  std::cout << "top << " << top << std::endl;
+  std::cout << "bottom << " << bottom << std::endl;
+  std::cout << "left << " << left << std::endl;
+  std::cout << "right << " << right << std::endl;
   
   over_w = rois[left].size().width - std::abs(diff_x);
-  over_h = rois[top].size().height - std::abs(diff_x);
+  over_h = rois[top].size().height - std::abs(diff_y);
+
+  std::cout << "over_w << " << over_w << std::endl;
+  std::cout << "over_h << " << over_h << std::endl;
 
   if(over_w < 0)
   {
@@ -240,6 +258,9 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
     over_ht = rois[bottom].size().height;
   }
 
+  std::cout << "over_wt << " << over_wt << std::endl;
+  std::cout << "over_ht << " << over_ht << std::endl;
+
   //右側 tl:{0,?}  br:{over_wt,?}
   //下側 tl:{?,0}  br:{?,over_ht}
 
@@ -249,7 +270,7 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
   tl[bottom].y = 0;
   br[bottom].y = over_ht;
 
-  if(right = 1)
+  if(right == 1)
   {
     tl[left].x = tl[right].x + diff_x;
     br[left].x = br[right].x + diff_x;
@@ -260,7 +281,7 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
     br[left].x = br[right].x - diff_x;
   }
 
-  if(bottom = 1)
+  if(bottom == 1)
   {
     tl[top].y = tl[bottom].y + diff_y;
     br[top].y = br[bottom].y + diff_y;
@@ -274,7 +295,8 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
   overlap.header.stamp = ros::Time::now();
   overlap.overlap = true;
   overlap.resolution = 0.05;
-  overlap.num = map_num;
+  overlap.order = order;
+  overlap.size = size;
   overlap.tl = tl;
   overlap.br = br;
   overlap.rect_tl = rect_tl;

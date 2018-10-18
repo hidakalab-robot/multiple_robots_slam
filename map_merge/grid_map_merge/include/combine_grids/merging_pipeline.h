@@ -69,6 +69,8 @@ private:
   std::vector<nav_msgs::OccupancyGrid::ConstPtr> grids_;
   std::vector<cv::Mat> images_;
   std::vector<cv::Mat> transforms_;
+  
+  std::vector<int> mapOrder;
 };
 
 template <typename InputIt>
@@ -83,6 +85,7 @@ void MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
   // their guarantee validity for only single-pass algos
   images_.clear();
   grids_.clear();
+  mapOrder.clear();
   for (InputIt it = grids_begin; it != grids_end; ++it) {
     if (*it && !(*it)->data.empty()) {
       grids_.push_back(*it);
@@ -95,6 +98,18 @@ void MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
       grids_.emplace_back();
       images_.emplace_back();
     }
+  }
+  for(int i=0;i<grids_.size();i++)
+  {
+    std::cout << "****grids frame ******\n" << grids_[i] -> header.frame_id << std::endl;
+    std::string num = grids_[i] -> header.frame_id;
+    std::cout << "a"  << std::endl;
+    char numPick = num[6];
+    std::cout << "b"  << std::endl;
+    mapOrder.push_back((int)(numPick - '0'));
+    std::cout << "c"  << std::endl;
+    std::cout << "order_num\n" << mapOrder[i] << std::endl;
+    std::cout << "d"  << std::endl;
   }
 }
 

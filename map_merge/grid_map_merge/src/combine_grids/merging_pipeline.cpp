@@ -211,8 +211,9 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
 
   ROS_DEBUG("compositing result grid");
   nav_msgs::OccupancyGrid::Ptr result;
+
   internal::GridCompositor compositor;
-  result = compositor.compose(imgs_warped, rois);
+  result = compositor.compose(imgs_warped, rois, mapOrder);
 
   // set correct resolution to output grid. use resolution of identity (works
   // for estimated trasforms), or any resolution (works for know_init_positions)
@@ -232,14 +233,41 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
     result->info.resolution = any_resolution;
   }
 
-  // set grid origin to its centre
-  result->info.origin.position.x = grids_[map_num - 1]->info.origin.position.x;
+  for(int i;i<grids_.size();i++)
+  {
+    std::cout << "grids_frames\n" << grids_[i] -> header.frame_id << std::endl;
+  }
+
+  for(int i=0;i<mapOrder.size();i++)
+  {
+    std::cout << "check1" << std::endl;
+    if(mapOrder[i] == map_num)
+    {
+      // set grid origin to its centre
+      result->info.origin.position.x = grids_[i]->info.origin.position.x;
+      std::cout << "check2" << std::endl;
       //-(result->info.width / 2.0) * double(result->info.resolution);
       //-10.525;
-  result->info.origin.position.y = grids_[map_num - 1]->info.origin.position.y;
+      result->info.origin.position.y = grids_[i]->info.origin.position.y;
+      std::cout << "check3" << std::endl;
       //-(result->info.height / 2.0) * double(result->info.resolution);
       //-10.525;
-  result->info.origin.orientation.w = 1.0;
+      result->info.origin.orientation.w = 1.0;
+      std::cout << "check4" << std::endl;
+    }
+  }
+
+  std::cout << "check5" << std::endl;
+
+  // // set grid origin to its centre
+  //     result->info.origin.position.x = grids_[map_num-1]->info.origin.position.x;
+  //     //-(result->info.width / 2.0) * double(result->info.resolution);
+  //     //-10.525;
+  //     result->info.origin.position.y = grids_[map_num-1]->info.origin.position.y;
+  //     //-(result->info.height / 2.0) * double(result->info.resolution);
+  //     //-10.525;
+  //     result->info.origin.orientation.w = 1.0;
+
 
   return result;
 }
