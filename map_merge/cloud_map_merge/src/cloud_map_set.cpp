@@ -11,7 +11,7 @@ int main (int argc, char** argv)
     ms.queue1.callOne(ros::WallDuration(1));
     ms.queue2.callOne(ros::WallDuration(1));
 
-    if(ms.isInput1() && ms.isInput2())
+    if(ms.isInput1() && ms.isInput2() && ms.isInput3())
     {
       ms.dataPublish();
     }
@@ -24,6 +24,10 @@ int main (int argc, char** argv)
       if(!ms.isInput2())
       {
         std::cout << "not input robot2" << '\n';
+      }
+      if(!ms.isInput3())
+      {
+        std::cout << "not input overlap" << '\n';
       }
     }
     ms.resetFlag();

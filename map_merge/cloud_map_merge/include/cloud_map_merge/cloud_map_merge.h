@@ -32,7 +32,9 @@ public:
     ~CloudMapMerge(){};
 
     void translation(void);
-    void checkOverlap(void);
+    void createOverlapCloud(void);
+    void matchingCloud(void);
+    void alignment(void);
     void merge(void);
     bool isInput(void);
     void resetFlag(void);
@@ -69,10 +71,23 @@ void CloudMapMerge::resetFlag(void)
   input = false;
 }
 
-void CloudMapMerge::checkOverlap(void)
+void CloudMapMerge::alignment(void)
 {
-    /*ここでマップの重なりを検出してposesの書き換えを行う*/
-    /*どこが重なってるか分かったら、その部分だけ抽出したクラウドを作る*/
+    /*被っている部分だけ抽出したクラウドを作る*/
+    createOverlapCloud();
+    /*抽出した点群同士でマッチングを行ってズレを確認*/
+    matchingCloud();
+    /*マッチングの結果を使って確認*/
+}
+
+void CloudMapMerge::createOverlapCloud(void)
+{
+    /*被っている部分だけ抽出したクラウドを作る*/
+}
+
+void CloudMapMerge::matchingCloud(void)
+{
+    /*抽出した点群同士でマッチングを行ってズレを確認*/
 }
 
 void CloudMapMerge::merge(void)
