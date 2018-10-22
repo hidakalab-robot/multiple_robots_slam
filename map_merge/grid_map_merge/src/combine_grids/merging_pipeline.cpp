@@ -213,7 +213,7 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   nav_msgs::OccupancyGrid::Ptr result;
 
   internal::GridCompositor compositor;
-  result = compositor.compose(imgs_warped, rois, mapOrder);
+  result = compositor.compose(imgs_warped, rois, grids_, mapOrder);
 
   // set correct resolution to output grid. use resolution of identity (works
   // for estimated trasforms), or any resolution (works for know_init_positions)

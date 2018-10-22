@@ -48,7 +48,7 @@ namespace combine_grids
 namespace internal
 {
 nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
-    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<int>& mapOrder)
+    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, const std::vector<int>& mapOrder)
 {
   ROS_ASSERT(grids.size() == rois.size());
 
@@ -94,7 +94,10 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   /*このへんでマップの重なりを検知する*/
 
   std::vector<cv::Rect> arg_rois;
+  std::vector<nav_msgs::OccupancyGrid> arg_grids;
+
   arg_rois.resize(2);
+  arg_grids.resize(2);
 
   cloud_map_merge::OverlapArray overlaps;
   //std::vector<cloud_map_merge::Overlap> localOverlaps;
@@ -106,7 +109,10 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   {
     arg_rois[0] = rois[i];
     arg_rois[1] = rois[i+1];
-    publishOverlap(arg_rois,mapOrder[i],mapOrder[i+1],overlaps);
+    arg_grids[0] = *grids_[i];
+    arg_grids[1] = *grids_[i+1];
+
+    publishOverlap(arg_rois,arg_grids,mapOrder[i],mapOrder[i+1],overlaps);
   }
   //std::cout << "overlaps\n" << overlaps << std::endl;
   //overlaps.overlapArray = localOverlaps;
@@ -139,7 +145,7 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   return result_grid;
 }
 
-void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int& num_a, const int& num_b, cloud_map_merge::OverlapArray& overlaps)
+void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid>& grids_, const int& num_a, const int& num_b, cloud_map_merge::OverlapArray& overlaps)
 {
 
   std::cout << "*********overlap********" << std::endl;
@@ -148,6 +154,7 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
 
   std::vector<int> order;
   std::vector<geometry_msgs::Point> size;
+  std::vector<geometry_msgs::Point> origin;
   std::vector<geometry_msgs::Point> tl;
   std::vector<geometry_msgs::Point> br;
   std::vector<geometry_msgs::Point> rect_tl;
@@ -155,6 +162,7 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
 
   order.resize(2);
   size.resize(2);
+  origin.resize(2);
   tl.resize(2);
   br.resize(2);
   rect_tl.resize(2);
@@ -167,6 +175,9 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
   {
     size[i].x = rois[i].size().width;
     size[i].y = rois[i].size().height;
+
+    origin[i].x = grids_[i].info.origin.position.x;
+    origin[i].y = grids_[i].info.origin.position.y;
 
     rect_tl[i].x = rois[i].tl().x;
     rect_tl[i].y = rois[i].tl().y;
@@ -297,6 +308,7 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const int
   overlap.resolution = 0.05;
   overlap.order = order;
   overlap.size = size;
+  overlap.origin = origin;
   overlap.tl = tl;
   overlap.br = br;
   overlap.rect_tl = rect_tl;

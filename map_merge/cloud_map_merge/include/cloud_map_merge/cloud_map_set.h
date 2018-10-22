@@ -161,5 +161,7 @@ void CloudMapSet::dataPublish(void)
 
   data.overlaps = overlaps.overlapArray;
 
+  data.header.stamp = ros::Time::now();
+
   pub.publish(data);
 }

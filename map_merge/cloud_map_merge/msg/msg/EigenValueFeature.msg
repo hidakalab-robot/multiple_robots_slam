@@ -1,0 +1,7 @@
+float32 linearity
+float32 planarity
+float32 scattering
+float32 omnivariance
+float32 anisotropy
+float32 eigenentropy
+float32 changeOfCurvature
