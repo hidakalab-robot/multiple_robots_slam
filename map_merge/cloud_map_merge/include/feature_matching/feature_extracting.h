@@ -95,6 +95,7 @@ void FeatureExtracting::resetFlag(void)
 void FeatureExtracting::featureExtraction(void)
 {
 	/*3*3の共分散行列を作る*/
+	for(int k=0;k<2;k++)
 	std::vector<Eigen::Matrix3f> vcMatrices;
 	Eigen::Matrix3f vcMatrix;
 	Eigen::Vector3f point;

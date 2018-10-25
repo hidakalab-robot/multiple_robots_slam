@@ -4,7 +4,7 @@
 #include <cloud_map_merge/RobotPose.h>
 #include <cloud_map_merge/AllRobotData.h>
 #include <pcl_ros/point_cloud.h>
-#include <feature_matching/feature_matching.h>
+#include <cloud_map_merge/feature_matching.h>
 
 class CloudMapMerge
 {
@@ -194,7 +194,13 @@ void CloudMapMerge::matchingCloud(const std::vector<pcl::PointCloud<pcl::PointXY
 
     FeatureMatching::Eigenvalue ev(overlaps[0],overlaps[1]);
 
-    ev.test();
+    ev.clustering();
+    ev.featureExtraction();
+    ev.matching();
+
+    geometry_msgs::Point matchGap;
+
+    ev.getGap(matchGap); //Point型の位置ずれがでてくる
 }
 
 void CloudMapMerge::merge(void)
