@@ -10,6 +10,7 @@ int main (int argc, char** argv)
   {
     ms.queue1.callOne(ros::WallDuration(1));
     ms.queue2.callOne(ros::WallDuration(1));
+    //ms.queue3.callOne(ros::WallDuration(1));
 
     if(ms.isInput1() && ms.isInput2() && ms.isInput3())
     {

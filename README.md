@@ -42,7 +42,7 @@ $ roslaunch map_merge map_merge.launch robot_name:=robot1
 
     $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot1 server:=true
 
-    $ roslaunch map_merge map_merge.launch robot_name:=robot1 server:=true
+    $ roslaunch map_merge map_merge_robot.launch robot_name:=robot1 server:=true
     ```
 
   - robot2
@@ -54,7 +54,7 @@ $ roslaunch map_merge map_merge.launch robot_name:=robot1
 
     $ roslaunch roscore_communication roscore_communication.launch robot_name:=robot2 server:=true
 
-    $ roslaunch map_merge map_merge.launch robot_name:=robot2 server:=true
+    $ roslaunch map_merge map_merge_robot.launch robot_name:=robot2 server:=true
     ```
   - server
 

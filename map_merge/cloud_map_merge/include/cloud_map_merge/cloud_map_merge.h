@@ -205,18 +205,18 @@ void CloudMapMerge::matchingCloud(const std::vector<pcl::PointCloud<pcl::PointXY
     std::cout << "***** matchGap *****" <<  matchGap << std::endl;
 
     //poseErrors = 
-    
+
     //matchGapとinitPoseの差を算出
 
 }
 
 void CloudMapMerge::merge(void)
 {
-    std::vector<cloud_map_merge::RobotPose> poseErrors;
+    //std::vector<cloud_map_merge::RobotPose> poseErrors;
 
     if(alignment)
     {
-        poseErrors = cloudAlignment();
+        //poseErrors = cloudAlignment();
     }
 
 

@@ -91,6 +91,7 @@ CloudMapSet::CloudMapSet()
 
   input1 = false;
   input2 = false;
+  input3 = true;
 }
 
 void CloudMapSet::callback1(const sensor_msgs::PointCloud2::ConstPtr& msg)
@@ -133,7 +134,7 @@ void CloudMapSet::resetFlag(void)
 
   input1 = false;
   input2 = false;
-  input3 = false;
+  //input3 = false;
 }
 
 void CloudMapSet::dataPublish(void)
@@ -159,7 +160,7 @@ void CloudMapSet::dataPublish(void)
   data.poses = poses;
   data.maps = maps;
 
-  data.overlaps = overlaps.overlapArray;
+  //data.overlaps = overlaps.overlapArray;
 
   data.header.stamp = ros::Time::now();
 
