@@ -93,37 +93,37 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 
   /*このへんでマップの重なりを検知する*/
 
-  // std::vector<cv::Rect> arg_rois;
-  // std::vector<nav_msgs::OccupancyGrid> arg_grids;
+  std::vector<cv::Rect> arg_rois;
+  std::vector<nav_msgs::OccupancyGrid> arg_grids;
 
-  // arg_rois.resize(2);
-  // arg_grids.resize(2);
+  arg_rois.resize(2);
+  arg_grids.resize(2);
 
-  // cloud_map_merge::OverlapArray overlaps;
-  //std::vector<cloud_map_merge::Overlap> localOverlaps;
+  cloud_map_merge::OverlapArray overlaps;
+  std::vector<cloud_map_merge::Overlap> localOverlaps;
 
   //ros::Publisher pubOverlap;
   //ros::NodeHandle p;
 
-  // for (int i=0;i<rois.size()-1;i++)
-  // {
-  //   arg_rois[0] = rois[i];
-  //   arg_rois[1] = rois[i+1];
-  //   arg_grids[0] = *grids_[i];
-  //   arg_grids[1] = *grids_[i+1];
+  for (int i=0;i<rois.size()-1;i++)
+  {
+    arg_rois[0] = rois[i];
+    arg_rois[1] = rois[i+1];
+    arg_grids[0] = *grids_[i];
+    arg_grids[1] = *grids_[i+1];
 
-  //   publishOverlap(arg_rois,arg_grids,mapOrder[i],mapOrder[i+1],overlaps);
-  // }
-  // //std::cout << "overlaps\n" << overlaps << std::endl;
-  // //overlaps.overlapArray = localOverlaps;
-  // overlaps.header.stamp = ros::Time::now();
-  // std::cout << "publish overlap" << std::endl;
+    publishOverlap(arg_rois,arg_grids,mapOrder[i],mapOrder[i+1],overlaps);
+  }
+  //std::cout << "overlaps\n" << overlaps << std::endl;
+  //overlaps.overlapArray = localOverlaps;
+  overlaps.header.stamp = ros::Time::now();
+  std::cout << "publish overlap" << std::endl;
 
-  // //これを入れないとpublish出来ないため一時的にいれてる
-  // //ほんとは最初のコンストラクタでpublisherを宣言するのが良い
-  // sleep(1);
+  //これを入れないとpublish出来ないため一時的にいれてる
+  //ほんとは最初のコンストラクタでpublisherを宣言するのが良い
+  sleep(1);
 
-  // pubOverlap.publish(overlaps);
+  pubOverlap.publish(overlaps);
 
   result_grid->info.width = static_cast<uint>(dst_roi.width);
   result_grid->info.height = static_cast<uint>(dst_roi.height);
@@ -168,8 +168,8 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const std
   rect_tl.resize(2);
   rect_br.resize(2);
 
-  order[0] = num_a;
-  order[1] = num_b;
+  order[0] = num_a - 1;
+  order[1] = num_b - 1;
 
   for(int i=0;i<2;i++)
   {
