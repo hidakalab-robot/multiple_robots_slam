@@ -21,20 +21,18 @@ namespace FeatureMatching
 		void euclideanClustering(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud, std::vector<pcl::PointIndices>& indices);
 		void coloringCloud(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud, std::vector<pcl::PointIndices>& indices);
 		void listAndCentroid(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud, cloud_map_merge::Cluster& data, std::vector<pcl::PointIndices>& indices);
-
 		void extract(pcl::PointCloud<pcl::PointXYZRGB>::Ptr& cloud, cloud_map_merge::Cluster& clusterData, std::vector<cloud_map_merge::EigenValueFeature>& clusterFeature);
-
 		void calcMatch(void);
 		void missMatchDetection(void);
 
 	public:
+	
 		Eigenvalue(pcl::PointCloud<pcl::PointXYZRGB>::Ptr argCloud1, pcl::PointCloud<pcl::PointXYZRGB>::Ptr argCloud2);
 		~Eigenvalue(){};
 
 		void clustering(void);
 		void featureExtraction(void);
 		void matching(void);
-
 		void getMatchingGap(geometry_msgs::Point& gap);
 	};
 }
