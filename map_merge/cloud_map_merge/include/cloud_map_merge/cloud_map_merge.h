@@ -102,7 +102,7 @@ std::vector<cloud_map_merge::RobotPose> CloudMapMerge::cloudAlignment(void)
         checkOverlapCloud(overlapClouds,robotData.poses, robotData.overlaps[i]);
 
         /*抽出した点群同士でマッチング*/
-        //matchingCloud(overlapClouds, poseErrors, robotData.poses, robotData.overlaps[i]);
+        matchingCloud(overlapClouds, poseErrors, robotData.poses, robotData.overlaps[i]);
     }
 
     return poseErrors;
@@ -200,7 +200,10 @@ void CloudMapMerge::matchingCloud(const std::vector<pcl::PointCloud<pcl::PointXY
 
     geometry_msgs::Point matchGap;
 
-    ev.getGap(matchGap); //Point型の位置ずれがでてくる
+    ev.getMatchingGap(matchGap); //Point型の位置ずれがでてくる //overlaps[1] - overlaps[0]のgapが出る
+
+    //matchGapとinitPoseの差を算出
+
 }
 
 void CloudMapMerge::merge(void)

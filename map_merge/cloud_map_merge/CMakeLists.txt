@@ -60,6 +60,8 @@ find_package(catkin REQUIRED COMPONENTS
    Index.msg
    Cluster.msg
    EigenValueFeature.msg
+   MatchPair.msg
+   MatchList.msg
  )
 
 ## Generate services in the 'srv' folder
