@@ -202,6 +202,10 @@ void CloudMapMerge::matchingCloud(const std::vector<pcl::PointCloud<pcl::PointXY
 
     ev.getMatchingGap(matchGap); //Point型の位置ずれがでてくる //overlaps[1] - overlaps[0]のgapが出る
 
+    std::cout << "***** matchGap *****" <<  matchGap << std::endl;
+
+    //poseErrors = 
+    
     //matchGapとinitPoseの差を算出
 
 }

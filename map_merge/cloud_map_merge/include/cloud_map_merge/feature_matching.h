@@ -35,7 +35,7 @@ namespace FeatureMatching
 		void featureExtraction(void);
 		void matching(void);
 
-		void getMathingGap(geometry_msgs::Point& gap);
+		void getMatchingGap(geometry_msgs::Point& gap);
 	};
 }
 
