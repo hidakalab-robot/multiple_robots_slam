@@ -91,39 +91,44 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 
   std::cout << "fix_end" << '\n';
 
+
+
   /*このへんでマップの重なりを検知する*/
-
-  std::vector<cv::Rect> arg_rois;
-  std::vector<nav_msgs::OccupancyGrid> arg_grids;
-
-  arg_rois.resize(2);
-  arg_grids.resize(2);
-
-  cloud_map_merge::OverlapArray overlaps;
-  std::vector<cloud_map_merge::Overlap> localOverlaps;
-
-  //ros::Publisher pubOverlap;
-  //ros::NodeHandle p;
-
-  for (int i=0;i<rois.size()-1;i++)
+  if(rois.size()>1)
   {
-    arg_rois[0] = rois[i];
-    arg_rois[1] = rois[i+1];
-    arg_grids[0] = *grids_[i];
-    arg_grids[1] = *grids_[i+1];
+    std::vector<cv::Rect> arg_rois;
+    std::vector<nav_msgs::OccupancyGrid> arg_grids;
 
-    publishOverlap(arg_rois,arg_grids,mapOrder[i],mapOrder[i+1],overlaps);
+    arg_rois.resize(2);
+    arg_grids.resize(2);
+
+    cloud_map_merge::OverlapArray overlaps;
+    std::vector<cloud_map_merge::Overlap> localOverlaps;
+
+    //ros::Publisher pubOverlap;
+    //ros::NodeHandle p;
+
+    for (int i=0;i<rois.size()-1;i++)
+    {
+      arg_rois[0] = rois[i];
+      arg_rois[1] = rois[i+1];
+      arg_grids[0] = *grids_[i];
+      arg_grids[1] = *grids_[i+1];
+
+      publishOverlap(arg_rois,arg_grids,mapOrder[i],mapOrder[i+1],overlaps);
+    }
+    //std::cout << "overlaps\n" << overlaps << std::endl;
+    //overlaps.overlapArray = localOverlaps;
+    overlaps.header.stamp = ros::Time::now();
+    std::cout << "publish overlap" << std::endl;
+
+    //これを入れないとpublish出来ないため一時的にいれてる
+    //ほんとは最初のコンストラクタでpublisherを宣言するのが良い
+    sleep(1);
+
+    pubOverlap.publish(overlaps);
   }
-  //std::cout << "overlaps\n" << overlaps << std::endl;
-  //overlaps.overlapArray = localOverlaps;
-  overlaps.header.stamp = ros::Time::now();
-  std::cout << "publish overlap" << std::endl;
-
-  //これを入れないとpublish出来ないため一時的にいれてる
-  //ほんとは最初のコンストラクタでpublisherを宣言するのが良い
-  sleep(1);
-
-  pubOverlap.publish(overlaps);
+  
 
   result_grid->info.width = static_cast<uint>(dst_roi.width);
   result_grid->info.height = static_cast<uint>(dst_roi.height);

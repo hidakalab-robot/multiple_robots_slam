@@ -160,7 +160,8 @@ void CloudMapSet::dataPublish(void)
   data.poses = poses;
   data.maps = maps;
 
-  data.overlaps = overlaps.overlapArray;
+  if(input3)
+    data.overlaps = overlaps.overlapArray;
 
   data.header.stamp = ros::Time::now();
 

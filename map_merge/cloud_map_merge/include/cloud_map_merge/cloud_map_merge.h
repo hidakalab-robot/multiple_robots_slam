@@ -281,7 +281,15 @@ void CloudMapMerge::matchingCloud(const std::vector<pcl::PointCloud<pcl::PointXY
 
     ev.writeMatchingLine(pubLine);
 
-    //poseErrors = 
+
+    poseErrors[0].x = 0;
+    poseErrors[0].y = 0;
+    poseErrors[1].x = 1.5;
+    poseErrors[1].y = 0;
+    if(std::abs(matchGap.x) < 0.2)
+        poseErrors[1].x = matchGap.x;
+    if(std::abs(matchGap.y) < 0.2)
+        poseErrors[1].y = matchGap.y;
 
     //matchGapとinitPoseの差を算出
 
@@ -290,12 +298,17 @@ void CloudMapMerge::matchingCloud(const std::vector<pcl::PointCloud<pcl::PointXY
 void CloudMapMerge::merge(void)
 {
     std::vector<cloud_map_merge::RobotPose> poseErrors;
-
+    poseErrors.resize(robotData.poses.size());
+    
     if(alignment)
     {
-        std::cout << "***** call alignment function *****" << std::endl;
-        poseErrors = cloudAlignment();
+        if(robotData.overlaps.size() > 0)
+        {
+            std::cout << "***** call alignment function *****" << std::endl;
+            poseErrors = cloudAlignment();
+        }
     }
+
 
 
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr mergedCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -316,6 +329,11 @@ void CloudMapMerge::merge(void)
             rotatePoint = rotation * point;
             transCloud -> points[j].x = rotatePoint[0] + robotData.poses[i].x;
             transCloud -> points[j].y = rotatePoint[1] + robotData.poses[i].y;
+            if(alignment && robotData.overlaps.size() > 0)
+            {
+                transCloud -> points[j].x = transCloud -> points[j].x + (poseErrors[i].x - robotData.poses[i].x);
+                transCloud -> points[j].y = transCloud -> points[j].y + (poseErrors[i].y - robotData.poses[i].y);
+            }
         }
 
         *mergedCloud += *transCloud;
