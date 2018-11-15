@@ -9,7 +9,7 @@
   <arg name="robot2_init_y"/>
   <arg name="robot2_init_yaw"/>
 
-  <node pkg="cloud_map_merge" type="cloud_map_set" name="cloud_map_set" output="screen">
+  <node pkg="cloud_map_merge" type="cloud_map_set" name="cloud_map_set">
     <param name="robot1_init_x" value="$(arg robot1_init_x)"/>
     <param name="robot1_init_y" value="$(arg robot1_init_y)"/>
     <param name="robot1_init_yaw" value="$(arg robot1_init_yaw)"/>
@@ -20,11 +20,11 @@
 
   </node>
 
-  <node pkg="cloud_map_merge" type="cloud_map_merge" name="cloud_map_merge">
+  <node pkg="cloud_map_merge" type="cloud_map_merge" name="cloud_map_merge" output="screen">
     <param name="sub_topic" value="/$(arg robot_name)/cloud_map_merge/all_robot_data"/>
     <param name="pub_topic" value="/$(arg robot_name)/cloud_map_merge/merge_map"/>
     <param name="merge_map_frame" value="/$(arg robot_name)/merge_map"/>
-    <param name="alignment" value="false"/>
+    <param name="alignment" value="true"/>
   </node>
 
 </launch>

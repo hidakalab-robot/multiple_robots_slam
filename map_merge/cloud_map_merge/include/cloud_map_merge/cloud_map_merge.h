@@ -284,8 +284,8 @@ void CloudMapMerge::matchingCloud(const std::vector<pcl::PointCloud<pcl::PointXY
 
     poseErrors[0].x = 0;
     poseErrors[0].y = 0;
-    poseErrors[1].x = 1.5;
-    poseErrors[1].y = 0;
+    poseErrors[1].x = 0;
+    poseErrors[1].y = 12.5;
     if(std::abs(matchGap.x) < 0.2)
         poseErrors[1].x = matchGap.x;
     if(std::abs(matchGap.y) < 0.2)
@@ -314,8 +314,18 @@ void CloudMapMerge::merge(void)
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr mergedCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     for(int i=0;i<robotData.poses.size();i++)
     {
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr transCloudTmp(new pcl::PointCloud<pcl::PointXYZRGB>);
+        pcl::fromROSMsg (robotData.maps[i], *transCloudTmp);
+
+        const double ceilingHeight = 2.4;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr transCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-        pcl::fromROSMsg (robotData.maps[i], *transCloud);
+        for(int k=0;k<transCloudTmp->points.size();k++)
+        {
+            if((transCloudTmp->points[k].z < ceilingHeight) && (transCloudTmp->points[k].z > -0.05))
+            {
+                transCloud->points.push_back(transCloudTmp->points[k]);
+            }
+        }
 
         Eigen::Matrix2d rotation;
         rotation << cos(robotData.poses[i].yaw) , -sin(robotData.poses[i].yaw) , sin(robotData.poses[i].yaw) , cos(robotData.poses[i].yaw);
