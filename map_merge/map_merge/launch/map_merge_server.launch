@@ -5,9 +5,13 @@
   <arg name="robot1_init_y" default="0.0"/>
   <arg name="robot1_init_yaw" default="0.0"/>
 
-  <arg name="robot2_init_x" default="1.5"/>
-  <arg name="robot2_init_y" default="0.0"/>
+  <arg name="robot2_init_x" default="0.5"/>
+  <arg name="robot2_init_y" default="8.0"/>
   <arg name="robot2_init_yaw" default="0.0"/>
+
+  <arg name="robot2_init_x2" default="0.5"/>
+  <arg name="robot2_init_y2" default="12.5"/>
+  <arg name="robot2_init_yaw2" default="0.0"/>
 
   <arg name="map_resolution" default="0.05"/>
 
@@ -50,9 +54,9 @@
       <arg name="robot1_init_y" value="$(arg robot1_init_y)"/>
       <arg name="robot1_init_yaw" value="$(arg robot1_init_yaw)"/>
 
-      <arg name="robot2_init_x" value="$(arg robot2_init_x)"/>
-      <arg name="robot2_init_y" value="$(arg robot2_init_y)"/>
-      <arg name="robot2_init_yaw" value="$(arg robot2_init_yaw)"/>
+      <arg name="robot2_init_x" value="$(arg robot2_init_x2)"/>
+      <arg name="robot2_init_y" value="$(arg robot2_init_y2)"/>
+      <arg name="robot2_init_yaw" value="$(arg robot2_init_yaw2)"/>
     </include>
 
   </group>

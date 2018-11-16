@@ -1,0 +1,12 @@
+<launch>
+    <arg name="group_name" default="tfchanger"/>
+    <arg name="robot" default="robot1"/>
+    <group ns="$(arg group_name)">
+        <node pkg="map_merge" type="pointcloud_tf_changer" name="pointcloud_tf_changer">
+            <param name="pub_topic" value="/newmsg/$(arg robot)/rtabmap/cloud_obstacles"/>
+            <param name="sub_topic" value="/$(arg robot)/rtabmap/cloud_obstacles"/>
+            <param name="new_frame_id" value="/server/merge_map"/>
+            <param name="ceiling" value="true"/>
+        </node>
+    </group>
+</launch>
