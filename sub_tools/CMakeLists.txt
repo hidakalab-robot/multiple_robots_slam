@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   pcl_ros
   nav_msgs
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -206,3 +207,6 @@ target_link_libraries(pointcloud_tf_changer ${catkin_LIBRARIES})
 
 add_executable(map_tf_changer src/map_tf_changer.cpp)
 target_link_libraries(map_tf_changer ${catkin_LIBRARIES})
+
+add_executable(get_other_pose src/get_other_pose.cpp)
+target_link_libraries(get_other_pose ${catkin_LIBRARIES})

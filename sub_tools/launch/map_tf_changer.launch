@@ -2,7 +2,7 @@
     <arg name="group_name" default="tfchanger"/>
     <arg name="robot" default="robot1"/>
     <group ns="$(arg group_name)">
-        <node pkg="map_merge" type="map_tf_changer" name="map_tf_changer">
+        <node pkg="sub_tools" type="map_tf_changer" name="map_tf_changer">
             <param name="pub_topic" value="/newmsg/$(arg robot)/map"/>
             <param name="sub_topic" value="/$(arg robot)/map"/>
             <param name="new_frame_id" value="/server/merge_map"/>

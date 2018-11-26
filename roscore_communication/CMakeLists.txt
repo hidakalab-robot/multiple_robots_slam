@@ -199,5 +199,5 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(get_other_pose src/get_other_pose.cpp)
-target_link_libraries(get_other_pose ${catkin_LIBRARIES})
+#add_executable(get_other_pose src/get_other_pose.cpp)
+#target_link_libraries(get_other_pose ${catkin_LIBRARIES})
