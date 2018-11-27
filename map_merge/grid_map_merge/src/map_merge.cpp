@@ -86,25 +86,41 @@ void MapMerge::topicSubscribing()
   // default msg constructor does no properly initialize quaternion
   init_pose.rotation.w = 1;  // create identity quaternion
 
+  //topicの数だけループ回してる
   for (const auto& topic : topic_infos) {
     // we check only map topic
     if (!isRobotMapTopic(topic)) {
+      //std::cout << "** check1 **" << "\n";
       continue;
     }
 
     robot_name = robotNameFromTopic(topic.name);
-    if (robots_.count(robot_name)) {
-      // we already know this robot
-      continue;
-    }
 
     if (have_initial_poses_ && !getInitPose(robot_name, init_pose)) {
+      //std::cout << "** check3 **" << "\n";
       ROS_WARN("Couldn't get initial position for robot [%s]\n"
                "did you defined parameters map_merge/init_pose_[xyz]? in robot "
                "namespace? If you want to run merging without known initial "
                "positions of robots please set `known_init_poses` parameter "
                "to false. See relavant documentation for details.",
                robot_name.c_str());
+      continue;
+    }
+
+ 
+    if (robots_.count(robot_name)) {
+      // we already know this robot
+      //std::cout << "** check2 **" << "\n";
+      {
+        boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
+        for (auto& subscription : subscriptions_) {
+          std::lock_guard<std::mutex> s_lock(subscription.mutex);
+          if(subscription.name == robot_name)
+          {
+            subscription.initial_pose = init_pose;
+          }
+        }
+      } 
       continue;
     }
 
@@ -119,6 +135,7 @@ void MapMerge::topicSubscribing()
     MapSubscription& subscription = subscriptions_.front();
     robots_.insert({robot_name, &subscription});
     subscription.initial_pose = init_pose;
+    subscription.name = robot_name;
 
     /* subscribe callbacks */
     map_topic = ros::names::append(robot_name, robot_map_topic_);
@@ -159,7 +176,7 @@ void MapMerge::mapMerging()
         std::lock_guard<std::mutex> s_lock(subscription.mutex);
         grids.push_back(subscription.readonly_map);
         transforms.push_back(subscription.initial_pose);
-	std::cout << "subscription.initial_pose << " << subscription.initial_pose << "\n";
+	//std::cout << "subscription.initial_pose << " << subscription.initial_pose << "\n";
       }
     }
     // we don't need to lock here, because when have_initial_poses_ is true we
@@ -331,6 +348,7 @@ bool MapMerge::getInitPose(const std::string& name,
   std::string merging_namespace = ros::names::append(name, "grid_map_merge");
   double yaw = 0.0;
 
+
   bool success =
       ros::param::get(ros::names::append(merging_namespace, "init_pose_x"),
                       pose.translation.x) &&
@@ -341,7 +359,7 @@ bool MapMerge::getInitPose(const std::string& name,
       ros::param::get(ros::names::append(merging_namespace, "init_pose_yaw"),
                       yaw);
 
-  std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
+  //std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
 
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);
@@ -358,6 +376,7 @@ void MapMerge::executemapMerging()
   ros::Rate r(merging_rate_);
   while (node_.ok()) {
     mapMerging();
+    std::cout << "*** mapMerging ***" << "\n";
     r.sleep();
   }
 }
@@ -367,6 +386,7 @@ void MapMerge::executetopicSubscribing()
   ros::Rate r(discovery_rate_);
   while (node_.ok()) {
     topicSubscribing();
+    std::cout << "*** topicSubscribing ***" << "\n";
     r.sleep();
   }
 }
