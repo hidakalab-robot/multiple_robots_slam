@@ -60,36 +60,36 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   sizes.reserve(grids.size());
 
   for (auto& roi : rois) {
-    std::cout << "roi\n" << roi << '\n';
+    //std::cout << "roi\n" << roi << '\n';
     corners.push_back(roi.tl());
     sizes.push_back(roi.size());
   }
 
   for(int i=0;i<corners.size();i++)
   {
-    std::cout << "before_corner" << '\n';
-    std::cout << corners[i] << '\n';
+    //std::cout << "before_corner" << '\n';
+    //std::cout << corners[i] << '\n';
   }
 
-  std::cout << "fix" << '\n';
+  //std::cout << "fix" << '\n';
 
   //cv::Point fix{30,0};
 
   //corners[1] = fix;
 
   for (auto& roi : rois) {
-    std::cout << "roi\n" << roi << '\n';
+    //std::cout << "roi\n" << roi << '\n';
   }
 
   for(int i=0;i<corners.size();i++)
   {
-    std::cout << "after_corner" << '\n';
+    //std::cout << "after_corner" << '\n';
     std::cout << corners[i] << '\n';
   }
 
   cv::Rect dst_roi = cv::detail::resultRoi(corners, sizes);
 
-  std::cout << "fix_end" << '\n';
+  //std::cout << "fix_end" << '\n';
 
 
 
@@ -120,7 +120,7 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
     //std::cout << "overlaps\n" << overlaps << std::endl;
     //overlaps.overlapArray = localOverlaps;
     overlaps.header.stamp = ros::Time::now();
-    std::cout << "publish overlap" << std::endl;
+    //std::cout << "publish overlap" << std::endl;
 
     //これを入れないとpublish出来ないため一時的にいれてる
     //ほんとは最初のコンストラクタでpublisherを宣言するのが良い
@@ -153,7 +153,7 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid>& grids_, const int& num_a, const int& num_b, cloud_map_merge::OverlapArray& overlaps)
 {
 
-  std::cout << "*********overlap********" << std::endl;
+  //std::cout << "*********overlap********" << std::endl;
 
   cloud_map_merge::Overlap overlap;
 
@@ -211,8 +211,8 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const std
   diff_x = rois[1].tl().x - rois[0].tl().x;
   diff_y = rois[1].tl().y - rois[0].tl().y;
 
-  std::cout << "diff_x << " << diff_x << std::endl;
-  std::cout << "diff_y << " << diff_y << std::endl;
+  //std::cout << "diff_x << " << diff_x << std::endl;
+  //std::cout << "diff_y << " << diff_y << std::endl;
 
   //二つの地図の位置関係をチェック
   if(diff_x > 0)
@@ -235,20 +235,20 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const std
     bottom = 0;
   }
 
-  std::cout << "top << " << top << std::endl;
-  std::cout << "bottom << " << bottom << std::endl;
-  std::cout << "left << " << left << std::endl;
-  std::cout << "right << " << right << std::endl;
+  //std::cout << "top << " << top << std::endl;
+  //std::cout << "bottom << " << bottom << std::endl;
+  //std::cout << "left << " << left << std::endl;
+  //std::cout << "right << " << right << std::endl;
   
   over_w = rois[left].size().width - std::abs(diff_x);
   over_h = rois[top].size().height - std::abs(diff_y);
 
-  std::cout << "over_w << " << over_w << std::endl;
-  std::cout << "over_h << " << over_h << std::endl;
+  //std::cout << "over_w << " << over_w << std::endl;
+  //std::cout << "over_h << " << over_h << std::endl;
 
   if(over_w < 0)
   {
-    std::cout << "x方向で重なってない" << std::endl;
+    //std::cout << "x方向で重なってない" << std::endl;
     return;
   }
   if(over_w < rois[right].size().width)
@@ -262,7 +262,7 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const std
 
   if(over_h < 0)
   {
-    std::cout << "y方向で重なってない" << std::endl;
+    //std::cout << "y方向で重なってない" << std::endl;
     return;
   }
   if(over_h < rois[bottom].size().height)
@@ -274,8 +274,8 @@ void GridCompositor::publishOverlap(const std::vector<cv::Rect>& rois, const std
     over_ht = rois[bottom].size().height;
   }
 
-  std::cout << "over_wt << " << over_wt << std::endl;
-  std::cout << "over_ht << " << over_ht << std::endl;
+  //std::cout << "over_wt << " << over_wt << std::endl;
+  //std::cout << "over_ht << " << over_ht << std::endl;
 
   //右側 tl:{0,?}  br:{over_wt,?}
   //下側 tl:{?,0}  br:{?,over_ht}

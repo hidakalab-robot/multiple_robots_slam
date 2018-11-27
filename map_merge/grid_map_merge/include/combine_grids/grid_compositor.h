@@ -56,7 +56,7 @@ private:
   ros::NodeHandle p;
 public:
   GridCompositor(){
-    std::cout << "コンストラクタ" << std::endl;
+    //std::cout << "コンストラクタ" << std::endl;
     pubOverlap = p.advertise<cloud_map_merge::OverlapArray>("grid_map_merge/overlap", 10);};
   ~GridCompositor(){};
   nav_msgs::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids,

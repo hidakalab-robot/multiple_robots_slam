@@ -156,8 +156,8 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   ROS_ASSERT(images_.size() == transforms_.size());
   ROS_ASSERT(images_.size() == grids_.size());
 
-  std::cout << "in composeGrid" << '\n';
-  std::cout << transforms_.size() << '\n';
+  //std::cout << "in composeGrid" << '\n';
+  //std::cout << transforms_.size() << '\n';
   for(int i=0;i<transforms_.size();i++)
   {
     std::cout << transforms_[i] << '\n';
@@ -180,17 +180,17 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
       imgs_warped.emplace_back();
       rois.emplace_back(
           warper.warp(images_[i], transforms_[i], imgs_warped.back()));
-      std::cout << "for\n" << transforms_[i] << '\n';
+      //std::cout << "for\n" << transforms_[i] << '\n';
     }
   }
 
-  std::cout << "imgs_warped_size << " << imgs_warped.size() << '\n';
+  //std::cout << "imgs_warped_size << " << imgs_warped.size() << '\n';
 
-  std::cout << "warp1" << '\n';
+  //std::cout << "warp1" << '\n';
   //cv::imshow("imgs_warped_1",imgs_warped[0]);
   //cv::waitKey(1);
 
-  std::cout << "warp2" << '\n';
+  //std::cout << "warp2" << '\n';
   //cv::imshow("imgs_warped_2",imgs_warped[1]);
   //cv::waitKey(1);
 
@@ -204,7 +204,7 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
 
 
   if (imgs_warped.empty()) {
-    std::cout << "nullptr" << '\n';
+    //std::cout << "nullptr" << '\n';
     return nullptr;
   }
 
@@ -235,29 +235,29 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
 
   for(int i;i<grids_.size();i++)
   {
-    std::cout << "grids_frames\n" << grids_[i] -> header.frame_id << std::endl;
+    //std::cout << "grids_frames\n" << grids_[i] -> header.frame_id << std::endl;
   }
 
   for(int i=0;i<mapOrder.size();i++)
   {
-    std::cout << "check1" << std::endl;
+    //std::cout << "check1" << std::endl;
     if(mapOrder[i] == map_num)
     {
       // set grid origin to its centre
       result->info.origin.position.x = grids_[i]->info.origin.position.x;
-      std::cout << "check2" << std::endl;
+      //std::cout << "check2" << std::endl;
       //-(result->info.width / 2.0) * double(result->info.resolution);
       //-10.525;
       result->info.origin.position.y = grids_[i]->info.origin.position.y;
-      std::cout << "check3" << std::endl;
+      //std::cout << "check3" << std::endl;
       //-(result->info.height / 2.0) * double(result->info.resolution);
       //-10.525;
       result->info.origin.orientation.w = 1.0;
-      std::cout << "check4" << std::endl;
+      //std::cout << "check4" << std::endl;
     }
   }
 
-  std::cout << "check5" << std::endl;
+  //std::cout << "check5" << std::endl;
 
   // // set grid origin to its centre
   //     result->info.origin.position.x = grids_[map_num-1]->info.origin.position.x;

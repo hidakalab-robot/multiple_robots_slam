@@ -1,0 +1,12 @@
+<launch>
+    <node pkg="map_merge" type="map_param_fix" name="map_param_fix" output="screen">
+        <param name="map_topic" value="/robot2/map"/>
+        <param name="tf_topic" value="/tf"/>
+        <param name="odom_frame" value="/robot2/odom"/>
+        <param name="resolution" value="0.05"/>
+        <param name="init_origin_x" value="-10.525"/>
+        <param name="init_origin_y" value="-10.525"/>
+        <param name="init_param_x" value="0.0"/>
+        <param name="init_param_y" value="-240.0"/>
+    </node>
+</launch>

@@ -49,21 +49,21 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
 {
   ROS_ASSERT(transform.type() == CV_64F);
   cv::Mat H;
-  std::cout << "transform\n" << transform << '\n';
+  //std::cout << "transform\n" << transform << '\n';
   invertAffineTransform(transform.rowRange(0, 2), H);//Hに逆アフィン
   cv::Rect roi = warpRoi(grid, H);//アフィンの逆でrectを移動
   // shift top left corner for warp affine (otherwise the image is cropped)
-  std::cout << "before_H\n" << H << '\n';
-  std::cout << "warp_roi\n" << roi << '\n';
+  //std::cout << "before_H\n" << H << '\n';
+  //std::cout << "warp_roi\n" << roi << '\n';
   H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
   H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
-  std::cout << "after_H\n" << H << '\n';
-  std::cout << "warp_affine" << '\n';
+  //std::cout << "after_H\n" << H << '\n';
+  //std::cout << "warp_affine" << '\n';
   warpAffine(grid, warped_grid, H, roi.size(), cv::INTER_NEAREST,
              cv::BORDER_CONSTANT,
              cv::Scalar::all(255) /* this is -1 for signed char */);//grid:前景 warped:背景 H:前景の移動行列
-  std::cout << "roi_size << " << roi.size() << '\n';
-  std::cout << "warped_grid_size << " << warped_grid.size() << '\n';
+  //std::cout << "roi_size << " << roi.size() << '\n';
+  //std::cout << "warped_grid_size << " << warped_grid.size() << '\n';
   ROS_ASSERT(roi.size() == warped_grid.size());
 
   return roi;
@@ -76,24 +76,24 @@ cv::Rect GridWarper::warpRoi(const cv::Mat& grid, const cv::Mat& transform)
   cv::Mat H;
   transform.convertTo(H, CV_32F);
 
-  std::cout << "H\n" << H << '\n';
+  //std::cout << "H\n" << H << '\n';
 
   // separate rotation and translation for plane warper
   // 3D translation
   cv::Mat T = cv::Mat::zeros(3, 1, CV_32F);
   H.colRange(2, 3).rowRange(0, 2).copyTo(T.rowRange(0, 2));
 
-  std::cout << "T\n" << T << '\n';
+  //std::cout << "T\n" << T << '\n';
 
 
-  std::cout << "T_size << " << T.size() << '\n';
+  //std::cout << "T_size << " << T.size() << '\n';
   // 3D rotation
   cv::Mat R = cv::Mat::eye(3, 3, CV_32F);
   H.colRange(0, 2).copyTo(R.rowRange(0, 2).colRange(0, 2));
 
-  std::cout << "R\n" << R << '\n';
+  //std::cout << "R\n" << R << '\n';
 
-  std::cout << "grid_size << " << grid.size() << '\n';
+  //std::cout << "grid_size << " << grid.size() << '\n';
 
   return warper->warpRoi(grid.size(), cv::Mat::eye(3, 3, CV_32F), R, T);
 }
