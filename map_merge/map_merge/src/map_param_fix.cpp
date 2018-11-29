@@ -85,8 +85,8 @@ void MapParamFix::map_callback(const nav_msgs::OccupancyGrid::ConstPtr& msg)
 
   geometry_msgs::Pose newParam;
 
-  newParam.position.x = initMapParam.position.x + (diffX / resolution * -1);
-  newParam.position.y = initMapParam.position.y + (diffY / resolution * -1);
+  newParam.position.x = initMapParam.position.x + (diffX / resolution * 1);
+  newParam.position.y = initMapParam.position.y + (diffY / resolution * 1);
 
   edit_param.setParam("/robot2/grid_map_merge/init_pose_x",newParam.position.x);
   edit_param.setParam("/robot2/grid_map_merge/init_pose_y",newParam.position.y);

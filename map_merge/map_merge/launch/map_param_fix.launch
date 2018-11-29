@@ -5,6 +5,6 @@
         <param name="init_origin_x" value="-10.525"/>
         <param name="init_origin_y" value="-10.525"/>
         <param name="init_param_x" value="0.0"/>
-        <param name="init_param_y" value="-240.0"/>
+        <param name="init_param_y" value="240.0"/>
     </node>
 </launch>
