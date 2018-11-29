@@ -359,7 +359,7 @@ bool MapMerge::getInitPose(const std::string& name,
       ros::param::get(ros::names::append(merging_namespace, "init_pose_yaw"),
                       yaw);
 
-  //std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
+  std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
 
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);

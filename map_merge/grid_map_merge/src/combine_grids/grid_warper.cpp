@@ -40,30 +40,118 @@
 
 #include <ros/assert.h>
 
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 namespace combine_grids
 {
 namespace internal
 {
 cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
-                          cv::Mat& warped_grid)
+                          cv::Mat& warped_grid, cv::Rect& fix_roi)
+                          //warper.warp(images_[i], transforms_[i], imgs_warped.back()));
 {
   ROS_ASSERT(transform.type() == CV_64F);
-  cv::Mat H;
-  //std::cout << "transform\n" << transform << '\n';
-  invertAffineTransform(transform.rowRange(0, 2), H);//Hに逆アフィン
+  //cv::Mat H;
+  cv::Mat H(transform.rowRange(0, 2));
+  std::cout << "transform\n" << transform << '\n';
+  //invertAffineTransform(transform.rowRange(0, 2), H);//Hに逆アフィン
+  
   cv::Rect roi = warpRoi(grid, H);//アフィンの逆でrectを移動
   // shift top left corner for warp affine (otherwise the image is cropped)
-  //std::cout << "before_H\n" << H << '\n';
-  //std::cout << "warp_roi\n" << roi << '\n';
-  H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
-  H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
-  //std::cout << "after_H\n" << H << '\n';
-  //std::cout << "warp_affine" << '\n';
-  warpAffine(grid, warped_grid, H, roi.size(), cv::INTER_NEAREST,
+  std::cout << "before_H\n" << H << '\n';
+  std::cout << "warp_roi\n" << roi << '\n';
+
+  bool magic = true;
+
+  if(magic)
+  {
+    //cv::imshow("before_magic",grid);
+    //cv::waitKey(5);
+
+    double rotation = acos(H.at<double>(0, 0));
+
+    std::cout << "rotation : " << rotation << "\n";
+
+
+    double magicX, magicY, magicX2, magicY2;
+
+    double hx, hy, rx , ry;
+
+    hx = -H.at<double>(0, 2);
+    hy = -H.at<double>(1, 2);
+    rx = roi.tl().x;
+    ry = roi.tl().y;
+
+    magicX = -H.at<double>(0, 2) + roi.tl().x;
+    magicY = -H.at<double>(1, 2) + roi.tl().y;
+
+    std::cout << "hx : " << hx << ", hy : " << hy << ", rx : " << rx << ", ry : " << ry << "\n";
+
+    std::cout << "cos(th) : " << cos(rotation) << ", sin(th) : " << sin(rotation) << "\n";
+
+    magicX2 = ((-H.at<double>(0, 2) + roi.tl().x)*cos(rotation)-(-H.at<double>(1, 2) + roi.tl().y)*sin(rotation))/10;
+    magicY2 = -(-H.at<double>(1, 2) + roi.tl().y)*cos(rotation)+(-H.at<double>(0, 2) + roi.tl().x)*sin(rotation);
+
+    //magicX = hx + rx +10;
+    //magicY = hy + ry + 10;
+
+    //magicX = 10;
+    //magicY = 10;
+
+    //magicX -= -500;
+    //magicY -= 0;
+
+
+
+    std::cout << "magicX : " << magicX << ", magicY : " << magicY << "\n";
+    std::cout << "magicX2 : " << magicX2 << ", magicY2 : " << magicY2 << "\n";
+
+
+    //warpAffineを回転だけにするための演算
+
+    //H.at<double>(0, 2) -= (roi.tl().x - magicX);//warpAffineを回転だけにする
+    //H.at<double>(1, 2) -= (roi.tl().y - magicY);//warpAffineを回転だけにする
+
+    H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
+    H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
+
+    //cv::Rect newRoi(roi.tl().x - magicX,roi.tl().y - magicY,roi.width,roi.height);
+    cv::Rect newRoi(roi.tl().x - magicX2,roi.tl().y - magicY2,roi.width,roi.height);
+
+    fix_roi = newRoi;
+    //fix_roi = roi;
+
+    //cv::imshow("after_magic",grid);
+    //cv::waitKey(5);
+
+    std::cout << "magic_H\n" << H << '\n';
+    std::cout << "magic_roi\n" << roi << '\n';
+  }
+  else
+  {
+    H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
+    H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
+  }
+
+  std::cout << "after_H\n" << H << '\n';
+  std::cout << "warp_affine" << '\n';
+
+  std::cout << "before_roi_size << " << roi.size() << '\n';
+  std::cout << "before_warped_grid_size << " << warped_grid.size() << '\n';
+  try{
+    warpAffine(grid, warped_grid, H, roi.size(), cv::INTER_NEAREST,
              cv::BORDER_CONSTANT,
              cv::Scalar::all(255) /* this is -1 for signed char */);//grid:前景 warped:背景 H:前景の移動行列
-  //std::cout << "roi_size << " << roi.size() << '\n';
-  //std::cout << "warped_grid_size << " << warped_grid.size() << '\n';
+  }
+  catch(cv::Exception& e)
+  {
+    std::cerr << e.what() << std::endl;
+  }
+
+  
+  std::cout << "roi_size << " << roi.size() << '\n';
+  std::cout << "warped_grid_size << " << warped_grid.size() << '\n';
   ROS_ASSERT(roi.size() == warped_grid.size());
 
   return roi;
@@ -76,22 +164,22 @@ cv::Rect GridWarper::warpRoi(const cv::Mat& grid, const cv::Mat& transform)
   cv::Mat H;
   transform.convertTo(H, CV_32F);
 
-  //std::cout << "H\n" << H << '\n';
+  std::cout << "H\n" << H << '\n';
 
   // separate rotation and translation for plane warper
   // 3D translation
   cv::Mat T = cv::Mat::zeros(3, 1, CV_32F);
   H.colRange(2, 3).rowRange(0, 2).copyTo(T.rowRange(0, 2));
 
-  //std::cout << "T\n" << T << '\n';
+  std::cout << "T\n" << T << '\n';
 
 
-  //std::cout << "T_size << " << T.size() << '\n';
+  std::cout << "T_size << " << T.size() << '\n';
   // 3D rotation
   cv::Mat R = cv::Mat::eye(3, 3, CV_32F);
   H.colRange(0, 2).copyTo(R.rowRange(0, 2).colRange(0, 2));
 
-  //std::cout << "R\n" << R << '\n';
+  std::cout << "R\n" << R << '\n';
 
   //std::cout << "grid_size << " << grid.size() << '\n';
 
