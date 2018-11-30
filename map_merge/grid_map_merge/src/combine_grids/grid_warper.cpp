@@ -93,7 +93,7 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
     magicX2 = (-H.at<double>(0, 2) + roi.tl().x)*cos(rotation)-(-H.at<double>(1, 2) + roi.tl().y)*sin(rotation);
     magicY2 = (-H.at<double>(1, 2) + roi.tl().y)*cos(rotation)+(-H.at<double>(0, 2) + roi.tl().x)*sin(rotation);
 
-    magicX2 = H.at<double>(0, 2)*-sin(rotation) + cos(rotation)*roi.tl().x + roi.tl().x*sin(rotation) + cos(rotation)* H.at<double>(0, 2);
+    magicX2 = H.at<double>(0, 2)*-sin(rotation) + 2*cos(rotation)*roi.tl().x + roi.tl().x*sin(rotation);// + cos(rotation)* H.at<double>(0, 2);
     magicY2 = H.at<double>(1, 2)*-sin(rotation) - cos(rotation)*roi.tl().y + roi.tl().y*sin(rotation) + cos(rotation)* H.at<double>(1, 2);
 
 
@@ -120,8 +120,8 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
     H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
     H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
 
-    cv::Rect newRoi(roi.tl().x - magicX,roi.tl().y - magicY,roi.width,roi.height);
-    //cv::Rect newRoi(roi.tl().x - magicX2,roi.tl().y - magicY2,roi.width,roi.height);
+    //cv::Rect newRoi(roi.tl().x - magicX,roi.tl().y - magicY,roi.width,roi.height);
+    cv::Rect newRoi(roi.tl().x - magicX2,roi.tl().y - magicY2,roi.width,roi.height);
 
     fix_roi = newRoi;
     //fix_roi = roi;
