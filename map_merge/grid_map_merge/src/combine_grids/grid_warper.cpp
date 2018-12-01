@@ -56,8 +56,8 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
   cv::Mat H(transform.rowRange(0, 2));
   std::cout << "transform\n" << transform << '\n';
   //invertAffineTransform(transform.rowRange(0, 2), H);//Hに逆アフィン
-  
-  cv::Rect roi = warpRoi(grid, H);//アフィンの逆でrectを移動
+  std::cout << "grid size : " << grid.size();
+  cv::Rect roi = warpRoi(grid, H);//アフィンの逆でrectを移動//gridはサイズを見てるだけ,Hで移動
   // shift top left corner for warp affine (otherwise the image is cropped)
   std::cout << "before_H\n" << H << '\n';
   std::cout << "warp_roi\n" << roi << '\n';
@@ -120,8 +120,8 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
     H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
     H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
 
-    //cv::Rect newRoi(roi.tl().x - magicX,roi.tl().y - magicY,roi.width,roi.height);
-    cv::Rect newRoi(roi.tl().x - magicX2,roi.tl().y - magicY2,roi.width,roi.height);
+    cv::Rect newRoi(roi.tl().x - magicX,roi.tl().y - magicY,roi.width,roi.height);
+    //cv::Rect newRoi(roi.tl().x - magicX2,roi.tl().y - magicY2,roi.width,roi.height);
 
     fix_roi = newRoi;
     //fix_roi = roi;

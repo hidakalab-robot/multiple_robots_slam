@@ -7,7 +7,7 @@
 
   <arg name="robot2_init_x" default="0.0"/>
   <arg name="robot2_init_y" default="12.0"/>
-  <arg name="robot2_init_yaw" default="3.14"/> 
+  <arg name="robot2_init_yaw" default="0.785"/> 
   <!-- +-3.14 -->
 
 <!--
