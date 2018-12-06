@@ -54,15 +54,24 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
   ROS_ASSERT(transform.type() == CV_64F);
   //cv::Mat H;
   cv::Mat H(transform.rowRange(0, 2));
+  cv::Mat fakeH = (cv::Mat_<double>(2,3) << H.at<double>(0, 0),H.at<double>(0, 1),0,H.at<double>(1, 0),H.at<double>(1, 1),0);
+  //fakeH.at<int>(0,2) = 0;
+  //fakeH.at<int>(1,2) = 0;
+
+  //H = fakeH;
+
   std::cout << "transform\n" << transform << '\n';
   //invertAffineTransform(transform.rowRange(0, 2), H);//Hに逆アフィン
-  std::cout << "grid size : " << grid.size();
+  std::cout << "grid size : " << grid.size() << "\n";
   cv::Rect roi = warpRoi(grid, H);//アフィンの逆でrectを移動//gridはサイズを見てるだけ,Hで移動
+  //cv::Rect roi = warpRoi(grid, fakeH);
   // shift top left corner for warp affine (otherwise the image is cropped)
   std::cout << "before_H\n" << H << '\n';
   std::cout << "warp_roi\n" << roi << '\n';
 
-  bool magic = true;
+  std::cout << "fakeH\n" << fakeH << "\n";
+
+  bool magic = false;
 
   if(magic)
   {
@@ -96,8 +105,7 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
     magicX2 = H.at<double>(0, 2)*-sin(rotation) + 2*cos(rotation)*roi.tl().x + roi.tl().x*sin(rotation);// + cos(rotation)* H.at<double>(0, 2);
     magicY2 = H.at<double>(1, 2)*-sin(rotation) - cos(rotation)*roi.tl().y + roi.tl().y*sin(rotation) + cos(rotation)* H.at<double>(1, 2);
 
-
-    //magicX = hx + rx +10;
+    //magicX = hx + rx + 10;
     //magicY = hy + ry + 10;
 
     //magicX = 10;
@@ -105,8 +113,6 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
 
     //magicX -= -500;
     //magicY -= 0;
-
-
 
     std::cout << "magicX : " << magicX << ", magicY : " << magicY << "\n";
     std::cout << "magicX2 : " << magicX2 << ", magicY2 : " << magicY2 << "\n";
@@ -123,8 +129,8 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
     cv::Rect newRoi(roi.tl().x - magicX,roi.tl().y - magicY,roi.width,roi.height);
     //cv::Rect newRoi(roi.tl().x - magicX2,roi.tl().y - magicY2,roi.width,roi.height);
 
-    fix_roi = newRoi;
-    //fix_roi = roi;
+    //fix_roi = newRoi;
+    fix_roi = roi;
 
     //cv::imshow("after_magic",grid);
     //cv::waitKey(5);
@@ -136,6 +142,7 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
   {
     H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
     H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
+    fix_roi = roi;
   }
 
   std::cout << "after_H\n" << H << '\n';
@@ -144,9 +151,9 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
   std::cout << "before_roi_size << " << roi.size() << '\n';
   std::cout << "before_warped_grid_size << " << warped_grid.size() << '\n';
   try{
-    warpAffine(grid, warped_grid, H, roi.size(), cv::INTER_NEAREST,
-             cv::BORDER_CONSTANT,
-             cv::Scalar::all(255) /* this is -1 for signed char */);//grid:前景 warped:背景 H:前景の移動行列
+    warpAffine(grid, warped_grid, H, roi.size(), cv::INTER_NEAREST,cv::BORDER_CONSTANT,cv::Scalar::all(255) /* this is -1 for signed char */);//grid:前景 warped:背景 H:前景の移動行列
+    //warpAffine(grid, warped_grid, fakeH, roi.size(), cv::INTER_NEAREST,cv::BORDER_CONSTANT,cv::Scalar::all(255) /* this is -1 for signed char */);//grid:前景 warped:背景 H:前景の移動行列
+  
   }
   catch(cv::Exception& e)
   {

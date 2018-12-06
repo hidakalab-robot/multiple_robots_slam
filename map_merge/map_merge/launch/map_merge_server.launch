@@ -37,6 +37,9 @@
         <arg name="init_yaw" value="0.0"/>
       </include>
 
+      <node pkg="tf" type="static_transform_publisher" name="robot1_maptf_broadcaster" args="$(arg robot1_init_x) $(arg robot1_init_y) 0 $(arg robot1_init_yaw) 0 0 /$(arg robot_name)/map /robot1/map 100"/>
+
+      <node pkg="tf" type="static_transform_publisher" name="robot2_maptf_broadcaster" args="$(arg robot2_init_x) $(arg robot2_init_y) 0 $(arg robot2_init_yaw) 0 0 /$(arg robot_name)/map /robot2/map 100"/>
 
       <include file="$(find map_merge)/launch/includes/grid_map_merge.launch.xml">
         <arg name="robot_name" value="$(arg robot_name)"/>
