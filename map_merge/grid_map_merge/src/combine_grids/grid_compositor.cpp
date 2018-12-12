@@ -48,7 +48,7 @@ namespace combine_grids
 namespace internal
 {
 nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
-    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, const std::vector<int>& mapOrder)
+    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, const std::vector<int>& mapOrder, const std::vector<cv::Rect>& fix_rois, cv::Rect& dst_roi, bool errorAvoidance)
 {
   ROS_ASSERT(grids.size() == rois.size());
 
@@ -60,15 +60,23 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   sizes.reserve(grids.size());
 
   for (auto& roi : rois) {
-    //std::cout << "roi\n" << roi << '\n';
+    std::cout << "roi\n" << roi << '\n';
     corners.push_back(roi.tl());
     sizes.push_back(roi.size());
   }
 
   for(int i=0;i<corners.size();i++)
   {
+    std::cout << "before_corner" << '\n';
+    std::cout << corners[i] << '\n';
+  }
+
+
+  for(int i=0;i<corners.size();i++)
+  {
     //std::cout << "before_corner" << '\n';
     //std::cout << corners[i] << '\n';
+    corners[i] = fix_rois[i].tl();
   }
 
   //std::cout << "fix" << '\n';
@@ -83,18 +91,21 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 
   for(int i=0;i<corners.size();i++)
   {
-    //std::cout << "after_corner" << '\n';
+    std::cout << "after_corner" << '\n';
     std::cout << corners[i] << '\n';
   }
 
-  cv::Rect dst_roi = cv::detail::resultRoi(corners, sizes);
+  //cv::Rect dst_roi = cv::detail::resultRoi(corners, sizes);
+  dst_roi = cv::detail::resultRoi(corners, sizes);
+  std::cout << "dst_roi : " << dst_roi << "\n";
 
   //std::cout << "fix_end" << '\n';
 
 
 
   /*このへんでマップの重なりを検知する*/
-  if(rois.size()>1)
+  //bool pubOver = false;
+  if(rois.size()>1 && !errorAvoidance)
   {
     std::vector<cv::Rect> arg_rois;
     std::vector<nav_msgs::OccupancyGrid> arg_grids;

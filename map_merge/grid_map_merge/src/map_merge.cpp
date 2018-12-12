@@ -114,9 +114,9 @@ void MapMerge::topicSubscribing()
       {
         boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
         for (auto& subscription : subscriptions_) {
-          std::lock_guard<std::mutex> s_lock(subscription.mutex);
           if(subscription.name == robot_name)
           {
+            std::lock_guard<std::mutex> s_lock(subscription.mutex);
             subscription.initial_pose = init_pose;
           }
         }
@@ -165,30 +165,45 @@ void MapMerge::topicSubscribing()
 void MapMerge::mapMerging()
 {
   ROS_DEBUG("Map merging started.");
+  //std::cout << "test3" << std::endl;
+
+  bool errorAvoidance;
 
   if (have_initial_poses_) {
+    //std::cout << "test4" << std::endl;
     std::vector<nav_msgs::OccupancyGridConstPtr> grids;
     std::vector<geometry_msgs::Transform> transforms;
+    //std::cout << "test5" << std::endl;
     grids.reserve(subscriptions_size_);
     {
+      //std::cout << "test1" << std::endl;
       boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
+      //std::cout << "test2" << std::endl;
       for (auto& subscription : subscriptions_) {
+        //std::cout << "test6" << std::endl;
         std::lock_guard<std::mutex> s_lock(subscription.mutex);
+        //std::cout << "test7" << std::endl;
         grids.push_back(subscription.readonly_map);
+        //std::cout << "test8" << std::endl;
         transforms.push_back(subscription.initial_pose);
 	//std::cout << "subscription.initial_pose << " << subscription.initial_pose << "\n";
       }
     }
     // we don't need to lock here, because when have_initial_poses_ is true we
     // will not run concurrently on the pipeline
-    pipeline_.feed(grids.begin(), grids.end());
+    //std::cout << "test10" << std::endl;
+    errorAvoidance = pipeline_.feed(grids.begin(), grids.end());
+    //std::cout << "test13" << std::endl;
     pipeline_.setTransforms(transforms.begin(), transforms.end());
+    //std::cout << "test14" << std::endl;
   }
 
+  //std::cout << "test11" << std::endl;
   nav_msgs::OccupancyGridPtr merged_map;
+  //std::cout << "test12" << std::endl;
   {
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
-    merged_map = pipeline_.composeGrids(map_num);
+    merged_map = pipeline_.composeGrids(map_num, errorAvoidance);
   }
   if (!merged_map) {
     return;
@@ -359,7 +374,7 @@ bool MapMerge::getInitPose(const std::string& name,
       ros::param::get(ros::names::append(merging_namespace, "init_pose_yaw"),
                       yaw);
 
-  //std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
+  std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
 
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);

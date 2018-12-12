@@ -151,7 +151,7 @@ static inline bool isIdentity(const cv::Mat& matrix)
   return cv::countNonZero(diff) == 0;
 }
 
-nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
+nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool errorAvoidance)
 {
   ROS_ASSERT(images_.size() == transforms_.size());
   ROS_ASSERT(images_.size() == grids_.size());
@@ -173,14 +173,17 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   imgs_warped.reserve(images_.size());
   std::vector<cv::Rect> rois;
   rois.reserve(images_.size());
+  std::vector<cv::Rect> fix_rois;
+  fix_rois.reserve(images_.size());
+
 
 
   for (size_t i = 0; i < images_.size(); ++i) {
     if (!transforms_[i].empty() && !images_[i].empty()) {
       imgs_warped.emplace_back();
       rois.emplace_back(
-          warper.warp(images_[i], transforms_[i], imgs_warped.back()));
-      //std::cout << "for\n" << transforms_[i] << '\n';
+          warper.warp(images_[i], transforms_[i], imgs_warped.back(), fix_rois[i]));
+      std::cout << "for\n" << transforms_[i] << '\n';
     }
   }
 
@@ -195,7 +198,7 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   //cv::waitKey(1);
 
   // std::cout << "rois1" << '\n';
-  // cv::imshow("rois_1",rois[0]);
+  //cv::imshow("rois_1",rois[0]);
   // cv::waitKey(1);
   //
   // std::cout << "rois2" << '\n';
@@ -212,8 +215,10 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   ROS_DEBUG("compositing result grid");
   nav_msgs::OccupancyGrid::Ptr result;
 
+  cv::Rect dst_roi;
+
   internal::GridCompositor compositor;
-  result = compositor.compose(imgs_warped, rois, grids_, mapOrder);
+  result = compositor.compose(imgs_warped, rois, grids_, mapOrder,fix_rois,dst_roi, errorAvoidance);
 
   // set correct resolution to output grid. use resolution of identity (works
   // for estimated trasforms), or any resolution (works for know_init_positions)
@@ -244,11 +249,11 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
     if(mapOrder[i] == map_num)
     {
       // set grid origin to its centre
-      result->info.origin.position.x = grids_[i]->info.origin.position.x;
+      result->info.origin.position.x = grids_[i]->info.origin.position.x + 0.05*dst_roi.tl().x;
       //std::cout << "check2" << std::endl;
       //-(result->info.width / 2.0) * double(result->info.resolution);
       //-10.525;
-      result->info.origin.position.y = grids_[i]->info.origin.position.y;
+      result->info.origin.position.y = grids_[i]->info.origin.position.y + 0.05*dst_roi.tl().y;
       //std::cout << "check3" << std::endl;
       //-(result->info.height / 2.0) * double(result->info.resolution);
       //-10.525;
