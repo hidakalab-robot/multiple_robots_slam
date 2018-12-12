@@ -31,7 +31,7 @@
     <param name="merged_map_topic" value="/$(arg robot_name)/grid_map_merge/merge_map"/>
     <param name="world_frame" value="$(arg robot_name)/merge_map"/>
     <param name="known_init_poses" value="true"/>
-    <param name="merging_rate" value="1.0"/>
+    <param name="merging_rate" value="2.0"/>
     <param name="discovery_rate" value="0.5"/>
     <param name="estimation_rate" value="0.5"/>
     <param name="estimation_confidence" value="1.0"/>

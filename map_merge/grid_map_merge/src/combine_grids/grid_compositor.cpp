@@ -48,7 +48,7 @@ namespace combine_grids
 namespace internal
 {
 nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
-    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, const std::vector<int>& mapOrder, const std::vector<cv::Rect>& fix_rois, cv::Rect& dst_roi)
+    const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, const std::vector<int>& mapOrder, const std::vector<cv::Rect>& fix_rois, cv::Rect& dst_roi, bool errorAvoidance)
 {
   ROS_ASSERT(grids.size() == rois.size());
 
@@ -104,7 +104,8 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 
 
   /*このへんでマップの重なりを検知する*/
-  if(rois.size()>1)
+  //bool pubOver = false;
+  if(rois.size()>1 && !errorAvoidance)
   {
     std::vector<cv::Rect> arg_rois;
     std::vector<nav_msgs::OccupancyGrid> arg_grids;

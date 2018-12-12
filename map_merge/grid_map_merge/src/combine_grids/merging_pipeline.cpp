@@ -151,7 +151,7 @@ static inline bool isIdentity(const cv::Mat& matrix)
   return cv::countNonZero(diff) == 0;
 }
 
-nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
+nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool errorAvoidance)
 {
   ROS_ASSERT(images_.size() == transforms_.size());
   ROS_ASSERT(images_.size() == grids_.size());
@@ -218,7 +218,7 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   cv::Rect dst_roi;
 
   internal::GridCompositor compositor;
-  result = compositor.compose(imgs_warped, rois, grids_, mapOrder,fix_rois,dst_roi);
+  result = compositor.compose(imgs_warped, rois, grids_, mapOrder,fix_rois,dst_roi, errorAvoidance);
 
   // set correct resolution to output grid. use resolution of identity (works
   // for estimated trasforms), or any resolution (works for know_init_positions)
