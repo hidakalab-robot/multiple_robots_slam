@@ -58,7 +58,8 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
   //fakeH.at<int>(0,2) = 0;
   //fakeH.at<int>(1,2) = 0;
 
-  //H = fakeH;
+  cv::Mat saveH(H);
+  H = fakeH;
 
   std::cout << "transform\n" << transform << '\n';
   //invertAffineTransform(transform.rowRange(0, 2), H);//Hに逆アフィン
@@ -140,9 +141,10 @@ cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform,
   }
   else
   {
-    H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
-    H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
-    fix_roi = roi;
+    //H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
+    //H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
+    cv::Rect newRoi(saveH.at<double>(0, 2),saveH.at<double>(1, 2),roi.width,roi.height);
+    fix_roi = newRoi;
   }
 
   std::cout << "after_H\n" << H << '\n';

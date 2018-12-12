@@ -183,7 +183,7 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool err
       imgs_warped.emplace_back();
       rois.emplace_back(
           warper.warp(images_[i], transforms_[i], imgs_warped.back(), fix_rois[i]));
-      std::cout << "for\n" << transforms_[i] << '\n';
+      //std::cout << "for\n" << transforms_[i] << '\n';
     }
   }
 

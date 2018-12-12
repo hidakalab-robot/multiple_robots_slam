@@ -71,12 +71,14 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
     std::cout << corners[i] << '\n';
   }
 
+  cv::Point fix{0,0};
 
   for(int i=0;i<corners.size();i++)
   {
     //std::cout << "before_corner" << '\n';
     //std::cout << corners[i] << '\n';
     corners[i] = fix_rois[i].tl();
+    //corners[i] = fix;
   }
 
   //std::cout << "fix" << '\n';
