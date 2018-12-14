@@ -158,13 +158,32 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool err
 
   //std::cout << "in composeGrid" << '\n';
   //std::cout << transforms_.size() << '\n';
+
   for(int i=0;i<transforms_.size();i++)
   {
-    std::cout << transforms_[i] << '\n';
+    //std::cout << transforms_[i] << '\n';
   }
 
   if (images_.empty()) {
     return nullptr;
+  }
+
+  //std::cout << "test" << std::endl;
+
+  //std::cout << "trans_size : " << transforms_.size() << std::endl;
+
+  std::vector<cv::Mat> transformSave;
+  //transformSave.reserve(transforms_.size());
+
+  for(int i=0;i<transforms_.size();i++){
+    //std::cout << "test1" << std::endl;
+    cv::Mat temp = transforms_[i].clone();
+    transformSave.push_back(temp);
+    //std::cout << "test2" << std::endl;
+  }
+
+  for(int i=0;i<transformSave.size();i++){
+    //std::cout << "save_check\n" << transformSave[i] << std::endl;
   }
 
   ROS_DEBUG("warping grids");
@@ -211,6 +230,10 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool err
     return nullptr;
   }
 
+  ROS_DEBUG("fixing rois");
+
+  //マップ原点の座標を見てroiを修正する
+  fixRois(rois,transformSave,map_num);
 
   ROS_DEBUG("compositing result grid");
   nav_msgs::OccupancyGrid::Ptr result;
@@ -275,6 +298,105 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool err
 
 
   return result;
+}
+
+void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>& transforms,int originNum)
+{
+  //grids_ : マップの情報
+  //map_order : 配列の順番
+  //originNum : 基準となるマップ番号
+  //rois : roisの一次出力
+  //transforms : 各マップの変換行列
+
+  //基準マップの原点座標
+  int originMapX;
+  int originMapY;
+
+  for(int i=0;i<mapOrder.size();i++)
+  {
+    if(mapOrder[i] == originNum)
+    {
+      //std::cout << "check1" << std::endl;
+      originMapX = grids_[i]->info.origin.position.x / -0.05;
+      //std::cout << "check2" << std::endl;
+      originMapY = grids_[i]->info.origin.position.y / -0.05;
+    }
+  }
+
+  //cv::Rect newRoi(saveH.at<double>(0, 2),saveH.at<double>(1, 2),roi.width,roi.height);
+  //cv::Rect newRoi(0,0,roi.width,roi.height);
+
+  int moveX;
+  int moveY;
+
+  int thisOriginX;
+  int thisOriginY;
+
+  for(int i=0;i<mapOrder.size();i++)
+  {
+    if(mapOrder[i] != originNum)
+    {
+      //H.at<double>(0, 2)
+      thisOriginX = grids_[i]->info.origin.position.x / -0.05;
+      thisOriginY = grids_[i]->info.origin.position.y / -0.05;
+
+      //左上と原点の距離を計算
+      double rotation = std::abs(asin(transforms[i].at<double>(0, 1)));
+      double vecX1 = grids_[i]->info.height * cos(1.57-rotation);
+
+      double vecX2 = thisOriginX*cos(rotation)-thisOriginY*sin(rotation);
+      double vecY2 = thisOriginX*sin(rotation)+thisOriginY*cos(rotation);
+
+
+
+
+
+      double distX = vecX1 + vecX2;
+      double distY = vecY2;
+
+      std::cout << "rotation : " << rotation << std::endl;
+
+      std::cout << "grid_originX : " << grids_[i]->info.origin.position.x << std::endl;
+      std::cout << "grid_originY : " << grids_[i]->info.origin.position.y << std::endl;
+
+      std::cout << "transform : \n" << transforms[i] << std::endl;
+
+      std::cout << "height : " << grids_[i]->info.height << std::endl;
+      std::cout << "width : " << grids_[i]->info.width << std::endl;
+
+      std::cout << "roi : \n" << rois[i] << std::endl;
+
+      std::cout << "vecX1 : " << vecX1 << std::endl;
+      std::cout << "vecX2 : " << vecX2 << std::endl;
+
+      std::cout << "vecY2 : " << vecY2 << std::endl;
+
+
+      std::cout << "distX : " << distX << std::endl;
+      std::cout << "distY : " << distY << std::endl;
+    
+
+      //std::cout << "check3" << std::endl;
+      moveX = originMapX + (int)transforms[i].at<double>(0,2);
+      moveY = originMapY + (int)transforms[i].at<double>(1,2);
+
+      std::cout << "originX : " << originMapX << std::endl;
+      std::cout << "originY : " << originMapY << std::endl;
+
+      std::cout << "transX : " << transforms[i].at<double>(0,2) << std::endl;
+      std::cout << "transY : " << transforms[i].at<double>(1,2) << std::endl;
+
+      std::cout << "moveX : " << moveX << std::endl;
+      std::cout << "moveY : " << moveY << std::endl;
+
+
+      //std::cout << "check4" << std::endl;
+      cv::Rect newRoi(moveX-distX,moveY-distY,rois[i].width,rois[i].height);
+      rois[i] = newRoi;
+    }
+  }
+
+
 }
 
 std::vector<geometry_msgs::Transform> MergingPipeline::getTransforms() const
