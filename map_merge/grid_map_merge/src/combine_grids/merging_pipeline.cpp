@@ -332,67 +332,112 @@ void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>&
   int thisOriginX;
   int thisOriginY;
 
+  double vecX1,vecX2,vecY1,vecY2;
+
+  double distX,distY;
+
+  double rotation,rotationS,rotationC;
+
   for(int i=0;i<mapOrder.size();i++)
   {
     if(mapOrder[i] != originNum)
     {
-      //H.at<double>(0, 2)
+      rotationS = asin(transforms[i].at<double>(1, 0));
+      rotationC = acos(transforms[i].at<double>(0, 0));
+
       thisOriginX = grids_[i]->info.origin.position.x / -0.05;
       thisOriginY = grids_[i]->info.origin.position.y / -0.05;
 
-      //左上と原点の距離を計算
-      double rotation = std::abs(asin(transforms[i].at<double>(0, 1)));
-      double vecX1 = grids_[i]->info.height * cos(1.57-rotation);
+      vecX1 = vecX2 = vecY1 = vecY2 = 0;
 
-      double vecX2 = thisOriginX*cos(rotation)-thisOriginY*sin(rotation);
-      double vecY2 = thisOriginX*sin(rotation)+thisOriginY*cos(rotation);
-
-
-
-
-
-      double distX = vecX1 + vecX2;
-      double distY = vecY2;
-
-      std::cout << "rotation : " << rotation << std::endl;
-
-      std::cout << "grid_originX : " << grids_[i]->info.origin.position.x << std::endl;
-      std::cout << "grid_originY : " << grids_[i]->info.origin.position.y << std::endl;
-
-      std::cout << "transform : \n" << transforms[i] << std::endl;
-
-      std::cout << "height : " << grids_[i]->info.height << std::endl;
-      std::cout << "width : " << grids_[i]->info.width << std::endl;
-
-      std::cout << "roi : \n" << rois[i] << std::endl;
-
-      std::cout << "vecX1 : " << vecX1 << std::endl;
-      std::cout << "vecX2 : " << vecX2 << std::endl;
-
-      std::cout << "vecY2 : " << vecY2 << std::endl;
-
-
-      std::cout << "distX : " << distX << std::endl;
-      std::cout << "distY : " << distY << std::endl;
-    
-
-      //std::cout << "check3" << std::endl;
       moveX = originMapX + (int)transforms[i].at<double>(0,2);
       moveY = originMapY + (int)transforms[i].at<double>(1,2);
 
-      std::cout << "originX : " << originMapX << std::endl;
-      std::cout << "originY : " << originMapY << std::endl;
+      if(std::abs(rotationC) <= M_PI/2){
+        rotation = rotationS;
+        if(rotationS >= 0){
+        // 0 ~ 90
+        //左上と原点の距離を計算
+          std::cout << "pattern1" << std::endl;
+          vecX1 = grids_[i]->info.height * sin(rotation);
+        }
+        else{
+        // -90 ~ 0
+        //左上と原点の距離を計算
+          std::cout << "pattern2" << std::endl;
+          //vecY1 = grids_[i]->info.width * std::abs(sin(rotation));
+          vecY1 = grids_[i]->info.width * std::abs(sin(rotation));
+        }
+      }
+      else{
+        //rotation = rotationC;
+        if(rotationS >= 0){
+          rotation = rotationC;
+        // 0 ~ 90
+        //左上と原点の距離を計算
+          std::cout << "pattern3" << std::endl;
+          vecX1 = grids_[i]->info.height * cos(rotation - M_PI/2) + grids_[i]->info.width * sin(rotation - M_PI/2);
+          vecY1 = grids_[i]->info.height * sin(rotation - M_PI/2);
+        }
+        else{
+        // -90 ~ 0
+        //左上と原点の距離を計算
+        rotation = -rotationC;
+        double rotation2 = std::abs(rotationC);
+          std::cout << "pattern4" << std::endl;
+          vecX1 = grids_[i]->info.width * sin(rotation2 - M_PI/2);
+          vecY1 = grids_[i]->info.width * cos(rotation2 - M_PI/2) + grids_[i]->info.height * sin(rotation2 - M_PI/2);
+          //vecX1 = grids_[i]->info.width * cos(rotation2);
+          //vecY1 = grids_[i]->info.width * sin(rotation2) + grids_[i]->info.height * cos(rotation2);
+        }
+      }
 
-      std::cout << "transX : " << transforms[i].at<double>(0,2) << std::endl;
-      std::cout << "transY : " << transforms[i].at<double>(1,2) << std::endl;
+      vecX2 = thisOriginX*cos(rotation)-thisOriginY*sin(rotation);
+      vecY2 = thisOriginX*sin(rotation)+thisOriginY*cos(rotation);
 
-      std::cout << "moveX : " << moveX << std::endl;
-      std::cout << "moveY : " << moveY << std::endl;
+      distX = vecX1 + vecX2;
+      distY = vecY1 + vecY2;
 
-
-      //std::cout << "check4" << std::endl;
       cv::Rect newRoi(moveX-distX,moveY-distY,rois[i].width,rois[i].height);
       rois[i] = newRoi;
+
+      //comment area
+      { 
+        std::cout << "rotation : " << rotation << std::endl;
+        std::cout << "rotationS : " << rotationS << std::endl;
+        std::cout << "rotationC : " << rotationC << std::endl;
+
+        std::cout << "grid_originX : " << grids_[i]->info.origin.position.x << std::endl;
+        std::cout << "grid_originY : " << grids_[i]->info.origin.position.y << std::endl;
+
+        std::cout << "transform : \n" << transforms[i] << std::endl;
+
+        std::cout << "height : " << grids_[i]->info.height << std::endl;
+        std::cout << "width : " << grids_[i]->info.width << std::endl;
+
+        std::cout << "roi : \n" << rois[i] << std::endl;
+
+        std::cout << "vecX1 : " << vecX1 << std::endl;
+        std::cout << "vecX2 : " << vecX2 << std::endl;
+        std::cout << "vecY1 : " << vecY1 << std::endl;
+        std::cout << "vecY2 : " << vecY2 << std::endl;
+
+        std::cout << "distX : " << distX << std::endl;
+        std::cout << "distY : " << distY << std::endl;
+
+        std::cout << "originX : " << originMapX << std::endl;
+        std::cout << "originY : " << originMapY << std::endl;
+
+        std::cout << "transX : " << transforms[i].at<double>(0,2) << std::endl;
+        std::cout << "transY : " << transforms[i].at<double>(1,2) << std::endl;
+
+        std::cout << "moveX : " << moveX << std::endl;
+        std::cout << "moveY : " << moveY << std::endl;
+
+        std::cout << "true-moveX : " << moveX-distX << std::endl;
+        std::cout << "true-moveY : " << moveY-distY << std::endl;
+      }
+
     }
   }
 
