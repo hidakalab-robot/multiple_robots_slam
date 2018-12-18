@@ -402,41 +402,41 @@ void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>&
       rois[i] = newRoi;
 
       //comment area
-      { 
-        std::cout << "rotation : " << rotation << std::endl;
-        std::cout << "rotationS : " << rotationS << std::endl;
-        std::cout << "rotationC : " << rotationC << std::endl;
+      // { 
+      //   std::cout << "rotation : " << rotation << std::endl;
+      //   std::cout << "rotationS : " << rotationS << std::endl;
+      //   std::cout << "rotationC : " << rotationC << std::endl;
 
-        std::cout << "grid_originX : " << grids_[i]->info.origin.position.x << std::endl;
-        std::cout << "grid_originY : " << grids_[i]->info.origin.position.y << std::endl;
+      //   std::cout << "grid_originX : " << grids_[i]->info.origin.position.x << std::endl;
+      //   std::cout << "grid_originY : " << grids_[i]->info.origin.position.y << std::endl;
 
-        std::cout << "transform : \n" << transforms[i] << std::endl;
+      //   std::cout << "transform : \n" << transforms[i] << std::endl;
 
-        std::cout << "height : " << grids_[i]->info.height << std::endl;
-        std::cout << "width : " << grids_[i]->info.width << std::endl;
+      //   std::cout << "height : " << grids_[i]->info.height << std::endl;
+      //   std::cout << "width : " << grids_[i]->info.width << std::endl;
 
-        std::cout << "roi : \n" << rois[i] << std::endl;
+      //   std::cout << "roi : \n" << rois[i] << std::endl;
 
-        std::cout << "vecX1 : " << vecX1 << std::endl;
-        std::cout << "vecX2 : " << vecX2 << std::endl;
-        std::cout << "vecY1 : " << vecY1 << std::endl;
-        std::cout << "vecY2 : " << vecY2 << std::endl;
+      //   std::cout << "vecX1 : " << vecX1 << std::endl;
+      //   std::cout << "vecX2 : " << vecX2 << std::endl;
+      //   std::cout << "vecY1 : " << vecY1 << std::endl;
+      //   std::cout << "vecY2 : " << vecY2 << std::endl;
 
-        std::cout << "distX : " << distX << std::endl;
-        std::cout << "distY : " << distY << std::endl;
+      //   std::cout << "distX : " << distX << std::endl;
+      //   std::cout << "distY : " << distY << std::endl;
 
-        std::cout << "originX : " << originMapX << std::endl;
-        std::cout << "originY : " << originMapY << std::endl;
+      //   std::cout << "originX : " << originMapX << std::endl;
+      //   std::cout << "originY : " << originMapY << std::endl;
 
-        std::cout << "transX : " << transforms[i].at<double>(0,2) << std::endl;
-        std::cout << "transY : " << transforms[i].at<double>(1,2) << std::endl;
+      //   std::cout << "transX : " << transforms[i].at<double>(0,2) << std::endl;
+      //   std::cout << "transY : " << transforms[i].at<double>(1,2) << std::endl;
 
-        std::cout << "moveX : " << moveX << std::endl;
-        std::cout << "moveY : " << moveY << std::endl;
+      //   std::cout << "moveX : " << moveX << std::endl;
+      //   std::cout << "moveY : " << moveY << std::endl;
 
-        std::cout << "true-moveX : " << moveX-distX << std::endl;
-        std::cout << "true-moveY : " << moveY-distY << std::endl;
-      }
+      //   std::cout << "true-moveX : " << moveX-distX << std::endl;
+      //   std::cout << "true-moveY : " << moveY-distY << std::endl;
+      // }
 
     }
   }
