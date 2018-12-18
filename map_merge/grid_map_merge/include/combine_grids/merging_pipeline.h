@@ -71,6 +71,8 @@ private:
   std::vector<cv::Mat> transforms_;
   
   std::vector<int> mapOrder;
+
+  void fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>& transforms, int originNum);
 };
 
 template <typename InputIt>
@@ -121,7 +123,7 @@ bool MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
       //std::cout << "****grids frame ******\n" << grids_[i] -> header.frame_id << std::endl;
       //std::cout << "grid_size : " << grids_.size() << "\n";
       //std::cout << "i : " << i << "\n";
-      std::cout << grids_[i] -> header.frame_id << "\n";
+      //std::cout << grids_[i] -> header.frame_id << "\n";
       std::string num = grids_[i] -> header.frame_id;
       //std::cout << "test29" << std::endl;
       //std::cout << "a"  << std::endl;

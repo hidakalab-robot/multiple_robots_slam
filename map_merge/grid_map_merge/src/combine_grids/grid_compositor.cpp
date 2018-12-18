@@ -60,15 +60,14 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   sizes.reserve(grids.size());
 
   for (auto& roi : rois) {
-    std::cout << "roi\n" << roi << '\n';
+    //std::cout << "roi\n" << roi << '\n';
     corners.push_back(roi.tl());
     sizes.push_back(roi.size());
   }
 
-  for(int i=0;i<corners.size();i++)
-  {
-    std::cout << "before_corner" << '\n';
-    std::cout << corners[i] << '\n';
+  for(int i=0;i<sizes.size();i++){
+    //std::cout << "size_meter\n";
+    //std::cout << "[" << sizes[i].width * 0.05 << ", " << sizes[i].height * 0.05 << "]\n";
   }
 
 
@@ -76,7 +75,16 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
   {
     //std::cout << "before_corner" << '\n';
     //std::cout << corners[i] << '\n';
-    corners[i] = fix_rois[i].tl();
+  }
+
+  //cv::Point fix{0,0};
+
+  for(int i=0;i<corners.size();i++)
+  {
+    //std::cout << "before_corner" << '\n';
+    //std::cout << corners[i] << '\n';
+    //corners[i] = fix_rois[i].tl();
+    //corners[i] = fix;
   }
 
   //std::cout << "fix" << '\n';
@@ -91,13 +99,15 @@ nav_msgs::OccupancyGrid::Ptr GridCompositor::compose(
 
   for(int i=0;i<corners.size();i++)
   {
-    std::cout << "after_corner" << '\n';
-    std::cout << corners[i] << '\n';
+    //std::cout << "after_corner" << '\n';
+    //std::cout << corners[i] << '\n';
+    //std::cout << "after_corner_meter\n";
+    //std::cout << "[" << corners[i].x * 0.05 << ", " << corners[i].y * 0.05 << "]" << std::endl;
   }
 
   //cv::Rect dst_roi = cv::detail::resultRoi(corners, sizes);
   dst_roi = cv::detail::resultRoi(corners, sizes);
-  std::cout << "dst_roi : " << dst_roi << "\n";
+  //std::cout << "dst_roi : " << dst_roi << "\n";
 
   //std::cout << "fix_end" << '\n';
 

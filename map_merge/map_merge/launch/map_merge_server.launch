@@ -8,8 +8,9 @@
   <arg name="robot2_init_x" default="0.0"/>
   <arg name="robot2_init_y" default="12.0"/>
   <!-- <arg name="robot2_init_yaw" default="0.0"/> -->
-  <arg name="robot2_init_yaw" default="0.785"/> 
-  <!-- +-3.14 -->
+  <!-- <arg name="robot2_init_yaw" default="0.785"/>  -->
+  <arg name="robot2_init_yaw" default="-2.08"/> 
+  <!-- yawの設定値は -1.57 <= yaw <= 1.57 -->
 
 <!--
   <arg name="robot2_init_x2" default="0.0"/>
@@ -41,6 +42,7 @@
       <node pkg="tf" type="static_transform_publisher" name="robot1_maptf_broadcaster" args="$(arg robot1_init_x) $(arg robot1_init_y) 0 $(arg robot1_init_yaw) 0 0 /$(arg robot_name)/map /robot1/map 100"/>
 
       <node pkg="tf" type="static_transform_publisher" name="robot2_maptf_broadcaster" args="$(arg robot2_init_x) $(arg robot2_init_y) 0 $(arg robot2_init_yaw) 0 0 /$(arg robot_name)/map /robot2/map 100"/>
+      <!-- <node pkg="tf" type="static_transform_publisher" name="robot2_maptf_broadcaster" args="$(arg robot2_init_x) $(arg robot2_init_y) 0 0 0 0 /$(arg robot_name)/map /robot2/map 100"/> -->
 
       <include file="$(find map_merge)/launch/includes/grid_map_merge.launch.xml">
         <arg name="robot_name" value="$(arg robot_name)"/>
