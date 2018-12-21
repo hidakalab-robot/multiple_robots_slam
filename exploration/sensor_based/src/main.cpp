@@ -1,4 +1,5 @@
 #include <ros/ros.h>
+#include <sensor_based/core.h>
 
 int main(int argc, char *argv[])
 {

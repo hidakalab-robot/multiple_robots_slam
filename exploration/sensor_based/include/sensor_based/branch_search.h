@@ -1,28 +1,51 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
-#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PointStamped.h>
+#include <sensor_based/PoseLog.h>
 
 //分岐領域を検出
 class BranchSearch
 {
 private:
+	ros::NodeHandle param;
     double BRANCH_ANGLE;
     double CENTER_RANGE_MIN;
     double BRANCH_RANGE_LIMIT;
     double BRANCH_DIFF_THRESHOLD;
+	double DUPLICATE_MARGIN;
+	std::string ROBOT_NAME;
+
+	ros::NodeHandle spl;
+    ros::Subscriber subPoseLog;
+    ros::CallbackQueue qPoseLog;
+    std::string poseLogTopic;
+    std::vector<geometry_msgs::PoseStamped> poseLogData;
+
+	ros::NodeHandle pgb;
+	ros::Publisher pubGoalBranch;
+	std::string goalBranchTopic;
 
 
 public:
     BranchSearch();
     ~BranchSearch(){};
     void initialize(double branchAngle, double centerRangeMin);
-    geometry_msgs::Point returnBranch(sensor_msgs::LaserScan scanData);
-    bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal);
-    bool duplicatedPointDetection(void);
+    geometry_msgs::Point returnBranch(sensor_msgs::LaserScan scanData,geometry_msgs::PoseStamped pose);
+    bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
+    bool duplicateDetection(geometry_msgs::Point goal);
+
+	void poseLogCB(const sensor_based::PoseLog::ConstPtr& msg);
+
+	void publishGoalBranch(geometry_msgs::Point goal);
+
 };
 
 BranchSearch::BranchSearch(){
+	param.getParam("pose_log_topic", poseLogTopic);
+    spl.setCallbackQueue(&qPoseLog);
+    subPoseLog = spl.subscribe(poseLogTopic,1,&BranchSearch::poseLogCB, this);
 
+	pubGoalBranch = pgb.advertise<geometry_msgs::PointStamped>(goalBranchTopic, 1);
 }
 
 void BranchSearch::initialize(double branchAngle, double centerRangeMin){
@@ -30,9 +53,29 @@ void BranchSearch::initialize(double branchAngle, double centerRangeMin){
     CENTER_RANGE_MIN = centerRangeMin;
     //BRANCH_RANGE_LIMIT = 
     //BRANCH_DIFF_THRESHOLD
+	//ROBOT_NAME = 
+	//DUPLICATE_MARGIN
 }
 
-geometry_msgs::Point BranchSearch::returnBranch(sensor_msgs::LaserScan scanData){
+void BranchSearch::poseLogCB(const sensor_based::PoseLog::ConstPtr& msg){
+	for(int i=0;i<msg -> names.size();i++){
+		if(msg->names[i] == ROBOT_NAME){
+			poseLogData = msg->poseLists[i].poses;
+			break;
+		}
+	}
+}
+
+void BranchSearch::publishGoalBranch(geometry_msgs::Point goal){
+	geometry_msgs::PointStamped msg;
+	msg.point = goal;
+	msg.header.stamp = ros::Time::now();
+	msg.header.frame_id = ROBOT_NAME + "/map";
+
+	pubGoalBranch.publish(msg);
+}
+
+geometry_msgs::Point BranchSearch::returnBranch(sensor_msgs::LaserScan scanData, geometry_msgs::PoseStamped pose){
     const int scanWidth = BRANCH_ANGLE / scanData.angle_increment;
     const int scanMin = (scanData.ranges.size()/2)-1 - scanWidth;
     const int scanMax = (scanData.ranges.size()/2) + scanWidth;
@@ -62,25 +105,26 @@ geometry_msgs::Point BranchSearch::returnBranch(sensor_msgs::LaserScan scanData)
     //bool branchFlag;
 
     //branchFlag = branchDetection(fixRanges,fixAngle,scanData.angle_max,goal);
-    if(!branchDetection(fixRanges,fixAngle,scanData.angle_max,goal)){
-        geometry_msgs::Point temp;
-        goal = temp
+    if(branchDetection(fixRanges,fixAngles,scanData.angle_max,goal,pose)){
+		//double yaw = 2*asin(pose.pose.orientation.z);
+		//goal.x = pose.pose.position.x+(cos(yaw)*goal.x) - (sin(yaw)*goal.y);
+		//globalY = pose.pose.position.y+(cos(yaw)*goal.y) + (sin(yaw)*goal.x);
+		publishGoalBranch(goal);
     }
+	else{
+		geometry_msgs::Point temp;
+        goal = temp;
+	}
+	//publishGoalBranch(goal);
 
     return goal;
 
 }
 
-bool BranchSearch::branchDetection(std::vector<float> ranges, std::vector<float> angles,float angleMax,geometry_msgs::Point& goal){
-    //int i;
-	//int j;
+bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose){
 	int near;
-	float scanX;
-	float scanY;
-	float nextScanX;
-	float nextScanY;
-	float diffX;
-    float diffY;
+	float scanX,scanY,nextScanX,nextScanY;
+	float diffX,diffY;
 
 	float centerDist = 1000.0;
 
@@ -90,13 +134,18 @@ bool BranchSearch::branchDetection(std::vector<float> ranges, std::vector<float>
 	const float BRANCH_LOW_Y = BRANCH_DIFF_THRESHOLD*tan(angleMax);
 	const float BRANCH_HIGH_Y = BRANCH_RANGE_LIMIT*tan(angleMax);//分岐領域の2点間のｙ座標の差がこの値以下のとき分岐として検出
 
-	std::vector<float> listX;//goal_xを保存
-	std::vector<float> listY;//goal_yを保存
+	//std::vector<float> listX;//goal_xを保存
+	//std::vector<float> listY;//goal_yを保存
+	std::vector<geometry_msgs::Point> list;
+	geometry_msgs::Point tempGoal;
+
 
 	//goal_x = 0;
 	//goal_y = 0;
 
     bool flag;
+
+
 
     //はじめのfor文では条件を満たした分岐領域を探す
     //２つ目のfor文で最も近い分岐を選ぶ
@@ -112,8 +161,11 @@ bool BranchSearch::branchDetection(std::vector<float> ranges, std::vector<float>
 				nextScanY = ranges[i+1]*sin(angles[i+1]);
 				diffY = std::abs(nextScanY - scanY);
 				if(BRANCH_LOW_Y <= diffY && diffY <= BRANCH_HIGH_Y){
-					listX.push_back((nextScanX + scanX)/2);
-					listY.push_back((nextScanY + scanY)/2);
+					tempGoal.x = (nextScanX + scanX)/2;
+					tempGoal.y = (nextScanY + scanY)/2;
+					//listX.push_back((nextScanX + scanX)/2);
+					//listY.push_back((nextScanY + scanY)/2);
+					list.push_back(tempGoal);
 					flag = true;
 				}
 			}
@@ -122,19 +174,25 @@ bool BranchSearch::branchDetection(std::vector<float> ranges, std::vector<float>
 
 	if(flag){
         bool tempCenterDist;
-		for(int k=listX.size();k>0;k--){
-			for(int j=0;j<listX.size();j++){
-				tempCenterDist = std::abs(listX[j])+std::abs(listY[j]);
+		double yaw = 2*asin(pose.pose.orientation.z);
+		for(int k=list.size();k>0;k--){
+			for(int j=0;j<list.size();j++){
+				tempCenterDist = std::abs(list[j].x)+std::abs(list[j].y);
 				if(tempCenterDist <= centerDist){
 					centerDist = tempCenterDist;
-					goal.x = listX[j];
-					goal.y = listY[j];
+					//globalX = pose.pose.position.x+(cos(yaw)*goal.x) - (sin(yaw)*goal.y);
+					//globalY = pose.pose.position.y+(cos(yaw)*goal.y) + (sin(yaw)*goal.x);
+					//goal.x = list[j].x;
+					//goal.y = list[j].y;
+					//sensor->mapに座標変換
+					goal.x = pose.pose.position.x + (cos(yaw)*list[j].x) - (sin(yaw)*list[j].y);
+					goal.y = pose.pose.position.y + (cos(yaw)*list[j].y) + (sin(yaw)*list[j].y);
 					near = j;
 				}
 			}
-			if(duplicatedDetection()){
-				listX.erase(listX.begin() + near);
-				listY.erase(listY.begin() + near);
+			if(duplicateDetection(goal)){
+				list.erase(list.begin() + near);
+				//listY.erase(list.begin() + near);
 				flag = false;
 			}
 			else{
@@ -148,6 +206,50 @@ bool BranchSearch::branchDetection(std::vector<float> ranges, std::vector<float>
     return flag;
 }
 
-void BranchSearch::duplicatedDetection(void){
+bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
+	double globalX;//分岐領域の世界座標
+	double globalY;//分岐領域の世界座標
+	double xPlus;
+	double xMinus;
+	double yPlus;
+	double yMinus;
+	//bool duplication_flag = false;
 
+	//odom_queue.callOne(ros::WallDuration(1));
+
+	//poseLogData にポーズのログ
+	qPoseLog.callOne(ros::WallDuration(1));
+
+	//double yaw = 2*asin(pose.pose.orientation.z);
+
+
+	//globalX = pose.pose.position.x+(cos(yaw)*goal.x) - (sin(yaw)*goal.y);
+	//globalY = pose.pose.position.y+(cos(yaw)*goal.y) + (sin(yaw)*goal.x);
+
+	xPlus = globalX + DUPLICATE_MARGIN;
+	xMinus = globalX - DUPLICATE_MARGIN;
+	yPlus = globalY + DUPLICATE_MARGIN;
+	yMinus = globalY - DUPLICATE_MARGIN;
+
+
+	//std::cout << "odom_x,odom_y (" << odom_x << "," << odom_y << ")" << std::endl;
+	//std::cout << "goal_x,goal_y (" << goal_x << "," << goal_y << ")" << std::endl;
+	//std::cout << "yaw (" << yaw << ")" << std::endl;
+	//std::cout << "global_x,global_y (" << global_x << "," << global_y << ")" << std::endl;
+	
+	
+
+	for(int i=0;i<poseLogData.size();i++){
+		//過去のオドメトリが許容範囲の中に入っているか//
+		if((xPlus >= poseLogData[i].pose.position.x) && (xMinus <= poseLogData[i].pose.position.x)){
+			if((yPlus >= poseLogData[i].pose.position.y) && (yMinus <= poseLogData[i].pose.position.y)){
+				//duplication_flag = true;
+				//branch_find_flag = false;
+				//std::cout << "すでに探査した領域でした・・・ぐすん;;" << std::endl;
+				return true;
+			}
+		}
+	}
+	
+	return false;
 }

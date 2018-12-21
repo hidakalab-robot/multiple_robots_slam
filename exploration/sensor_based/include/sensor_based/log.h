@@ -1,0 +1,1 @@
+        void poseLog(geometry_msgs::PoseStamped pose);
