@@ -57,6 +57,8 @@ struct MapSubscription {
   // also protects reads and writes of shared_ptrs
   std::mutex mutex;
 
+  std::string name;
+
   geometry_msgs::Transform initial_pose;
   nav_msgs::OccupancyGrid::Ptr writable_map;
   nav_msgs::OccupancyGrid::ConstPtr readonly_map;

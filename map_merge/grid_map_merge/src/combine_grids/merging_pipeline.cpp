@@ -151,20 +151,39 @@ static inline bool isIdentity(const cv::Mat& matrix)
   return cv::countNonZero(diff) == 0;
 }
 
-nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
+nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool errorAvoidance)
 {
   ROS_ASSERT(images_.size() == transforms_.size());
   ROS_ASSERT(images_.size() == grids_.size());
 
-  std::cout << "in composeGrid" << '\n';
-  std::cout << transforms_.size() << '\n';
+  //std::cout << "in composeGrid" << '\n';
+  //std::cout << transforms_.size() << '\n';
+
   for(int i=0;i<transforms_.size();i++)
   {
-    std::cout << transforms_[i] << '\n';
+    //std::cout << transforms_[i] << '\n';
   }
 
   if (images_.empty()) {
     return nullptr;
+  }
+
+  //std::cout << "test" << std::endl;
+
+  //std::cout << "trans_size : " << transforms_.size() << std::endl;
+
+  std::vector<cv::Mat> transformSave;
+  //transformSave.reserve(transforms_.size());
+
+  for(int i=0;i<transforms_.size();i++){
+    //std::cout << "test1" << std::endl;
+    cv::Mat temp = transforms_[i].clone();
+    transformSave.push_back(temp);
+    //std::cout << "test2" << std::endl;
+  }
+
+  for(int i=0;i<transformSave.size();i++){
+    //std::cout << "save_check\n" << transformSave[i] << std::endl;
   }
 
   ROS_DEBUG("warping grids");
@@ -173,29 +192,32 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
   imgs_warped.reserve(images_.size());
   std::vector<cv::Rect> rois;
   rois.reserve(images_.size());
+  std::vector<cv::Rect> fix_rois;
+  fix_rois.reserve(images_.size());
+
 
 
   for (size_t i = 0; i < images_.size(); ++i) {
     if (!transforms_[i].empty() && !images_[i].empty()) {
       imgs_warped.emplace_back();
       rois.emplace_back(
-          warper.warp(images_[i], transforms_[i], imgs_warped.back()));
-      std::cout << "for\n" << transforms_[i] << '\n';
+          warper.warp(images_[i], transforms_[i], imgs_warped.back(), fix_rois[i]));
+      //std::cout << "for\n" << transforms_[i] << '\n';
     }
   }
 
-  std::cout << "imgs_warped_size << " << imgs_warped.size() << '\n';
+  //std::cout << "imgs_warped_size << " << imgs_warped.size() << '\n';
 
-  std::cout << "warp1" << '\n';
+  //std::cout << "warp1" << '\n';
   //cv::imshow("imgs_warped_1",imgs_warped[0]);
   //cv::waitKey(1);
 
-  std::cout << "warp2" << '\n';
+  //std::cout << "warp2" << '\n';
   //cv::imshow("imgs_warped_2",imgs_warped[1]);
   //cv::waitKey(1);
 
   // std::cout << "rois1" << '\n';
-  // cv::imshow("rois_1",rois[0]);
+  //cv::imshow("rois_1",rois[0]);
   // cv::waitKey(1);
   //
   // std::cout << "rois2" << '\n';
@@ -204,16 +226,22 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
 
 
   if (imgs_warped.empty()) {
-    std::cout << "nullptr" << '\n';
+    //std::cout << "nullptr" << '\n';
     return nullptr;
   }
 
+  ROS_DEBUG("fixing rois");
+
+  //マップ原点の座標を見てroiを修正する
+  fixRois(rois,transformSave,map_num);
 
   ROS_DEBUG("compositing result grid");
   nav_msgs::OccupancyGrid::Ptr result;
 
+  cv::Rect dst_roi;
+
   internal::GridCompositor compositor;
-  result = compositor.compose(imgs_warped, rois, grids_, mapOrder);
+  result = compositor.compose(imgs_warped, rois, grids_, mapOrder,fix_rois,dst_roi, errorAvoidance);
 
   // set correct resolution to output grid. use resolution of identity (works
   // for estimated trasforms), or any resolution (works for know_init_positions)
@@ -235,29 +263,29 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
 
   for(int i;i<grids_.size();i++)
   {
-    std::cout << "grids_frames\n" << grids_[i] -> header.frame_id << std::endl;
+    //std::cout << "grids_frames\n" << grids_[i] -> header.frame_id << std::endl;
   }
 
   for(int i=0;i<mapOrder.size();i++)
   {
-    std::cout << "check1" << std::endl;
+    //std::cout << "check1" << std::endl;
     if(mapOrder[i] == map_num)
     {
       // set grid origin to its centre
-      result->info.origin.position.x = grids_[i]->info.origin.position.x;
-      std::cout << "check2" << std::endl;
+      result->info.origin.position.x = grids_[i]->info.origin.position.x + 0.05*dst_roi.tl().x;
+      //std::cout << "check2" << std::endl;
       //-(result->info.width / 2.0) * double(result->info.resolution);
       //-10.525;
-      result->info.origin.position.y = grids_[i]->info.origin.position.y;
-      std::cout << "check3" << std::endl;
+      result->info.origin.position.y = grids_[i]->info.origin.position.y + 0.05*dst_roi.tl().y;
+      //std::cout << "check3" << std::endl;
       //-(result->info.height / 2.0) * double(result->info.resolution);
       //-10.525;
       result->info.origin.orientation.w = 1.0;
-      std::cout << "check4" << std::endl;
+      //std::cout << "check4" << std::endl;
     }
   }
 
-  std::cout << "check5" << std::endl;
+  //std::cout << "check5" << std::endl;
 
   // // set grid origin to its centre
   //     result->info.origin.position.x = grids_[map_num-1]->info.origin.position.x;
@@ -270,6 +298,150 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num)
 
 
   return result;
+}
+
+void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>& transforms,int originNum)
+{
+  //grids_ : マップの情報
+  //map_order : 配列の順番
+  //originNum : 基準となるマップ番号
+  //rois : roisの一次出力
+  //transforms : 各マップの変換行列
+
+  //基準マップの原点座標
+  int originMapX;
+  int originMapY;
+
+  for(int i=0;i<mapOrder.size();i++)
+  {
+    if(mapOrder[i] == originNum)
+    {
+      //std::cout << "check1" << std::endl;
+      originMapX = grids_[i]->info.origin.position.x / -0.05;
+      //std::cout << "check2" << std::endl;
+      originMapY = grids_[i]->info.origin.position.y / -0.05;
+    }
+  }
+
+  //cv::Rect newRoi(saveH.at<double>(0, 2),saveH.at<double>(1, 2),roi.width,roi.height);
+  //cv::Rect newRoi(0,0,roi.width,roi.height);
+
+  int moveX;
+  int moveY;
+
+  int thisOriginX;
+  int thisOriginY;
+
+  double vecX1,vecX2,vecY1,vecY2;
+
+  double distX,distY;
+
+  double rotation,rotationS,rotationC;
+
+  for(int i=0;i<mapOrder.size();i++)
+  {
+    if(mapOrder[i] != originNum)
+    {
+      rotationS = asin(transforms[i].at<double>(1, 0));
+      rotationC = acos(transforms[i].at<double>(0, 0));
+
+      thisOriginX = grids_[i]->info.origin.position.x / -0.05;
+      thisOriginY = grids_[i]->info.origin.position.y / -0.05;
+
+      vecX1 = vecX2 = vecY1 = vecY2 = 0;
+
+      moveX = originMapX + (int)transforms[i].at<double>(0,2);
+      moveY = originMapY + (int)transforms[i].at<double>(1,2);
+
+      if(std::abs(rotationC) <= M_PI/2){
+        rotation = rotationS;
+        if(rotationS >= 0){
+        // 0 ~ 90
+        //左上と原点の距離を計算
+          std::cout << "pattern1" << std::endl;
+          vecX1 = grids_[i]->info.height * sin(rotation);
+        }
+        else{
+        // -90 ~ 0
+        //左上と原点の距離を計算
+          std::cout << "pattern2" << std::endl;
+          //vecY1 = grids_[i]->info.width * std::abs(sin(rotation));
+          vecY1 = grids_[i]->info.width * std::abs(sin(rotation));
+        }
+      }
+      else{
+        //rotation = rotationC;
+        if(rotationS >= 0){
+          rotation = rotationC;
+        // 0 ~ 90
+        //左上と原点の距離を計算
+          std::cout << "pattern3" << std::endl;
+          vecX1 = grids_[i]->info.height * cos(rotation - M_PI/2) + grids_[i]->info.width * sin(rotation - M_PI/2);
+          vecY1 = grids_[i]->info.height * sin(rotation - M_PI/2);
+        }
+        else{
+        // -90 ~ 0
+        //左上と原点の距離を計算
+        rotation = -rotationC;
+        double rotation2 = std::abs(rotationC);
+          std::cout << "pattern4" << std::endl;
+          vecX1 = grids_[i]->info.width * sin(rotation2 - M_PI/2);
+          vecY1 = grids_[i]->info.width * cos(rotation2 - M_PI/2) + grids_[i]->info.height * sin(rotation2 - M_PI/2);
+          //vecX1 = grids_[i]->info.width * cos(rotation2);
+          //vecY1 = grids_[i]->info.width * sin(rotation2) + grids_[i]->info.height * cos(rotation2);
+        }
+      }
+
+      vecX2 = thisOriginX*cos(rotation)-thisOriginY*sin(rotation);
+      vecY2 = thisOriginX*sin(rotation)+thisOriginY*cos(rotation);
+
+      distX = vecX1 + vecX2;
+      distY = vecY1 + vecY2;
+
+      cv::Rect newRoi(moveX-distX,moveY-distY,rois[i].width,rois[i].height);
+      rois[i] = newRoi;
+
+      //comment area
+      // { 
+      //   std::cout << "rotation : " << rotation << std::endl;
+      //   std::cout << "rotationS : " << rotationS << std::endl;
+      //   std::cout << "rotationC : " << rotationC << std::endl;
+
+      //   std::cout << "grid_originX : " << grids_[i]->info.origin.position.x << std::endl;
+      //   std::cout << "grid_originY : " << grids_[i]->info.origin.position.y << std::endl;
+
+      //   std::cout << "transform : \n" << transforms[i] << std::endl;
+
+      //   std::cout << "height : " << grids_[i]->info.height << std::endl;
+      //   std::cout << "width : " << grids_[i]->info.width << std::endl;
+
+      //   std::cout << "roi : \n" << rois[i] << std::endl;
+
+      //   std::cout << "vecX1 : " << vecX1 << std::endl;
+      //   std::cout << "vecX2 : " << vecX2 << std::endl;
+      //   std::cout << "vecY1 : " << vecY1 << std::endl;
+      //   std::cout << "vecY2 : " << vecY2 << std::endl;
+
+      //   std::cout << "distX : " << distX << std::endl;
+      //   std::cout << "distY : " << distY << std::endl;
+
+      //   std::cout << "originX : " << originMapX << std::endl;
+      //   std::cout << "originY : " << originMapY << std::endl;
+
+      //   std::cout << "transX : " << transforms[i].at<double>(0,2) << std::endl;
+      //   std::cout << "transY : " << transforms[i].at<double>(1,2) << std::endl;
+
+      //   std::cout << "moveX : " << moveX << std::endl;
+      //   std::cout << "moveY : " << moveY << std::endl;
+
+      //   std::cout << "true-moveX : " << moveX-distX << std::endl;
+      //   std::cout << "true-moveY : " << moveY-distY << std::endl;
+      // }
+
+    }
+  }
+
+
 }
 
 std::vector<geometry_msgs::Transform> MergingPipeline::getTransforms() const

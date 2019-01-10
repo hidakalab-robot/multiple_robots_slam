@@ -5,8 +5,8 @@
   <arg name="robot1_init_y" default="0.0"/>
   <arg name="robot1_init_yaw" default="0.0"/>
 
-  <arg name="robot2_init_x" default="0.0"/>
-  <arg name="robot2_init_y" default="1.5"/>
+  <arg name="robot2_init_x" default="1.5"/>
+  <arg name="robot2_init_y" default="0.0"/>
   <arg name="robot2_init_yaw" default="0.0"/>
 
   <arg name="map_resolution" default="0.05"/>

@@ -4,6 +4,7 @@
 #include <cloud_map_merge/Cluster.h>
 #include <cloud_map_merge/EigenValueFeature.h>
 #include <cloud_map_merge/MatchList.h>
+#include <visualization_msgs/MarkerArray.h>
 
 namespace FeatureMatching
 {
@@ -25,8 +26,9 @@ namespace FeatureMatching
 		void calcMatch(void);
 		void missMatchDetection(void);
 
+
 	public:
-	
+
 		Eigenvalue(pcl::PointCloud<pcl::PointXYZRGB>::Ptr argCloud1, pcl::PointCloud<pcl::PointXYZRGB>::Ptr argCloud2);
 		~Eigenvalue(){};
 
@@ -34,6 +36,7 @@ namespace FeatureMatching
 		void featureExtraction(void);
 		void matching(void);
 		void getMatchingGap(geometry_msgs::Point& gap);
+		void writeMatchingLine(ros::Publisher& pubLine);
 	};
 }
 
@@ -44,9 +47,13 @@ FeatureMatching::Eigenvalue::Eigenvalue(pcl::PointCloud<pcl::PointXYZRGB>::Ptr a
 	clouds[0] = argCloud0;
 	clouds[1] = argCloud1;
 
+	std::cout << "check arg clouds size << " << argCloud0 -> points.size() << " << " << argCloud1 -> points.size() << std::endl; 
+	std::cout << "check clouds size << " << clouds[0] -> points.size() << " << " << clouds[1] -> points.size() << std::endl; 
+
 	clusterData.resize(2);
 	clusterIndices.resize(2);
 	clusterFeatures.resize(2);
+
 }
 
 void FeatureMatching::Eigenvalue::clustering(void)
@@ -478,12 +485,12 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 	for(int i=0;i<diffVectors.size();i++)
 	{
 		/*すでに判定が行われているマッチングについては処理を行わないようにする*/
-		std::cout << "diffVectors[" << i << "] << " << diffVectors[i] <<  '\n';
-		std::cout << "pairNumbers[" << i << "] << (" << pairNumbers[i][0] << "," << pairNumbers[i][1] << ")" << '\n';
+		//std::cout << "diffVectors[" << i << "] << " << diffVectors[i] <<  '\n';
+		//std::cout << "pairNumbers[" << i << "] << (" << pairNumbers[i][0] << "," << pairNumbers[i][1] << ")" << '\n';
 
 		if((matchEvaluation[pairNumbers[i][0]] != 0) && (matchEvaluation[pairNumbers[i][1]] != 0))
 		{
-			std::cout << "skip!!" << '\n';
+			//std::cout << "skip!!" << '\n';
 			continue;
 		}
 
@@ -492,24 +499,24 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 			/*i番の差を計算するのに使われているマッチングを使った別のマッチングを見る*/
 			/*pairNumbers[i][0]とpairNumbers[i][1]を見る*/
 			/*まず、matchEvaluationを見て、すでにどちらかの判定がでてないか見る*/
-			std::cout << "pointA" << '\n';
+			//std::cout << "pointA" << '\n';
 			if((matchEvaluation[pairNumbers[i][0]] == 1) || (matchEvaluation[pairNumbers[i][1]] == 1))
 			{
 				/*片方に合ってる判定が出てればもう片方が間違っている*/
 				if(matchEvaluation[pairNumbers[i][0]] == 1)
 				{
 					matchEvaluation[pairNumbers[i][1]] = -1;
-					std::cout << "pointA-1" << '\n';
+					//std::cout << "pointA-1" << '\n';
 				}
 				else
 				{
 					matchEvaluation[pairNumbers[i][0]] = -1;
-					std::cout << "pointA-2" << '\n';
+					//std::cout << "pointA-2" << '\n';
 				}
 			}
 			else/*どちらにも合っている判定がないので周りのベクトルと比較*/
 			{
-				std::cout << "pointB" << '\n';
+				//std::cout << "pointB" << '\n';
 				/*片方が間違っていることがわかってればもう片方について調べる*/
 				if(matchEvaluation[pairNumbers[i][0]] == -1)
 				{
@@ -526,7 +533,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 							if(diffVectors[j] <= normThreshold)
 							{
 								matchEvaluation[pairNumbers[i][1]] == 1;
-								std::cout << "pointB-1" << '\n';
+								//std::cout << "pointB-1" << '\n';
 								break;
 							}
 						}
@@ -535,7 +542,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 				else if(matchEvaluation[pairNumbers[i][1]] == -1)
 				{
 					//pairNumbers[i][0]について調べる
-					std::cout << "pointC" << '\n';
+					//std::cout << "pointC" << '\n';
 					for(int j=0;j<diffVectors.size();j++)
 					{
 						if(i == j)
@@ -548,7 +555,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 							if(diffVectors[j] <= normThreshold)
 							{
 								matchEvaluation[pairNumbers[i][0]] == 1;
-								std::cout << "pointC-1" << '\n';
+								//std::cout << "pointC-1" << '\n';
 								break;
 							}
 						}
@@ -556,7 +563,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 				}
 				else /*両方不明のとき*/
 				{
-					std::cout << "pointD" << '\n';
+					//std::cout << "pointD" << '\n';
 					for(int j=0;j<diffVectors.size();j++)
 					{
 						if(i == j)
@@ -569,7 +576,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 							if(diffVectors[j] <= normThreshold)
 							{
 								matchEvaluation[pairNumbers[i][1]] == 1;
-								std::cout << "pointD-1" << '\n';
+								//std::cout << "pointD-1" << '\n';
 								break;
 							}
 						}
@@ -586,7 +593,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 							if(diffVectors[j] <= normThreshold)
 							{
 								matchEvaluation[pairNumbers[i][0]] == 1;
-								std::cout << "pointD-2" << '\n';
+								//std::cout << "pointD-2" << '\n';
 								break;
 							}
 						}
@@ -597,7 +604,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 		else//ベクトルの計算に使われたマッチングが合ってそうなので、そのように記述
 		{
 			/*pairNumbers[i][0]とpairNumbers[i][1]はどちらも合ってそう*/
-			std::cout << "pointE" << '\n';
+			//std::cout << "pointE" << '\n';
 			matchEvaluation[pairNumbers[i][0]] = 1;
 			matchEvaluation[pairNumbers[i][1]] = 1;
 		}
@@ -608,7 +615,7 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 
 	for(int i=0;i<clusterMatchList.list.size();i++)
 	{
-		std::cout << "matchEvaluation[" << i << "] << " << matchEvaluation[i] << '\n';
+		//std::cout << "matchEvaluation[" << i << "] << " << matchEvaluation[i] << '\n';
 		if(matchEvaluation[i] == 1)
 		{
 			noMissMatchList.push_back(clusterMatchList.list[i]);
@@ -623,19 +630,74 @@ void FeatureMatching::Eigenvalue::missMatchDetection(void)
 
 void FeatureMatching::Eigenvalue::getMatchingGap(geometry_msgs::Point& gap)
 {
-	double diffX;
-	double diffY;
+	//double diffX;
+	//double diffY;
 
 	double sumDiffX = 0;
 	double sumDiffY = 0;
+	double sumDiffZ = 0;
 
 	for(int i=0;i<clusterMatchList.list.size();i++)
 	{
 		sumDiffX += clusterMatchList.list[i].centroid[1].x - clusterMatchList.list[i].centroid[0].x;
 		sumDiffY += clusterMatchList.list[i].centroid[1].y - clusterMatchList.list[i].centroid[0].y;
+		sumDiffZ += clusterMatchList.list[i].centroid[1].z - clusterMatchList.list[i].centroid[0].z;
 	}
 
 	gap.x = sumDiffX / clusterMatchList.list.size();
 	gap.y = sumDiffY / clusterMatchList.list.size();
+	gap.z = sumDiffZ / clusterMatchList.list.size();
 
+}
+
+void FeatureMatching::Eigenvalue::writeMatchingLine(ros::Publisher& pubLine)
+{
+
+	std::cout << "***** write matching list *****" << std::endl;
+
+	visualization_msgs::Marker matchLine;
+
+	matchLine.header.frame_id = "/server/merge_map";
+	matchLine.header.stamp = ros::Time::now();
+	matchLine.type = visualization_msgs::Marker::LINE_LIST;
+	matchLine.action = visualization_msgs::Marker::ADD;
+	matchLine.pose.orientation.w = 1.0;
+	matchLine.scale.x = 0.1;
+	matchLine.color.a = 1.0;
+	matchLine.lifetime = ros::Duration(0);
+
+	double SHIFT_X = 1.5;
+
+	/*表示するマッチングの種類によっての設定*/
+
+	matchLine.ns = "EigenValue";
+	matchLine.color.r = 0.0f;
+	matchLine.color.g = 1.0f;
+	matchLine.color.b = 1.0f;
+	
+//clusterMatchList.list
+
+	visualization_msgs::MarkerArray matchLineList;
+
+	geometry_msgs::Point sCentroid;
+	geometry_msgs::Point mCentroid;
+
+	for(int i=0;i<clusterMatchList.list.size();i++)
+	{
+
+		sCentroid.x = clusterMatchList.list[i].centroid[0].x;
+		sCentroid.y = clusterMatchList.list[i].centroid[0].y;
+		sCentroid.z = clusterMatchList.list[i].centroid[0].z;
+
+		mCentroid.x = clusterMatchList.list[i].centroid[1].x;
+		mCentroid.y = clusterMatchList.list[i].centroid[1].y;
+		mCentroid.z = clusterMatchList.list[i].centroid[1].z;
+
+		matchLine.id = i;
+		matchLine.points.push_back(sCentroid);
+		matchLine.points.push_back(mCentroid);
+		matchLineList.markers.push_back(matchLine);
+	}
+
+	pubLine.publish(matchLineList);
 }

@@ -91,7 +91,7 @@ CloudMapSet::CloudMapSet()
 
   input1 = false;
   input2 = false;
-  input3 = true;
+  input3 = false;
 }
 
 void CloudMapSet::callback1(const sensor_msgs::PointCloud2::ConstPtr& msg)
@@ -129,12 +129,12 @@ bool CloudMapSet::isInput3(void)
 
 void CloudMapSet::resetFlag(void)
 {
-  std::cout << "robot1 << " << robot1X << ", " << robot1Y << ", " << robot1Yaw << '\n';
-  std::cout << "robot2 << " << robot2X << ", " << robot2Y << ", " << robot2Yaw << '\n';
+  //std::cout << "robot1 << " << robot1X << ", " << robot1Y << ", " << robot1Yaw << '\n';
+  //std::cout << "robot2 << " << robot2X << ", " << robot2Y << ", " << robot2Yaw << '\n';
 
   input1 = false;
   input2 = false;
-  //input3 = false;
+  input3 = false;
 }
 
 void CloudMapSet::dataPublish(void)
@@ -160,7 +160,8 @@ void CloudMapSet::dataPublish(void)
   data.poses = poses;
   data.maps = maps;
 
-  //data.overlaps = overlaps.overlapArray;
+  if(input3)
+    data.overlaps = overlaps.overlapArray;
 
   data.header.stamp = ros::Time::now();
 
