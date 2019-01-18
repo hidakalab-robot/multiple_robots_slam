@@ -37,7 +37,7 @@ public:
 	void poseLogCB(const sensor_based::PoseLog::ConstPtr& msg);
 
 	void publishGoalBranch(geometry_msgs::Point goal);
-
+//branchListをパブリッシュした方が色々使えるかも
 };
 
 BranchSearch::BranchSearch(){

@@ -74,7 +74,7 @@ namespace sensor_based
         sp.setCallbackQueue(&qBumper);
         subPose = sp.subscribe(bumperTopic,1,&Core::bumperCB,this);
 
-        scanEdit = 0;
+        scanEdit = false;
 
     }
 
