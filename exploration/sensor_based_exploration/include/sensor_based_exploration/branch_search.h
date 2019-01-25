@@ -1,7 +1,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PointStamped.h>
-#include <sensor_based/PoseLog.h>
+#include <sensor_based_exploration/PoseLog.h>
 
 //分岐領域を検出
 class BranchSearch
@@ -34,7 +34,7 @@ public:
     bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
     bool duplicateDetection(geometry_msgs::Point goal);
 
-	void poseLogCB(const sensor_based::PoseLog::ConstPtr& msg);
+	void poseLogCB(const sensor_based_exploration::PoseLog::ConstPtr& msg);
 
 	void publishGoalBranch(geometry_msgs::Point goal);
 //branchListをパブリッシュした方が色々使えるかも
@@ -57,7 +57,7 @@ void BranchSearch::initialize(double branchAngle, double centerRangeMin){
 	//DUPLICATE_MARGIN
 }
 
-void BranchSearch::poseLogCB(const sensor_based::PoseLog::ConstPtr& msg){
+void BranchSearch::poseLogCB(const sensor_based_exploration::PoseLog::ConstPtr& msg){
 	for(int i=0;i<msg -> names.size();i++){
 		if(msg->names[i] == ROBOT_NAME){
 			poseLogData = msg->poseLists[i].poses;

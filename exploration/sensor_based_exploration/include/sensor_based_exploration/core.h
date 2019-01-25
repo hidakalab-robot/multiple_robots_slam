@@ -4,14 +4,14 @@
 #include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/PoseStamped.h>
 
-#include <sensor_based/moving.h>
-#include <sensor_based/branch_search.h>
+#include <sensor_based_exploration/moving.h>
+#include <sensor_based_exploration/branch_search.h>
 
 #include <boost/bind.hpp>
 
-//sensor-basedの根幹クラス
+//sensor-based-explorationの根幹クラス
 
-namespace sensor_based
+namespace sensor_based_exploration
 {
     class Core
     {

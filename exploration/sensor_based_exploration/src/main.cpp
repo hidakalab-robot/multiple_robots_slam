@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <sensor_based/core.h>
+#include <sensor_based_exploration/core.h>
 
 int main(int argc, char *argv[])
 {

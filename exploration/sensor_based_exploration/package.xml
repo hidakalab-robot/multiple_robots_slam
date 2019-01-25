@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>sensor_based</name>
+  <name>sensor_based_exploration</name>
   <version>0.0.0</version>
-  <description>The sensor_based package</description>
+  <description>The sensor_based_exploration package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
