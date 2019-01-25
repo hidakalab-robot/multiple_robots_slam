@@ -1,17 +1,22 @@
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PointStamped.h>
-#include <sensor_based_exploration/PoseLog.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseArray.h>
+//#include <sensor_based_exploration/PoseLog.h>
 
 //分岐領域を検出
 class BranchSearch
 {
 private:
-	ros::NodeHandle param;
+	//分岐検出用パラメータ
+	ros::NodeHandle p;
     double BRANCH_ANGLE;
     double CENTER_RANGE_MIN;
-    double BRANCH_RANGE_LIMIT;
-    double BRANCH_DIFF_THRESHOLD;
+    //double BRANCH_RANGE_LIMIT;
+	double BRANCH_DIST_LIMIT;
+    //double BRANCH_DIFF_THRESHOLD;
+	double BRANCH_DIFF_X_MIN;
 	double DUPLICATE_MARGIN;
 	std::string ROBOT_NAME;
 
@@ -19,7 +24,8 @@ private:
     ros::Subscriber subPoseLog;
     ros::CallbackQueue qPoseLog;
     std::string poseLogTopic;
-    std::vector<geometry_msgs::PoseStamped> poseLogData;
+    //std::vector<geometry_msgs::PoseStamped> poseLogData;
+	geometry_msgs::PoseArray poseLogData;
 
 	ros::NodeHandle pgb;
 	ros::Publisher pubGoalBranch;
@@ -29,41 +35,55 @@ private:
 public:
     BranchSearch();
     ~BranchSearch(){};
-    void initialize(double branchAngle, double centerRangeMin);
-    geometry_msgs::Point returnBranch(sensor_msgs::LaserScan scanData,geometry_msgs::PoseStamped pose);
+    //void initialize(double branchAngle, double centerRangeMin);
+    geometry_msgs::Point getGoalBranch(sensor_msgs::LaserScan scanData,geometry_msgs::PoseStamped pose);
     bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
     bool duplicateDetection(geometry_msgs::Point goal);
 
-	void poseLogCB(const sensor_based_exploration::PoseLog::ConstPtr& msg);
+	//void poseLogCB(const sensor_based_exploration::PoseLog::ConstPtr& msg);
+	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
 
 	void publishGoalBranch(geometry_msgs::Point goal);
 //branchListをパブリッシュした方が色々使えるかも
 };
 
 BranchSearch::BranchSearch(){
-	param.getParam("pose_log_topic", poseLogTopic);
+	p.getParam("pose_log_topic", poseLogTopic);
     spl.setCallbackQueue(&qPoseLog);
     subPoseLog = spl.subscribe(poseLogTopic,1,&BranchSearch::poseLogCB, this);
 
 	pubGoalBranch = pgb.advertise<geometry_msgs::PointStamped>(goalBranchTopic, 1);
+
+	//branch_searchパラメータの読み込み
+	p.param<double>("branch_angle", BRANCH_ANGLE, 1.0);
+	p.param<double>("center_range_min", CENTER_RANGE_MIN, 1.0);
+	//p.param<double>("branch_range_limit", BRANCH_RANGE_LIMIT, 1.0);
+	p.param<double>("branch_range_limit", BRANCH_DIST_LIMIT, 1.0);
+	//p.param<double>("branch_diff_threshold", BRANCH_DIFF_THRESHOLD, 1.0);
+	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
+	p.param<std::string>("robot_name", ROBOT_NAME, "robot1");
+	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.0);
+
 }
 
-void BranchSearch::initialize(double branchAngle, double centerRangeMin){
-    BRANCH_ANGLE = branchAngle;
-    CENTER_RANGE_MIN = centerRangeMin;
-    //BRANCH_RANGE_LIMIT = 
-    //BRANCH_DIFF_THRESHOLD
-	//ROBOT_NAME = 
-	//DUPLICATE_MARGIN
-}
+// void BranchSearch::initialize(double branchAngle, double centerRangeMin){
+//     BRANCH_ANGLE = branchAngle;
+//     CENTER_RANGE_MIN = centerRangeMin;
+//     //BRANCH_RANGE_LIMIT = 
+//     //BRANCH_DIFF_THRESHOLD
+// 	//ROBOT_NAME = 
+// 	//DUPLICATE_MARGIN
+// }
 
-void BranchSearch::poseLogCB(const sensor_based_exploration::PoseLog::ConstPtr& msg){
-	for(int i=0;i<msg -> names.size();i++){
-		if(msg->names[i] == ROBOT_NAME){
-			poseLogData = msg->poseLists[i].poses;
-			break;
-		}
-	}
+//void BranchSearch::poseLogCB(const sensor_based_exploration::PoseLog::ConstPtr& msg){
+void BranchSearch::poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg){
+	// for(int i=0;i<msg -> names.size();i++){
+	// 	if(msg->names[i] == ROBOT_NAME){
+	// 		poseLogData = msg->poseLists[i].poses;
+	// 		break;
+	// 	}
+	// }
+	poseLogData = *msg;
 }
 
 void BranchSearch::publishGoalBranch(geometry_msgs::Point goal){
@@ -75,7 +95,7 @@ void BranchSearch::publishGoalBranch(geometry_msgs::Point goal){
 	pubGoalBranch.publish(msg);
 }
 
-geometry_msgs::Point BranchSearch::returnBranch(sensor_msgs::LaserScan scanData, geometry_msgs::PoseStamped pose){
+geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scanData, geometry_msgs::PoseStamped pose){
     const int scanWidth = BRANCH_ANGLE / scanData.angle_increment;
     const int scanMin = (scanData.ranges.size()/2)-1 - scanWidth;
     const int scanMax = (scanData.ranges.size()/2) + scanWidth;
@@ -122,17 +142,17 @@ geometry_msgs::Point BranchSearch::returnBranch(sensor_msgs::LaserScan scanData,
 }
 
 bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose){
-	int near;
+
 	float scanX,scanY,nextScanX,nextScanY;
 	float diffX,diffY;
-
-	float centerDist = 1000.0;
 
 	//float Branch_y_dist;
 
 	//分岐のy座標の差がこの値の範囲内の場合のみ分岐として検出
-	const float BRANCH_LOW_Y = BRANCH_DIFF_THRESHOLD*tan(angleMax);
-	const float BRANCH_HIGH_Y = BRANCH_RANGE_LIMIT*tan(angleMax);//分岐領域の2点間のｙ座標の差がこの値以下のとき分岐として検出
+	//const float BRANCH_LOW_Y = BRANCH_DIFF_THRESHOLD*tan(angleMax);
+	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(angleMax);
+	//const float BRANCH_HIGH_Y = BRANCH_RANGE_LIMIT*tan(angleMax);
+	const float BRANCH_MAX_Y = BRANCH_DIST_LIMIT*tan(angleMax);
 
 	//std::vector<float> listX;//goal_xを保存
 	//std::vector<float> listY;//goal_yを保存
@@ -143,9 +163,6 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 	//goal_x = 0;
 	//goal_y = 0;
 
-    bool flag;
-
-
 
     //はじめのfor文では条件を満たした分岐領域を探す
     //２つ目のfor文で最も近い分岐を選ぶ
@@ -154,28 +171,37 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 	for(int i=0;i<ranges.size()-1;i++){
 		scanX = ranges[i]*cos(angles[i]);
 		nextScanX = ranges[i+1]*cos(angles[i+1]);
-		if(scanX <= BRANCH_RANGE_LIMIT && nextScanX <= BRANCH_RANGE_LIMIT){
+		//if(scanX <= BRANCH_RANGE_LIMIT && nextScanX <= BRANCH_RANGE_LIMIT){
+		if(scanX <= BRANCH_DIST_LIMIT && nextScanX <= BRANCH_DIST_LIMIT){
 			diffX = std::abs(nextScanX - scanX);
-			if(diffX >= BRANCH_DIFF_THRESHOLD){
+			//if(diffX >= BRANCH_DIFF_THRESHOLD){
+			if(diffX >= BRANCH_DIFF_X_MIN){
 				scanY = ranges[i]*sin(angles[i]);
 				nextScanY = ranges[i+1]*sin(angles[i+1]);
 				diffY = std::abs(nextScanY - scanY);
-				if(BRANCH_LOW_Y <= diffY && diffY <= BRANCH_HIGH_Y){
+				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){
 					tempGoal.x = (nextScanX + scanX)/2;
 					tempGoal.y = (nextScanY + scanY)/2;
 					//listX.push_back((nextScanX + scanX)/2);
 					//listY.push_back((nextScanY + scanY)/2);
 					list.push_back(tempGoal);
-					flag = true;
+					//flag = true;
 				}
 			}
 		}
 	}
 
-	if(flag){
+	
+    bool find = false;
+
+	if(list.size()>0){
+		int near;
+		float centerDist;
         bool tempCenterDist;
 		double yaw = 2*asin(pose.pose.orientation.z);
+
 		for(int k=list.size();k>0;k--){
+			centerDist = 1000.0;
 			for(int j=0;j<list.size();j++){
 				tempCenterDist = std::abs(list[j].x)+std::abs(list[j].y);
 				if(tempCenterDist <= centerDist){
@@ -193,17 +219,16 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 			if(duplicateDetection(goal)){
 				list.erase(list.begin() + near);
 				//listY.erase(list.begin() + near);
-				flag = false;
+				find = false;
 			}
 			else{
-				flag = true;
+				find = true;
 				break;
 			}
-			centerDist = 1000.0;
 		}	
     }
 
-    return flag;
+    return find;
 }
 
 bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
@@ -213,6 +238,8 @@ bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
 	double xMinus;
 	double yPlus;
 	double yMinus;
+
+	const int lOG_NEWER_LIMIT = 30;//ログの取得が1Hzの場合30秒前までのログで重複検出
 	//bool duplication_flag = false;
 
 	//odom_queue.callOne(ros::WallDuration(1));
@@ -239,10 +266,22 @@ bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
 	
 	
 
-	for(int i=0;i<poseLogData.size();i++){
+	// for(int i=0;i<poseLogData.size()-lOG_NEWER_LIMIT;i++){
+	// 	//過去のオドメトリが許容範囲の中に入っているか//
+	// 	if((xPlus >= poseLogData[i].pose.position.x) && (xMinus <= poseLogData[i].pose.position.x)){
+	// 		if((yPlus >= poseLogData[i].pose.position.y) && (yMinus <= poseLogData[i].pose.position.y)){
+	// 			//duplication_flag = true;
+	// 			//branch_find_flag = false;
+	// 			//std::cout << "すでに探査した領域でした・・・ぐすん;;" << std::endl;
+	// 			return true;
+	// 		}
+	// 	}
+	// }
+
+	for(int i=0;i<poseLogData.poses.size()-lOG_NEWER_LIMIT;i++){
 		//過去のオドメトリが許容範囲の中に入っているか//
-		if((xPlus >= poseLogData[i].pose.position.x) && (xMinus <= poseLogData[i].pose.position.x)){
-			if((yPlus >= poseLogData[i].pose.position.y) && (yMinus <= poseLogData[i].pose.position.y)){
+		if((xPlus >= poseLogData.poses[i].position.x) && (xMinus <= poseLogData.poses[i].position.x)){
+			if((yPlus >= poseLogData.poses[i].position.y) && (yMinus <= poseLogData.poses[i].position.y)){
 				//duplication_flag = true;
 				//branch_find_flag = false;
 				//std::cout << "すでに探査した領域でした・・・ぐすん;;" << std::endl;
