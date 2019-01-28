@@ -7,16 +7,14 @@
 #include <sensor_based_exploration/moving.h>
 #include <sensor_based_exploration/branch_search.h>
 
-#include <boost/bind.hpp>
+//sensor-based explorationの根幹クラス
 
-//sensor-based-explorationの根幹クラス
+namespace sensor_based_exploration{
 
-namespace sensor_based_exploration
-{
     class Core
     {
     private:
-        ros::NodeHandle param;
+        ros::NodeHandle p;
 
         ros::NodeHandle ss;
         ros::Subscriber subScan;
@@ -36,46 +34,44 @@ namespace sensor_based_exploration
         std::string bumperTopic;
         kobuki_msgs::BumperEvent bumperData;
 
-        bool flag;
+
+        geometry_msgs::Point goal;
+
+        bool scanEdit;
+
+        Moving mv;
+        BranchSearch bs;
 
         void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
         void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
         void bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg);
 
         void approx(std::vector<float>& scan);
-        void forBranch(std::vector<float>& scan);
+        //void forBranch(std::vector<float>& scan);
 
     public:
 
-        Moving MV;
-        BranchSearch BS;
-
-        bool scanEdit;
-    
         Core();
         ~Core(){};
 
-        
-
+        bool getGoal(void);
+        void moveToGoal(void);
     };
 
-    Core::Core():param("~"){
-        MV.initialize();
+    Core::Core(){
+        //MV.initialize();
         //BS.initialize();
-        param.getParam("scan_topic", scanTopic);
+        p.param<std::string>("scan_topic", scanTopic, "scan");
         ss.setCallbackQueue(&qScan);
         subScan = ss.subscribe(scanTopic,1,&Core::scanCB, this);
 
-        param.getParam("pose_topic", poseTopic);
+        p.param<std::string>("pose_topic", poseTopic, "pose");
         sp.setCallbackQueue(&qPose);
         subPose = sp.subscribe(poseTopic,1,&Core::poseCB,this);
 
-        param.getParam("bumper_topic", bumperTopic);
-        sp.setCallbackQueue(&qBumper);
-        subPose = sp.subscribe(bumperTopic,1,&Core::bumperCB,this);
-
-        scanEdit = false;
-
+        p.param<std::string>("bumper_topic", bumperTopic, "bumper");
+        sb.setCallbackQueue(&qBumper);
+        subBumper = sb.subscribe(bumperTopic,1,&Core::bumperCB,this);
     }
 
     void Core::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
@@ -95,7 +91,7 @@ namespace sensor_based_exploration
 
     void Core::approx(std::vector<float>& scan){
         float depth,depth1,depth2;
-	    depth = depth1 = depth2 =0;
+        depth = depth1 = depth2 =0;
 
         for(int j=0,count=0;j<scan.size()-1;j++){
             depth=scan[j];
@@ -140,4 +136,23 @@ namespace sensor_based_exploration
             }
         }
     }
+
+    bool Core::getGoal(void){
+        scanEdit = false;
+        qScan.callOne(ros::WallDuration(1));
+        qPose.callOne(ros::WallDuration(1));
+        goal = bs.getGoalBranch(scanData,poseData);
+
+        if((int)goal.x == 0 && (int)goal.y == 0 && (int)goal.z == 0){
+            return false;
+        }
+        else{
+            return true;
+        }
+    }
+
+    void Core::moveToGoal(void){
+
+    }
+
 }

@@ -1,8 +1,10 @@
+//分岐領域を検出するクラス
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
+#include <sensor_based_exploration/PointArray.h>
 //#include <sensor_based_exploration/PoseLog.h>
 
 //分岐領域を検出
@@ -19,6 +21,7 @@ private:
 	double BRANCH_DIFF_X_MIN;
 	double DUPLICATE_MARGIN;
 	std::string ROBOT_NAME;
+	bool DUPLICATE_CHECK;
 
 	ros::NodeHandle spl;
     ros::Subscriber subPoseLog;
@@ -27,43 +30,50 @@ private:
     //std::vector<geometry_msgs::PoseStamped> poseLogData;
 	geometry_msgs::PoseArray poseLogData;
 
-	ros::NodeHandle pgb;
+	ros::NodeHandle pb;
 	ros::Publisher pubGoalBranch;
 	std::string goalBranchTopic;
 
+	ros::Publisher pubBranchList;
+	std::string branchListTopic;
+
+	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
+    bool duplicateDetection(geometry_msgs::Point goal);
+	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
+	void publishGoalBranch(geometry_msgs::Point goal);
+	void publishBranchList(std::vector<geometry_msgs::Point> list);
 
 public:
     BranchSearch();
     ~BranchSearch(){};
-    //void initialize(double branchAngle, double centerRangeMin);
+
     geometry_msgs::Point getGoalBranch(sensor_msgs::LaserScan scanData,geometry_msgs::PoseStamped pose);
-    bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
-    bool duplicateDetection(geometry_msgs::Point goal);
 
-	//void poseLogCB(const sensor_based_exploration::PoseLog::ConstPtr& msg);
-	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
 
-	void publishGoalBranch(geometry_msgs::Point goal);
 //branchListをパブリッシュした方が色々使えるかも
 };
 
 BranchSearch::BranchSearch(){
-	p.getParam("pose_log_topic", poseLogTopic);
+	p.param<std::string>("pose_log_topic", poseLogTopic, "pose_log");
     spl.setCallbackQueue(&qPoseLog);
     subPoseLog = spl.subscribe(poseLogTopic,1,&BranchSearch::poseLogCB, this);
 
-	pubGoalBranch = pgb.advertise<geometry_msgs::PointStamped>(goalBranchTopic, 1);
+	p.param<std::string>("goal_branch_topic", goalBranchTopic, "goal_branch");
+	pubGoalBranch = pb.advertise<geometry_msgs::PointStamped>(goalBranchTopic, 1);
+
+	p.param<std::string>("branch_list_topic", branchListTopic, "branch_list");
+	pubBranchList = pb.advertise<sensor_based_exploration::PointArray>(branchListTopic, 1);
 
 	//branch_searchパラメータの読み込み
-	p.param<double>("branch_angle", BRANCH_ANGLE, 1.0);
+	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
 	p.param<double>("center_range_min", CENTER_RANGE_MIN, 1.0);
 	//p.param<double>("branch_range_limit", BRANCH_RANGE_LIMIT, 1.0);
-	p.param<double>("branch_range_limit", BRANCH_DIST_LIMIT, 1.0);
+	p.param<double>("branch_range_limit", BRANCH_DIST_LIMIT, 5.0);
 	//p.param<double>("branch_diff_threshold", BRANCH_DIFF_THRESHOLD, 1.0);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
 	p.param<std::string>("robot_name", ROBOT_NAME, "robot1");
-	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.0);
-
+	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.5);
+	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
 }
 
 // void BranchSearch::initialize(double branchAngle, double centerRangeMin){
@@ -93,6 +103,15 @@ void BranchSearch::publishGoalBranch(geometry_msgs::Point goal){
 	msg.header.frame_id = ROBOT_NAME + "/map";
 
 	pubGoalBranch.publish(msg);
+}
+
+void BranchSearch::publishBranchList(std::vector<geometry_msgs::Point> list){
+	sensor_based_exploration::PointArray msg;
+	msg.points = list;
+	msg.header.stamp = ros::Time::now();
+	msg.header.frame_id = ROBOT_NAME + "/map";
+
+	pubBranchList.publish(msg);
 }
 
 geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scanData, geometry_msgs::PoseStamped pose){
@@ -191,10 +210,13 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 		}
 	}
 
+
 	
     bool find = false;
 
 	if(list.size()>0){
+		publishBranchList(list);
+
 		int near;
 		float centerDist;
         bool tempCenterDist;
@@ -216,7 +238,7 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 					near = j;
 				}
 			}
-			if(duplicateDetection(goal)){
+			if(DUPLICATE_CHECK && duplicateDetection(goal)){
 				list.erase(list.begin() + near);
 				//listY.erase(list.begin() + near);
 				find = false;

@@ -56,6 +56,7 @@ find_package(catkin REQUIRED COMPONENTS
 #   Message2.msg
   PoseList.msg
   PoseLog.msg
+  PointArray.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -76,7 +77,7 @@ find_package(catkin REQUIRED COMPONENTS
  generate_messages(
    DEPENDENCIES
   geometry_msgs
-  std_msgs#nav_msgs#   sensor_msgs
+  std_msgs
  )
 
 ################################################
