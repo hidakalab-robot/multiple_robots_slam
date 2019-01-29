@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(sensor_based_exploration)
+project(exploration)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -8,12 +8,14 @@ project(sensor_based_exploration)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  geometry_msgs
+  kobuki_msgs
   nav_msgs
   roscpp
   rospy
   sensor_msgs
   std_msgs
-  geometry_msgs
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -52,11 +54,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
  add_message_files(
    FILES
-#   Message1.msg
+   PointArray.msg
 #   Message2.msg
-  PoseList.msg
-  PoseLog.msg
-  PointArray.msg
  )
 
 ## Generate services in the 'srv' folder
@@ -76,8 +75,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-  geometry_msgs
-  std_msgs
+   std_msgs
+   geometry_msgs#   kobuki_msgs#   nav_msgs#   sensor_msgs   std_msgs#   visualization_msgs
  )
 
 ################################################
@@ -111,8 +110,8 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES sensor_based
-  CATKIN_DEPENDS nav_msgs roscpp rospy sensor_msgs std_msgs geometry_msgs
+#  LIBRARIES exploration
+  CATKIN_DEPENDS geometry_msgs kobuki_msgs nav_msgs roscpp rospy sensor_msgs std_msgs visualization_msgs
 #  DEPENDS system_lib
 )
 
@@ -129,7 +128,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/sensor_based.cpp
+#   src/${PROJECT_NAME}/exploration.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -140,7 +139,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/sensor_based_node.cpp)
+# add_executable(${PROJECT_NAME}_node src/exploration_node.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -197,7 +196,7 @@ include_directories(
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_sensor_based.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_exploration.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
@@ -205,6 +204,10 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(sensor_based_exploration src/main.cpp)
+add_executable(sensor_based_exploration src/sbe_main.cpp)
 add_dependencies(sensor_based_exploration ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
+
+add_executable(pose_log_publisher src/pose_log_publisher.cpp)
+add_dependencies(pose_log_publisher ${PROJECT_NAME}_generate_messages_cpp)
+target_link_libraries(pose_log_publisher ${catkin_LIBRARIES})

@@ -1,10 +1,11 @@
 //分岐領域を検出するクラス
 #include <ros/ros.h>
+#include <ros/callback_queue.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
-#include <sensor_based_exploration/PointArray.h>
+#include <exploration/PointArray.h>
 //#include <sensor_based_exploration/PoseLog.h>
 
 //分岐領域を検出
@@ -20,7 +21,7 @@ private:
     //double BRANCH_DIFF_THRESHOLD;
 	double BRANCH_DIFF_X_MIN;
 	double DUPLICATE_MARGIN;
-	std::string ROBOT_NAME;
+
 	bool DUPLICATE_CHECK;
 
 	ros::NodeHandle spl;
@@ -37,23 +38,51 @@ private:
 	ros::Publisher pubBranchList;
 	std::string branchListTopic;
 
+	ros::NodeHandle ss;
+    ros::Subscriber subScan;
+    ros::CallbackQueue qScan;
+    std::string scanTopic;
+    sensor_msgs::LaserScan scanData;
+
+	ros::NodeHandle sp;
+    ros::Subscriber subPose;
+    ros::CallbackQueue qPose;
+    std::string poseTopic;
+    geometry_msgs::PoseStamped poseData;
+
+	std::string mapFrameId;
+
 	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
     bool duplicateDetection(geometry_msgs::Point goal);
 	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
 	void publishGoalBranch(geometry_msgs::Point goal);
 	void publishBranchList(std::vector<geometry_msgs::Point> list);
 
+	void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
+	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
+
+	geometry_msgs::Point getGoalBranch(sensor_msgs::LaserScan scan,geometry_msgs::PoseStamped pose);
+
 public:
     BranchSearch();
     ~BranchSearch(){};
 
-    geometry_msgs::Point getGoalBranch(sensor_msgs::LaserScan scanData,geometry_msgs::PoseStamped pose);
 
+
+	bool getGoal(geometry_msgs::Point& goal);
 
 //branchListをパブリッシュした方が色々使えるかも
 };
 
 BranchSearch::BranchSearch(){
+	p.param<std::string>("scan_topic", scanTopic, "scan");
+    ss.setCallbackQueue(&qScan);
+    subScan = ss.subscribe(scanTopic,1,&BranchSearch::scanCB, this);
+
+	p.param<std::string>("pose_topic", poseTopic, "pose");
+    sp.setCallbackQueue(&qPose);
+    subPose = sp.subscribe(poseTopic,1,&BranchSearch::poseCB,this);
+
 	p.param<std::string>("pose_log_topic", poseLogTopic, "pose_log");
     spl.setCallbackQueue(&qPoseLog);
     subPoseLog = spl.subscribe(poseLogTopic,1,&BranchSearch::poseLogCB, this);
@@ -62,7 +91,7 @@ BranchSearch::BranchSearch(){
 	pubGoalBranch = pb.advertise<geometry_msgs::PointStamped>(goalBranchTopic, 1);
 
 	p.param<std::string>("branch_list_topic", branchListTopic, "branch_list");
-	pubBranchList = pb.advertise<sensor_based_exploration::PointArray>(branchListTopic, 1);
+	pubBranchList = pb.advertise<exploration::PointArray>(branchListTopic, 1);
 
 	//branch_searchパラメータの読み込み
 	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
@@ -71,9 +100,20 @@ BranchSearch::BranchSearch(){
 	p.param<double>("branch_range_limit", BRANCH_DIST_LIMIT, 5.0);
 	//p.param<double>("branch_diff_threshold", BRANCH_DIFF_THRESHOLD, 1.0);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
-	p.param<std::string>("robot_name", ROBOT_NAME, "robot1");
+	p.param<std::string>("map_frame_id", mapFrameId, "map");
 	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.5);
 	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
+}
+
+void BranchSearch::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
+        scanData = *msg;
+        // if(scanEdit){
+        //     approx(scanData.ranges);
+        // }
+}
+
+void BranchSearch::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
+        poseData = *msg;
 }
 
 // void BranchSearch::initialize(double branchAngle, double centerRangeMin){
@@ -100,29 +140,43 @@ void BranchSearch::publishGoalBranch(geometry_msgs::Point goal){
 	geometry_msgs::PointStamped msg;
 	msg.point = goal;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = ROBOT_NAME + "/map";
+	msg.header.frame_id = mapFrameId;
 
 	pubGoalBranch.publish(msg);
 }
 
 void BranchSearch::publishBranchList(std::vector<geometry_msgs::Point> list){
-	sensor_based_exploration::PointArray msg;
+	exploration::PointArray msg;
 	msg.points = list;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = ROBOT_NAME + "/map";
+	msg.header.frame_id = mapFrameId;
 
 	pubBranchList.publish(msg);
 }
 
-geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scanData, geometry_msgs::PoseStamped pose){
-    const int scanWidth = BRANCH_ANGLE / scanData.angle_increment;
-    const int scanMin = (scanData.ranges.size()/2)-1 - scanWidth;
-    const int scanMax = (scanData.ranges.size()/2) + scanWidth;
+bool BranchSearch::getGoal(geometry_msgs::Point& goal){
+	qPose.callOne(ros::WallDuration(1));
+	qScan.callOne(ros::WallDuration(1));
+
+	goal = getGoalBranch(scanData,poseData);
+
+	if((int)goal.x == 0 && (int)goal.y == 0 && (int)goal.z == 0){
+            return false;
+    }
+    else{
+            return true;
+    }
+}
+
+geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, geometry_msgs::PoseStamped pose){
+    const int scanWidth = BRANCH_ANGLE / scan.angle_increment;
+    const int scanMin = (scan.ranges.size()/2)-1 - scanWidth;
+    const int scanMax = (scan.ranges.size()/2) + scanWidth;
 
     geometry_msgs::Point goal;
 
     for(int i = scanMin;i<scanMax;i++){
-		if(!std::isnan(scanData.ranges[i]) && scanData.ranges[i] < CENTER_RANGE_MIN){
+		if(!std::isnan(scan.ranges[i]) && scan.ranges[i] < CENTER_RANGE_MIN){
 			return goal;
 		}
     }
@@ -130,10 +184,10 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scanData
     std::vector<float> fixRanges;
     std::vector<float> fixAngles;
 
-    for(int i=0;i<scanData.ranges.size();i++){
-		if(!std::isnan(scanData.ranges[i])){
-			fixRanges.push_back(scanData.ranges[i]);
-			fixAngles.push_back(scanData.angle_min+(scanData.angle_increment*i));
+    for(int i=0;i<scan.ranges.size();i++){
+		if(!std::isnan(scan.ranges[i])){
+			fixRanges.push_back(scan.ranges[i]);
+			fixAngles.push_back(scan.angle_min+(scan.angle_increment*i));
 		}
     }
 
@@ -144,7 +198,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scanData
     //bool branchFlag;
 
     //branchFlag = branchDetection(fixRanges,fixAngle,scanData.angle_max,goal);
-    if(branchDetection(fixRanges,fixAngles,scanData.angle_max,goal,pose)){
+    if(branchDetection(fixRanges,fixAngles,scan.angle_max,goal,pose)){
 		//double yaw = 2*asin(pose.pose.orientation.z);
 		//goal.x = pose.pose.position.x+(cos(yaw)*goal.x) - (sin(yaw)*goal.y);
 		//globalY = pose.pose.position.y+(cos(yaw)*goal.y) + (sin(yaw)*goal.x);
