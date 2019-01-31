@@ -6,6 +6,11 @@
 #include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/Twist.h>
 
+#include<exploration/ToGoal.h>
+#include<exploration/MoveAngle.h>
+
+//topic名はパラメータで渡すのではなくremapしても良いかも
+
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
 class Moving 
@@ -40,7 +45,6 @@ private:
     sensor_msgs::LaserScan scanData;
     sensor_msgs::LaserScan scanDataOrigin;
 
-
     ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
@@ -57,8 +61,15 @@ private:
     ros::Publisher pubVelocity;
     std::string velocityTopic;
 
-    double thetaOld;
+    ros::NodeHandle ptg;
+    ros::Publisher pubToGoal;
+    std::string ToGoalTopic;
 
+    ros::NodeHandle pma;
+    ros::Publisher pubMoveAngle;
+    std::string moveAngleTopic;
+
+    double previousOrientation;
     
     void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
     void bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg);
@@ -66,10 +77,7 @@ private:
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
     double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle);
-
     double localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose);
-
-    
 
     bool bumperCollision(kobuki_msgs::BumperEvent bumper);
     void rescueRotation(void);
@@ -78,6 +86,9 @@ private:
     bool roadCenterDetection(sensor_msgs::LaserScan scan);
 
     void vfhMovement(bool isStraight, geometry_msgs::Point goal);
+
+    void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
+    void publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal);
 
 public:
     Moving();
@@ -103,8 +114,6 @@ Moving::Moving(){
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
 
-
-
     p.param<std::string>("scan_topic", scanTopic, "scan");
     ss.setCallbackQueue(&qScan);
     subScan = ss.subscribe(scanTopic,1,&Moving::scanCB, this);
@@ -117,8 +126,14 @@ Moving::Moving(){
     sb.setCallbackQueue(&qBumper);
     subBumper = sb.subscribe(bumperTopic,1,&Moving::bumperCB,this);
 
-    p.param<std::string>("velocity_topic", velocityTopic, "cmd_vel");
+    p.param<std::string>("velocity_topic", velocityTopic, "velocity");
     pubVelocity = pv.advertise<geometry_msgs::Twist>(velocityTopic, 1);
+
+    p.param<std::string>("to_goal_topic", ToGoalTopic, "to_goal");
+    pubToGoal = ptg.advertise<exploration::ToGoal>(ToGoalTopic, 1);
+
+    p.param<std::string>("move_angle_topic", moveAngleTopic, "move_angle");
+    pubMoveAngle = pma.advertise<exploration::MoveAngle>(moveAngleTopic, 1);
 
     INFINITY_NUMBER = 1000000;
 }
@@ -185,6 +200,29 @@ void Moving::approx(std::vector<float>& scan){
     }
 }
 
+void Moving::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal){
+    exploration::ToGoal msg;
+
+    msg.pose = pose;
+    msg.goal = goal;
+
+    msg.header.stamp = ros::Time::now();
+
+    pubToGoal.publish(msg);
+}
+
+void Moving::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel){
+    exploration::MoveAngle msg;
+
+    msg.angle = angle;
+    msg.pose = pose;
+    msg.velocity = vel;
+
+    msg.header.stamp = ros::Time::now();
+
+    pubMoveAngle.publish(msg);
+}
+
 void Moving::moveToGoal(geometry_msgs::Point goal){
 
     qPose.callOne(ros::WallDuration(1));
@@ -204,6 +242,7 @@ void Moving::moveToGoal(geometry_msgs::Point goal){
 
     //このループいらないかも要検討
     while(GRAVITY_ENABLE < distToGoal && distToGoal < GRAVITY_FORCE_ENABLE && ros::ok()){
+        publishToGoal(poseData.pose, goal);
         distToGoalOld = distToGoal;
         vfhMovement(true,nullGoal);
         qPose.callOne(ros::WallDuration(1));
@@ -225,6 +264,7 @@ void Moving::moveToGoal(geometry_msgs::Point goal){
     }
 
     while(GOAL_MARGIN < distToGoal && ros::ok()){
+        publishToGoal(poseData.pose, goal);
         distToGoalOld = distToGoal;
         vfhMovement(false,goal);
         qPose.callOne(ros::WallDuration(1));
@@ -430,14 +470,14 @@ bool Moving::bumperCollision(kobuki_msgs::BumperEvent bumper){
 void Moving::rescueRotation(void){
     //どうしようもなくなった時に回転する
     geometry_msgs::Twist vel;
-    vel.angular.z = -1 * (thetaOld / std::abs(thetaOld)) * ROTATION_VELOCITY;
+    vel.angular.z = -1 * previousOrientation * ROTATION_VELOCITY;
     pubVelocity.publish(vel);
 }
 
 void Moving::velocityPublisher(double theta, double v, double t){
     double omega;
 
-    thetaOld = theta;
+    previousOrientation = theta / std::abs(theta);
 
     omega = (2*theta)/t;
 
@@ -445,6 +485,8 @@ void Moving::velocityPublisher(double theta, double v, double t){
 
     vel.linear.x = v;
     vel.angular.z = omega;
+
+    publishMoveAngle(theta,poseData.pose,vel);
 
     pubVelocity.publish(vel);
 }

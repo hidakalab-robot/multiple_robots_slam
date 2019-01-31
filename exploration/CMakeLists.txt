@@ -55,6 +55,8 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    PointArray.msg
+   ToGoal.msg
+   MoveAngle.msg
 #   Message2.msg
  )
 
@@ -205,9 +207,9 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(sensor_based_exploration src/sbe_main.cpp)
-add_dependencies(sensor_based_exploration ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(sensor_based_exploration ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
 
 add_executable(pose_log_publisher src/pose_log_publisher.cpp)
-add_dependencies(pose_log_publisher ${PROJECT_NAME}_generate_messages_cpp)
+add_dependencies(pose_log_publisher ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(pose_log_publisher ${catkin_LIBRARIES})

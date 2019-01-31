@@ -6,6 +6,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
 #include <exploration/PointArray.h>
+#include <exploration/GoalAngle.h>
 //#include <sensor_based_exploration/PoseLog.h>
 
 //分岐領域を検出
