@@ -6,7 +6,6 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
 #include <exploration/PointArray.h>
-#include <exploration/GoalAngle.h>
 //#include <sensor_based_exploration/PoseLog.h>
 
 //分岐領域を検出
@@ -32,12 +31,13 @@ private:
     //std::vector<geometry_msgs::PoseStamped> poseLogData;
 	geometry_msgs::PoseArray poseLogData;
 
-	ros::NodeHandle pb;
-	ros::Publisher pubGoalBranch;
-	std::string goalBranchTopic;
+	ros::NodeHandle pg;
+	ros::Publisher pubGoal;
+	std::string goalTopic;
 
-	ros::Publisher pubBranchList;
-	std::string branchListTopic;
+	ros::NodeHandle pgl;
+	ros::Publisher pubGoalList;
+	std::string goalListTopic;
 
 	ros::NodeHandle ss;
     ros::Subscriber subScan;
@@ -56,8 +56,8 @@ private:
 	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
     bool duplicateDetection(geometry_msgs::Point goal);
 	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
-	void publishGoalBranch(geometry_msgs::Point goal);
-	void publishBranchList(std::vector<geometry_msgs::Point> list);
+	void publishGoal(geometry_msgs::Point goal);
+	void publishGoalList(std::vector<geometry_msgs::Point> list);
 
 	void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
 	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
@@ -67,8 +67,6 @@ private:
 public:
     BranchSearch();
     ~BranchSearch(){};
-
-
 
 	bool getGoal(geometry_msgs::Point& goal);
 
@@ -88,11 +86,11 @@ BranchSearch::BranchSearch(){
     spl.setCallbackQueue(&qPoseLog);
     subPoseLog = spl.subscribe(poseLogTopic,1,&BranchSearch::poseLogCB, this);
 
-	p.param<std::string>("goal_branch_topic", goalBranchTopic, "goal_branch");
-	pubGoalBranch = pb.advertise<geometry_msgs::PointStamped>(goalBranchTopic, 1);
+	p.param<std::string>("goal_topic", goalTopic, "goal");
+	pubGoal = pg.advertise<geometry_msgs::PointStamped>(goalTopic, 1);
 
-	p.param<std::string>("branch_list_topic", branchListTopic, "branch_list");
-	pubBranchList = pb.advertise<exploration::PointArray>(branchListTopic, 1);
+	p.param<std::string>("goal_list_topic", goalListTopic, "goal_list");
+	pubGoalList = pgl.advertise<exploration::PointArray>(goalListTopic, 1);
 
 	//branch_searchパラメータの読み込み
 	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
@@ -137,22 +135,22 @@ void BranchSearch::poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg){
 	poseLogData = *msg;
 }
 
-void BranchSearch::publishGoalBranch(geometry_msgs::Point goal){
+void BranchSearch::publishGoal(geometry_msgs::Point goal){
 	geometry_msgs::PointStamped msg;
 	msg.point = goal;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = mapFrameId;
 
-	pubGoalBranch.publish(msg);
+	pubGoal.publish(msg);
 }
 
-void BranchSearch::publishBranchList(std::vector<geometry_msgs::Point> list){
+void BranchSearch::publishGoalList(std::vector<geometry_msgs::Point> list){
 	exploration::PointArray msg;
 	msg.points = list;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = mapFrameId;
 
-	pubBranchList.publish(msg);
+	pubGoalList.publish(msg);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -203,7 +201,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
 		//double yaw = 2*asin(pose.pose.orientation.z);
 		//goal.x = pose.pose.position.x+(cos(yaw)*goal.x) - (sin(yaw)*goal.y);
 		//globalY = pose.pose.position.y+(cos(yaw)*goal.y) + (sin(yaw)*goal.x);
-		publishGoalBranch(goal);
+		publishGoal(goal);
     }
 	else{
 		geometry_msgs::Point temp;
@@ -270,7 +268,7 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
     bool find = false;
 
 	if(list.size()>0){
-		publishBranchList(list);
+		publishGoalList(list);
 
 		int near;
 		float centerDist;

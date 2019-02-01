@@ -6,8 +6,8 @@
 #include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/Twist.h>
 
-#include<exploration/ToGoal.h>
-#include<exploration/MoveAngle.h>
+#include <exploration/ToGoal.h>
+#include <exploration/MoveAngle.h>
 
 //topic名はパラメータで渡すのではなくremapしても良いかも
 
@@ -214,7 +214,7 @@ void Moving::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal){
 void Moving::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel){
     exploration::MoveAngle msg;
 
-    msg.angle = angle;
+    msg.localAngle = angle;
     msg.pose = pose;
     msg.velocity = vel;
 

@@ -1,4 +1,3 @@
-#include <ros/ros.h>
 #include <exploration/moving.h>
 #include <exploration/branch_search.h>
 
