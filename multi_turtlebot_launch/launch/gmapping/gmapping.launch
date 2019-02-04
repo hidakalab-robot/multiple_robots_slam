@@ -3,7 +3,7 @@
    <group ns="$(arg robot_name)">
   <!-- 3D sensor -->
   <arg name="3d_sensor" default="$(env TURTLEBOT_3D_SENSOR)"/>  <!-- r200, kinect, asus_xtion_pro -->
-  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/3dsensor.launch">
+  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/3dsensor.launch.xml">
     <arg name="robot_name" value="$(arg robot_name)"/>
     <arg name="rgb_processing" value="false" />
     <arg name="depth_registration" value="false" />
@@ -23,6 +23,10 @@
   <!-- Move base -->
   <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/move_base.launch.xml">
 
+    <arg name="robot_name" value="$(arg robot_name)"/>
+  </include>
+
+  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/robot_pose_publisher.launch.xml">
     <arg name="robot_name" value="$(arg robot_name)"/>
   </include>
 

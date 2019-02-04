@@ -1,5 +1,5 @@
-#ifndef MOVING_H
-#define MOVING_H
+#ifndef MOVEMENT_H
+#define MOVEMENT_H
 
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -16,7 +16,7 @@
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
-class Moving 
+class Movement 
 {
 private:
     ros::NodeHandle p;
@@ -28,18 +28,15 @@ private:
     double SAFE_DISTANCE;
     double SAFE_SPACE;
     double SCAN_THRESHOLD;
-
     double FORWARD_VELOCITY;
     double BACK_VELOCITY;
     double BACK_TIME;
     double ROTATION_VELOCITY;
-
     double EMERGENCY_THRESHOLD;
-
     double ROAD_CENTER_THRESHOLD;
     double ROAD_THRESHOLD;
 
-    int INFINITY_NUMBER;
+    int INT_INFINITY;
 
     ros::NodeHandle ss;
     ros::Subscriber subScan;
@@ -76,32 +73,29 @@ private:
     
     void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
     void bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg);
-    void approx(std::vector<float>& scan);
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
+    void approx(std::vector<float>& scan);
+    void vfhMovement(bool isStraight, geometry_msgs::Point goal);
+    bool bumperCollision(kobuki_msgs::BumperEvent bumper);
     double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle);
     double localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose);
-
-    bool bumperCollision(kobuki_msgs::BumperEvent bumper);
-    void rescueRotation(void);
-    void velocityPublisher(double theta, double v, double t);
     bool emergencyAvoidance(sensor_msgs::LaserScan scan);
+    void recoveryRotation(void);
+    void velocityPublisher(double theta, double v, double t);
     bool roadCenterDetection(sensor_msgs::LaserScan scan);
-
-    void vfhMovement(bool isStraight, geometry_msgs::Point goal);
-
-    void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
     void publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal);
+    void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
 
 public:
-    Moving();
-    ~Moving(){};
+    Movement();
+    ~Movement(){};
 
     void moveToGoal(geometry_msgs::Point goal);
     void moveToForward(void);
 };
 
-Moving::Moving(){
+Movement::Movement():p("~"){
     p.param<double>("goal_margin", GOAL_MARGIN, 0.5);
     p.param<double>("gravity_gain", GRAVITY_GAIN, 1.2);
     p.param<double>("gravity_force_enable", GRAVITY_FORCE_ENABLE, 6.0);
@@ -118,13 +112,13 @@ Moving::Moving(){
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
 
     ss.setCallbackQueue(&qScan);
-    subScan = ss.subscribe("scan",1,&Moving::scanCB, this);
+    subScan = ss.subscribe("scan",1,&Movement::scanCB, this);
 
     sp.setCallbackQueue(&qPose);
-    subPose = sp.subscribe("pose",1,&Moving::poseCB,this);
+    subPose = sp.subscribe("pose",1,&Movement::poseCB,this);
 
     sb.setCallbackQueue(&qBumper);
-    subBumper = sb.subscribe("bumper",1,&Moving::bumperCB,this);
+    subBumper = sb.subscribe("bumper",1,&Movement::bumperCB,this);
 
     pubVelocity = pv.advertise<geometry_msgs::Twist>("velocity", 1);
 
@@ -134,15 +128,15 @@ Moving::Moving(){
 
     // p.param<std::string>("scan_topic", scanTopic, "scan");
     // ss.setCallbackQueue(&qScan);
-    // subScan = ss.subscribe(scanTopic,1,&Moving::scanCB, this);
+    // subScan = ss.subscribe(scanTopic,1,&Movement::scanCB, this);
 
     // p.param<std::string>("pose_topic", poseTopic, "pose");
     // sp.setCallbackQueue(&qPose);
-    // subPose = sp.subscribe(poseTopic,1,&Moving::poseCB,this);
+    // subPose = sp.subscribe(poseTopic,1,&Movement::poseCB,this);
 
     // p.param<std::string>("bumper_topic", bumperTopic, "bumper");
     // sb.setCallbackQueue(&qBumper);
-    // subBumper = sb.subscribe(bumperTopic,1,&Moving::bumperCB,this);
+    // subBumper = sb.subscribe(bumperTopic,1,&Movement::bumperCB,this);
 
     // p.param<std::string>("velocity_topic", velocityTopic, "velocity");
     // pubVelocity = pv.advertise<geometry_msgs::Twist>(velocityTopic, 1);
@@ -153,24 +147,24 @@ Moving::Moving(){
     // p.param<std::string>("move_angle_topic", moveAngleTopic, "move_angle");
     // pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>(moveAngleTopic, 1);
 
-    INFINITY_NUMBER = 1000000;
+    INT_INFINITY = 1000000;
 }
 
-void Moving::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
+void Movement::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     scanData = *msg;
     scanDataOrigin = *msg;
     approx(scanData.ranges);
 }
 
-void Moving::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
+void Movement::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
     poseData = *msg;
 }
 
-void Moving::bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg){
+void Movement::bumperCB(const kobuki_msgs::BumperEvent::ConstPtr& msg){
     bumperData = *msg;
 }
 
-void Moving::approx(std::vector<float>& scan){
+void Movement::approx(std::vector<float>& scan){
     float depth,depth1,depth2;
     depth = depth1 = depth2 =0;
 
@@ -218,35 +212,12 @@ void Moving::approx(std::vector<float>& scan){
     }
 }
 
-void Moving::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal){
-    exploration_msgs::ToGoal msg;
-
-    msg.pose = pose;
-    msg.goal = goal;
-
-    msg.header.stamp = ros::Time::now();
-
-    pubToGoal.publish(msg);
-}
-
-void Moving::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel){
-    exploration_msgs::MoveAngle msg;
-
-    msg.localAngle = angle;
-    msg.pose = pose;
-    msg.velocity = vel;
-
-    msg.header.stamp = ros::Time::now();
-
-    pubMoveAngle.publish(msg);
-}
-
-void Moving::moveToGoal(geometry_msgs::Point goal){
+void Movement::moveToGoal(geometry_msgs::Point goal){
+    ROS_INFO_STREAM("Goal Recieved : (" << goal.x << "," << goal.y << ")\n");
 
     qPose.callOne(ros::WallDuration(1));
 
     const double GRAVITY_ENABLE = std::abs(goal.y - poseData.pose.position.y) + GRAVITY_GAIN;
-
     double distToGoal;
     double distToGoalOld;
     double diff = 0;
@@ -255,6 +226,8 @@ void Moving::moveToGoal(geometry_msgs::Point goal){
     int sign = -1;
 
     distToGoal = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
+
+    ROS_INFO_STREAM("Distance to Goal : " << distToGoal << " [m]\n");
 
     geometry_msgs::Point nullGoal;
 
@@ -304,13 +277,55 @@ void Moving::moveToGoal(geometry_msgs::Point goal){
     }
 }
 
-double Moving::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle=0.0){
+void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
+    double resultAngle;
+
+    qBumper.callOne(ros::WallDuration(1));
+    if(!bumperCollision(bumperData)){
+        qScan.callOne(ros::WallDuration(1));
+        if(isStraight){
+            resultAngle = vfhCalculation(scanData,true);
+        }
+        else{
+            qPose.callOne(ros::WallDuration(1));
+            resultAngle = vfhCalculation(scanData,false,localAngleCalculation(goal,poseData));
+        }
+        if((int)resultAngle == INT_INFINITY){
+            if(!emergencyAvoidance(scanData)){
+                recoveryRotation();
+            }
+        }
+        else{
+            velocityPublisher(resultAngle,FORWARD_VELOCITY,0.5);
+        }
+    }
+
+}
+
+bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
+    //壁に衝突してるかを確認して、してたらバック
+    if(bumperData.state){
+        ROS_WARN_STREAM("Bumper Hit !!\n");
+        geometry_msgs::Twist vel;
+        vel.linear.x = BACK_VELOCITY;
+        ros::Duration duration(BACK_TIME);
+        ros::Time setTime = ros::Time::now();
+
+        while(ros::Time::now()-setTime < duration){
+            pubVelocity.publish(vel);
+        }
+        return true;
+    }
+    return false;
+}
+
+double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle=0.0){
     //要求角度と最も近くなる配列の番号を探索
     //安全な角度マージンの定義
     //要求角度に最も近くなる右側と左側の番号を探索
+    ROS_DEBUG_STREAM("VFH Calculation\n");
 
     static int centerPosition = 0;
-
     double diff;
     double min;
     int goalI;
@@ -335,97 +350,75 @@ double Moving::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double
     }
 
     const int SAFE_NUM = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
-
     int start;
     int k;
     int count;
-    int plus = INFINITY_NUMBER;
-    int minus = INFINITY_NUMBER;
-
+    int plus = INT_INFINITY;
+    int minus = INT_INFINITY;
 
     for(int i=goalI;i<scan.ranges.size();i++){
-		//std::cout << "plusのfor,i:" << i << ",ranges[i]:" << ranges[i] << std::endl;
 		if(scan.ranges[i] > SCAN_THRESHOLD){
-			//std::cout << "正方向" << std::endl;
 			start = i;
 			k = i;
 			count = 0;
-			while(scan.ranges[k] > SCAN_THRESHOLD && count < SAFE_NUM && k < scan.ranges.size()-1){//iの限界
-				//std::cout << "sp_ranges[i]:" << ranges[i] << std::endl;
+			while(scan.ranges[k] > SCAN_THRESHOLD && count < SAFE_NUM && k < scan.ranges.size()-1){
 				count++;
 				k++;
 			}
-			//std::cout << "rad_counter1:" << rad_counter << std::endl;
-			if(count == SAFE_NUM && start >= SAFE_NUM){//プラス側はOKなのでマイナス側を見に行く
-				//std::cout << "逆方向" << std::endl;
+			if(count == SAFE_NUM && start >= SAFE_NUM){
 				count = 0;
 				for(int j=start;j>start-SAFE_NUM;j--){
 					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM){
-						//std::cout << "tp_ranges[i]:" << ranges[i] << std::endl;
 						count++;
 					}
-					//std::cout << "j:" << j << std::endl;
 				}
-				//std::cout << "rad_counter2:" << rad_counter << std::endl;
 				if(count == SAFE_NUM){
 					plus = start;
-					//std::cout << "breakした" << std::endl;
 					break;
 				}	
 			}
 		}
     }
 
-    //std::cout << "plusのfor抜けた" << std::endl;
-
 	for(int i=goalI;i>=0;i--){
-		//std::cout << "minusのfor,i:" << i << ",ranges[i]:" << ranges[i] << std::endl;
 		if(scan.ranges[i] > SCAN_THRESHOLD){
-			//std::cout << "正方向" << std::endl;
 			start = i;
 			k = i;
 			count = 0;
 			while(scan.ranges[k] > SCAN_THRESHOLD && count < SAFE_NUM && k > 0){
-				//std::cout << "sm_ranges[i]:" << ranges[l] << std::endl;
 				count++;
 				k--;
 			}
-			//std::cout << "rad_counter1:" << rad_counter << std::endl;
-			if(count == SAFE_NUM && start <= scan.ranges.size()-SAFE_NUM){//マイナス側はOKなのでプラス側を見に行く//ここやってない//やった
-				//std::cout << "逆方向" << std::endl;
+			if(count == SAFE_NUM && start <= scan.ranges.size()-SAFE_NUM){
 				count = 0;
 				for(int j=start;j<start+SAFE_NUM;j++){
 					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM){
-						//std::cout << "tm_ranges[i]:" << ranges[i] << std::endl;
 						count++;
 					}
 				}
-				//std::cout << "rad_counter2:" << rad_counter << std::endl;
 				if(count == SAFE_NUM){
 					minus = start;
-					//std::cout << "breakした" << std::endl;
 					break;
 				}	
 			}
 		}
 	}
-    //std::cout << "minusのfor抜けた" << std::endl;
 
     double moveAngle;
 
-    if(plus != INFINITY_NUMBER || minus != INFINITY_NUMBER){
+    if(plus != INT_INFINITY || minus != INT_INFINITY){
 		double pd;
 		double md;
 
-		if(plus == INFINITY_NUMBER){
-			pd = INFINITY_NUMBER;
+		if(plus == INT_INFINITY){
+			pd = INT_INFINITY;
 		}
         else{
             pd = std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
         }
 
-		if(minus == INFINITY_NUMBER){
-			md = INFINITY_NUMBER;
+		if(minus == INT_INFINITY){
+			md = INT_INFINITY;
 		}
         else{
             md = std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
@@ -439,19 +432,17 @@ double Moving::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double
 		}
     }
     else{
-        moveAngle = INFINITY_NUMBER;
+        moveAngle = INT_INFINITY;
     }
 
     return moveAngle;
-
 }
 
-double Moving::localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose){
+double Movement::localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose){
     double tempAngle;
     double localAngle;
 
     tempAngle = atan2(goal.y - pose.pose.position.y, goal.x - pose.pose.position.x);
-
     localAngle = tempAngle - 2*asin(pose.pose.orientation.z);
 
     if(localAngle < -M_PI){
@@ -462,60 +453,12 @@ double Moving::localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::Po
     }
 
     return localAngle;
-
 }
 
-bool Moving::bumperCollision(kobuki_msgs::BumperEvent bumper){
-    //壁に衝突してるかを確認して、してたらバック
-    if(bumperData.state){
-        geometry_msgs::Twist vel;
-        vel.linear.x = BACK_VELOCITY;
-
-        ros::Duration duration(BACK_TIME);
-
-        ros::Time setTime = ros::Time::now();
-
-        while(ros::Time::now()-setTime < duration){
-            pubVelocity.publish(vel);
-        }
-
-        return true;
-    }
-    
-    return false;
-}
-
-void Moving::rescueRotation(void){
-    //どうしようもなくなった時に回転する
-    geometry_msgs::Twist vel;
-    vel.angular.z = -1 * previousOrientation * ROTATION_VELOCITY;
-    pubVelocity.publish(vel);
-}
-
-void Moving::velocityPublisher(double theta, double v, double t){
-    double omega;
-
-    previousOrientation = theta / std::abs(theta);
-
-    omega = (2*theta)/t;
-
-    geometry_msgs::Twist vel;
-
-    vel.linear.x = v;
-    vel.angular.z = omega;
-
-    publishMoveAngle(theta,poseData.pose,vel);
-
-    pubVelocity.publish(vel);
-}
-
-bool Moving::emergencyAvoidance(sensor_msgs::LaserScan scan){
-
+bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan){
     double aveP;
     double aveM;
-
     double sum = 0;
-
     static double sign = 0;
 
     //minus側の平均
@@ -536,15 +479,24 @@ bool Moving::emergencyAvoidance(sensor_msgs::LaserScan scan){
     aveP = sum / (scan.ranges.size()/2);
 
     if(aveP < EMERGENCY_THRESHOLD && aveM < EMERGENCY_THRESHOLD){
+        ROS_WARN_STREAM("Close to Obstacles !!\n");
+        if(sign > 0){
+            ROS_INFO_STREAM("Avoidance to Left\n");
+        }
+        else{
+            ROS_INFO_STREAM("Avoidance to Right\n");
+        }
         velocityPublisher(sign * scan.angle_max/6,0.0,0.3);
     }
     else{
         if(aveP > aveM){
             sign = 1.0;
+            ROS_INFO_STREAM("Avoidance to Left\n");
             velocityPublisher(sign*scan.angle_max/6,FORWARD_VELOCITY,0.3);
         }
         else if(aveP < aveM){
             sign = -1.0;
+            ROS_INFO_STREAM("Avoidance to Right\n");
             velocityPublisher(sign*scan.angle_max/6,FORWARD_VELOCITY,0.3);
         }
         else{
@@ -555,8 +507,39 @@ bool Moving::emergencyAvoidance(sensor_msgs::LaserScan scan){
     return true;
 }
 
-bool Moving::roadCenterDetection(sensor_msgs::LaserScan scan){
+void Movement::recoveryRotation(void){
+    //どうしようもなくなった時に回転する
+    ROS_WARN_STREAM("Recovery Rotation !\n");
+    geometry_msgs::Twist vel;
+    vel.angular.z = -1 * previousOrientation * ROTATION_VELOCITY;
+    pubVelocity.publish(vel);
+}
 
+void Movement::velocityPublisher(double theta, double v, double t){
+    double omega;
+
+    previousOrientation = theta / std::abs(theta);
+    omega = (2*theta)/t;
+    geometry_msgs::Twist vel;
+    vel.linear.x = v;
+    vel.angular.z = omega;
+
+    publishMoveAngle(theta,poseData.pose,vel);
+    pubVelocity.publish(vel);
+    ROS_INFO_STREAM("Publish Velocity\n");
+}
+
+void Movement::moveToForward(void){
+    ROS_INFO_STREAM("Moving Straight\n");
+    geometry_msgs::Point nullGoal;
+
+    qScan.callOne(ros::WallDuration(1));
+    if(!roadCenterDetection(scanDataOrigin)){
+        vfhMovement(true,nullGoal);
+    }
+}
+
+bool Movement::roadCenterDetection(sensor_msgs::LaserScan scan){
     std::vector<float> fixRanges;
     std::vector<float> fixAngles;
 
@@ -580,138 +563,36 @@ bool Moving::roadCenterDetection(sensor_msgs::LaserScan scan){
         diffY = fixRanges[i+1]*sin(fixAngles[i+1]) - fixRanges[i]*sin(fixAngles[i]);
         if(std::abs(diffY) >= ROAD_THRESHOLD){
             centerAngle = (fixAngles[i]+fixAngles[i+1])/2;
+            ROS_DEBUG_STREAM("Road Center Found\n");
             velocityPublisher(centerAngle,FORWARD_VELOCITY,0.8);
             return true;
         }
     }
-
+    ROS_DEBUG_STREAM("Road Center Do Not Found\n");
     return false;
 }
 
-void Moving::moveToForward(void){
+void Movement::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal){
+    exploration_msgs::ToGoal msg;
 
-    geometry_msgs::Point nullGoal;
+    msg.pose = pose;
+    msg.goal = goal;
+    msg.header.stamp = ros::Time::now();
 
-    qScan.callOne(ros::WallDuration(1));
-    if(!roadCenterDetection(scanDataOrigin)){
-        vfhMovement(true,nullGoal);
-    }
+    pubToGoal.publish(msg);
+    ROS_INFO_STREAM("Publish ToGoal\n");
 }
 
-void Moving::vfhMovement(bool isStraight, geometry_msgs::Point goal){
+void Movement::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel){
+    exploration_msgs::MoveAngle msg;
 
-    double resultAngle;
+    msg.localAngle = angle;
+    msg.pose = pose;
+    msg.velocity = vel;
+    msg.header.stamp = ros::Time::now();
 
-    qBumper.callOne(ros::WallDuration(1));
-    if(!bumperCollision(bumperData)){
-        qScan.callOne(ros::WallDuration(1));
-        if(isStraight){
-            resultAngle = vfhCalculation(scanData,true);
-        }
-        else{
-            qPose.callOne(ros::WallDuration(1));
-            resultAngle = vfhCalculation(scanData,false,localAngleCalculation(goal,poseData));
-        }
-        
-        if((int)resultAngle == INFINITY_NUMBER){
-            if(!emergencyAvoidance(scanData)){
-                rescueRotation();
-            }
-        }
-        else{
-            velocityPublisher(resultAngle,FORWARD_VELOCITY,0.5);
-        }
-    }
+    pubMoveAngle.publish(msg);
+    ROS_INFO_STREAM("Publish MoveAngle\n");
 }
 
-#endif //MOVING_H
-
-// void Moving::movingLoop(geometry_msgs::Point goal){
-
-//     qPose.callOne(ros::WallDuration(1));
-
-//     const double GRAVITY_ENABLE = std::abs(goal.y - poseData.pose.position.y) + GRAVITY_GAIN;
-
-//     double distToGoal;
-//     double distToGoalOld;
-//     double diff = 0;
-//     int count = 0;
-//     const int END_COUNT = 1;
-//     int sign = -1;
-//     double resultAngle;
-
-//     distToGoal = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
-
-//     //このループいらないかも要検討
-//     while(GRAVITY_ENABLE < distToGoal && distToGoal < GRAVITY_FORCE_ENABLE && ros::ok()){
-//         distToGoalOld = distToGoal;
-//         qBumper.callOne(ros::WallDuration(1));
-//         if(!bumperCollision(bumperData)){
-//             qScan.callOne(ros::WallDuration(1));
-//             resultAngle = vfhCalculation(scanData,true);
-//             if((int)resultAngle == INFINITY_NUMBER){
-//                 if(!emergencyAvoidance(scanData)){
-//                     rescueRotation();
-//                 }
-//             }
-//             else{
-//                 velocityPublisher(resultAngle,FORWARD_VELOCITY,0.5);
-//             }
-//         }
-//         qPose.callOne(ros::WallDuration(1));
-//         distToGoal = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
-
-//         diff += distToGoal - distToGoalOld;
-
-//         if(std::abs(diff) > GRAVITH_DIFF_THRESHOLD){
-//             if(diff*sign < 0){
-//                 sign *= -1;
-//                 count++;
-//                 if(count == END_COUNT){
-//                     diff = 0;
-//                     count = 0;
-//                     sign = -1;
-//                     break;
-//                 }
-//             }
-//             diff = 0;
-//         }
-//     }
-
-//     while(GOAL_MARGIN < distToGoal && ros::ok()){
-//         distToGoalOld = distToGoal;
-//         qBumper.callOne(ros::WallDuration(1));
-//         if(!bumperCollision(bumperData)){
-//             qScan.callOne(ros::WallDuration(1));
-//             qPose.callOne(ros::WallDuration(1));
-//             resultAngle = vfhCalculation(scanData,false,localAngleCalculation(goal,poseData));
-//             if((int)resultAngle == INFINITY_NUMBER){
-//                 if(!emergencyAvoidance(scanData)){
-//                     rescueRotation();
-//                 }
-//             }
-//             else{
-//                 velocityPublisher(resultAngle,FORWARD_VELOCITY,0.5);
-//             }
-//         }
-//         qPose.callOne(ros::WallDuration(1));
-//         distToGoal = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
-
-//         diff += distToGoal - distToGoalOld;
-
-//         if(std::abs(diff) > GRAVITH_DIFF_THRESHOLD){
-//             if(diff*sign < 0){
-//                 sign *= -1;
-//                 count++;
-//                 if(count == END_COUNT){
-//                     diff = 0;
-//                     count = 0;
-//                     sign = -1;
-//                     break;
-//                 }
-//             }
-//             diff = 0;
-//         }
-//     }
-
-// }
+#endif //MOVEMENT_H

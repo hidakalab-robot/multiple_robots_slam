@@ -1,4 +1,4 @@
-#include <exploration/moving.h>
+#include <exploration/movement.h>
 #include <exploration/branch_search.h>
 
 int main(int argc, char *argv[])
@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
     ros::init(argc, argv, "sensor_based_exploration");
 
     BranchSearch bs;
-    Moving mv;
+    Movement mv;
 
     geometry_msgs::Point goal;
 

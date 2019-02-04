@@ -3,6 +3,7 @@
 
 //分岐領域を検出するクラス
 #include <ros/ros.h>
+//#include <ros/console.h>
 #include <ros/callback_queue.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PointStamped.h>
@@ -26,6 +27,8 @@ private:
 	double DUPLICATE_MARGIN;
 
 	bool DUPLICATE_CHECK;
+
+	double DOUBLE_INFINITY;
 
 	ros::NodeHandle spl;
     ros::Subscriber subPoseLog;
@@ -56,27 +59,24 @@ private:
 
 	std::string mapFrameId;
 
-	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
-    bool duplicateDetection(geometry_msgs::Point goal);
-	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
-	void publishGoal(geometry_msgs::Point goal);
-	void publishGoalList(std::vector<geometry_msgs::Point> list);
-
 	void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
 	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
+	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
 
 	geometry_msgs::Point getGoalBranch(sensor_msgs::LaserScan scan,geometry_msgs::PoseStamped pose);
+	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
+    bool duplicateDetection(geometry_msgs::Point goal);
+	void publishGoal(geometry_msgs::Point goal);
+	void publishGoalList(std::vector<geometry_msgs::Point> list);
 
 public:
     BranchSearch();
     ~BranchSearch(){};
 
 	bool getGoal(geometry_msgs::Point& goal);
-
-//branchListをパブリッシュした方が色々使えるかも
 };
 
-BranchSearch::BranchSearch(){
+BranchSearch::BranchSearch():p("~"){
 
     ss.setCallbackQueue(&qScan);
     subScan = ss.subscribe("scan",1,&BranchSearch::scanCB, this);
@@ -87,7 +87,7 @@ BranchSearch::BranchSearch(){
     spl.setCallbackQueue(&qPoseLog);
     subPoseLog = spl.subscribe("pose_log",1,&BranchSearch::poseLogCB, this);
 
-	pubGoal = pg.advertise<geometry_msgs::PointStamped>("goal_topic", 1);
+	pubGoal = pg.advertise<geometry_msgs::PointStamped>("goal", 1);
 
 	pubGoalList = pgl.advertise<exploration_msgs::PointArray>("goal_list", 1);
 
@@ -122,6 +122,8 @@ BranchSearch::BranchSearch(){
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
 	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.5);
 	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
+
+	DOUBLE_INFINITY = 10000.0;
 }
 
 void BranchSearch::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
@@ -155,24 +157,6 @@ void BranchSearch::poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg){
 	poseLogData = *msg;
 }
 
-void BranchSearch::publishGoal(geometry_msgs::Point goal){
-	geometry_msgs::PointStamped msg;
-	msg.point = goal;
-	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = mapFrameId;
-
-	pubGoal.publish(msg);
-}
-
-void BranchSearch::publishGoalList(std::vector<geometry_msgs::Point> list){
-	exploration_msgs::PointArray msg;
-	msg.points = list;
-	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = mapFrameId;
-
-	pubGoalList.publish(msg);
-}
-
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	qPose.callOne(ros::WallDuration(1));
 	qScan.callOne(ros::WallDuration(1));
@@ -180,10 +164,12 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	goal = getGoalBranch(scanData,poseData);
 
 	if((int)goal.x == 0 && (int)goal.y == 0 && (int)goal.z == 0){
-            return false;
+		ROS_INFO_STREAM("Branch Do Not Found\n");
+        return false;
     }
     else{
-            return true;
+		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")\n");
+        return true;
     }
 }
 
@@ -196,6 +182,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
 
     for(int i = scanMin;i<scanMax;i++){
 		if(!std::isnan(scan.ranges[i]) && scan.ranges[i] < CENTER_RANGE_MIN){
+			ROS_ERROR_STREAM("It may be Close to Obstacles\n");
 			return goal;
 		}
     }
@@ -211,6 +198,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
     }
 
     if(fixRanges.size() < 2){
+		ROS_ERROR_STREAM("ScanData is Insufficient\n");
 		return goal;
     }
 
@@ -230,10 +218,11 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
 	//publishGoalBranch(goal);
 
     return goal;
-
 }
 
 bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose){
+
+	ROS_DEBUG_STREAM("Searching Branch\n");
 
 	float scanX,scanY,nextScanX,nextScanY;
 	float diffX,diffY;
@@ -282,12 +271,12 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 			}
 		}
 	}
-
-
 	
     bool find = false;
 
 	if(list.size()>0){
+		ROS_DEBUG_STREAM("Branch Candidate Found\n");
+
 		publishGoalList(list);
 
 		int near;
@@ -296,7 +285,7 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 		double yaw = 2*asin(pose.pose.orientation.z);
 
 		for(int k=list.size();k>0;k--){
-			centerDist = 1000.0;
+			centerDist = DOUBLE_INFINITY;
 			for(int j=0;j<list.size();j++){
 				tempCenterDist = std::abs(list[j].x)+std::abs(list[j].y);
 				if(tempCenterDist <= centerDist){
@@ -311,6 +300,9 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 					near = j;
 				}
 			}
+
+			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
+
 			if(DUPLICATE_CHECK && duplicateDetection(goal)){
 				list.erase(list.begin() + near);
 				//listY.erase(list.begin() + near);
@@ -322,7 +314,6 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 			}
 		}	
     }
-
     return find;
 }
 
@@ -380,12 +371,33 @@ bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
 				//duplication_flag = true;
 				//branch_find_flag = false;
 				//std::cout << "すでに探査した領域でした・・・ぐすん;;" << std::endl;
+				ROS_DEBUG_STREAM("This Branch is Duplicated\n");
 				return true;
 			}
 		}
 	}
-	
+	ROS_DEBUG_STREAM("This Branch is Not Duplicated\n");
 	return false;
+}
+
+void BranchSearch::publishGoal(geometry_msgs::Point goal){
+	geometry_msgs::PointStamped msg;
+	msg.point = goal;
+	msg.header.stamp = ros::Time::now();
+	msg.header.frame_id = mapFrameId;
+
+	pubGoal.publish(msg);
+	ROS_INFO_STREAM("Publish Goal\n");
+}
+
+void BranchSearch::publishGoalList(std::vector<geometry_msgs::Point> list){
+	exploration_msgs::PointArray msg;
+	msg.points = list;
+	msg.header.stamp = ros::Time::now();
+	msg.header.frame_id = mapFrameId;
+
+	pubGoalList.publish(msg);
+	ROS_INFO_STREAM("Publish GoalList\n");
 }
 
 #endif //BRANCH_SEARCH_H

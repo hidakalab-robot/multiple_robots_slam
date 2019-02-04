@@ -67,8 +67,7 @@ private:
     ros::Publisher pubMoveAngleMarker;
     //std::string moveAngleMarkerTopic;
     
-
-    //poselog
+    //pose
     ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
@@ -80,6 +79,12 @@ private:
     ros::Publisher pubPoseMarker;
     //std::string poseMarkerTopic;
     std_msgs::ColorRGBA poseColor;
+
+    bool inputGoal;
+    bool inputGoalList;
+    bool inputToGoal;
+    bool inputMoveAngle;
+    bool inputPose;
 
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
@@ -107,7 +112,7 @@ public:
     void publishMoveAngleMarker(void);
 };
 
-Visualization::Visualization(){
+Visualization::Visualization():p("~"){
     p.param<std::string>("map_frame_id", mapFrameId, "map");
 }
 
@@ -136,14 +141,24 @@ void Visualization::poseMarkerInitialize(void){
     poseMarker.id = 0;
 
     poseColor.a = 1.0f;
+
+    inputPose = false;
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
 	poseData = *msg;
+    inputPose = true;
 }
 
 void Visualization::publishPoseMarker(void){
     qPose.callOne(ros::WallDuration(1));
+
+    if(inputPose){
+        inputPose = false;
+    }
+    else{
+        return;
+    }
 
     p.param<std::string>("exploration_method", explorationMethod, "SENSOR");
     
@@ -204,14 +219,25 @@ void Visualization::goalMarkerInitialize(void){
     goalMarker.color.g = 0.0f;
     goalMarker.color.b = 1.0f;
     goalMarker.color.a = 1.0f;
+
+    inputGoal = false;
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
 	goalData = *msg;
+    inputGoal = true;
 }
 
 void Visualization::publishGoalMarker(void){
     qGoal.callOne(ros::WallDuration(1));
+
+    if(inputGoal){
+        inputGoal = false;
+    }
+    else{
+        return;
+    }
+
     goalMarker.pose.position.x = goalData.point.x;
     goalMarker.pose.position.y = goalData.point.y;
 
@@ -250,14 +276,24 @@ void Visualization::goalListMarkerInitialize(void){
     goalListMarker.color.g = 1.0f;
     goalListMarker.color.b = 0.0f;
     goalListMarker.color.a = 1.0f;
+
+    inputGoalList = false;
 }
 
 void Visualization::goalListCB(const exploration_msgs::PointArray::ConstPtr& msg){
 	goalListData = *msg;
+    inputGoalList = true;
 }
 
 void Visualization::publishGoalListMarker(void){
     qGoalList.callOne(ros::WallDuration(1));
+
+    if(inputGoalList){
+        inputGoalList = false;
+    }
+    else{
+        return;
+    }
 
     goalListMarker.points = goalListData.points;
     goalListMarker.header.stamp = ros::Time::now();
@@ -294,14 +330,24 @@ void Visualization::toGoalMarkerInitialize(void){
     toGoalMarker.color.g = 0.0f;
     toGoalMarker.color.b = 0.0f;
     toGoalMarker.color.a = 1.0f;
+
+    inputToGoal = false;
 }
 
 void Visualization::toGoalCB(const exploration_msgs::ToGoal::ConstPtr& msg){
 	toGoalData = *msg;
+    inputToGoal = true;
 }
 
 void Visualization::publishToGoalMarker(void){
     qToGoal.callOne(ros::WallDuration(1));
+
+    if(inputToGoal){
+        inputToGoal = false;
+    }
+    else{
+        return;
+    }
 
     std::vector<geometry_msgs::Point> input;
     input.resize(2);
@@ -351,14 +397,24 @@ void Visualization::moveAngleMarkerInitialize(void){
     moveAngleMarker.color.g = 1.0f;
     moveAngleMarker.color.b = 0.0f;
     moveAngleMarker.color.a = 1.0f;
+
+    inputMoveAngle = false;
 }
 
 void Visualization::moveAngleCB(const exploration_msgs::MoveAngle::ConstPtr& msg){
 	moveAngleData = *msg;
+    inputMoveAngle = true;
 }
 
 void Visualization::publishMoveAngleMarker(void){
     qMoveAngle.callOne(ros::WallDuration(1));
+
+    if(inputMoveAngle){
+        inputMoveAngle = false;
+    }
+    else{
+        return;
+    }
 
     double moveAngleLength;
     p.param<double>("move_angle_length", moveAngleLength, 0.3);

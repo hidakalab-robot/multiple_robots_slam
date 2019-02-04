@@ -218,3 +218,7 @@ target_link_libraries(log ${catkin_LIBRARIES})
 add_executable(visualization src/visualization.cpp)
 #add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(visualization ${catkin_LIBRARIES})
+
+add_executable(continuity src/continuity.cpp)
+#add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(continuity ${catkin_LIBRARIES})

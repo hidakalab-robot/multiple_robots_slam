@@ -9,7 +9,7 @@
 class Log
 {
 private:
-    ros::NodeHandle p;
+    //ros::NodeHandle p;
     //std::string poseTopic;
     //std::string poseLogTopic;
 
@@ -24,6 +24,8 @@ private:
 
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
+    bool inputPose;
+
 public:
     Log();
     ~Log(){};
@@ -33,6 +35,7 @@ public:
 };
 
 Log::Log(){
+    
 }
 
 void Log::poseLogInitialize(void){
@@ -47,14 +50,23 @@ void Log::poseLogInitialize(void){
 
 	// p.param<std::string>("pose_log_topic", poseLogTopic, "pose_log");
 	// pubPoseLog = ppl.advertise<geometry_msgs::PoseArray>(poseLogTopic, 1);
+    inputPose = false; 
 }
 
 void Log::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
     poseData = *msg;
+    inputPose = true;
 }
 
 void Log::publishPoseLog(void){
     qPose.callOne(ros::WallDuration(1));
+
+    if(inputPose){
+        inputPose = false;
+    }
+    else{
+        return;
+    }
 
     poseLog.poses.push_back(poseData.pose);
     poseLog.header = poseData.header;
