@@ -1,3 +1,6 @@
+#ifndef LOG_H
+#define LOG_H
+
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -7,8 +10,8 @@ class Log
 {
 private:
     ros::NodeHandle p;
-    std::string poseTopic;
-    std::string poseLogTopic;
+    //std::string poseTopic;
+    //std::string poseLogTopic;
 
     ros::NodeHandle sp;
     ros::Subscriber subPose;
@@ -33,12 +36,17 @@ Log::Log(){
 }
 
 void Log::poseLogInitialize(void){
-    p.param<std::string>("pose_topic", poseTopic, "pose");
     sp.setCallbackQueue(&qPose);
-    subPose = sp.subscribe(poseTopic,1,&Log::poseCB,this);
+    subPose = sp.subscribe("pose",1,&Log::poseCB,this);
 
-	p.param<std::string>("pose_log_topic", poseLogTopic, "pose_log");
-	pubPoseLog = ppl.advertise<geometry_msgs::PoseArray>(poseLogTopic, 1);
+	pubPoseLog = ppl.advertise<geometry_msgs::PoseArray>("pose_log", 1);
+
+    // p.param<std::string>("pose_topic", poseTopic, "pose");
+    // sp.setCallbackQueue(&qPose);
+    // subPose = sp.subscribe(poseTopic,1,&Log::poseCB,this);
+
+	// p.param<std::string>("pose_log_topic", poseLogTopic, "pose_log");
+	// pubPoseLog = ppl.advertise<geometry_msgs::PoseArray>(poseLogTopic, 1);
 }
 
 void Log::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
@@ -54,3 +62,5 @@ void Log::publishPoseLog(void){
 
     pubPoseLog.publish(poseLog);
 }
+
+#endif //LOG_H

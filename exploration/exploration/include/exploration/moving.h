@@ -1,3 +1,6 @@
+#ifndef MOVING_H
+#define MOVING_H
+
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <sensor_msgs/LaserScan.h>
@@ -6,8 +9,8 @@
 #include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/Twist.h>
 
-#include <exploration/ToGoal.h>
-#include <exploration/MoveAngle.h>
+#include <exploration_msgs/ToGoal.h>
+#include <exploration_msgs/MoveAngle.h>
 
 //topic名はパラメータで渡すのではなくremapしても良いかも
 
@@ -41,33 +44,33 @@ private:
     ros::NodeHandle ss;
     ros::Subscriber subScan;
     ros::CallbackQueue qScan;
-    std::string scanTopic;
+    //std::string scanTopic;
     sensor_msgs::LaserScan scanData;
     sensor_msgs::LaserScan scanDataOrigin;
 
     ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
-    std::string poseTopic;
+    //std::string poseTopic;
     geometry_msgs::PoseStamped poseData;
 
     ros::NodeHandle sb;
     ros::Subscriber subBumper;
     ros::CallbackQueue qBumper;
-    std::string bumperTopic;
+    //std::string bumperTopic;
     kobuki_msgs::BumperEvent bumperData;
 
     ros::NodeHandle pv;
     ros::Publisher pubVelocity;
-    std::string velocityTopic;
+    //std::string velocityTopic;
 
     ros::NodeHandle ptg;
     ros::Publisher pubToGoal;
-    std::string ToGoalTopic;
+    //std::string ToGoalTopic;
 
     ros::NodeHandle pma;
     ros::Publisher pubMoveAngle;
-    std::string moveAngleTopic;
+    //std::string moveAngleTopic;
 
     double previousOrientation;
     
@@ -114,26 +117,41 @@ Moving::Moving(){
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
 
-    p.param<std::string>("scan_topic", scanTopic, "scan");
     ss.setCallbackQueue(&qScan);
-    subScan = ss.subscribe(scanTopic,1,&Moving::scanCB, this);
+    subScan = ss.subscribe("scan",1,&Moving::scanCB, this);
 
-    p.param<std::string>("pose_topic", poseTopic, "pose");
     sp.setCallbackQueue(&qPose);
-    subPose = sp.subscribe(poseTopic,1,&Moving::poseCB,this);
+    subPose = sp.subscribe("pose",1,&Moving::poseCB,this);
 
-    p.param<std::string>("bumper_topic", bumperTopic, "bumper");
     sb.setCallbackQueue(&qBumper);
-    subBumper = sb.subscribe(bumperTopic,1,&Moving::bumperCB,this);
+    subBumper = sb.subscribe("bumper",1,&Moving::bumperCB,this);
 
-    p.param<std::string>("velocity_topic", velocityTopic, "velocity");
-    pubVelocity = pv.advertise<geometry_msgs::Twist>(velocityTopic, 1);
+    pubVelocity = pv.advertise<geometry_msgs::Twist>("velocity", 1);
 
-    p.param<std::string>("to_goal_topic", ToGoalTopic, "to_goal");
-    pubToGoal = ptg.advertise<exploration::ToGoal>(ToGoalTopic, 1);
+    pubToGoal = ptg.advertise<exploration_msgs::ToGoal>("to_goal", 1);
 
-    p.param<std::string>("move_angle_topic", moveAngleTopic, "move_angle");
-    pubMoveAngle = pma.advertise<exploration::MoveAngle>(moveAngleTopic, 1);
+    pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>("move_angle", 1);
+
+    // p.param<std::string>("scan_topic", scanTopic, "scan");
+    // ss.setCallbackQueue(&qScan);
+    // subScan = ss.subscribe(scanTopic,1,&Moving::scanCB, this);
+
+    // p.param<std::string>("pose_topic", poseTopic, "pose");
+    // sp.setCallbackQueue(&qPose);
+    // subPose = sp.subscribe(poseTopic,1,&Moving::poseCB,this);
+
+    // p.param<std::string>("bumper_topic", bumperTopic, "bumper");
+    // sb.setCallbackQueue(&qBumper);
+    // subBumper = sb.subscribe(bumperTopic,1,&Moving::bumperCB,this);
+
+    // p.param<std::string>("velocity_topic", velocityTopic, "velocity");
+    // pubVelocity = pv.advertise<geometry_msgs::Twist>(velocityTopic, 1);
+
+    // p.param<std::string>("to_goal_topic", ToGoalTopic, "to_goal");
+    // pubToGoal = ptg.advertise<exploration_msgs::ToGoal>(ToGoalTopic, 1);
+
+    // p.param<std::string>("move_angle_topic", moveAngleTopic, "move_angle");
+    // pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>(moveAngleTopic, 1);
 
     INFINITY_NUMBER = 1000000;
 }
@@ -201,7 +219,7 @@ void Moving::approx(std::vector<float>& scan){
 }
 
 void Moving::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal){
-    exploration::ToGoal msg;
+    exploration_msgs::ToGoal msg;
 
     msg.pose = pose;
     msg.goal = goal;
@@ -212,7 +230,7 @@ void Moving::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal){
 }
 
 void Moving::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel){
-    exploration::MoveAngle msg;
+    exploration_msgs::MoveAngle msg;
 
     msg.localAngle = angle;
     msg.pose = pose;
@@ -605,6 +623,8 @@ void Moving::vfhMovement(bool isStraight, geometry_msgs::Point goal){
         }
     }
 }
+
+#endif //MOVING_H
 
 // void Moving::movingLoop(geometry_msgs::Point goal){
 

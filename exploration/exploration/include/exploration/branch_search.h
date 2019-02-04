@@ -1,3 +1,6 @@
+#ifndef BRANCH_SEARCH_H
+#define BRANCH_SEARCH_H
+
 //分岐領域を検出するクラス
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
@@ -5,7 +8,7 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
-#include <exploration/PointArray.h>
+#include <exploration_msgs/PointArray.h>
 //#include <sensor_based_exploration/PoseLog.h>
 
 //分岐領域を検出
@@ -27,28 +30,28 @@ private:
 	ros::NodeHandle spl;
     ros::Subscriber subPoseLog;
     ros::CallbackQueue qPoseLog;
-    std::string poseLogTopic;
+    //std::string poseLogTopic;
     //std::vector<geometry_msgs::PoseStamped> poseLogData;
 	geometry_msgs::PoseArray poseLogData;
 
 	ros::NodeHandle pg;
 	ros::Publisher pubGoal;
-	std::string goalTopic;
+	//std::string goalTopic;
 
 	ros::NodeHandle pgl;
 	ros::Publisher pubGoalList;
-	std::string goalListTopic;
+	//std::string goalListTopic;
 
 	ros::NodeHandle ss;
     ros::Subscriber subScan;
     ros::CallbackQueue qScan;
-    std::string scanTopic;
+    //std::string scanTopic;
     sensor_msgs::LaserScan scanData;
 
 	ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
-    std::string poseTopic;
+    //std::string poseTopic;
     geometry_msgs::PoseStamped poseData;
 
 	std::string mapFrameId;
@@ -74,32 +77,49 @@ public:
 };
 
 BranchSearch::BranchSearch(){
-	p.param<std::string>("scan_topic", scanTopic, "scan");
+
     ss.setCallbackQueue(&qScan);
-    subScan = ss.subscribe(scanTopic,1,&BranchSearch::scanCB, this);
+    subScan = ss.subscribe("scan",1,&BranchSearch::scanCB, this);
 
-	p.param<std::string>("pose_topic", poseTopic, "pose");
     sp.setCallbackQueue(&qPose);
-    subPose = sp.subscribe(poseTopic,1,&BranchSearch::poseCB,this);
+    subPose = sp.subscribe("pose",1,&BranchSearch::poseCB,this);
 
-	p.param<std::string>("pose_log_topic", poseLogTopic, "pose_log");
     spl.setCallbackQueue(&qPoseLog);
-    subPoseLog = spl.subscribe(poseLogTopic,1,&BranchSearch::poseLogCB, this);
+    subPoseLog = spl.subscribe("pose_log",1,&BranchSearch::poseLogCB, this);
 
-	p.param<std::string>("goal_topic", goalTopic, "goal");
-	pubGoal = pg.advertise<geometry_msgs::PointStamped>(goalTopic, 1);
+	pubGoal = pg.advertise<geometry_msgs::PointStamped>("goal_topic", 1);
 
-	p.param<std::string>("goal_list_topic", goalListTopic, "goal_list");
-	pubGoalList = pgl.advertise<exploration::PointArray>(goalListTopic, 1);
+	pubGoalList = pgl.advertise<exploration_msgs::PointArray>("goal_list", 1);
 
-	//branch_searchパラメータの読み込み
+	// p.param<std::string>("scan_topic", scanTopic, "scan");
+    // ss.setCallbackQueue(&qScan);
+    // subScan = ss.subscribe(scanTopic,1,&BranchSearch::scanCB, this);
+
+	// p.param<std::string>("pose_topic", poseTopic, "pose");
+    // sp.setCallbackQueue(&qPose);
+    // subPose = sp.subscribe(poseTopic,1,&BranchSearch::poseCB,this);
+
+	// p.param<std::string>("pose_log_topic", poseLogTopic, "pose_log");
+    // spl.setCallbackQueue(&qPoseLog);
+    // subPoseLog = spl.subscribe(poseLogTopic,1,&BranchSearch::poseLogCB, this);
+
+	// p.param<std::string>("goal_topic", goalTopic, "goal");
+	// pubGoal = pg.advertise<geometry_msgs::PointStamped>(goalTopic, 1);
+
+	// p.param<std::string>("goal_list_topic", goalListTopic, "goal_list");
+	// pubGoalList = pgl.advertise<exploration_msgs::PointArray>(goalListTopic, 1);
+
+
+	p.param<std::string>("map_frame_id", mapFrameId, "map");
+
+	//branch_searchパラメータの読み込み(基本変更しなくて良い)
+
 	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
 	p.param<double>("center_range_min", CENTER_RANGE_MIN, 1.0);
 	//p.param<double>("branch_range_limit", BRANCH_RANGE_LIMIT, 1.0);
 	p.param<double>("branch_range_limit", BRANCH_DIST_LIMIT, 5.0);
 	//p.param<double>("branch_diff_threshold", BRANCH_DIFF_THRESHOLD, 1.0);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
-	p.param<std::string>("map_frame_id", mapFrameId, "map");
 	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.5);
 	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
 }
@@ -145,7 +165,7 @@ void BranchSearch::publishGoal(geometry_msgs::Point goal){
 }
 
 void BranchSearch::publishGoalList(std::vector<geometry_msgs::Point> list){
-	exploration::PointArray msg;
+	exploration_msgs::PointArray msg;
 	msg.points = list;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = mapFrameId;
@@ -367,3 +387,5 @@ bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
 	
 	return false;
 }
+
+#endif //BRANCH_SEARCH_H
