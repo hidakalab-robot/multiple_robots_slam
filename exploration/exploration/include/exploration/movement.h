@@ -442,7 +442,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
     }
     else{
         moveAngle = INT_INFINITY;
-        ROS_WARN_STREAM("Move Angle : Not Found\n");
+        ROS_DEBUG_STREAM("Move Angle : Not Found\n");
     }
 
     return moveAngle;
