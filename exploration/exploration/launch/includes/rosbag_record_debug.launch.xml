@@ -1,0 +1,21 @@
+<launch>
+    <arg name="name" default="rosbag"/>
+    <arg name="dir" default="/home/rosdesk/rosbag/$(arg name)"/>
+
+    <arg name="pose"/>
+    <arg name="pose_log"/>
+    <arg name="scan"/>
+    <arg name="bumper"/>
+    <arg name="goal"/>
+    <arg name="goal_list"/>
+    <arg name="to_goal"/>
+    <arg name="move_angle"/>
+    <arg name="visualization"/>
+    <arg name="bumper_raw"/>
+    <arg name="velocity"/>
+    <arg name="etc"/>
+    
+    <arg name="topics" default="$(arg pose) $(arg pose_log) $(arg scan) $(arg bumper) $(arg goal) $(arg goal_list) $(arg to_goal) $(arg move_angle) $(arg visualization) $(arg bumper_raw) $(arg velocity) $(arg etc)"/>
+    
+    <node pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-o $(arg dir) $(arg topics)"/>
+</launch>

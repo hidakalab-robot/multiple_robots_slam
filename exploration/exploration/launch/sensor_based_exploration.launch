@@ -55,10 +55,26 @@
             <param name="bumper_continuity_topic" value="$(arg bumper_continuity)"/>
         </node>
 
-        <include file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
+        <!-- <include file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
             <arg name="robot_name" value="$(arg robot_name)"/>
-            <!-- <arg name="dir" value="/home/ros1/rosbag"/> -->
+             <arg name="dir" value="/home/ros1/rosbag"/>
             <arg name="topics" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization) /$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /$(arg robot_name)/scan /tf /tf_static /$(arg robot_name)/camera/rgb/image_raw"/>
+        </include> -->
+
+        <include file="$(find exploration)/launch/includes/rosbag_record_debug.launch.xml">
+            <arg name="dir" value="/home/ros1/rosbag_debug"/>
+            <arg name="pose" value="$(arg pose)"/>
+            <arg name="pose_log" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg pose_log)"/>
+            <arg name="scan" value="/$(arg robot_name)/scan"/>
+            <arg name="bumper" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg bumper_continuity)"/>
+            <arg name="goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal)"/>
+            <arg name="goal_list" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal_list)"/>
+            <arg name="to_goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg to_goal)"/>
+            <arg name="move_angle" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg move_angle)"/>
+            <arg name="visualization" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization)"/>
+            <arg name="bumper_raw" value="/$(arg robot_name)/mobile_base/events/bumper"/>
+            <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
+            <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_raw"/>
         </include>
     </group>
 </launch>
