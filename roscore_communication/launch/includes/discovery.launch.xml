@@ -1,0 +1,6 @@
+<launch>
+	<arg name="_mcast_group"/>
+	<node pkg="master_discovery_fkie" type="master_discovery" name="master_discovery" output="screen">
+		<param name="_mcast_group" value="$(arg _mcast_group)"/>
+	</node>
+</launch>

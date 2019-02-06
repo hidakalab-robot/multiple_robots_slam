@@ -1,0 +1,11 @@
+<launch>
+
+	<include file="$(find roscore_communication)/launch/includes/discovery.launch.xml">
+			<arg name="_mcast_group" value="224.0.0.8"/>
+	</include>
+
+	<include file="$(find roscore_communication)/launch/includes/sync.launch.xml">
+		<arg name="sync_topics" value="['/robot*/map','/robot*/map_updates', '/robot*/robot_pose', '/robot*/camera/rgb/image_color/compressed','/robot*/rtabmap/cloud_obstacles','*/cmd_vel_mux/input/teleop']"/>
+	</include>
+	
+</launch>
