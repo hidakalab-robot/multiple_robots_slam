@@ -78,7 +78,7 @@ private:
     void approx(std::vector<float>& scan);
     void vfhMovement(bool isStraight, geometry_msgs::Point goal);
     bool bumperCollision(kobuki_msgs::BumperEvent bumper);
-    double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle);
+    double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle = 0.0);
     double localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose);
     bool emergencyAvoidance(sensor_msgs::LaserScan scan);
     void recoveryRotation(void);
@@ -239,6 +239,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
         qPose.callOne(ros::WallDuration(1));
         distToGoal = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
         diff += distToGoal - distToGoalOld;
+        ROS_INFO_STREAM("Refresh Distance to Goal : " << distToGoal << " [m]\n");
         if(std::abs(diff) > GRAVITH_DIFF_THRESHOLD){
             if(diff*sign < 0){
                 sign *= -1;
@@ -247,13 +248,15 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
                     diff = 0;
                     count = 0;
                     sign = -1;
-                    break;
+                    ROS_WARN_STREAM("This Goal Can Not Reach !\n");
+                    return; 
+                    //break;
                 }
             }
             diff = 0;
         }
     }
-
+    
     while(GOAL_MARGIN < distToGoal && ros::ok()){
         publishToGoal(poseData.pose, goal);
         distToGoalOld = distToGoal;
@@ -261,6 +264,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
         qPose.callOne(ros::WallDuration(1));
         distToGoal = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
         diff += distToGoal - distToGoalOld;
+        ROS_INFO_STREAM("Refresh Distance to Goal : " << distToGoal << " [m]\n");
         if(std::abs(diff) > GRAVITH_DIFF_THRESHOLD){
             if(diff*sign < 0){
                 sign *= -1;
@@ -269,7 +273,9 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
                     diff = 0;
                     count = 0;
                     sign = -1;
-                    break;
+                    ROS_WARN_STREAM("This Goal Can Not Reach !\n");
+                    return;
+                    //break;
                 }
             }
             diff = 0;
@@ -319,11 +325,13 @@ bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
     return false;
 }
 
-double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle=0.0){
+double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle){
     //要求角度と最も近くなる配列の番号を探索
     //安全な角度マージンの定義
     //要求角度に最も近くなる右側と左側の番号を探索
     ROS_DEBUG_STREAM("VFH Calculation\n");
+
+    ROS_DEBUG_STREAM("Goal Angle : " << goalAngle << " [deg]\n");
 
     static int centerPosition = 0;
     double diff;
@@ -430,9 +438,11 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 		else{
 			moveAngle = scan.angle_min + scan.angle_increment * minus;
 		}
+        ROS_DEBUG_STREAM("Move Angle : " << moveAngle << " [deg]\n");
     }
     else{
         moveAngle = INT_INFINITY;
+        ROS_WARN_STREAM("Move Angle : Not Found\n");
     }
 
     return moveAngle;
