@@ -1,4 +1,6 @@
 <launch>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+
     <arg name="robot_name" default="robot1"/>
 
     <arg name="pose_topic" default="/$(arg robot_name)/robot_pose"/>
@@ -18,7 +20,7 @@
             <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
 
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
-            <remap from="pose" to="/$(arg pose_topic)"/>
+            <remap from="pose" to="$(arg pose_topic)"/>
             <remap from="pose_log" to="$(arg pose_log_topic)"/>
             <remap from="goal" to="$(arg goal_topic)"/>
             <remap from="goal_list" to="$(arg goal_list_topic)"/>
@@ -31,7 +33,7 @@
             <param name="exploration_method" value="SENSOR"/>
 
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
-            <remap from="pose" to="/$(arg pose_topic)"/>
+            <remap from="pose" to="$(arg pose_topic)"/>
             <remap from="goal" to="$(arg goal_topic)"/>
             <remap from="goal_list" to="$(arg goal_list_topic)"/>
             <remap from="to_goal" to="$(arg to_goal_topic)"/>
@@ -44,7 +46,7 @@
         </node>
 
         <node pkg="exploration" type="log" name="log">
-            <remap from="pose" to="/$(arg pose_topic)"/>
+            <remap from="pose" to="$(arg pose_topic)"/>
             <remap from="pose_log" to="$(arg pose_log_topic)"/>
         </node>
 
