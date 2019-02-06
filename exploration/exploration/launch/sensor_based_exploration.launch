@@ -3,14 +3,14 @@
 
     <arg name="robot_name" default="robot1"/>
 
-    <arg name="pose_topic" default="/$(arg robot_name)/robot_pose"/>
-    <arg name="pose_log_topic" default="pose_log"/>
-    <arg name="goal_topic" default="goal"/>
-    <arg name="goal_list_topic" default="goal_list"/>
-    <arg name="to_goal_topic" default="to_goal"/>
-    <arg name="move_angle_topic" default="move_angle"/>
-    <arg name="visualization_topic" default="visualization"/>
-    <arg name="bumper_continuity_topic" default="bumper_continuity"/>
+    <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
+    <arg name="pose_log" default="pose_log"/>
+    <arg name="goal" default="goal"/>
+    <arg name="goal_list" default="goal_list"/>
+    <arg name="to_goal" default="to_goal"/>
+    <arg name="move_angle" default="move_angle"/>
+    <arg name="visualization" default="visualization"/>
+    <arg name="bumper_continuity" default="bumper_continuity"/>
 
     <arg name="exploration_ns" default="exploration"/>
 
@@ -20,39 +20,45 @@
             <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
 
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
-            <remap from="pose" to="$(arg pose_topic)"/>
-            <remap from="pose_log" to="$(arg pose_log_topic)"/>
-            <remap from="goal" to="$(arg goal_topic)"/>
-            <remap from="goal_list" to="$(arg goal_list_topic)"/>
-            <remap from="to_goal" to="$(arg to_goal_topic)"/>
-            <remap from="move_angle" to="$(arg move_angle_topic)"/>
-            <remap from="bumper" to="$(arg bumper_continuity_topic)"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="$(arg pose_log)"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="to_goal" to="$(arg to_goal)"/>
+            <remap from="move_angle" to="$(arg move_angle)"/>
+            <remap from="bumper" to="$(arg bumper_continuity)"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
             <param name="exploration_method" value="SENSOR"/>
 
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
-            <remap from="pose" to="$(arg pose_topic)"/>
-            <remap from="goal" to="$(arg goal_topic)"/>
-            <remap from="goal_list" to="$(arg goal_list_topic)"/>
-            <remap from="to_goal" to="$(arg to_goal_topic)"/>
-            <remap from="move_angle" to="$(arg move_angle_topic)"/>
-            <remap from="pose_marker" to="$(arg visualization_topic)"/>
-            <remap from="goal_marker" to="$(arg visualization_topic)"/>
-            <remap from="goal_list_marker" to="$(arg visualization_topic)"/>
-            <remap from="to_goal_marker" to="$(arg visualization_topic)"/>
-            <remap from="move_angle_marker" to="$(arg visualization_topic)"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="to_goal" to="$(arg to_goal)"/>
+            <remap from="move_angle" to="$(arg move_angle)"/>
+            <remap from="pose_marker" to="$(arg visualization)"/>
+            <remap from="goal_marker" to="$(arg visualization)"/>
+            <remap from="goal_list_marker" to="$(arg visualization)"/>
+            <remap from="to_goal_marker" to="$(arg visualization)"/>
+            <remap from="move_angle_marker" to="$(arg visualization)"/>
         </node>
 
         <node pkg="exploration" type="log" name="log">
-            <remap from="pose" to="$(arg pose_topic)"/>
-            <remap from="pose_log" to="$(arg pose_log_topic)"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="$(arg pose_log)"/>
         </node>
 
         <node pkg="exploration" type="continuity" name="continuity">
             <param name="bumper_raw_topic" value="/$(arg robot_name)/mobile_base/events/bumper"/>
-            <param name="bumper_continuity_topic" value="$(arg bumper_continuity_topic)"/>
+            <param name="bumper_continuity_topic" value="$(arg bumper_continuity)"/>
         </node>
+
+        <include file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
+            <!-- <arg name="dir" value="/home/ros1/rosbag"/> -->
+            <arg name="topics" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization) /$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /$(arg robot_name)/scan /tf /tf_static /$(arg robot_name)/camera/rgb/image_raw"/>
+        </include>
     </group>
 </launch>
