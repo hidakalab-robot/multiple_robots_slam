@@ -277,12 +277,22 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 	if(list.size()>0){
 		ROS_DEBUG_STREAM("Branch Candidate Found\n");
 
-		publishGoalList(list);
-
 		int near;
 		float centerDist;
         bool tempCenterDist;
 		double yaw = 2*asin(pose.pose.orientation.z);
+
+		std::vector<geometry_msgs::Point> globalList;
+		globalList.resize(list.size());
+		geometry_msgs::Point tempGlobal;
+
+		for(int i=0;i<list.size();i++){
+			tempGlobal.x = pose.pose.position.x + (cos(yaw)*list[i].x) - (sin(yaw)*list[i].y);
+			tempGlobal.y = pose.pose.position.y + (cos(yaw)*list[i].y) + (sin(yaw)*list[i].y);
+			globalList[i] = tempGlobal;
+		}
+
+		publishGoalList(globalList);
 
 		for(int k=list.size();k>0;k--){
 			centerDist = DOUBLE_INFINITY;
@@ -295,8 +305,9 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 					//goal.x = list[j].x;
 					//goal.y = list[j].y;
 					//sensor->mapに座標変換
-					goal.x = pose.pose.position.x + (cos(yaw)*list[j].x) - (sin(yaw)*list[j].y);
-					goal.y = pose.pose.position.y + (cos(yaw)*list[j].y) + (sin(yaw)*list[j].y);
+					//goal.x = pose.pose.position.x + (cos(yaw)*list[j].x) - (sin(yaw)*list[j].y);
+					//goal.y = pose.pose.position.y + (cos(yaw)*list[j].y) + (sin(yaw)*list[j].y);
+					goal = globalList[j];
 					near = j;
 				}
 			}

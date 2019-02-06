@@ -151,7 +151,7 @@ void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
 }
 
 void Visualization::publishPoseMarker(void){
-    qPose.callOne(ros::WallDuration(1));
+    qPose.callOne(ros::WallDuration(0.5));
 
     if(inputPose){
         inputPose = false;
@@ -229,7 +229,7 @@ void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
 }
 
 void Visualization::publishGoalMarker(void){
-    qGoal.callOne(ros::WallDuration(1));
+    qGoal.callOne(ros::WallDuration(0.5));
 
     if(inputGoal){
         inputGoal = false;
@@ -286,7 +286,7 @@ void Visualization::goalListCB(const exploration_msgs::PointArray::ConstPtr& msg
 }
 
 void Visualization::publishGoalListMarker(void){
-    qGoalList.callOne(ros::WallDuration(1));
+    qGoalList.callOne(ros::WallDuration(0.5));
 
     if(inputGoalList){
         inputGoalList = false;
@@ -340,7 +340,7 @@ void Visualization::toGoalCB(const exploration_msgs::ToGoal::ConstPtr& msg){
 }
 
 void Visualization::publishToGoalMarker(void){
-    qToGoal.callOne(ros::WallDuration(1));
+    qToGoal.callOne(ros::WallDuration(0.5));
 
     if(inputToGoal){
         inputToGoal = false;
@@ -407,7 +407,7 @@ void Visualization::moveAngleCB(const exploration_msgs::MoveAngle::ConstPtr& msg
 }
 
 void Visualization::publishMoveAngleMarker(void){
-    qMoveAngle.callOne(ros::WallDuration(1));
+    qMoveAngle.callOne(ros::WallDuration(0.5));
 
     if(inputMoveAngle){
         inputMoveAngle = false;
@@ -432,8 +432,8 @@ void Visualization::publishMoveAngleMarker(void){
 
     double yaw = 2*asin(moveAngleData.pose.orientation.z);
 
-    input[1].x = tempX * cos(-yaw) - tempY * sin(-yaw);
-    input[1].y = tempX * sin(-yaw) + tempY * cos(-yaw);
+    input[1].x = input[0].x + tempX * cos(yaw) - tempY * sin(yaw);
+    input[1].y = input[0].y + tempX * sin(yaw) + tempY * cos(yaw);
 
     moveAngleMarker.points = input;
 

@@ -37,6 +37,7 @@ private:
     double ROAD_THRESHOLD;
 
     int INT_INFINITY;
+    double DOUBLE_INFINITY;
 
     ros::NodeHandle ss;
     ros::Subscriber subScan;
@@ -148,6 +149,7 @@ Movement::Movement():p("~"){
     // pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>(moveAngleTopic, 1);
 
     INT_INFINITY = 1000000;
+    DOUBLE_INFINITY = 100000.0;
 }
 
 void Movement::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
@@ -293,7 +295,6 @@ void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
             resultAngle = vfhCalculation(scanData,true);
         }
         else{
-            qPose.callOne(ros::WallDuration(1));
             resultAngle = vfhCalculation(scanData,false,localAngleCalculation(goal,poseData));
         }
         if((int)resultAngle == INT_INFINITY){
@@ -348,14 +349,20 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
         }
     }
     else{
+        min = DOUBLE_INFINITY;
         for(int i=0;i<scan.ranges.size();i++){
 		    diff = std::abs(goalAngle - (scan.angle_min + scan.angle_increment * i));
+            // if(i%100 == 0){
+            //     ROS_WARN_STREAM("diff : " << diff << ", i : " << i << ", rad : " << scan.angle_min + scan.angle_increment << "\n");
+            // }
 		    if(diff < min){
 			    min = diff;
 			    goalI = i;
 		    }
         }
     }
+
+    //ROS_WARN_STREAM("angle_min : " << scan.angle_min << ", angle_increment : " << scan.angle_increment << ", goalI : " << goalI << "\n");
 
     const int SAFE_NUM = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
     int start;
@@ -544,6 +551,7 @@ void Movement::moveToForward(void){
     geometry_msgs::Point nullGoal;
 
     qScan.callOne(ros::WallDuration(1));
+    qPose.callOne(ros::WallDuration(1));
     if(!roadCenterDetection(scanDataOrigin)){
         vfhMovement(true,nullGoal);
     }
