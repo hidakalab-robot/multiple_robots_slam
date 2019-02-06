@@ -15,7 +15,7 @@
     <arg name="exploration_ns" default="exploration"/>
 
     <group ns="$(arg robot_name)/$(arg exploration_ns)">
-        <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
+        <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="log">
             <remap from="scan" to="/$(arg robot_name)/scan"/>
             <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
 

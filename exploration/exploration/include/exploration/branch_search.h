@@ -339,10 +339,15 @@ bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
 	//globalX = pose.pose.position.x+(cos(yaw)*goal.x) - (sin(yaw)*goal.y);
 	//globalY = pose.pose.position.y+(cos(yaw)*goal.y) + (sin(yaw)*goal.x);
 
-	xPlus = globalX + DUPLICATE_MARGIN;
-	xMinus = globalX - DUPLICATE_MARGIN;
-	yPlus = globalY + DUPLICATE_MARGIN;
-	yMinus = globalY - DUPLICATE_MARGIN;
+	xPlus = goal.x + DUPLICATE_MARGIN;
+	xMinus = goal.x - DUPLICATE_MARGIN;
+	yPlus = goal.y + DUPLICATE_MARGIN;
+	yMinus = goal.y - DUPLICATE_MARGIN;
+
+	//xPlus = globalX + DUPLICATE_MARGIN;
+	//xMinus = globalX - DUPLICATE_MARGIN;
+	//yPlus = globalY + DUPLICATE_MARGIN;
+	//yMinus = globalY - DUPLICATE_MARGIN;
 
 
 	//std::cout << "odom_x,odom_y (" << odom_x << "," << odom_y << ")" << std::endl;
