@@ -6,11 +6,14 @@
 //#include <ros/console.h>
 #include <ros/callback_queue.h>
 #include <sensor_msgs/LaserScan.h>
-#include <geometry_msgs/PointStamped.h>
+//#include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
-#include <exploration_msgs/PointArray.h>
+//#include <exploration_msgs/PointArray.h>
+#include <tf/tf.h>
 //#include <sensor_based_exploration/PoseLog.h>
+#include <exploration_msgs/Goal.h>
+#include <exploration_msgs/GoalList.h>
 
 //分岐領域を検出
 class BranchSearch
@@ -64,10 +67,12 @@ private:
 	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
 
 	geometry_msgs::Point getGoalBranch(sensor_msgs::LaserScan scan,geometry_msgs::PoseStamped pose);
-	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose);
+	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,geometry_msgs::PoseStamped pose);
+	double qToYaw(geometry_msgs::Quaternion q);
     bool duplicateDetection(geometry_msgs::Point goal);
-	void publishGoal(geometry_msgs::Point goal);
-	void publishGoalList(std::vector<geometry_msgs::Point> list);
+	//void publishGoal(geometry_msgs::Point goal);
+	void publishGoal(geometry_msgs::Point global, geometry_msgs::Point local);
+	void publishGoalList(std::vector<geometry_msgs::Point> global, std::vector<geometry_msgs::Point> local);
 
 public:
     BranchSearch();
@@ -87,9 +92,10 @@ BranchSearch::BranchSearch():p("~"){
     spl.setCallbackQueue(&qPoseLog);
     subPoseLog = spl.subscribe("pose_log",1,&BranchSearch::poseLogCB, this);
 
-	pubGoal = pg.advertise<geometry_msgs::PointStamped>("goal", 1);
+	//pubGoal = pg.advertise<geometry_msgs::PointStamped>("goal", 1);
+	pubGoal = pg.advertise<exploration_msgs::Goal>("goal", 1);
 
-	pubGoalList = pgl.advertise<exploration_msgs::PointArray>("goal_list", 1);
+	pubGoalList = pgl.advertise<exploration_msgs::GoalList>("goal_list", 1);
 
 	// p.param<std::string>("scan_topic", scanTopic, "scan");
     // ss.setCallbackQueue(&qScan);
@@ -179,6 +185,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
     const int scanMax = (scan.ranges.size()/2) + scanWidth;
 
     geometry_msgs::Point goal;
+	geometry_msgs::Point localGoal;
 
     for(int i = scanMin;i<scanMax;i++){
 		if(!std::isnan(scan.ranges[i]) && scan.ranges[i] < CENTER_RANGE_MIN){
@@ -205,11 +212,11 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
     //bool branchFlag;
 
     //branchFlag = branchDetection(fixRanges,fixAngle,scanData.angle_max,goal);
-    if(branchDetection(fixRanges,fixAngles,scan.angle_max,goal,pose)){
+    if(branchDetection(fixRanges,fixAngles,scan.angle_max,goal,localGoal,pose)){
 		//double yaw = 2*asin(pose.pose.orientation.z);
 		//goal.x = pose.pose.position.x+(cos(yaw)*goal.x) - (sin(yaw)*goal.y);
 		//globalY = pose.pose.position.y+(cos(yaw)*goal.y) + (sin(yaw)*goal.x);
-		publishGoal(goal);
+		publishGoal(goal,localGoal);
     }
 	else{
 		geometry_msgs::Point temp;
@@ -220,7 +227,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
     return goal;
 }
 
-bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::PoseStamped pose){
+bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,geometry_msgs::PoseStamped pose){
 
 	ROS_DEBUG_STREAM("Searching Branch\n");
 
@@ -280,7 +287,7 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 		int near;
 		float centerDist;
         bool tempCenterDist;
-		double yaw = 2*asin(pose.pose.orientation.z);
+		double yaw = qToYaw(pose.pose.orientation);
 
 		std::vector<geometry_msgs::Point> globalList;
 		globalList.resize(list.size());
@@ -292,7 +299,7 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 			globalList[i] = tempGlobal;
 		}
 
-		publishGoalList(globalList);
+		publishGoalList(globalList,list);
 
 		for(int k=list.size();k>0;k--){
 			centerDist = DOUBLE_INFINITY;
@@ -308,6 +315,7 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 					//goal.x = pose.pose.position.x + (cos(yaw)*list[j].x) - (sin(yaw)*list[j].y);
 					//goal.y = pose.pose.position.y + (cos(yaw)*list[j].y) + (sin(yaw)*list[j].y);
 					goal = globalList[j];
+					localGoal = list[j];
 					near = j;
 				}
 			}
@@ -326,6 +334,13 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 		}	
     }
     return find;
+}
+
+double BranchSearch::qToYaw(geometry_msgs::Quaternion q){
+    tf::Quaternion tq(q.x, q.y, q.z, q.w);
+    double roll, pitch, yaw;
+    tf::Matrix3x3(tq).getRPY(roll,pitch,yaw);
+    return yaw;
 }
 
 bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
@@ -396,9 +411,13 @@ bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
 	return false;
 }
 
-void BranchSearch::publishGoal(geometry_msgs::Point goal){
-	geometry_msgs::PointStamped msg;
-	msg.point = goal;
+//void BranchSearch::publishGoal(geometry_msgs::Point goal){
+void BranchSearch::publishGoal(geometry_msgs::Point global, geometry_msgs::Point local){
+	//geometry_msgs::PointStamped msg;
+	exploration_msgs::Goal msg;
+	//msg.point = goal;
+	msg.global = global;
+	msg.local = local;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = mapFrameId;
 
@@ -406,9 +425,12 @@ void BranchSearch::publishGoal(geometry_msgs::Point goal){
 	ROS_INFO_STREAM("Publish Goal\n");
 }
 
-void BranchSearch::publishGoalList(std::vector<geometry_msgs::Point> list){
-	exploration_msgs::PointArray msg;
-	msg.points = list;
+void BranchSearch::publishGoalList(std::vector<geometry_msgs::Point> global, std::vector<geometry_msgs::Point> local){
+	//exploration_msgs::PointArray msg;
+	exploration_msgs::GoalList msg;
+	//msg.points = list;
+	msg.global = global;
+	msg.local = local;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = mapFrameId;
 

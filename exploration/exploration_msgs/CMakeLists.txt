@@ -53,6 +53,8 @@ find_package(catkin REQUIRED COMPONENTS
    PointArray.msg
    ToGoal.msg
    MoveAngle.msg
+   Goal.msg
+   GoalList.msg
  )
 
 ## Generate services in the 'srv' folder

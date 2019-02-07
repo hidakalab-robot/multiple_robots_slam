@@ -4,13 +4,16 @@
 //topicの情報をrvizで表示するためのクラス
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
-#include <exploration_msgs/PointArray.h>
-#include <geometry_msgs/PointStamped.h>
+//#include <exploration_msgs/PointArray.h>
+//#include <geometry_msgs/PointStamped.h>
 #include <exploration_msgs/ToGoal.h>
 #include <exploration_msgs/MoveAngle.h>
+#include <exploration_msgs/Goal.h>
+#include <exploration_msgs/GoalList.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <std_msgs/ColorRGBA.h>
+#include <tf/tf.h>
 
 class Visualization
 {
@@ -24,7 +27,8 @@ private:
     ros::Subscriber subGoal;
     ros::CallbackQueue qGoal;
     //std::string goalTopic;
-    geometry_msgs::PointStamped goalData;
+    //geometry_msgs::PointStamped goalData;
+    exploration_msgs::Goal goalData;
     visualization_msgs::Marker goalMarker;
     ros::NodeHandle pgm;
     ros::Publisher pubGoalMarker;
@@ -36,7 +40,8 @@ private:
     ros::Subscriber subGoalList;
     ros::CallbackQueue qGoalList;
     //std::string goalListTopic;
-    exploration_msgs::PointArray goalListData;
+    //exploration_msgs::PointArray goalListData;
+    exploration_msgs::GoalList goalListData;
     visualization_msgs::Marker goalListMarker;
     ros::NodeHandle pglm;
     ros::Publisher pubGoalListMarker;
@@ -55,7 +60,6 @@ private:
     ros::Publisher pubToGoalMarker;
     //std::string toGoalMarkerTopic;
     
-
     //moveAngle
     ros::NodeHandle sma;
     ros::Subscriber subMoveAngle;
@@ -87,10 +91,14 @@ private:
     bool inputPose;
 
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
-    void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
-    void goalListCB(const exploration_msgs::PointArray::ConstPtr& msg);
+    //void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
+    //void goalListCB(const exploration_msgs::PointArray::ConstPtr& msg);
+    void goalCB(const exploration_msgs::Goal::ConstPtr& msg);
+    void goalListCB(const exploration_msgs::GoalList::ConstPtr& msg);
     void toGoalCB(const exploration_msgs::ToGoal::ConstPtr& msg);
     void moveAngleCB(const exploration_msgs::MoveAngle::ConstPtr& msg);
+
+    double qToYaw(geometry_msgs::Quaternion q);
 
 public:
     Visualization();
@@ -114,6 +122,13 @@ public:
 
 Visualization::Visualization():p("~"){
     p.param<std::string>("map_frame_id", mapFrameId, "map");
+}
+
+double Visualization::qToYaw(geometry_msgs::Quaternion q){
+    tf::Quaternion temp(q.x, q.y, q.z, q.w);
+    double roll, pitch, yaw;
+    tf::Matrix3x3(temp).getRPY(roll,pitch,yaw);
+    return yaw;
 }
 
 void Visualization::poseMarkerInitialize(void){
@@ -223,7 +238,8 @@ void Visualization::goalMarkerInitialize(void){
     inputGoal = false;
 }
 
-void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
+// void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
+void Visualization::goalCB(const exploration_msgs::Goal::ConstPtr& msg){
 	goalData = *msg;
     inputGoal = true;
 }
@@ -238,8 +254,10 @@ void Visualization::publishGoalMarker(void){
         return;
     }
 
-    goalMarker.pose.position.x = goalData.point.x;
-    goalMarker.pose.position.y = goalData.point.y;
+    // goalMarker.pose.position.x = goalData.point.x;
+    // goalMarker.pose.position.y = goalData.point.y;
+    goalMarker.pose.position.x = goalData.global.x;
+    goalMarker.pose.position.y = goalData.global.y;
 
     goalMarker.header.stamp = ros::Time::now();
 
@@ -280,7 +298,8 @@ void Visualization::goalListMarkerInitialize(void){
     inputGoalList = false;
 }
 
-void Visualization::goalListCB(const exploration_msgs::PointArray::ConstPtr& msg){
+//void Visualization::goalListCB(const exploration_msgs::PointArray::ConstPtr& msg){
+void Visualization::goalListCB(const exploration_msgs::GoalList::ConstPtr& msg){
 	goalListData = *msg;
     inputGoalList = true;
 }
@@ -295,7 +314,8 @@ void Visualization::publishGoalListMarker(void){
         return;
     }
 
-    goalListMarker.points = goalListData.points;
+    //goalListMarker.points = goalListData.points;
+    goalListMarker.points = goalListData.global;
     goalListMarker.header.stamp = ros::Time::now();
 
     pubGoalListMarker.publish(goalListMarker);
@@ -427,10 +447,12 @@ void Visualization::publishMoveAngleMarker(void){
 
     double tempX,tempY;
 
-    tempX = moveAngleLength * cos(moveAngleData.localAngle);
-    tempY = moveAngleLength * sin(moveAngleData.localAngle);
+    //ローカル座標系での矢印の終点座標
+    tempX = moveAngleLength * cos(moveAngleData.local_angle);
+    tempY = moveAngleLength * sin(moveAngleData.local_angle);
 
-    double yaw = 2*asin(moveAngleData.pose.orientation.z);
+    //double yaw = 2*asin(moveAngleData.pose.orientation.z);
+    double yaw = qToYaw(moveAngleData.pose.orientation);
 
     input[1].x = input[0].x + tempX * cos(yaw) - tempY * sin(yaw);
     input[1].y = input[0].y + tempX * sin(yaw) + tempY * cos(yaw);
