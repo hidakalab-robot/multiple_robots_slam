@@ -295,7 +295,7 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
 
 		for(int i=0;i<list.size();i++){
 			tempGlobal.x = pose.pose.position.x + (cos(yaw)*list[i].x) - (sin(yaw)*list[i].y);
-			tempGlobal.y = pose.pose.position.y + (cos(yaw)*list[i].y) + (sin(yaw)*list[i].y);
+			tempGlobal.y = pose.pose.position.y + (cos(yaw)*list[i].y) + (sin(yaw)*list[i].x);
 			globalList[i] = tempGlobal;
 		}
 
