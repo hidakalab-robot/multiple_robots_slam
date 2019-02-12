@@ -33,6 +33,8 @@
             <remap from="goal/delete" default="$(arg goal_delete)"/>
             <remap from="goal_list/delete" default="$(arg goal_list_delete)"/>
             <remap from="to_goal/delete" default="$(arg to_goal_delete)"/>
+
+            <param name="velocity_gain" value="1.0"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
