@@ -10,6 +10,7 @@
   <param name="/use_sim_time" value="$(arg simulation)"/>
 
   <arg name="robot_name" default="robot1"/>
+
 <group ns="$(arg robot_name)">
   <include file="$(find multi_turtlebot_launch)/launch/bringup/includes/robot.launch.xml">
     <arg name="base" value="$(arg base)" />
@@ -26,5 +27,6 @@
     <arg name="battery" value="$(arg battery)" />
     <arg name="robot_name" value="$(arg robot_name)"/>
   </include>
+
 </group>
 </launch>

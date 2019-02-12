@@ -51,7 +51,7 @@
   <group ns="$(arg robot_name)">
 
   <!-- Navigation stuff (move_base) -->
-  <include unless="$(arg simulation)" file="$(find multi_turtlebot_launch)/launch/rtabmap/3dsensor.launch">
+  <include unless="$(arg simulation)" file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/3dsensor.launch.xml">
 	<arg name="robot_name" value="$(arg robot_name)"/>
   </include>
 
@@ -132,9 +132,11 @@
       <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
       <remap from="scan"            to="/$(arg robot_name)/scan"/>
     </node>
-    
   </group>
 
+  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/robot_pose_publisher.launch.xml">
+    <arg name="robot_name" value="$(arg robot_name)"/>
+  </include>   
 </group>
 
 </launch>

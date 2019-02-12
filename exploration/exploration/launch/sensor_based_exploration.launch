@@ -1,0 +1,80 @@
+<launch>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+
+    <arg name="robot_name" default="robot1"/>
+
+    <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
+    <arg name="pose_log" default="pose_log"/>
+    <arg name="goal" default="goal"/>
+    <arg name="goal_list" default="goal_list"/>
+    <arg name="to_goal" default="to_goal"/>
+    <arg name="move_angle" default="move_angle"/>
+    <arg name="visualization" default="visualization"/>
+    <arg name="bumper_continuity" default="bumper_continuity"/>
+
+    <arg name="exploration_ns" default="exploration"/>
+
+    <group ns="$(arg robot_name)/$(arg exploration_ns)">
+        <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
+            <remap from="scan" to="/$(arg robot_name)/scan"/>
+            <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
+
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="$(arg pose_log)"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="to_goal" to="$(arg to_goal)"/>
+            <remap from="move_angle" to="$(arg move_angle)"/>
+            <remap from="bumper" to="$(arg bumper_continuity)"/>
+        </node>
+
+        <node pkg="exploration" type="visualization" name="visualization">
+            <param name="exploration_method" value="SENSOR"/>
+
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="to_goal" to="$(arg to_goal)"/>
+            <remap from="move_angle" to="$(arg move_angle)"/>
+            <remap from="pose_marker" to="$(arg visualization)"/>
+            <remap from="goal_marker" to="$(arg visualization)"/>
+            <remap from="goal_list_marker" to="$(arg visualization)"/>
+            <remap from="to_goal_marker" to="$(arg visualization)"/>
+            <remap from="move_angle_marker" to="$(arg visualization)"/>
+        </node>
+
+        <node pkg="exploration" type="log" name="log">
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="$(arg pose_log)"/>
+        </node>
+
+        <node pkg="exploration" type="continuity" name="continuity">
+            <param name="bumper_raw_topic" value="/$(arg robot_name)/mobile_base/events/bumper"/>
+            <param name="bumper_continuity_topic" value="$(arg bumper_continuity)"/>
+        </node>
+
+        <!-- <include file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
+             <arg name="dir" value="/home/ros1/rosbag"/>
+            <arg name="topics" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization) /$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /$(arg robot_name)/scan /tf /tf_static /$(arg robot_name)/camera/rgb/image_raw"/>
+        </include> -->
+
+        <include file="$(find exploration)/launch/includes/rosbag_record_debug.launch.xml">
+            <arg name="dir" value="/home/ros1/rosbag_debug"/>
+            <arg name="pose" value="$(arg pose)"/>
+            <arg name="pose_log" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg pose_log)"/>
+            <arg name="scan" value="/$(arg robot_name)/scan"/>
+            <arg name="bumper" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg bumper_continuity)"/>
+            <arg name="goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal)"/>
+            <arg name="goal_list" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal_list)"/>
+            <arg name="to_goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg to_goal)"/>
+            <arg name="move_angle" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg move_angle)"/>
+            <arg name="visualization" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization)"/>
+            <arg name="bumper_raw" value="/$(arg robot_name)/mobile_base/events/bumper"/>
+            <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
+            <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_raw"/>
+        </include>
+    </group>
+</launch>

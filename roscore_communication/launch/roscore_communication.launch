@@ -1,25 +1,11 @@
 <launch>
-	<arg name="robot_name" default="robot1"/>
-        <arg name="other_robot_name" default="robot2"/>
-	<arg name="server" default="false"/>
 
-	<group ns="$(arg robot_name)">
-
-		<include file="$(find roscore_communication)/launch/includes/discovery.launch.xml">
+	<include file="$(find roscore_communication)/launch/includes/discovery.launch.xml">
 			<arg name="_mcast_group" value="224.0.0.8"/>
-		</include>
+	</include>
 
-		<include file="$(find roscore_communication)/launch/includes/sync.launch.xml">
-			<arg name="sync_topics" value="['/robot*/map','/robot*/map_updates', '/robot*/robot_pose', '/robot*/camera/rgb/image_color/compressed','/robot*/rtabmap/cloud_obstacles','*/cmd_vel_mux/input/teleop']"/>
-		</include>
+	<include file="$(find roscore_communication)/launch/includes/sync.launch.xml">
+		<arg name="sync_topics" value="['/robot*/map','/robot*/map_updates', '/robot*/robot_pose', '/robot*/camera/rgb/image_color/compressed','/robot*/rtabmap/cloud_obstacles','*/cmd_vel_mux/input/teleop']"/>
+	</include>
 	
-
-		<include unless="$(arg server)" file="$(find roscore_communication)/launch/includes/get_other_pose.launch.xml">
-			<arg name="other_robot_name" value="$(arg other_robot_name)"/>
-			<arg name="sub_topic" value="/$(arg other_robot_name)/robot_pose"/>
-			<arg name="pub_topic" value="other_robot_pose/$(arg other_robot_name)_pose"/>
-			<arg name="my_mergemap_frame" value="$(arg robot_name)/merge_map"/>
-		</include>
-		
-	</group>
 </launch>

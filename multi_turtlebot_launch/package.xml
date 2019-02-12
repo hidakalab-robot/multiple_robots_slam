@@ -58,7 +58,7 @@
   <exec_depend>roscpp</exec_depend>
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
-
+  <exec_depend>robot_pose_publisher</exec_depend>
   <exec_depend>rtabmap_ros</exec_depend>
   <exec_depend>turtlebot_description</exec_depend>
   <exec_depend>nodelet</exec_depend>
