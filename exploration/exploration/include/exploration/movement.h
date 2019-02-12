@@ -424,7 +424,7 @@ void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
             }
         }
         else{
-            velocityPublisher(resultAngle*VELOCITY_GAIN, FORWARD_VELOCITY*VELOCITY_GAIN, VFH_T);
+            velocityPublisher(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_T);
         }
     }
 }
