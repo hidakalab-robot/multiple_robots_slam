@@ -36,6 +36,17 @@ private:
     double CURVE_GAIN;
     int TRY_COUNT;
     bool AVOIDANCE_TO_GOAL;
+    double VELOCITY_GAIN;
+
+    double AVOIDANCE_T;
+    double VFH_T;
+    double ROAD_CENTER_T;
+
+    double MATCH_ANGLE_THRESHOLD;
+    double MATCH_ROTATION_VELOCITY;
+
+    double PATH_RADIUS;
+    double LOCAL_TOLERANCE ;
 
     int INT_INFINITY;
     double DOUBLE_INFINITY;
@@ -117,6 +128,16 @@ Movement::Movement():p("~"){
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
     p.param<int>("try_count", TRY_COUNT, 1);
     p.param<bool>("avoidance_to_goal", AVOIDANCE_TO_GOAL, true);
+    p.param<double>("velocity_gain", VELOCITY_GAIN, 1.0);
+    p.param<double>("avoidance_t", AVOIDANCE_T, 0.3);
+    p.param<double>("vfh_t", VFH_T, 0.5);
+    p.param<double>("road_center_t", ROAD_CENTER_T, 0.8);
+
+    p.param<double>("match_angle_threshold", MATCH_ANGLE_THRESHOLD, 0.1);
+    p.param<double>("match_rotation_velocity", MATCH_ROTATION_VELOCITY, 0.2);
+
+    p.param<double>("path_radius", PATH_RADIUS, 0.5);
+    p.param<double>("local_tolerance", LOCAL_TOLERANCE, 0.2);
 
     ss.setCallbackQueue(&qScan);
     subScan = ss.subscribe("scan",1,&Movement::scanCB, this);
@@ -287,7 +308,7 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
 
     //double yaw = qToYaw(poseData.pose.orientation);
 
-    const double PATH_RADIUS = 0.5;
+    //double PATH_RADIUS = 0.5;
 
     //目標位置との角度
 
@@ -316,8 +337,8 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
     double goalYaw = qToYaw(path[tempI].pose.orientation);
     double yaw = qToYaw(poseData.pose.orientation);
 
-    const double MATCH_ANGLE_THRESHOLD = 0.1;
-    const double MATCH_ROTATION_VELOCITY = 0.2;
+    // double MATCH_ANGLE_THRESHOLD = 0.1;
+    // double MATCH_ROTATION_VELOCITY = 0.2;
 
     geometry_msgs::Twist vel;
     vel.angular.z = MATCH_ROTATION_VELOCITY;
@@ -344,7 +365,7 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
     goalDistance = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
     //localDistance = sqrt(pow(tempGoal.x - poseData.pose.position.x,2) + pow(tempGoal.y - poseData.pose.position.y,2));
 
-    const double LOCAL_TOLERANCE = 0.2;
+    //const double LOCAL_TOLERANCE = 0.2;
 
     int tempIOld;
 
@@ -403,7 +424,7 @@ void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
             }
         }
         else{
-            velocityPublisher(resultAngle,FORWARD_VELOCITY,0.5);
+            velocityPublisher(resultAngle*VELOCITY_GAIN, FORWARD_VELOCITY*VELOCITY_GAIN, VFH_T);
         }
     }
 }
@@ -605,7 +626,7 @@ bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Po
         else{
             ROS_INFO_STREAM("Avoidance to Right\n");
         }
-        velocityPublisher(sign * scan.angle_max/6,0.0,0.3);
+        velocityPublisher(sign * scan.angle_max/6 * VELOCITY_GAIN,0.0,AVOIDANCE_T);
     }
     else{
         //両方向に回避が可能かつゴールが設定されているときはゴール方向に回避
@@ -626,7 +647,7 @@ bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Po
             return false;
         }
     }
-    velocityPublisher(sign*scan.angle_max/6,FORWARD_VELOCITY,0.3);
+    velocityPublisher(sign*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_T);
 
     return true;
 }
@@ -635,7 +656,7 @@ void Movement::recoveryRotation(void){
     //どうしようもなくなった時に回転する
     ROS_WARN_STREAM("Recovery Rotation !\n");
     geometry_msgs::Twist vel;
-    vel.angular.z = -1 * previousOrientation * ROTATION_VELOCITY;
+    vel.angular.z = -1 * previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN;
     pubVelocity.publish(vel);
 }
 
@@ -689,7 +710,7 @@ bool Movement::roadCenterDetection(sensor_msgs::LaserScan scan){
         if(std::abs(diffY) >= ROAD_THRESHOLD){
             centerAngle = (fixAngles[i]+fixAngles[i+1])/2;
             ROS_DEBUG_STREAM("Road Center Found\n");
-            velocityPublisher(centerAngle,FORWARD_VELOCITY,0.8);
+            velocityPublisher(centerAngle*VELOCITY_GAIN,FORWARD_VELOCITY*VELOCITY_GAIN,ROAD_CENTER_T);
             return true;
         }
     }
