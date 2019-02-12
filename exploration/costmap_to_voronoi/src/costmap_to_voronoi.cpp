@@ -4,8 +4,6 @@ int main(int argc, char** argv)
 {
   ros::init(argc, argv, "costmap_to_voronoi");
 
-  //CostmapToVoronoi ctv;
-
   std::string name;
   ros::NodeHandle p("~");
   p.getParam("topic_ns", name);
@@ -19,15 +17,11 @@ int main(int argc, char** argv)
   start.header.frame_id = "robot1/map";
   goal.header.frame_id = "robot1/map";
 
-  goal.pose.position.x = 0.5;
-
-  //ctv.rosSpinOnce();
+  goal.pose.position.x = 40.5;
+  goal.pose.position.y = 9.5;
 
   while(ros::ok()){
-    //ctv.voronoiInitialize();
-    //ctv.makeVoronoi(start,goal,plan);
     ctv.voronoiProcess(start,goal,plan);
-    //ctv.rosSpinOnce();
   }
 
   return 0;
