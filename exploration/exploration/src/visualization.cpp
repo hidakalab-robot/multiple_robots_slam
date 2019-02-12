@@ -11,6 +11,9 @@ int main(int argc, char *argv[])
     v.goalListMarkerInitialize();
     v.toGoalMarkerInitialize();
     v.moveAngleMarkerInitialize();
+    v.goalDeleteInitialize();
+    v.goalListDeleteInitialize();
+    v.toGoalDeleteInitialize();
 
     while(ros::ok()){
         v.publishPoseMarker();
@@ -18,6 +21,9 @@ int main(int argc, char *argv[])
         v.publishGoalListMarker();
         v.publishToGoalMarker();
         v.publishMoveAngleMarker();
+        v.publishGoalDelete();
+        v.publishGoalListDelete();
+        v.publishToGoalDelete();
     }
     
     return 0;

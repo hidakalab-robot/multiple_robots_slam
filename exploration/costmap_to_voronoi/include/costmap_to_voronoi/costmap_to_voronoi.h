@@ -1,3 +1,6 @@
+#ifndef COSTMAP_TO_VORONOI_H
+#define COSTMAP_TO_VORONOI_H
+
 #include <ros/ros.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <voronoi_planner/planner_core.h>
@@ -34,17 +37,11 @@ public:
   void voronoiProcess(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan);
 };
 
-CostmapToVoronoi::CostmapToVoronoi()
-:tf(ros::Duration(10)),
-gcr("costmap_to_voronoi", tf)
-{
+CostmapToVoronoi::CostmapToVoronoi():tf(ros::Duration(10)),gcr("costmap_to_voronoi", tf){
   name = "costmap_to_voronoi";
 }
 
-CostmapToVoronoi::CostmapToVoronoi(std::string ns)
-:tf(ros::Duration(10)),
-gcr(ns, tf)
-{
+CostmapToVoronoi::CostmapToVoronoi(std::string ns):tf(ros::Duration(10)),gcr(ns, tf){
   name = ns;
 }
 
@@ -66,3 +63,5 @@ void CostmapToVoronoi::voronoiProcess(geometry_msgs::PoseStamped& start,geometry
   vp.initialize(name, &gcr);
   vp.makePlan(start,goal,plan);
 }
+
+#endif //COSTMAP_TO_VORONOI_H

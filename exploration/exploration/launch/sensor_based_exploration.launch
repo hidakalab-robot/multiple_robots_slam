@@ -11,6 +11,9 @@
     <arg name="move_angle" default="move_angle"/>
     <arg name="visualization" default="visualization"/>
     <arg name="bumper_continuity" default="bumper_continuity"/>
+    <arg name="goal_delete" default="goal/delete"/>
+    <arg name="goal_list_delete" default="goal_list/delete"/>
+    <arg name="to_goal_delete" default="to_goal/delete"/>
 
     <arg name="exploration_ns" default="exploration"/>
 
@@ -27,6 +30,9 @@
             <remap from="to_goal" to="$(arg to_goal)"/>
             <remap from="move_angle" to="$(arg move_angle)"/>
             <remap from="bumper" to="$(arg bumper_continuity)"/>
+            <remap from="goal/delete" default="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" default="$(arg goal_list_delete)"/>
+            <remap from="to_goal/delete" default="$(arg to_goal_delete)"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
@@ -43,6 +49,9 @@
             <remap from="goal_list_marker" to="$(arg visualization)"/>
             <remap from="to_goal_marker" to="$(arg visualization)"/>
             <remap from="move_angle_marker" to="$(arg visualization)"/>
+            <remap from="goal/delete" default="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" default="$(arg goal_list_delete)"/>
+            <remap from="to_goal/delete" default="$(arg to_goal_delete)"/>
         </node>
 
         <node pkg="exploration" type="log" name="log">

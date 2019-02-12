@@ -8,13 +8,10 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/Twist.h>
-
 #include <exploration_msgs/ToGoal.h>
 #include <exploration_msgs/MoveAngle.h>
-
 #include <tf/tf.h>
-
-//topic名はパラメータで渡すのではなくremapしても良いかも
+#include <std_msgs/Empty.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -22,8 +19,7 @@ class Movement
 {
 private:
     ros::NodeHandle p;
-    double GOAL_MARGIN;
-    //double GRAVITY_ENABLE;
+    double GOAL_TOLERANCE;
     double GRAVITY_FORCE_ENABLE;
     double GRAVITY_GAIN;
     double GRAVITH_DIFF_THRESHOLD;
@@ -47,33 +43,30 @@ private:
     ros::NodeHandle ss;
     ros::Subscriber subScan;
     ros::CallbackQueue qScan;
-    //std::string scanTopic;
     sensor_msgs::LaserScan scanData;
     sensor_msgs::LaserScan scanDataOrigin;
 
     ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
-    //std::string poseTopic;
     geometry_msgs::PoseStamped poseData;
 
     ros::NodeHandle sb;
     ros::Subscriber subBumper;
     ros::CallbackQueue qBumper;
-    //std::string bumperTopic;
     kobuki_msgs::BumperEvent bumperData;
 
     ros::NodeHandle pv;
     ros::Publisher pubVelocity;
-    //std::string velocityTopic;
 
     ros::NodeHandle ptg;
     ros::Publisher pubToGoal;
-    //std::string ToGoalTopic;
+
+    ros::NodeHandle ptgd;
+    ros::Publisher pubToGoalDel;
 
     ros::NodeHandle pma;
     ros::Publisher pubMoveAngle;
-    //std::string moveAngleTopic;
 
     double previousOrientation;
     double goalDirection;
@@ -89,24 +82,25 @@ private:
     double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle = 0.0);
     double localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose);
     double qToYaw(geometry_msgs::Quaternion q);
-    //bool emergencyAvoidance(sensor_msgs::LaserScan scan);
     bool emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Point goal);
     void recoveryRotation(void);
     void velocityPublisher(double theta, double v, double t);
     bool roadCenterDetection(sensor_msgs::LaserScan scan);
     void publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal);
     void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
+    void publishToGoalDelete(void);
 
 public:
     Movement();
     ~Movement(){};
 
     void moveToGoal(geometry_msgs::Point goal);
+    void moveToGoal(std::vector<geometry_msgs::PoseStamped> path);
     void moveToForward(void);
 };
 
 Movement::Movement():p("~"){
-    p.param<double>("goal_margin", GOAL_MARGIN, 0.5);
+    p.param<double>("goal_margin", GOAL_TOLERANCE, 0.5);
     p.param<double>("gravity_gain", GRAVITY_GAIN, 1.2);
     p.param<double>("gravity_force_enable", GRAVITY_FORCE_ENABLE, 6.0);
     p.param<double>("gravity_diff_threshold", GRAVITH_DIFF_THRESHOLD, 0.1);
@@ -134,31 +128,9 @@ Movement::Movement():p("~"){
     subBumper = sb.subscribe("bumper",1,&Movement::bumperCB,this);
 
     pubVelocity = pv.advertise<geometry_msgs::Twist>("velocity", 1);
-
     pubToGoal = ptg.advertise<exploration_msgs::ToGoal>("to_goal", 1);
-
     pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>("move_angle", 1);
-
-    // p.param<std::string>("scan_topic", scanTopic, "scan");
-    // ss.setCallbackQueue(&qScan);
-    // subScan = ss.subscribe(scanTopic,1,&Movement::scanCB, this);
-
-    // p.param<std::string>("pose_topic", poseTopic, "pose");
-    // sp.setCallbackQueue(&qPose);
-    // subPose = sp.subscribe(poseTopic,1,&Movement::poseCB,this);
-
-    // p.param<std::string>("bumper_topic", bumperTopic, "bumper");
-    // sb.setCallbackQueue(&qBumper);
-    // subBumper = sb.subscribe(bumperTopic,1,&Movement::bumperCB,this);
-
-    // p.param<std::string>("velocity_topic", velocityTopic, "velocity");
-    // pubVelocity = pv.advertise<geometry_msgs::Twist>(velocityTopic, 1);
-
-    // p.param<std::string>("to_goal_topic", ToGoalTopic, "to_goal");
-    // pubToGoal = ptg.advertise<exploration_msgs::ToGoal>(ToGoalTopic, 1);
-
-    // p.param<std::string>("move_angle_topic", moveAngleTopic, "move_angle");
-    // pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>(moveAngleTopic, 1);
+    pubToGoalDel = ptgd.advertise<std_msgs::Empty>("to_goal/delete", 1);
 
     INT_INFINITY = 1000000;
     DOUBLE_INFINITY = 100000.0;
@@ -188,12 +160,10 @@ void Movement::approx(std::vector<float>& scan){
     for(int j=0,count=0;j<scan.size()-1;j++){
         depth=scan[j];
         //|val|nan|のとき
-
         if(!std::isnan(depth) && std::isnan(scan[j+1])){
             depth1=depth;
             count++;
         }
-
         if(std::isnan(depth)){
             //|nan|nan|の区間
             if(std::isnan(scan[j+1])){
@@ -276,7 +246,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
         }
     }
     
-    while(GOAL_MARGIN < distToGoal && ros::ok()){
+    while(GOAL_TOLERANCE < distToGoal && ros::ok()){
         publishToGoal(poseData.pose, goal);
         distToGoalOld = distToGoal;
         vfhMovement(false,goal);
@@ -302,6 +272,117 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
     }
 
     existGoal = false;
+    publishToGoalDelete();
+}
+
+void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
+    //planの中で半径x[m]より外で一番近いところを探す
+    //初めに目標と角度合わせる
+    //目標近くについたらplanの中で半径x[m]より外で次に近いところを探す
+    //以下ループ
+
+    ROS_INFO_STREAM("Path Recieved\n");
+
+    qPose.callOne(ros::WallDuration(1));
+
+    //double yaw = qToYaw(poseData.pose.orientation);
+
+    const double PATH_RADIUS = 0.5;
+
+    //目標位置との角度
+
+    int tempI = INT_INFINITY;
+
+    double localDistance;
+    //planの中で半径x[m]より外で一番近いところを探す
+    for(int i=0;i<path.size();i++){
+        localDistance = sqrt(pow(path[i].pose.position.x - poseData.pose.position.x,2) + pow(path[i].pose.position.y - poseData.pose.position.y,2));
+        if(localDistance > PATH_RADIUS){
+            tempI = i;
+            break;
+        }
+    }
+    if(tempI == INT_INFINITY){
+        //すでに目的地近辺にいるとき
+        ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
+        return;
+    }
+
+    existGoal = true;
+
+    //初めに目標と角度合わせる
+    
+    //目標の角度計算(多分できるはず)
+    double goalYaw = qToYaw(path[tempI].pose.orientation);
+    double yaw = qToYaw(poseData.pose.orientation);
+
+    const double MATCH_ANGLE_THRESHOLD = 0.1;
+    const double MATCH_ROTATION_VELOCITY = 0.2;
+
+    geometry_msgs::Twist vel;
+    vel.angular.z = MATCH_ROTATION_VELOCITY;
+
+    //角度合わせ
+    while(std::abs(goalYaw - yaw) > MATCH_ANGLE_THRESHOLD){
+        //回転動作
+        pubVelocity.publish(vel);
+        qPose.callOne(ros::WallDuration(1));
+        yaw = qToYaw(poseData.pose.orientation);
+    }
+
+    //移動する
+    geometry_msgs::Point tempGoal;
+    tempGoal.x = path[tempI].pose.position.x;
+    tempGoal.y = path[tempI].pose.position.y;
+
+    //移動の終了条件 pathの最後の座標との距離が閾値以下
+    geometry_msgs::Point goal;
+    goal.x = path[path.size()-1].pose.position.x;
+    goal.y = path[path.size()-1].pose.position.y;
+
+    double goalDistance;
+    goalDistance = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
+    //localDistance = sqrt(pow(tempGoal.x - poseData.pose.position.x,2) + pow(tempGoal.y - poseData.pose.position.y,2));
+
+    const double LOCAL_TOLERANCE = 0.2;
+
+    int tempIOld;
+
+    while(GOAL_TOLERANCE < goalDistance){//最終目標との距離を見る
+        while(LOCAL_TOLERANCE < localDistance){//一時的な目標との距離
+            publishToGoal(poseData.pose, tempGoal);
+            vfhMovement(false,tempGoal);//目標方向に一回だけpublish
+            qPose.callOne(ros::WallDuration(1));
+            localDistance = sqrt(pow(path[tempI].pose.position.x - poseData.pose.position.x,2) + pow(path[tempI].pose.position.y - poseData.pose.position.y,2));
+        }
+        //ここまでで一時的な目標にたどり着いたはず
+        //次の目標を検索
+        tempIOld = tempI;
+        for(int i=tempI+1;i<path.size();i++){
+            localDistance = sqrt(pow(path[i].pose.position.x - poseData.pose.position.x,2) + pow(path[i].pose.position.y - poseData.pose.position.y,2));
+            if(localDistance > PATH_RADIUS){
+                tempI = i;
+                break;
+            }
+        }
+        if(tempI == tempIOld){
+            //すでに目的地近辺にいる
+            ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
+            existGoal = false;
+            return;
+        }
+        //新たに一時的な目標をセット
+        tempGoal.x = path[tempI].pose.position.x;
+        tempGoal.y = path[tempI].pose.position.y;
+
+        goalDistance = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
+    }
+
+    ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
+
+    publishToGoalDelete();
+    existGoal = false;
+
 }
 
 void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
@@ -317,7 +398,6 @@ void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
             resultAngle = vfhCalculation(scanData,false,localAngleCalculation(goal,poseData));
         }
         if((int)resultAngle == INT_INFINITY){
-            //if(!emergencyAvoidance(scanData)){
             if(!emergencyAvoidance(scanData,goal)){
                 recoveryRotation();
             }
@@ -371,18 +451,12 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
         min = DOUBLE_INFINITY;
         for(int i=0;i<scan.ranges.size();i++){
 		    diff = std::abs(goalAngle - (scan.angle_min + scan.angle_increment * i));
-            // if(i%100 == 0){
-            //     ROS_WARN_STREAM("diff : " << diff << ", i : " << i << ", rad : " << scan.angle_min + scan.angle_increment << "\n");
-            // }
 		    if(diff < min){
 			    min = diff;
 			    goalI = i;
 		    }
         }
     }
-
-    //ROS_WARN_STREAM("angle_min : " << scan.angle_min << ", angle_increment : " << scan.angle_increment << ", goalI : " << goalI << "\n");
-
     const int SAFE_NUM = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
     int start;
     int k;
@@ -479,8 +553,6 @@ double Movement::localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::
     double localAngle;
 
     tempAngle = atan2(goal.y - pose.pose.position.y, goal.x - pose.pose.position.x);
-
-    //localAngle = tempAngle - 2*asin(pose.pose.orientation.z);
     localAngle = tempAngle - qToYaw(pose.pose.orientation);
 
     if(localAngle < -M_PI){
@@ -502,7 +574,6 @@ double Movement::qToYaw(geometry_msgs::Quaternion q){
     return yaw;
 }
 
-//bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan){
 bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Point goal){
     double aveP;
     double aveM;
@@ -539,26 +610,22 @@ bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Po
     else{
         //両方向に回避が可能かつゴールが設定されているときはゴール方向に回避
         if(AVOIDANCE_TO_GOAL && existGoal && aveP >= EMERGENCY_THRESHOLD && aveM >= EMERGENCY_THRESHOLD){
-            //ここでローカルでのゴールの角度を計算
+            //ここでローカルでのゴールの角度を計算(local_angleの計算でやってる)
             sign = goalDirection;
             ROS_INFO_STREAM("Avoidance to Goal Derection\n");
-            //velocityPublisher(sign*scan.angle_max/6,FORWARD_VELOCITY,0.3);
         }
         else if(aveP > aveM){
             sign = 1.0;
             ROS_INFO_STREAM("Avoidance to Left\n");
-            //velocityPublisher(sign*scan.angle_max/6,FORWARD_VELOCITY,0.3);
         }
         else if(aveP < aveM){
             sign = -1.0;
             ROS_INFO_STREAM("Avoidance to Right\n");
-            //velocityPublisher(sign*scan.angle_max/6,FORWARD_VELOCITY,0.3);
         }
         else{
             return false;
         }
     }
-
     velocityPublisher(sign*scan.angle_max/6,FORWARD_VELOCITY,0.3);
 
     return true;
@@ -652,6 +719,13 @@ void Movement::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry
 
     pubMoveAngle.publish(msg);
     ROS_INFO_STREAM("Publish MoveAngle\n");
+}
+
+void Movement::publishToGoalDelete(void){
+    std_msgs::Empty msg;
+
+    pubToGoalDel.publish(msg);
+    ROS_INFO_STREAM("Publish To Goal Delete\n");
 }
 
 #endif //MOVEMENT_H
