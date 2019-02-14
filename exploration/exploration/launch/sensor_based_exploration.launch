@@ -30,9 +30,9 @@
             <remap from="to_goal" to="$(arg to_goal)"/>
             <remap from="move_angle" to="$(arg move_angle)"/>
             <remap from="bumper" to="$(arg bumper_continuity)"/>
-            <remap from="goal/delete" default="$(arg goal_delete)"/>
-            <remap from="goal_list/delete" default="$(arg goal_list_delete)"/>
-            <remap from="to_goal/delete" default="$(arg to_goal_delete)"/>
+            <remap from="goal/delete" to="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+            <remap from="to_goal/delete" to="$(arg to_goal_delete)"/>
 
             <param name="velocity_gain" value="1.0"/>
         </node>
@@ -51,9 +51,9 @@
             <remap from="goal_list_marker" to="$(arg visualization)"/>
             <remap from="to_goal_marker" to="$(arg visualization)"/>
             <remap from="move_angle_marker" to="$(arg visualization)"/>
-            <remap from="goal/delete" default="$(arg goal_delete)"/>
-            <remap from="goal_list/delete" default="$(arg goal_list_delete)"/>
-            <remap from="to_goal/delete" default="$(arg to_goal_delete)"/>
+            <remap from="goal/delete" to="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+            <remap from="to_goal/delete" to="$(arg to_goal_delete)"/>
         </node>
 
         <node pkg="exploration" type="log" name="log">
