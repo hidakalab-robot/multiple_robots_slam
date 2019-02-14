@@ -85,7 +85,7 @@
             <arg name="visualization" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization)"/>
             <arg name="bumper_raw" value="/$(arg robot_name)/mobile_base/events/bumper"/>
             <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
-            <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_raw"/>
+            <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_color"/>
         </include>
     </group>
 </launch>
