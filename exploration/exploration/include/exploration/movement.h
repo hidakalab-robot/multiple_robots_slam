@@ -29,6 +29,7 @@ private:
     double FORWARD_VELOCITY;
     double BACK_VELOCITY;
     double BACK_TIME;
+    double BUMPER_ROTATION_TIME;
     double ROTATION_VELOCITY;
     double EMERGENCY_THRESHOLD;
     double ROAD_CENTER_THRESHOLD;
@@ -121,6 +122,7 @@ Movement::Movement():p("~"){
     p.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
     p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
     p.param<double>("back_time", BACK_TIME, 0.5);
+    p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.5);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
     p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 1.0);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
@@ -431,7 +433,9 @@ void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
 
 bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
     //壁に衝突してるかを確認して、してたらバック
+    //バックの後に回転動作をさせる
     if(bumperData.state){
+        //バック部分
         ROS_WARN_STREAM("Bumper Hit !!\n");
         geometry_msgs::Twist vel;
         vel.linear.x = BACK_VELOCITY;
@@ -441,6 +445,29 @@ bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
         while(ros::Time::now()-setTime < duration){
             pubVelocity.publish(vel);
         }
+
+        //回転部分
+        switch (bumperData.bumper){
+            case 0:
+                vel.angular.z = -ROTATION_VELOCITY;
+                break;
+            case 1:
+                vel.angular.z = -previousOrientation * ROTATION_VELOCITY;
+                break;
+            case 2:
+                vel.angular.z = ROTATION_VELOCITY;
+                break;
+            default:
+                break;
+        }
+
+        ros::Duration duration2(BUMPER_ROTATION_TIME);
+        setTime = ros::Time::now();
+
+        while(ros::Time::now()-setTime < duration2){
+            pubVelocity.publish(vel);
+        }
+
         return true;
     }
     return false;
