@@ -122,7 +122,7 @@ Movement::Movement():p("~"){
     p.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
     p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
     p.param<double>("back_time", BACK_TIME, 0.5);
-    p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.5);
+    p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.0);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
     p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 1.0);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
@@ -463,7 +463,6 @@ bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
 
         ros::Duration duration2(BUMPER_ROTATION_TIME);
         setTime = ros::Time::now();
-
         while(ros::Time::now()-setTime < duration2){
             pubVelocity.publish(vel);
         }
