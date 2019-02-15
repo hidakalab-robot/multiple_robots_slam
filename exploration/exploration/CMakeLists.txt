@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   exploration_msgs
   tf
+  eigen
 )
 
 ## System dependencies are found with CMake's conventions
@@ -223,3 +224,7 @@ target_link_libraries(visualization ${catkin_LIBRARIES})
 add_executable(continuity src/continuity.cpp)
 #add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(continuity ${catkin_LIBRARIES})
+
+add_executable(frontier_based_exploration src/fbe_main.cpp)
+#add_dependencies(sensor_based_exploration ${${PROJECT_NAME}_EXPORTED_TARGETS})
+target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})

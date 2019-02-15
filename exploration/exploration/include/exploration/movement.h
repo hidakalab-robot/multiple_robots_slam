@@ -109,6 +109,7 @@ public:
     void moveToGoal(geometry_msgs::Point goal);
     void moveToGoal(std::vector<geometry_msgs::PoseStamped> path);
     void moveToForward(void);
+    void oneRotation(void);
 };
 
 Movement::Movement():p("~"){
@@ -122,7 +123,7 @@ Movement::Movement():p("~"){
     p.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
     p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
     p.param<double>("back_time", BACK_TIME, 0.5);
-    p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.0);
+    p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.5);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
     p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 1.0);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
@@ -447,6 +448,7 @@ bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
         }
 
         //回転部分
+        vel.linear.x = 0;
         switch (bumperData.bumper){
             case 0:
                 vel.angular.z = -ROTATION_VELOCITY;
@@ -775,4 +777,30 @@ void Movement::publishToGoalDelete(void){
     ROS_INFO_STREAM("Publish To Goal Delete\n");
 }
 
+void Movement::oneRotation(void){
+    //ロボットがz軸周りに一回転する
+    qPose.callOne(ros::WallDuration(1));
+
+    double initYaw = qToYaw(poseData.pose.orientation);
+    double initSign = initYaw / std::abs(initYaw);
+    double yaw = initYaw;
+
+    //initYawが+の時は+回転
+    //initYawが-の時は-回転
+    geometry_msgs::Twist vel;
+    vel.angular.z = initSign * ROTATION_VELOCITY;
+
+    int count = 0;
+    double yawOld;
+    //yawの符号が３回変わる、または２回変わった後initYawより絶対値が大きくなったら
+    while((count < 3 || (count < 2 && std::abs(yaw) < std::abs(initYaw))) && ros::ok()){
+        yawOld = yaw;
+        pubVelocity.publish(vel);
+        qPose.callOne(ros::WallDuration(1));
+        yaw = qToYaw(poseData.pose.orientation);
+        if(yawOld * yaw < 0){
+            count++;
+        }
+    }
+}
 #endif //MOVEMENT_H
