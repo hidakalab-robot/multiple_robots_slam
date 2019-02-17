@@ -18,7 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   exploration_msgs
   tf
-  eigen
 )
 
 ## System dependencies are found with CMake's conventions
@@ -129,6 +128,7 @@ catkin_package(
 include_directories(
  include
   ${catkin_INCLUDE_DIRS}
+  "/usr/include/eigen3"
 )
 
 ## Declare a C++ library

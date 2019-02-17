@@ -774,7 +774,7 @@ void Movement::publishToGoalDelete(void){
     std_msgs::Empty msg;
 
     pubToGoalDel.publish(msg);
-    ROS_INFO_STREAM("Publish To Goal Delete\n");
+    //ROS_INFO_STREAM("Publish To Goal Delete\n");
 }
 
 void Movement::oneRotation(void){

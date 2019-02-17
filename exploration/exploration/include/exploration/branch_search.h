@@ -324,14 +324,14 @@ void BranchSearch::publishGoalDelete(void){
 	std_msgs::Empty msg;
 	pubGoalDel.publish(msg);
 	
-	ROS_INFO_STREAM("Publish Goal Delete\n");
+	//ROS_INFO_STREAM("Publish Goal Delete\n");
 }
 
 void BranchSearch::publishGoalListDelete(void){
 	std_msgs::Empty msg;
 	pubGoalListDel.publish(msg);
 	
-	ROS_INFO_STREAM("Publish GoalList Delete\n");
+	//ROS_INFO_STREAM("Publish GoalList Delete\n");
 }
 
 #endif //BRANCH_SEARCH_H
