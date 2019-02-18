@@ -1,0 +1,38 @@
+<launch>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+
+    <arg name="robot_name" default="robot1"/>
+
+    <arg name="map" default="/$(arg robot_name)/map"/>
+    <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
+    <arg name="pose_log" default="pose_log"/>
+    <arg name="goal" default="goal"/>
+    <arg name="goal_list" default="goal_list"/>
+    <arg name="visualization" default="visualization"/>
+    <arg name="goal_delete" default="goal/delete"/>
+    <arg name="goal_list_delete" default="goal_list/delete"/>
+
+    <arg name="exploration_ns" default="exploration"/>
+
+    <group ns="$(arg robot_name)/$(arg exploration_ns)">
+        <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration_test" output="screen">
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <remap from="map" to="$(arg map)"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="goal/delete" to="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+        </node>
+
+        <node pkg="exploration" type="visualization_test" name="visualization_test">
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="goal_marker" to="$(arg visualization)"/>
+            <remap from="goal_list_marker" to="$(arg visualization)"/>
+            <remap from="goal/delete" to="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+        </node>
+    </group>
+</launch>

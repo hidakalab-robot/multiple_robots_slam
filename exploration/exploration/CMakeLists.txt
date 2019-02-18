@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(exploration)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -210,21 +210,19 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(sensor_based_exploration src/sbe_main.cpp)
-#add_dependencies(sensor_based_exploration ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
 
 add_executable(log src/log.cpp)
-#add_dependencies(log ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(log ${catkin_LIBRARIES})
 
 add_executable(visualization src/visualization.cpp)
-#add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(visualization ${catkin_LIBRARIES})
 
 add_executable(continuity src/continuity.cpp)
-#add_dependencies(visualization ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(continuity ${catkin_LIBRARIES})
 
 add_executable(frontier_based_exploration src/fbe_main.cpp)
-#add_dependencies(sensor_based_exploration ${${PROJECT_NAME}_EXPORTED_TARGETS})
 target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
+
+add_executable(visualization_test src/visualization_test.cpp)
+target_link_libraries(visualization_test ${catkin_LIBRARIES})
