@@ -17,11 +17,14 @@ int main(int argc, char** argv)
   start.header.frame_id = "robot1/map";
   goal.header.frame_id = "robot1/map";
 
-  goal.pose.position.x = 40.5;
-  goal.pose.position.y = 9.5;
+  goal.pose.position.x = 0.5;
+  //goal.pose.position.y = 9.5;
+
+  ros::Rate rate(1);
 
   while(ros::ok()){
     ctv.voronoiProcess(start,goal,plan);
+    rate.sleep();
   }
 
   return 0;

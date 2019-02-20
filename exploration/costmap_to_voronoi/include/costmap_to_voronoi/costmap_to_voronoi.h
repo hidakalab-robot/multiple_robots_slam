@@ -5,17 +5,18 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <voronoi_planner/planner_core.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <costmap_src/array_parser.cpp>
-#include <costmap_src/costmap_2d.cpp>
-#include <costmap_src/observation_buffer.cpp>
-#include <costmap_src/layer.cpp>
-#include <costmap_src/layered_costmap.cpp>
-#include <costmap_src/costmap_2d_ros.cpp>
-#include <costmap_src/costmap_2d_publisher.cpp>
-#include <costmap_src/costmap_math.cpp>
-#include <costmap_src/footprint.cpp>
-#include <costmap_src/costmap_layer.cpp>
-#include <voronoi_src/planner_core.cpp>
+// #include <costmap_src/array_parser.cpp>
+// #include <costmap_src/costmap_2d.cpp>
+// #include <costmap_src/observation_buffer.cpp>
+// #include <costmap_src/layer.cpp>
+// #include <costmap_src/layered_costmap.cpp>
+// #include <costmap_src/costmap_2d_ros.cpp>
+// #include <costmap_src/costmap_2d_publisher.cpp>
+// #include <costmap_src/costmap_math.cpp>
+// #include <costmap_src/footprint.cpp>
+// #include <costmap_src/costmap_layer.cpp>
+
+//#include <voronoi_src/planner_core.cpp>
 
 
 class CostmapToVoronoi
@@ -32,9 +33,9 @@ public:
   ~CostmapToVoronoi(){};
 
   //void voronoiInitialize();
-  void rosSpinOnce();
+  void rosSpinOnce(void);
   //void makeVoronoi(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan);
-  void voronoiProcess(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan);
+  bool voronoiProcess(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan);
 };
 
 CostmapToVoronoi::CostmapToVoronoi():tf(ros::Duration(10)),gcr("costmap_to_voronoi", tf){
@@ -49,7 +50,7 @@ CostmapToVoronoi::CostmapToVoronoi(std::string ns):tf(ros::Duration(10)),gcr(ns,
 //   vp.initialize(name, &gcr);
 // }
 
-void CostmapToVoronoi::rosSpinOnce(){
+void CostmapToVoronoi::rosSpinOnce(void){
   ros::spinOnce();
 }
 
@@ -57,11 +58,12 @@ void CostmapToVoronoi::rosSpinOnce(){
 //   vp.makePlan(start,goal,plan);
 // }
 
-void CostmapToVoronoi::voronoiProcess(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan){
+bool CostmapToVoronoi::voronoiProcess(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan){
   rosSpinOnce();
   voronoi_planner::VoronoiPlanner vp;
   vp.initialize(name, &gcr);
-  vp.makePlan(start,goal,plan);
+  
+  return vp.makePlan(start,goal,plan);
 }
 
 #endif //COSTMAP_TO_VORONOI_H

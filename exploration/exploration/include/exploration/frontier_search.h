@@ -12,6 +12,7 @@
 #include <tf/tf.h>
 #include <Eigen/Dense>
 
+
 class FrontierSearch
 {
 private:
@@ -559,4 +560,6 @@ void FrontierSearch::publishGoalListDelete(void){
 	
 	//ROS_INFO_STREAM("Publish GoalList Delete\n");
 }
+
+
 #endif //FRONTIER_SEARCH_H

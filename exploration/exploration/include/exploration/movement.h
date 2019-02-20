@@ -12,6 +12,9 @@
 #include <exploration_msgs/MoveAngle.h>
 #include <tf/tf.h>
 #include <std_msgs/Empty.h>
+#include <exploration/path_planning.h>
+#include <navfn/navfn_ros.h>
+#include <voronoi_planner/planner_core.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -102,10 +105,13 @@ private:
     void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
     void publishToGoalDelete(void);
 
+    bool callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
+
 public:
     Movement();
     ~Movement(){};
 
+    void moveToGoal(geometry_msgs::Point goal,bool createPath);
     void moveToGoal(geometry_msgs::Point goal);
     void moveToGoal(std::vector<geometry_msgs::PoseStamped> path);
     void moveToForward(void);
@@ -222,6 +228,33 @@ void Movement::approx(std::vector<float>& scan){
         }
     }
 }
+
+void Movement::moveToGoal(geometry_msgs::Point goal,bool createPath){
+    if(createPath){
+        qPose.callOne(ros::WallDuration(1));
+        geometry_msgs::PoseStamped start;
+        start = poseData;
+        geometry_msgs::PoseStamped goalStamped;
+        goalStamped.header.frame_id = poseData.header.frame_id;
+        goalStamped.pose.position.x = goal.x;
+        goalStamped.pose.position.y = goal.y;
+        std::vector<geometry_msgs::PoseStamped> path;
+        if(callPathPlanner(start,goalStamped,path)){
+            ROS_INFO_STREAM("Path was Found\n");
+            ROS_DEBUG_STREAM("path size : " << path.size() << "\n");
+            //moveToGoal(path);
+        }
+        else{
+            ROS_INFO_STREAM("Path was not Found\n");
+            moveToGoal(goal);
+        }
+    }
+    else{
+        moveToGoal(goal);
+    }
+}
+
+//反転処理　関数
 
 void Movement::moveToGoal(geometry_msgs::Point goal){
     ROS_INFO_STREAM("Goal Recieved : (" << goal.x << "," << goal.y << ")\n");
@@ -802,5 +835,15 @@ void Movement::oneRotation(void){
             count++;
         }
     }
+}
+
+bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+    //navfnなどのグローバルパスプラナーを呼ぶ
+    std::string name;
+    p.param<std::string>("planner_name", name, "path_planner");
+    pathPlanning<navfn::NavfnROS> pp(name);
+    //pathPlanning<voronoi_planner::VoronoiPlanner> pp(name);
+    
+    return pp.createPath(start,goal,path);
 }
 #endif //MOVEMENT_H

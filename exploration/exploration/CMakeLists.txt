@@ -18,6 +18,9 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   exploration_msgs
   tf
+  costmap_2d
+  navfn
+  voronoi_planner
 )
 
 ## System dependencies are found with CMake's conventions

@@ -13,6 +13,10 @@
     <arg name="goal_list_delete" default="goal_list/delete"/>
 
     <arg name="exploration_ns" default="exploration"/>
+    <arg name="planner_name" default="navfn_planner"/>
+
+    <arg name="base_frame_id"   default="$(arg robot_name)/base_footprint"/>
+  	<arg name="global_frame_id" default="$(arg robot_name)/map"/>
 
     <group ns="$(arg robot_name)/$(arg exploration_ns)">
         <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration_test" output="screen">
@@ -23,6 +27,11 @@
             <remap from="goal_list" to="$(arg goal_list)"/>
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+            <rosparam file="$(find exploration)/params/costmap_common_params.yaml" command="load" ns="$(arg planner_name)"/>
+			<rosparam file="$(find exploration)/params/global_costmap_params.yaml" command="load" ns="$(arg planner_name)"/>
+			<param name="$(arg planner_name)/global_frame" value="$(arg global_frame_id)"/>
+    		<param name="$(arg planner_name)/robot_base_frame" value="$(arg base_frame_id)"/>
+			<param name="planner_name" value="$(arg planner_name)"/>
         </node>
 
         <node pkg="exploration" type="visualization_test" name="visualization_test">
@@ -34,5 +43,6 @@
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
         </node>
+
     </group>
 </launch>

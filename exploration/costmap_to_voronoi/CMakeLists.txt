@@ -9,14 +9,14 @@ project(costmap_to_voronoi)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   costmap_2d
-  dynamic_reconfigure
+  #dynamic_reconfigure
   geometry_msgs
-  nav_msgs
+  #nav_msgs
   roscpp
   rospy
-  sensor_msgs
-  std_msgs
-  tf2_ros
+  #sensor_msgs
+  #std_msgs
+  #tf2_ros
   voronoi_planner
 )
 
@@ -206,4 +206,5 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(costmap_to_voronoi src/costmap_to_voronoi.cpp)
-target_link_libraries(costmap_to_voronoi ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+# target_link_libraries(costmap_to_voronoi ${PCL_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(costmap_to_voronoi ${catkin_LIBRARIES})

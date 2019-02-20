@@ -12,8 +12,9 @@
 			<rosparam file="$(find costmap_to_voronoi)/params/costmap_common_params.yaml" command="load" ns="$(arg topic_ns)"/>
 			<rosparam file="$(find costmap_to_voronoi)/params/global_costmap_params.yaml" command="load" ns="$(arg topic_ns)"/>
 			<param name="$(arg topic_ns)/global_frame" value="$(arg global_frame_id)"/>
-    			<param name="$(arg topic_ns)/robot_base_frame" value="$(arg base_frame_id)"/>
+    		<param name="$(arg topic_ns)/robot_base_frame" value="$(arg base_frame_id)"/>
 			<param name="topic_ns" value="$(arg topic_ns)"/>
+			<remap from="/move_base/global_costmap/costmap_updates" to="/$(arg robot_name)/$(arg topic_ns)/$(arg topic_ns)/costmap_updates"/>
 		</node>
 
 	</group>
