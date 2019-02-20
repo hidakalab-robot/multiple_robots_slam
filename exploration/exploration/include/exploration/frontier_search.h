@@ -29,10 +29,10 @@ private:
 
     ros::NodeHandle p;
 
-    double FRONTIER_DIAMETER_MIN;
+    float FRONTIER_DIAMETER_MIN;
     int FRONTIER_THICKNESS;
     int FRONTIER_DETECTION_METHOD;
-    double FILTER_SQUARE_DIAMETER;
+    float FILTER_SQUARE_DIAMETER;
     bool OBSTACLE_FILTER;
 
     double DOUBLE_MINUS_INFINITY;
@@ -70,12 +70,12 @@ private:
 	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
     void initialize(struct FrontierSearch::mapStruct& map, nav_msgs::OccupancyGrid source);
-    void release(struct FrontierSearch::mapStruct& map, double sizeX, double sizeY);
+    void release(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY);
     void horizonDetection(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY);
-    std::vector<Eigen::Vector2i> frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, double resolution);
-    std::vector<Eigen::Vector2i> frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, double resolution);
-    void obstacleFilter(struct FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, double resolution);
-    geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,double originX,double originY,double resolution);
+    std::vector<Eigen::Vector2i> frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution);
+    std::vector<Eigen::Vector2i> frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution);
+    void obstacleFilter(struct FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, float resolution);
+    geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,double originX,double originY,float resolution);
     geometry_msgs::Point selectGoal(std::vector<geometry_msgs::Point> goals, geometry_msgs::PoseStamped pose);
 
     double qToYaw(geometry_msgs::Quaternion q);
@@ -108,13 +108,13 @@ FrontierSearch::FrontierSearch():p("~"){
 
     p.param<std::string>("map_frame_id", mapFrameId, "map");
 
-    p.param<double>("frontier_diameter_min", FRONTIER_DIAMETER_MIN, 0.4);
+    p.param<float>("frontier_diameter_min", FRONTIER_DIAMETER_MIN, 0.4);
 	p.param<int>("frontier_thickness", FRONTIER_THICKNESS, 3);
     if((FRONTIER_THICKNESS%2) == 0){
         FRONTIER_THICKNESS++;
     }
     p.param<int>("frontier_detection_method", FRONTIER_DETECTION_METHOD, 0);
-    p.param<double>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
+    p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
     p.param<bool>("obstacle_filter", OBSTACLE_FILTER, true);
     p.param<double>("distance_weight", DISTANCE_WEIGHT, 1.0);
     p.param<double>("direction_weight", DIRECTION_WEIGHT, 2.0);
@@ -156,12 +156,15 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
             return false;
     }
 
-    ROS_DEBUG_STREAM("index size : " << index.size() << "\n");
+    //ROS_DEBUG_STREAM("Before Filter index size : " << index.size() << "\n");
+
 
     if(OBSTACLE_FILTER){
         obstacleFilter(map,index,mapData.info.width,mapData.info.height,mapData.info.resolution);
     }
     
+    //ROS_DEBUG_STREAM("After Filter Index Size : " << index.size() << "\n");
+
     if(index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found\n");
         publishGoalListDelete();
@@ -169,7 +172,7 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
         return false;
     }
     
-    ROS_INFO_STREAM("Frontier Found : " << index.size() << "\n");
+
 
     std::vector<geometry_msgs::Point> goals;
 
@@ -177,7 +180,7 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
         goals.push_back(arrayToCoordinate(index[i].x(),index[i].y(),mapData.info.origin.position.x,mapData.info.origin.position.y,mapData.info.resolution));
     }
 
-    ROS_INFO_STREAM("after Frontier Found : " << index.size() << "\n");
+    ROS_INFO_STREAM("Frontier Found : " << goals.size() << "\n");
 
     publishGoalList(goals);
 
@@ -199,6 +202,7 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
 }
 
 void FrontierSearch::initialize(struct FrontierSearch::mapStruct& map, nav_msgs::OccupancyGrid source){
+    
     const int sizeX = source.info.width;
     const int sizeY = source.info.height;
 
@@ -257,38 +261,13 @@ void FrontierSearch::horizonDetection(struct FrontierSearch::mapStruct& map, int
     ROS_INFO_STREAM("Horizon Detection complete\n");
 }
 
-std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, double resolution){
+std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution){
     ROS_INFO_STREAM("Frontier Detection\n");
     
     const int FRONTIER_EDGE_RENGE = FRONTIER_THICKNESS / 2;
 
-    ROS_DEBUG_STREAM("FRONTIER_EDGE_RENGE : " << FRONTIER_EDGE_RENGE << "\n");
-
-    int ROBOT_CELLSIZE = FRONTIER_DIAMETER_MIN / resolution;
-    int ROBOT_CELLSIZE_2;
-    ROBOT_CELLSIZE_2 = FRONTIER_DIAMETER_MIN / resolution;
-    double ROBOT_CELLSIZE_3 = FRONTIER_DIAMETER_MIN / resolution;
-    int ROBOT_CELLSIZE_4 = ROBOT_CELLSIZE_3;
-    double temp1 = FRONTIER_DIAMETER_MIN*100;
-    double temp2 = resolution*100;
-    int ROBOT_CELLSIZE_5 = temp1 / temp2;
-    float ROBOT_CELLSIZE_6 = FRONTIER_DIAMETER_MIN / resolution;
-    
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE double : " << FRONTIER_DIAMETER_MIN / resolution << "\n");
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE int : " << (int)(FRONTIER_DIAMETER_MIN / resolution) << "\n");
-
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE conv int : " << ROBOT_CELLSIZE << "\n");
-
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE conv2 int : " << ROBOT_CELLSIZE_2 << "\n");
-
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE conv3 double : " << ROBOT_CELLSIZE_3 << "\n");
-
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE conv4 int : " << ROBOT_CELLSIZE_4 << "\n");
-
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE conv5 int : " << ROBOT_CELLSIZE_5 << "\n");
-    ROS_DEBUG_STREAM("ROBOT_CELLSIZE conv6 int : " << (int)ROBOT_CELLSIZE_6 << "\n");
-
-    //double -> int のときは double -> float -> int としないと誤差がでるときがある
+    //ROS_DEBUG_STREAM("FRONTIER_EDGE_RENGE : " << FRONTIER_EDGE_RENGE << "\n");
+    //ROS_DEBUG_STREAM("ROBOT_CELLSIZE : " << (int)(FRONTIER_DIAMETER_MIN / resolution) << "\n");
 
     std::vector<Eigen::Vector2i> index;
     Eigen::Vector2i temp;
@@ -312,20 +291,17 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struc
 				while(sum > 0 && ros::ok()){
 					sum = 0;
 					continuity++;
-					//if(countX++ < sizeX){// インクリメントする前のxで比較したい
-                    if(countX < sizeX){
-                        countX++;
+					if(countX++ < sizeX){// インクリメントする前のxで比較したい
 						for(int j=-FRONTIER_EDGE_RENGE;j<=FRONTIER_EDGE_RENGE;j++){
 							sum += map.horizon[countX][y+j];
 						}
 					}
 					else{
-                        countX++;	
 						break;
 					}
 				}
 				endX = countX-1;
-				if(continuity >= (int)(FRONTIER_DIAMETER_MIN / resolution) + 1){
+				if(continuity >= (int)(FRONTIER_DIAMETER_MIN / resolution)){
                     temp.x() = (int)((startX + endX)/2);
                     temp.y() = y;
 					map.frontierMap[temp.x()][temp.y()] = 1;
@@ -339,10 +315,12 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struc
     }
 
     // y axis continuity
+    continuity = 0;
+    sum = 0;
     int countY = 0;
     int startY = 0;
     int endY = 0;
-    for(int x=FRONTIER_EDGE_RENGE;x<sizeX-FRONTIER_EDGE_RENGE;x+=FRONTIER_EDGE_RENGE){
+    for(int x=FRONTIER_EDGE_RENGE;x<sizeX-FRONTIER_EDGE_RENGE;x+=FRONTIER_THICKNESS){
 		countY = 0;
 		while(countY < sizeY && ros::ok()){
 			for(int i=-FRONTIER_EDGE_RENGE;i<=FRONTIER_EDGE_RENGE;i++){
@@ -354,20 +332,17 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struc
 				while(sum > 0 && ros::ok()){
 					sum = 0;
 					continuity++;
-                    //if(countY++ < sizeY){//インクリメントする前のyで比較したい
-                    if(countY < sizeY){
-                        countY++;
+                    if(countY++ < sizeY){//インクリメントする前のyで比較したい
 						for(int i=-FRONTIER_EDGE_RENGE;i<=FRONTIER_EDGE_RENGE;i++){
 							sum += map.horizon[x+i][countY];
 						}
 					}
 					else{
-                        countY++;	
 						break;
 					}
 				}
 				endY = countY-1;
-				if(continuity >= (int)(FRONTIER_DIAMETER_MIN / resolution) + 1){
+				if(continuity >= (int)(FRONTIER_DIAMETER_MIN / resolution)){
                     temp.x() = x;
                     temp.y() = (int)((startY + endY)/2);
 					map.frontierMap[temp.x()][temp.y()] = 1;
@@ -380,44 +355,38 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struc
 		}
     }
 
+
     ROS_INFO_STREAM("Frontier Detection Complete\n");
 
     return index;
 }
 
-std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, double resolution){
+std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution){
     //future work
     std::vector<Eigen::Vector2i> index;
     return index;
 }
 
 
-void FrontierSearch::obstacleFilter(struct FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, double resolution){
+void FrontierSearch::obstacleFilter(struct FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, float resolution){
     ROS_INFO_STREAM("Obstacle Filter\n");
     
     //add obstacle cell
     for(int x=0;x<sizeX;x++){
         for(int y=0;y<sizeY;y++){
             if((int)map.source[x][y] == 100){
-                //ROS_DEBUG_STREAM("obstacle\n");
                 map.frontierMap[x][y] = 100;
             }
         }
     }
 
     int FILTER_HALF_CELL = (FILTER_SQUARE_DIAMETER / resolution) / 2.0;
-    FILTER_HALF_CELL += FILTER_HALF_CELL % 2;//奇数ではダメな理由が不明
-
-    ROS_INFO_STREAM("Filter Parameter : FILTER_HALF_CELL ( " << FILTER_HALF_CELL << " ) ,FILTER_SQUARE_DIAMETER ( " << FILTER_SQUARE_DIAMETER << " ) ,resolution ( " << resolution << " )\n");
+    //FILTER_HALF_CELL += FILTER_HALF_CELL % 2;//奇数ではダメな理由が不明
 
     if(FILTER_HALF_CELL < 1){
         ROS_ERROR_STREAM("FILTER_SQUARE_DIAMETER is Bad\n");
         return;
     }
-
-    // for(int i = 0;i<index.size();i++){
-    //     ROS_DEBUG_STREAM("index : " << index[i] << "\n");
-    // }
 
     int RIGHT,LEFT;
     int TOP, BOTTOM;
@@ -426,48 +395,36 @@ void FrontierSearch::obstacleFilter(struct FrontierSearch::mapStruct& map,std::v
 
     for(int i=0;i<index.size();i++){
         sum = 0;
-        //ROS_DEBUG_STREAM("(x,y) : ( " << index[i].x() << ", " << index[i].y() << " )\n");
         //left shape
-        //ROS_DEBUG_STREAM("left\n");
         if(index[i].x()-FILTER_HALF_CELL < 0){
 			LEFT = index[i].x();
 		}
 		else{
 			LEFT = FILTER_HALF_CELL;
 		}
-        //ROS_DEBUG_STREAM("LEFT : " << LEFT << "\n");
         //right shape
-        //ROS_DEBUG_STREAM("right\n");
 		if(index[i].x()+FILTER_HALF_CELL > sizeX-1){
 			RIGHT = (sizeX-1)-index[i].x();
 		}
 		else{
 			RIGHT  = FILTER_HALF_CELL;
 		}
-        //ROS_DEBUG_STREAM("RIGHT : " << RIGHT << "\n");
         //top shape
-        //ROS_DEBUG_STREAM("top\n");
 		if(index[i].y()-FILTER_HALF_CELL < 0){
 			TOP = index[i].y();
 		}
 		else{
 			TOP = FILTER_HALF_CELL;
 		}
-        //ROS_DEBUG_STREAM("TOP : " << TOP << "\n");
         //bottom shape
-        //ROS_DEBUG_STREAM("bottom\n");
 		if(index[i].y()+FILTER_HALF_CELL > sizeY-1){
 			BOTTOM = (sizeY-1)-index[i].y();
 		}
 		else{
 			BOTTOM = FILTER_HALF_CELL;
 		}
-        //ROS_DEBUG_STREAM("BOTTOM : " << BOTTOM << "\n");
-        //ROS_DEBUG_STREAM("for\n");
         for(int y=index[i].y()-TOP;y<=index[i].y()+BOTTOM;y++){
             for(int x=index[i].x()-LEFT;x<=index[i].x()+RIGHT;x++){
-                //ROS_DEBUG_STREAM("(x,y) : ( " << x << ", " << y << " )\n");
-                //ROS_DEBUG_STREAM("obstacleValue : " << +map.frontierMap[x][y] << "\n");
                 sum += (int)map.frontierMap[x][y];
             }
         }
@@ -482,7 +439,7 @@ void FrontierSearch::obstacleFilter(struct FrontierSearch::mapStruct& map,std::v
     ROS_INFO_STREAM("Obstacle Filter complete\n");
 }
 
-geometry_msgs::Point FrontierSearch::arrayToCoordinate(int indexX,int indexY,double originX,double originY,double resolution){
+geometry_msgs::Point FrontierSearch::arrayToCoordinate(int indexX,int indexY,double originX,double originY,float resolution){
     geometry_msgs::Point coordinate;
 
     coordinate.x = resolution * indexX + originX;
@@ -542,6 +499,8 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
         }
     }
 
+    previousGoal = goal;
+
     return goal;
 }
 
@@ -552,7 +511,7 @@ double FrontierSearch::qToYaw(geometry_msgs::Quaternion q){
     return yaw;
 }
 
-void FrontierSearch::release(struct FrontierSearch::mapStruct& map, double sizeX, double sizeY){
+void FrontierSearch::release(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY){
     ROS_INFO_STREAM("Memory release\n");
 
     //mapのメモリを解放
