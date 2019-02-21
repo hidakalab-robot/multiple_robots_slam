@@ -12,8 +12,12 @@
     <arg name="goal_delete" default="goal/delete"/>
     <arg name="goal_list_delete" default="goal_list/delete"/>
 
+    <!-- this group namespace-->
     <arg name="exploration_ns" default="exploration"/>
-    <arg name="planner_name" default="navfn_planner"/>
+    <!-- used topic namespace if create path-->
+    <arg name="planner_name" default="navfn_planner"/> 
+    <!-- path planning method  0:Navfn, 1:Voronoi -->
+    <arg name="planner_method" default="0"/>
 
     <arg name="base_frame_id"   default="$(arg robot_name)/base_footprint"/>
   	<arg name="global_frame_id" default="$(arg robot_name)/map"/>
@@ -32,6 +36,8 @@
 			<param name="$(arg planner_name)/global_frame" value="$(arg global_frame_id)"/>
     		<param name="$(arg planner_name)/robot_base_frame" value="$(arg base_frame_id)"/>
 			<param name="planner_name" value="$(arg planner_name)"/>
+            <param name="planner_method" value="$(arg planner_method)"/>
+            <param name="move_base_name" value="$(arg robot_name)/move_base"/>
         </node>
 
         <node pkg="exploration" type="visualization_test" name="visualization_test">

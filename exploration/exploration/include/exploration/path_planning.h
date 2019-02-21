@@ -1,5 +1,3 @@
-//future work
-//現在位置から目標座標までの経路を作成したい
 #ifndef PATH_PLANNING_H
 #define PATH_PLANNING_H
 
@@ -28,6 +26,7 @@ public:
 template<typename T>
 pathPlanning<T>::pathPlanning():tf(ros::Duration(10)),gcr("path_planner", tf){
     name = "path_planner";
+    planner.initialize(name,&gcr);
 }
 
 template<typename T>

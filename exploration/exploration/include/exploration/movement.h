@@ -15,13 +15,36 @@
 #include <exploration/path_planning.h>
 #include <navfn/navfn_ros.h>
 #include <voronoi_planner/planner_core.h>
-
-//#include <nav_msgs/Path.h>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
+
+/*
+Using function Example
+
+if you want move to goal with move_base
+    moveToGoal(goal,true);
+
+if you want move to goal without move_base
+    moveToGoal(goal,false);
+        or
+    moveToGoal(goal);
+
+if you want to create path and move to goal
+    moveToGoal(createPath(goal));
+
+if you have path and use it
+    moveToGoal(path);
+
+if you want to move forward without goal
+    moveToForward();
+
+if you want to one rotation
+    oneRotation();
+*/
+
 class Movement 
 {
 private:
@@ -126,10 +149,10 @@ public:
     Movement();
     ~Movement(){};
 
-    void moveToGoal(geometry_msgs::Point goal,bool movebase);
     std::vector<geometry_msgs::PoseStamped> createPath(geometry_msgs::Point goal);
+    void moveToGoal(geometry_msgs::Point goal,bool movebase);
     void moveToGoal(geometry_msgs::Point goal);
-    void moveToGoal(std::vector<geometry_msgs::PoseStamped> path);
+    void moveToGoal(std::vector<geometry_msgs::PoseStamped> path); // not stable
 
     void moveToForward(void);
     void oneRotation(void);
@@ -908,8 +931,7 @@ bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::P
     int method;
     p.param<int>("planner_method", method, 0);
 
-    switch (method)
-    {
+    switch (method){
         case 0:
             ROS_INFO_STREAM("call Navfn\n");
             return callNavfn(name,start,goal,path);
