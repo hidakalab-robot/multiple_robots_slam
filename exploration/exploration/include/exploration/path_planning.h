@@ -43,6 +43,7 @@ template<typename T>
 bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& plan){
     rosSpinOnce();
     T planner;
+    ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
     planner.initialize(name,&gcr);
 
     return planner.makePlan(start,goal,plan);

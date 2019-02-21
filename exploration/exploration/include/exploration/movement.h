@@ -16,6 +16,8 @@
 #include <navfn/navfn_ros.h>
 #include <voronoi_planner/planner_core.h>
 
+#include <nav_msgs/Path.h>
+
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
 class Movement 
@@ -83,6 +85,9 @@ private:
     ros::NodeHandle pma;
     ros::Publisher pubMoveAngle;
 
+    ros::NodeHandle ppp;
+    ros::Publisher pubPathPlan;
+
     double previousOrientation;
     double goalDirection;
     bool existGoal;
@@ -104,6 +109,8 @@ private:
     void publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal);
     void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
     void publishToGoalDelete(void);
+
+    void publishPathPlan(std::vector<geometry_msgs::PoseStamped>& path);
 
     bool callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
 
@@ -161,6 +168,8 @@ Movement::Movement():p("~"){
     pubToGoal = ptg.advertise<exploration_msgs::ToGoal>("to_goal", 1);
     pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>("move_angle", 1);
     pubToGoalDel = ptgd.advertise<std_msgs::Empty>("to_goal/delete", 1);
+
+    pubPathPlan = ppp.advertise<nav_msgs::Path>("path", 1);
 
     INT_INFINITY = 1000000;
     DOUBLE_INFINITY = 100000.0;
@@ -242,11 +251,12 @@ void Movement::moveToGoal(geometry_msgs::Point goal,bool createPath){
         if(callPathPlanner(start,goalStamped,path)){
             ROS_INFO_STREAM("Path was Found\n");
             ROS_DEBUG_STREAM("path size : " << path.size() << "\n");
+            //publishPathPlan(path);
             //moveToGoal(path);
         }
         else{
             ROS_INFO_STREAM("Path was not Found\n");
-            moveToGoal(goal);
+            //moveToGoal(goal);
         }
     }
     else{
@@ -841,9 +851,21 @@ bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::P
     //navfnなどのグローバルパスプラナーを呼ぶ
     std::string name;
     p.param<std::string>("planner_name", name, "path_planner");
+    ROS_DEBUG_STREAM("planner name : " << name << "\n");
     pathPlanning<navfn::NavfnROS> pp(name);
     //pathPlanning<voronoi_planner::VoronoiPlanner> pp(name);
     
     return pp.createPath(start,goal,path);
+}
+
+void Movement::publishPathPlan(std::vector<geometry_msgs::PoseStamped>& path){
+    nav_msgs::Path msg;
+
+    msg.header.frame_id = path[0].header.frame_id;
+    msg.header.stamp = ros::Time::now();
+    msg.poses = path;
+
+    pubPathPlan.publish(msg);
+    //ROS_INFO_STREAM("Publish To Goal Delete\n");
 }
 #endif //MOVEMENT_H
