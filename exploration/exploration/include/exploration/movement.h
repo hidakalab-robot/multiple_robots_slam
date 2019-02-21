@@ -175,7 +175,7 @@ Movement::Movement():p("~"){
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
-    p.param<int>("try_count", TRY_COUNT, 3);
+    p.param<int>("try_count", TRY_COUNT, 1);
     p.param<bool>("avoidance_to_goal", AVOIDANCE_TO_GOAL, true);
     p.param<double>("velocity_gain", VELOCITY_GAIN, 1.0);
     p.param<double>("avoidance_t", AVOIDANCE_T, 0.3);

@@ -364,6 +364,7 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struc
 
 std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution){
     //future work
+    // k-means and bunsan
     std::vector<Eigen::Vector2i> index;
     return index;
 }
