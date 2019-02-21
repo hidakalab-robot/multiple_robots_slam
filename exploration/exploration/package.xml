@@ -62,6 +62,8 @@
   <build_depend>costmap_2d</build_depend>
   <build_depend>navfn</build_depend>
   <build_depend>voronoi_planner</build_depend>
+  <build_depend>mobe_base_msgs</build_depend>
+  <build_depend>actionlib</build_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
   <build_export_depend>kobuki_msgs</build_export_depend>
   <build_export_depend>nav_msgs</build_export_depend>
@@ -75,6 +77,8 @@
   <build_export_depend>costmap_2d</build_export_depend>
   <build_export_depend>navfn</build_export_depend>
   <build_export_depend>voronoi_planner</build_export_depend>
+  <build_export_depend>mobe_base_msgs</build_export_depend>
+  <build_export_depend>actionlib</build_export_depend>
   <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>kobuki_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
@@ -88,6 +92,8 @@
   <exec_depend>costmap_2d</exec_depend>
   <exec_depend>navfn</exec_depend>
   <exec_depend>voronoi_planner</exec_depend>
+  <exec_depend>mobe_base_msgs</exec_depend>
+  <exec_depend>actionlib</exec_depend>
 
 
   <!-- The export tag contains other, unspecified, tags -->

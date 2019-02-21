@@ -26,14 +26,15 @@ private:
   costmap_2d::Costmap2DROS gcr;
   std::string name;
   //voronoi_planner::VoronoiPlanner vp;
-
+  void rosSpinOnce(void);
+  
 public:
   CostmapToVoronoi();
   CostmapToVoronoi(std::string name);
   ~CostmapToVoronoi(){};
 
   //void voronoiInitialize();
-  void rosSpinOnce(void);
+
   //void makeVoronoi(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan);
   bool voronoiProcess(geometry_msgs::PoseStamped& start,geometry_msgs::PoseStamped& goal,std::vector<geometry_msgs::PoseStamped>& plan);
 };

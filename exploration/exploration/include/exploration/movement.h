@@ -16,7 +16,9 @@
 #include <navfn/navfn_ros.h>
 #include <voronoi_planner/planner_core.h>
 
-#include <nav_msgs/Path.h>
+//#include <nav_msgs/Path.h>
+#include <move_base_msgs/MoveBaseAction.h>
+#include <actionlib/client/simple_action_client.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -114,13 +116,21 @@ private:
 
     bool callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
 
+    bool callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
+    bool callNavfn(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
+
+    void directionFitting(double targetYaw);
+    void directionFitting(geometry_msgs::Point target);
+
 public:
     Movement();
     ~Movement(){};
 
-    void moveToGoal(geometry_msgs::Point goal,bool createPath);
+    void moveToGoal(geometry_msgs::Point goal,bool movebase);
+    std::vector<geometry_msgs::PoseStamped> createPath(geometry_msgs::Point goal);
     void moveToGoal(geometry_msgs::Point goal);
     void moveToGoal(std::vector<geometry_msgs::PoseStamped> path);
+
     void moveToForward(void);
     void oneRotation(void);
 };
@@ -238,33 +248,60 @@ void Movement::approx(std::vector<float>& scan){
     }
 }
 
-void Movement::moveToGoal(geometry_msgs::Point goal,bool createPath){
-    if(createPath){
-        qPose.callOne(ros::WallDuration(1));
-        geometry_msgs::PoseStamped start;
-        start = poseData;
-        geometry_msgs::PoseStamped goalStamped;
-        goalStamped.header.frame_id = poseData.header.frame_id;
-        goalStamped.pose.position.x = goal.x;
-        goalStamped.pose.position.y = goal.y;
-        std::vector<geometry_msgs::PoseStamped> path;
-        if(callPathPlanner(start,goalStamped,path)){
-            ROS_INFO_STREAM("Path was Found\n");
-            ROS_DEBUG_STREAM("path size : " << path.size() << "\n");
-            //publishPathPlan(path);
-            //moveToGoal(path);
-        }
-        else{
-            ROS_INFO_STREAM("Path was not Found\n");
-            //moveToGoal(goal);
-        }
+std::vector<geometry_msgs::PoseStamped> Movement::createPath(geometry_msgs::Point goal){
+    qPose.callOne(ros::WallDuration(1));
+    geometry_msgs::PoseStamped start;
+    start = poseData;
+    geometry_msgs::PoseStamped goalStamped;
+    goalStamped.header.frame_id = poseData.header.frame_id;
+    goalStamped.pose.position.x = goal.x;
+    goalStamped.pose.position.y = goal.y;
+    std::vector<geometry_msgs::PoseStamped> path;
+    if(callPathPlanner(start,goalStamped,path)){
+        ROS_INFO_STREAM("Path was Found\n");
+        //ROS_DEBUG_STREAM("path size : " << path.size() << "\n");
     }
     else{
-        moveToGoal(goal);
+        ROS_INFO_STREAM("Path was not Found\n");
     }
+    return path;
 }
 
-//反転処理　関数
+void Movement::moveToGoal(geometry_msgs::Point goal,bool movebase){
+    if(!movebase){
+        moveToGoal(goal);
+    }
+    else{
+        std::string movebaseName;
+        p.param<std::string>("movebase_name", movebaseName, "move_base");
+        std::string mapFrameId;
+        p.param<std::string>("map_frame_id", mapFrameId, "map");
+
+        actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(movebaseName, true);
+        
+        while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
+            ROS_INFO_STREAM("wait for action server\n");
+        }
+
+        move_base_msgs::MoveBaseGoal movebaseGoal;
+
+        movebaseGoal.target_pose.header.frame_id = mapFrameId;
+        movebaseGoal.target_pose.header.stamp = ros::Time::now();
+
+        movebaseGoal.target_pose.pose.position.x =  goal.x;
+        movebaseGoal.target_pose.pose.position.y =  goal.y;
+        movebaseGoal.target_pose.pose.orientation.w = 1.0;
+
+        ROS_INFO_STREAM("send goal to move_base\n");
+        ac.sendGoal(movebaseGoal);
+
+        ROS_INFO_STREAM("wait for result\n");
+        ac.waitForResult();
+
+        ROS_INFO_STREAM("move_base was finished\n");
+        //return ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED;
+    }
+}
 
 void Movement::moveToGoal(geometry_msgs::Point goal){
     ROS_INFO_STREAM("Goal Recieved : (" << goal.x << "," << goal.y << ")\n");
@@ -354,6 +391,11 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
 
     //double yaw = qToYaw(poseData.pose.orientation);
 
+    if(path.size() == 0){
+        ROS_ERROR_STREAM("Path is Empty\n");
+        return;
+    }
+
     //double PATH_RADIUS = 0.5;
 
     //目標位置との角度
@@ -381,21 +423,15 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
     
     //目標の角度計算(多分できるはず)
     double goalYaw = qToYaw(path[tempI].pose.orientation);
-    double yaw = qToYaw(poseData.pose.orientation);
+    // double yaw = qToYaw(poseData.pose.orientation);
 
     // double MATCH_ANGLE_THRESHOLD = 0.1;
     // double MATCH_ROTATION_VELOCITY = 0.2;
 
-    geometry_msgs::Twist vel;
-    vel.angular.z = MATCH_ROTATION_VELOCITY;
+    // geometry_msgs::Twist vel;
+    // vel.angular.z = MATCH_ROTATION_VELOCITY;
 
-    //角度合わせ
-    while(std::abs(goalYaw - yaw) > MATCH_ANGLE_THRESHOLD){
-        //回転動作
-        pubVelocity.publish(vel);
-        qPose.callOne(ros::WallDuration(1));
-        yaw = qToYaw(poseData.pose.orientation);
-    }
+    directionFitting(goalYaw);
 
     //移動する
     geometry_msgs::Point tempGoal;
@@ -450,6 +486,21 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
     publishToGoalDelete();
     existGoal = false;
 
+}
+
+void Movement::directionFitting(double targetYaw){
+    geometry_msgs::Twist vel;
+    vel.angular.z = MATCH_ROTATION_VELOCITY;
+
+    double yaw = qToYaw(poseData.pose.orientation);
+
+    //角度合わせ
+    while(std::abs(targetYaw - yaw) > MATCH_ANGLE_THRESHOLD){
+        //回転動作
+        pubVelocity.publish(vel);
+        qPose.callOne(ros::WallDuration(1));
+        yaw = qToYaw(poseData.pose.orientation);
+    }
 }
 
 void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
@@ -849,12 +900,35 @@ void Movement::oneRotation(void){
 
 bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
     //navfnなどのグローバルパスプラナーを呼ぶ
+
     std::string name;
     p.param<std::string>("planner_name", name, "path_planner");
-    ROS_DEBUG_STREAM("planner name : " << name << "\n");
-    pathPlanning<navfn::NavfnROS> pp(name);
-    //pathPlanning<voronoi_planner::VoronoiPlanner> pp(name);
-    
+    //ROS_DEBUG_STREAM("planner name : " << name << "\n");
+
+    int method;
+    p.param<int>("planner_method", method, 0);
+
+    switch (method)
+    {
+        case 0:
+            ROS_INFO_STREAM("call Navfn\n");
+            return callNavfn(name,start,goal,path);
+        case 1:
+            ROS_INFO_STREAM("call VoronoiPlanner\n");
+            return callVoronoiPlanner(name,start,goal,path);
+        default:
+            ROS_ERROR_STREAM("planner method is unknown\n");
+            return false;
+    }
+}
+
+bool Movement::callNavfn(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+    static pathPlanning<navfn::NavfnROS> pp(plannerName);
+    return pp.createPath(start,goal,path);
+}
+
+bool Movement::callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+    pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
     return pp.createPath(start,goal,path);
 }
 

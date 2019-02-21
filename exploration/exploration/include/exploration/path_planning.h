@@ -14,6 +14,7 @@ private:
     tf::TransformListener tf;
     costmap_2d::Costmap2DROS gcr;
     std::string name;
+    T planner;
 
     void rosSpinOnce(void);
 public:
@@ -32,6 +33,7 @@ pathPlanning<T>::pathPlanning():tf(ros::Duration(10)),gcr("path_planner", tf){
 template<typename T>
 pathPlanning<T>::pathPlanning(std::string ns):tf(ros::Duration(10)),gcr(ns, tf){
     name = ns;
+    planner.initialize(name,&gcr);
 }
 
 template<typename T>
@@ -42,9 +44,9 @@ void pathPlanning<T>::rosSpinOnce(void){
 template<typename T>
 bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& plan){
     rosSpinOnce();
-    T planner;
+    //T planner;
     ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
-    planner.initialize(name,&gcr);
+    //planner.initialize(name,&gcr);
 
     return planner.makePlan(start,goal,plan);
 }
