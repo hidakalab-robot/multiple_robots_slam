@@ -41,8 +41,11 @@ if you have path and use it
 if you want to move forward without goal
     moveToForward();
 
-if you want to one rotation
+if you want to one rotations
     oneRotation();
+
+if you want to get path only
+    createPath(goal);  //std::vector<geometry_msgs::PoseStamped> is returned 
 */
 
 class Movement 
@@ -80,6 +83,12 @@ private:
     double LOCAL_TOLERANCE;
 
     double ROTATION_GAIN;
+
+    std::string PLANNER_NAME;
+    int PLANNER_METHOD;
+
+    std::string MOVEBASE_NAME;
+    std::string MAP_FRAME_ID;
 
     int INT_INFINITY;
     double DOUBLE_INFINITY;
@@ -185,12 +194,19 @@ Movement::Movement():p("~"){
     p.param<double>("vfh_gain", VFH_GAIN, 0.5);
     p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
 
+    p.param<std::string>("planner_name", PLANNER_NAME, "path_planner");
+    p.param<int>("planner_method", PLANNER_METHOD, 0);
 
     p.param<double>("match_angle_threshold", MATCH_ANGLE_THRESHOLD, 0.1);
     p.param<double>("match_rotation_velocity", MATCH_ROTATION_VELOCITY, 0.2);
 
     p.param<double>("path_radius", PATH_RADIUS, 0.5);
     p.param<double>("local_tolerance", LOCAL_TOLERANCE, 0.2);
+
+    p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
+    p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
+
+
 
     ss.setCallbackQueue(&qScan);
     subScan = ss.subscribe("scan",1,&Movement::scanCB, this);
@@ -299,22 +315,15 @@ void Movement::moveToGoal(geometry_msgs::Point goal,bool movebase){
         moveToGoal(goal);
     }
     else{
-        std::string movebaseName;
-        p.param<std::string>("movebase_name", movebaseName, "move_base");
-        std::string mapFrameId;
-        p.param<std::string>("map_frame_id", mapFrameId, "map");
-
-        actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(movebaseName, true);
+        actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
         
         while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
             ROS_INFO_STREAM("wait for action server\n");
         }
 
         move_base_msgs::MoveBaseGoal movebaseGoal;
-
-        movebaseGoal.target_pose.header.frame_id = mapFrameId;
+        movebaseGoal.target_pose.header.frame_id = MAP_FRAME_ID;
         movebaseGoal.target_pose.header.stamp = ros::Time::now();
-
         movebaseGoal.target_pose.pose.position.x =  goal.x;
         movebaseGoal.target_pose.pose.position.y =  goal.y;
         movebaseGoal.target_pose.pose.orientation.w = 1.0;
@@ -928,21 +937,13 @@ void Movement::oneRotation(void){
 
 bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
     //navfnなどのグローバルパスプラナーを呼ぶ
-
-    std::string name;
-    p.param<std::string>("planner_name", name, "path_planner");
-    //ROS_DEBUG_STREAM("planner name : " << name << "\n");
-
-    int method;
-    p.param<int>("planner_method", method, 0);
-
-    switch (method){
+    switch (PLANNER_METHOD){
         case 0:
             ROS_INFO_STREAM("call Navfn\n");
-            return callNavfn(name,start,goal,path);
+            return callNavfn(PLANNER_NAME,start,goal,path);
         case 1:
             ROS_INFO_STREAM("call VoronoiPlanner\n");
-            return callVoronoiPlanner(name,start,goal,path);
+            return callVoronoiPlanner(PLANNER_NAME,start,goal,path);
         default:
             ROS_ERROR_STREAM("planner method is unknown\n");
             return false;
