@@ -69,15 +69,17 @@ private:
     bool AVOIDANCE_TO_GOAL;
     double VELOCITY_GAIN;
 
-    double AVOIDANCE_T;
-    double VFH_T;
-    double ROAD_CENTER_T;
+    double AVOIDANCE_GAIN;
+    double VFH_GAIN;
+    double ROAD_CENTER_GAIN;
 
     double MATCH_ANGLE_THRESHOLD;
     double MATCH_ROTATION_VELOCITY;
 
     double PATH_RADIUS;
-    double LOCAL_TOLERANCE ;
+    double LOCAL_TOLERANCE;
+
+    double ROTATION_GAIN;
 
     int INT_INFINITY;
     double DOUBLE_INFINITY;
@@ -178,9 +180,11 @@ Movement::Movement():p("~"){
     p.param<int>("try_count", TRY_COUNT, 1);
     p.param<bool>("avoidance_to_goal", AVOIDANCE_TO_GOAL, true);
     p.param<double>("velocity_gain", VELOCITY_GAIN, 1.0);
-    p.param<double>("avoidance_t", AVOIDANCE_T, 0.3);
-    p.param<double>("vfh_t", VFH_T, 0.5);
-    p.param<double>("road_center_t", ROAD_CENTER_T, 0.8);
+    p.param<double>("rotation_gain", ROTATION_GAIN, 1.0);
+    p.param<double>("avoidance_gain", AVOIDANCE_GAIN, 0.3);
+    p.param<double>("vfh_gain", VFH_GAIN, 0.5);
+    p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
+
 
     p.param<double>("match_angle_threshold", MATCH_ANGLE_THRESHOLD, 0.1);
     p.param<double>("match_rotation_velocity", MATCH_ROTATION_VELOCITY, 0.2);
@@ -544,7 +548,7 @@ void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
             }
         }
         else{
-            velocityPublisher(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_T);
+            velocityPublisher(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN);
         }
     }
 }
@@ -771,7 +775,7 @@ bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Po
         else{
             ROS_INFO_STREAM("Avoidance to Right\n");
         }
-        velocityPublisher(sign * scan.angle_max/6 * VELOCITY_GAIN,0.0,AVOIDANCE_T);
+        velocityPublisher(sign * scan.angle_max/6 * VELOCITY_GAIN,0.0,AVOIDANCE_GAIN);
     }
     else{
         //両方向に回避が可能かつゴールが設定されているときはゴール方向に回避
@@ -792,7 +796,7 @@ bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Po
             return false;
         }
     }
-    velocityPublisher(sign*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_T);
+    velocityPublisher(sign*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN);
 
     return true;
 }
@@ -809,6 +813,7 @@ void Movement::velocityPublisher(double theta, double v, double t){
     double omega;
 
     previousOrientation = theta / std::abs(theta);
+    t /= ROTATION_GAIN;
     omega = (CURVE_GAIN*theta)/t;
     geometry_msgs::Twist vel;
     vel.linear.x = v;
@@ -855,7 +860,7 @@ bool Movement::roadCenterDetection(sensor_msgs::LaserScan scan){
         if(std::abs(diffY) >= ROAD_THRESHOLD){
             centerAngle = (fixAngles[i]+fixAngles[i+1])/2;
             ROS_DEBUG_STREAM("Road Center Found\n");
-            velocityPublisher(centerAngle*VELOCITY_GAIN,FORWARD_VELOCITY*VELOCITY_GAIN,ROAD_CENTER_T);
+            velocityPublisher(centerAngle*VELOCITY_GAIN,FORWARD_VELOCITY*VELOCITY_GAIN,ROAD_CENTER_GAIN);
             return true;
         }
     }
