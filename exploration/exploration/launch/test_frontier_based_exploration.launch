@@ -15,9 +15,9 @@
     <!-- this group namespace-->
     <arg name="exploration_ns" default="exploration"/>
     <!-- used topic namespace if create path-->
-    <arg name="planner_name" default="navfn_planner"/> 
+    <arg name="planner_name" default="voronoi_planner"/> 
     <!-- path planning method  0:Navfn, 1:Voronoi -->
-    <arg name="planner_method" default="0"/>
+    <arg name="planner_method" default="1"/>
 
     <arg name="base_frame_id"   default="$(arg robot_name)/base_footprint"/>
   	<arg name="global_frame_id" default="$(arg robot_name)/map"/>

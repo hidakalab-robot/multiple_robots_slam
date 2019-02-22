@@ -28,6 +28,9 @@
   
   <arg name="robot_name" default="robot1"/>
 
+  <!-- sensor range for using depth and laserscan -->
+  <arg name="sensor_range_max" default="3.5"/> 
+
   <arg name="database_path"     default="rtabmap.db"/>
   <arg name="rgbd_odometry"     default="true"/>
   <arg name="rtabmapviz"        default="false"/>
@@ -69,10 +72,9 @@
 	  <param name="subscribe_depth"     type="bool"   value="true"/>
 	  <param name="subscribe_scan"      type="bool"   value="true"/>
 	  <param name="map_negative_poses_ignored" type="bool" value="true"/>
-	  <param name="Grid/FromDepth" type="string" value="true"/>
-          <param name="odom_frame_id" type="string" value="/$(arg robot_name)/odom"/>
+    <param name="odom_frame_id" type="string" value="/$(arg robot_name)/odom"/>
 	  <param name="map_frame_id" type="string" value="/$(arg robot_name)/map"/>
-	  <param name="grid_size" type="double" value="200"/>
+	  <!-- <param name="grid_size" type="double" value="200"/> -->
 
 	  <!-- inputs -->
 	  <remap from="scan"            to="/$(arg robot_name)/scan"/>
@@ -101,6 +103,9 @@
 	  <param name="Reg/Force3DoF"                type="string" value="true"/>
 	  <param name="GridGlobal/MinSize"           type="string" value="20"/>
     <param name="RGBD/OptimizeMaxError"        type="string" value="0.1"/>
+    <param name="Grid/FromDepth" type="string" value="true"/>
+    <param name="Grid/RangeMax" type="double" value="$(arg sensor_range_max)"/>
+
 	  
 	  <!-- localization mode -->
 	  <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>

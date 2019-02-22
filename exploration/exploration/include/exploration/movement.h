@@ -90,6 +90,8 @@ private:
     std::string MOVEBASE_NAME;
     std::string MAP_FRAME_ID;
 
+    bool PUBLISH_MY_VORONOI;
+
     int INT_INFINITY;
     double DOUBLE_INFINITY;
 
@@ -121,8 +123,8 @@ private:
     ros::NodeHandle pma;
     ros::Publisher pubMoveAngle;
 
-    ros::NodeHandle ppp;
-    ros::Publisher pubPathPlan;
+    ros::NodeHandle pvm;
+    ros::Publisher pubVoronoiMap;
 
     double previousOrientation;
     double goalDirection;
@@ -145,6 +147,8 @@ private:
     void publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal);
     void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
     void publishToGoalDelete(void);
+
+    void publishVoronoiMap(nav_msgs::OccupancyGrid map);
 
     bool callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
 
@@ -204,8 +208,6 @@ Movement::Movement():p("~"){
     p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
 
-
-
     ss.setCallbackQueue(&qScan);
     subScan = ss.subscribe("scan",1,&Movement::scanCB, this);
 
@@ -220,7 +222,10 @@ Movement::Movement():p("~"){
     pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>("move_angle", 1);
     pubToGoalDel = ptgd.advertise<std_msgs::Empty>("to_goal/delete", 1);
 
-    pubPathPlan = ppp.advertise<nav_msgs::Path>("path", 1);
+    p.param<bool>("publish_my_voronoi", PUBLISH_MY_VORONOI, false);
+    if(PUBLISH_MY_VORONOI){
+        pubVoronoiMap = pvm.advertise<nav_msgs::OccupancyGrid>("voronoi_grid", 1);
+    }
 
     INT_INFINITY = 1000000;
     DOUBLE_INFINITY = 100000.0;
@@ -899,6 +904,11 @@ void Movement::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry
     ROS_INFO_STREAM("Publish MoveAngle\n");
 }
 
+void Movement::publishVoronoiMap(nav_msgs::OccupancyGrid map){
+    pubVoronoiMap.publish(map);
+    ROS_DEBUG_STREAM("Publish My Voronoi Map\n");
+}
+
 void Movement::publishToGoalDelete(void){
     std_msgs::Empty msg;
 
@@ -955,7 +965,16 @@ bool Movement::callNavfn(std::string plannerName,geometry_msgs::PoseStamped star
 
 bool Movement::callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
     pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
-    return pp.createPath(start,goal,path);
+
+    if(PUBLISH_MY_VORONOI){
+        nav_msgs::OccupancyGrid map;
+        bool success = pp.createPath(start,goal,path,map);
+        publishVoronoiMap(map);
+        return success;
+    }
+    else{
+        return pp.createPath(start,goal,path);
+    }
 }
 
 #endif //MOVEMENT_H
