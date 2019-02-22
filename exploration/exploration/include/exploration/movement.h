@@ -146,8 +146,6 @@ private:
     void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
     void publishToGoalDelete(void);
 
-    void publishPathPlan(std::vector<geometry_msgs::PoseStamped>& path);
-
     bool callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
 
     bool callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
@@ -960,14 +958,4 @@ bool Movement::callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseSta
     return pp.createPath(start,goal,path);
 }
 
-void Movement::publishPathPlan(std::vector<geometry_msgs::PoseStamped>& path){
-    nav_msgs::Path msg;
-
-    msg.header.frame_id = path[0].header.frame_id;
-    msg.header.stamp = ros::Time::now();
-    msg.poses = path;
-
-    pubPathPlan.publish(msg);
-    //ROS_INFO_STREAM("Publish To Goal Delete\n");
-}
 #endif //MOVEMENT_H
