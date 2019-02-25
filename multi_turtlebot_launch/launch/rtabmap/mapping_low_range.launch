@@ -29,7 +29,7 @@
   <arg name="robot_name" default="robot1"/>
 
   <!-- sensor range for using depth and laserscan -->
-  <arg name="sensor_range_max_for_map" default="3.5"/>
+  <arg name="sensor_range_max_for_map" default="6.0"/>
   <arg name="sensor_range_max_for_laser" default="6.0"/>
 
   <arg name="database_path"     default="rtabmap.db"/>

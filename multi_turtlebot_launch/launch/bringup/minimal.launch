@@ -1,13 +1,13 @@
 <launch>
   <!-- Turtlebot -->
   <arg name="base"              default="$(env TURTLEBOT_BASE)"         doc="mobile base type [create, roomba]"/>
-  <arg name="battery"           default="$(env TURTLEBOT_BATTERY)"      doc="kernel provided locatio for battery info, use /proc/acpi/battery/BAT0 in 2.6 or earlier kernels." />
+  <!-- <arg name="battery"           default="$(env TURTLEBOT_BATTERY)"      doc="kernel provided locatio for battery info, use /proc/acpi/battery/BAT0 in 2.6 or earlier kernels." /> -->
   <arg name="stacks"            default="$(env TURTLEBOT_STACKS)"       doc="stack type displayed in visualisation/simulation [circles, hexagons]"/>
   <arg name="3d_sensor"         default="$(env TURTLEBOT_3D_SENSOR)"    doc="3d sensor types [kinect, asux_xtion_pro]"/>
-  <arg name="simulation"        default="$(env TURTLEBOT_SIMULATION)"   doc="set flags to indicate this turtle is run in simulation mode."/>
+  <!-- <arg name="simulation"        default="$(env TURTLEBOT_SIMULATION)"   doc="set flags to indicate this turtle is run in simulation mode."/> -->
   <arg name="serialport"        default="$(env TURTLEBOT_SERIAL_PORT)"  doc="used by create to configure the port it is connected on [/dev/ttyUSB0, /dev/ttyS0]"/>
 
-  <param name="/use_sim_time" value="$(arg simulation)"/>
+  <!-- <param name="/use_sim_time" value="$(arg simulation)"/> -->
 
   <arg name="robot_name" default="robot1"/>
 
@@ -23,9 +23,9 @@
     <arg name="serialport" value="$(arg serialport)" />
     <arg name="robot_name" value="$(arg robot_name)"/>
   </include>
-  <include unless="$(eval arg('battery') == 'None')" file="$(find multi_turtlebot_launch)/launch/bringup/includes/netbook.launch.xml">
+  <!-- <include unless="$(eval arg('battery') == 'None')" file="$(find multi_turtlebot_launch)/launch/bringup/includes/netbook.launch.xml">
     <arg name="battery" value="$(arg battery)" />
     <arg name="robot_name" value="$(arg robot_name)"/>
-  </include>
+  </include> -->
 </group>
 </launch>
