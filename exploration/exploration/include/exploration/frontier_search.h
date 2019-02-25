@@ -102,8 +102,8 @@ FrontierSearch::FrontierSearch():p("~"){
     sp.setCallbackQueue(&qPose);
     subPose = sp.subscribe("pose",1,&FrontierSearch::poseCB,this);
 
-    pubGoal = pg.advertise<exploration_msgs::Goal>("goal", 1);
-	pubGoalList = pgl.advertise<exploration_msgs::GoalList>("goal_list", 1);
+    pubGoal = pg.advertise<exploration_msgs::Goal>("goal", 1, true);
+	pubGoalList = pgl.advertise<exploration_msgs::GoalList>("goal_list", 1, true);
 	pubGoalDel = pgd.advertise<std_msgs::Empty>("goal/delete", 1);
 	pubGoalListDel = pgld.advertise<std_msgs::Empty>("goal_list/delete", 1);
 

@@ -119,9 +119,6 @@ void VoronoiPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap
 
 
         ros::Subscriber costmapUpdateSubscriber = private_nh.subscribe("/move_base/global_costmap/costmap_updates", 10, &VoronoiPlanner::costmapUpdateCallback, this);
-
-
-
         initialized_ = true;
     } else
         ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");
@@ -436,10 +433,11 @@ bool VoronoiPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geo
 
     ROS_ERROR("\nTime to get plan: %f sec\n", (ros::Time::now() - t_b).toSec());
 
+    usleep(2e5);//publisherの準備ができるまで待機0.2秒 (単位が[us]なので)
 
     //publish the plan for visualization purposes
     publishPlan(plan);
-
+    
     if(publish_voronoi_grid_){
         publishVoronoiGrid(&voronoi_);
     }
@@ -979,7 +977,7 @@ void VoronoiPlanner::publishVoronoiGrid(DynamicVoronoi *voronoi)
                 grid.data[x + y*nx] = 0;
         }
     }
-    usleep(2e5);//publisherの準備ができるまで待機0.2秒 (単位が[us]なので)
+    //usleep(2e5);//publisherの準備ができるまで待機0.2秒 (単位が[us]なので)
     voronoi_grid_pub_.publish(grid);
 }
 
@@ -1019,7 +1017,7 @@ void VoronoiPlanner::publishVoronoiGrid(DynamicVoronoi *voronoi,nav_msgs::Occupa
                 grid.data[x + y*nx] = 0;
         }
     }
-
+    //usleep(2e5);//publisherの準備ができるまで待機0.2秒 (単位が[us]なので)
     map = grid;
     voronoi_grid_pub_.publish(grid);
 }

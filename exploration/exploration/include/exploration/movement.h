@@ -218,9 +218,9 @@ Movement::Movement():p("~"){
     subBumper = sb.subscribe("bumper",1,&Movement::bumperCB,this);
 
     pubVelocity = pv.advertise<geometry_msgs::Twist>("velocity", 1);
-    pubToGoal = ptg.advertise<exploration_msgs::ToGoal>("to_goal", 1);
+    pubToGoal = ptg.advertise<exploration_msgs::ToGoal>("to_goal", 1,true);
     pubMoveAngle = pma.advertise<exploration_msgs::MoveAngle>("move_angle", 1);
-    pubToGoalDel = ptgd.advertise<std_msgs::Empty>("to_goal/delete", 1);
+    pubToGoalDel = ptgd.advertise<std_msgs::Empty>("to_goal/delete", 1,true);
 
     p.param<bool>("publish_my_voronoi", PUBLISH_MY_VORONOI, false);
     if(PUBLISH_MY_VORONOI){
@@ -492,7 +492,7 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
 
     while(GOAL_TOLERANCE < goalDistance){//最終目標との距離を見る
         while(LOCAL_TOLERANCE < localDistance){//一時的な目標との距離
-            publishToGoal(poseData.pose, tempGoal);
+            //publishToGoal(poseData.pose, tempGoal);
             vfhMovement(false,tempGoal);//目標方向に一回だけpublish
             qPose.callOne(ros::WallDuration(1));
             localDistance = sqrt(pow(path[tempI].pose.position.x - poseData.pose.position.x,2) + pow(path[tempI].pose.position.y - poseData.pose.position.y,2));
@@ -522,7 +522,7 @@ void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
 
     ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
 
-    publishToGoalDelete();
+    //publishToGoalDelete();
     existGoal = false;
 
 }
@@ -965,7 +965,6 @@ bool Movement::callNavfn(std::string plannerName,geometry_msgs::PoseStamped star
 
 bool Movement::callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
     pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
-
     if(PUBLISH_MY_VORONOI){
         nav_msgs::OccupancyGrid map;
         bool success = pp.createPath(start,goal,path,map);

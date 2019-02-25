@@ -142,7 +142,7 @@ void Visualization::poseMarkerInitialize(void){
     sp.setCallbackQueue(&qPose);
     subPose = sp.subscribe("pose",1,&Visualization::poseCB, this);
 
-    pubPoseMarker = ppm.advertise<visualization_msgs::Marker>("pose_marker", 1);
+    pubPoseMarker = ppm.advertise<visualization_msgs::Marker>("pose_marker", 1,true);
 
     double lineWidth;
     p.param<double>("line_width", lineWidth, 0.1);
@@ -194,7 +194,7 @@ void Visualization::goalMarkerInitialize(void){
     sg.setCallbackQueue(&qGoal);
     subGoal = sg.subscribe("goal",1,&Visualization::goalCB, this);
 
-    pubGoalMarker = pgm.advertise<visualization_msgs::Marker>("goal_marker", 1);
+    pubGoalMarker = pgm.advertise<visualization_msgs::Marker>("goal_marker", 1,true);
 
     double goalSize;
     p.param<double>("goal_size", goalSize, 0.5);
@@ -254,7 +254,7 @@ void Visualization::goalListMarkerInitialize(void){
     sgl.setCallbackQueue(&qGoalList);
     subGoalList = sgl.subscribe("goal_list",1,&Visualization::goalListCB, this);
 
-    pubGoalListMarker = pglm.advertise<visualization_msgs::Marker>("goal_list_marker", 1);
+    pubGoalListMarker = pglm.advertise<visualization_msgs::Marker>("goal_list_marker", 1, true);
 
     double goalListSize;
     p.param<double>("goal_list_size", goalListSize, 0.3);
@@ -309,7 +309,7 @@ void Visualization::publishGoalListDelete(void){
 void Visualization::toGoalMarkerInitialize(void){
     stg.setCallbackQueue(&qToGoal);
     subToGoal = stg.subscribe("to_goal",1,&Visualization::toGoalCB, this);
-    pubToGoalMarker = ptgm.advertise<visualization_msgs::Marker>("to_goal_marker", 1);
+    pubToGoalMarker = ptgm.advertise<visualization_msgs::Marker>("to_goal_marker", 1, true);
 
     double toGoalSize;
     p.param<double>("to_goal_size", toGoalSize, 0.1);
@@ -350,7 +350,7 @@ void Visualization::toGoalDeleteInitialize(void){
     stgd.setCallbackQueue(&qToGoalDel);
     subToGoalDel = stgd.subscribe("to_goal/delete",1,&Visualization::toGoalDelCB, this);
 
-    pubToGoalDel = ptgd.advertise<visualization_msgs::Marker>("to_goal_marker", 1);
+    pubToGoalDel = ptgd.advertise<visualization_msgs::Marker>("to_goal_marker", 1, true);
 
     toGoalDel.header.frame_id = mapFrameId;
     toGoalDel.action = visualization_msgs::Marker::DELETE;
@@ -370,7 +370,7 @@ void Visualization::moveAngleMarkerInitialize(void){
     sma.setCallbackQueue(&qMoveAngle);
     subMoveAngle = sma.subscribe("move_angle",1,&Visualization::moveAngleCB, this);
 
-    pubMoveAngleMarker = pmam.advertise<visualization_msgs::Marker>("move_angle_marker", 1);
+    pubMoveAngleMarker = pmam.advertise<visualization_msgs::Marker>("move_angle_marker", 1, true);
 
     double moveAngleSizeX;
     double moveAngleSizeY;
