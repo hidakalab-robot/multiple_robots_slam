@@ -136,11 +136,12 @@ private:
 
     void approx(std::vector<float>& scan);
     void vfhMovement(bool isStraight, geometry_msgs::Point goal);
+    void vfhMovement(bool isStraight, double angle);
     bool bumperCollision(kobuki_msgs::BumperEvent bumper);
     double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle = 0.0);
     double localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose);
     double qToYaw(geometry_msgs::Quaternion q);
-    bool emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Point goal);
+    bool emergencyAvoidance(sensor_msgs::LaserScan scan);
     void recoveryRotation(void);
     void velocityPublisher(double theta, double v, double t);
     bool roadCenterDetection(sensor_msgs::LaserScan scan);
@@ -158,6 +159,10 @@ private:
     void directionFitting(double targetYaw);
     void directionFitting(geometry_msgs::Point target);
 
+    //moveToForwardのときの障害物回避で、前方に壁があったときの処理
+    bool forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle);
+    double sideSpaceDetection(sensor_msgs::LaserScan& scan, int plus, int minus);
+
 public:
     Movement();
     ~Movement(){};
@@ -169,6 +174,8 @@ public:
 
     void moveToForward(void);
     void oneRotation(void);
+
+    void functionCallTester(void);
 };
 
 Movement::Movement():p("~"){
@@ -555,7 +562,30 @@ void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
             resultAngle = vfhCalculation(scanData,false,localAngleCalculation(goal,poseData));
         }
         if((int)resultAngle == INT_INFINITY){
-            if(!emergencyAvoidance(scanData,goal)){
+            if(!emergencyAvoidance(scanData)){
+                recoveryRotation();
+            }
+        }
+        else{
+            velocityPublisher(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN);
+        }
+    }
+}
+
+void Movement::vfhMovement(bool isStraight, double angle){
+    double resultAngle;
+
+    qBumper.callOne(ros::WallDuration(1));
+    if(!bumperCollision(bumperData)){
+        qScan.callOne(ros::WallDuration(1));
+        if(isStraight){
+            resultAngle = vfhCalculation(scanData,true);
+        }
+        else{
+            resultAngle = vfhCalculation(scanData,false,angle);
+        }
+        if((int)resultAngle == INT_INFINITY){
+            if(!emergencyAvoidance(scanData)){
                 recoveryRotation();
             }
         }
@@ -756,7 +786,7 @@ double Movement::qToYaw(geometry_msgs::Quaternion q){
     return yaw;
 }
 
-bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan, geometry_msgs::Point goal){
+bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan){
     double aveP;
     double aveM;
     double sum = 0;
@@ -838,13 +868,21 @@ void Movement::velocityPublisher(double theta, double v, double t){
 
 void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight\n");
-    geometry_msgs::Point nullGoal;
+    geometry_msgs::Point goal;
+    double angle;
 
     qScan.callOne(ros::WallDuration(1));
     qPose.callOne(ros::WallDuration(1));
-    if(!roadCenterDetection(scanDataOrigin)){
-        vfhMovement(true,nullGoal);
+
+    if(forwardWallDetection(scanDataOrigin, angle)){
+        vfhMovement(false,angle);
     }
+    else{
+        if(!roadCenterDetection(scanDataOrigin)){
+            vfhMovement(true,goal);
+        }
+    }
+    
 }
 
 bool Movement::roadCenterDetection(sensor_msgs::LaserScan scan){
@@ -976,4 +1014,134 @@ bool Movement::callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseSta
     }
 }
 
+bool Movement::forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle){
+    //前方に壁があるかどうかを判定する
+    //前方何度まで見るかを決める
+    //その範囲にセンサデータが何割存在するかで壁かどうか決める
+    //壁があった場合右と左のどっちに避けるか決定
+
+    const double FORWARD_ANGLE = 0.17;
+
+    const int CENTER_SUBSCRIPT = scan.ranges.size()/2;
+
+    int PLUS = CENTER_SUBSCRIPT + (int)(FORWARD_ANGLE/scan.angle_increment);
+    int MINUS = CENTER_SUBSCRIPT - (int)(FORWARD_ANGLE/scan.angle_increment);
+
+    //ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", CENTER_SUBSCRIPT : " << CENTER_SUBSCRIPT << ", calc : " << (int)(FORWARD_ANGLE/scan.angle_increment) << "\n");
+
+    int count = 0;
+    double sum = 0;
+
+    for(int i=MINUS;i<PLUS;i++){
+        if(!std::isnan(scan.ranges[i])){
+            count++;
+            sum += scan.ranges[i];
+        }
+    }
+    //ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << (double)count/(PLUS-MINUS) << "\n");
+
+    double WALL_RATE_THRESHOLD = 0.8;
+
+    if((double)count/(PLUS-MINUS) > WALL_RATE_THRESHOLD){
+        ROS_INFO_STREAM("Wall Found : " << sum/count << " [m]\n");
+        angle = sideSpaceDetection(scan,PLUS, MINUS);
+        return true;
+    }
+    else{
+        ROS_INFO_STREAM("Wall not Found\n");
+        return false;
+    }
+}
+
+double Movement::sideSpaceDetection(sensor_msgs::LaserScan& scan, int plus, int minus){
+    //minus
+    double sumMinus = 0;
+    int countNanMinus = 0;
+    double maxSpaceMinus = 0;
+    double temp;
+    for(int i=0;i<minus;++i){
+        if(!std::isnan(scan.ranges[i])){
+            sumMinus += scan.ranges[i];
+            temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[i+1]));
+            if(temp > maxSpaceMinus){
+                maxSpaceMinus = temp;
+            }
+        }
+        else{
+            countNanMinus++;
+        }
+    }
+
+    //plus
+    double sumPlus = 0;
+    int countNanPlus = 0;
+    double maxSpacePlus = 0;
+    for(int i=plus;i<scan.ranges.size();++i){
+        if(!std::isnan(scan.ranges[i])){
+            sumPlus += scan.ranges[i];
+            temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[i-1]));
+            if(temp > maxSpacePlus){
+                maxSpacePlus = temp;
+            }
+        }
+        else{
+            countNanPlus++;
+        }
+    }
+
+    ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
+    ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
+
+    double aveMinus = sumMinus/(minus - countNanMinus);
+    double avePlus = sumPlus/(scan.ranges.size() - plus - countNanPlus);
+
+    double WALL_DISTANCE_THRESHOLD = 5.0;
+
+    //壁までの距離が遠い時は判定を行わない
+    if((aveMinus+avePlus)/2 > WALL_DISTANCE_THRESHOLD){
+        return 0;
+    }
+    else{//不確定 //壁までの距離が遠いときは平均距離が長いほうが良い、近いときは開いてる領域が大きい方が良い
+        if(maxSpaceMinus > maxSpacePlus && aveMinus > EMERGENCY_THRESHOLD){
+            ROS_INFO_STREAM("Found Right Space\n");
+            return scan.angle_min + (scan.angle_increment * (scan.ranges.size()/2+minus)/2);
+        }
+        else if(maxSpacePlus > maxSpaceMinus && avePlus > EMERGENCY_THRESHOLD){
+            ROS_INFO_STREAM("Found Left Space\n");
+            return scan.angle_min + (scan.angle_increment * (plus + scan.ranges.size()/2)/2);
+        }
+        else{
+            ROS_INFO_STREAM("Not Found Space\n");
+            return 0;
+        }
+    }
+
+
+
+    //平均距離が長い方にスペースがある//ダメでした
+    // if(aveMinus > avePlus && aveMinus > EMERGENCY_THRESHOLD){
+    //     ROS_INFO_STREAM("Found Right Space\n");
+    //     return scan.angle_min + (scan.angle_increment * (scan.ranges.size()/2+minus)/2);
+    // }
+    // else if(avePlus > aveMinus && avePlus > EMERGENCY_THRESHOLD){
+    //     ROS_INFO_STREAM("Found Left Space\n");
+    //     return scan.angle_min + (scan.angle_increment * (plus + scan.ranges.size()/2)/2);
+    // }
+    // else{
+    //     ROS_INFO_STREAM("Not Found Space\n");
+    //     return 0;
+    // }
+    //不確定 //壁までの距離が遠いときは平均距離が長いほうが良い、近いときは開いてる領域が大きい方が良い
+    //開いてる領域が大きい方
+}
+
+void Movement::functionCallTester(void){
+    qScan.callOne(ros::WallDuration(1));
+
+    double angle;
+    if(forwardWallDetection(scanDataOrigin,angle)){
+        ROS_INFO_STREAM("Return Angle : " << angle << " [rad], " << angle*180/M_PI << " [deg]" << "\n");
+    }
+    
+}
 #endif //MOVEMENT_H

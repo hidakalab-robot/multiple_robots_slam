@@ -231,3 +231,6 @@ target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
 
 add_executable(visualization_test src/visualization_test.cpp)
 target_link_libraries(visualization_test ${catkin_LIBRARIES})
+
+add_executable(function_test src/function_test.cpp)
+target_link_libraries(function_test ${catkin_LIBRARIES})
