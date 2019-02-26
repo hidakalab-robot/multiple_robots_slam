@@ -2,7 +2,7 @@
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, "visualization");
+    ros::init(argc, argv, "visualization_sbe");
 
     Visualization v;
 

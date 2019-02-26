@@ -325,7 +325,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal,bool movebase){
         moveToGoal(goal);
     }
     else{
-        actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
+        static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
         
         while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
             ROS_INFO_STREAM("wait for action server\n");
@@ -345,6 +345,14 @@ void Movement::moveToGoal(geometry_msgs::Point goal,bool movebase){
         ac.waitForResult();
 
         ROS_INFO_STREAM("move_base was finished\n");
+
+        if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+            ROS_INFO_STREAM("I Reached Given Target");
+        }
+        else{
+            ROS_WARN_STREAM("I do not Reached Given Target");
+        }
+
         //return ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED;
     }
 }
@@ -1041,14 +1049,19 @@ bool Movement::forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle)
     //ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << (double)count/(PLUS-MINUS) << "\n");
 
     double WALL_RATE_THRESHOLD = 0.8;
+    double WALL_DISTANCE_UPPER_THRESHOLD = 5.0;
+    double WALL_DISTANCE_LOWER_THRESHOLD = 3.0;
+    double wallDistance = sum/count;
 
-    if((double)count/(PLUS-MINUS) > WALL_RATE_THRESHOLD){
-        ROS_INFO_STREAM("Wall Found : " << sum/count << " [m]\n");
+    //壁の割合が少ないときと、壁までの距離が遠い時は検出判定をしない
+    //追加で壁に近くなりすぎると判定ができなくなるので無効とする
+    if((double)count/(PLUS-MINUS) > WALL_RATE_THRESHOLD && wallDistance < WALL_DISTANCE_UPPER_THRESHOLD && wallDistance > WALL_DISTANCE_LOWER_THRESHOLD){
+        ROS_INFO_STREAM("Wall Found : " << wallDistance << " [m]\n");
         angle = sideSpaceDetection(scan,PLUS, MINUS);
         return true;
     }
     else{
-        ROS_INFO_STREAM("Wall not Found\n");
+        ROS_INFO_STREAM("Wall not Found or Out of Range\n");
         return false;
     }
 }
@@ -1062,7 +1075,13 @@ double Movement::sideSpaceDetection(sensor_msgs::LaserScan& scan, int plus, int 
     for(int i=0;i<minus;++i){
         if(!std::isnan(scan.ranges[i])){
             sumMinus += scan.ranges[i];
-            temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[i+1]));
+            for(int j=i+1;j<minus;++j){
+                if(!std::isnan(scan.ranges[j])){
+                    temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[j]));
+                    break;
+                }
+            }
+            //temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[i+1]));//これだとi+1がnanで判定するのでダメ
             if(temp > maxSpaceMinus){
                 maxSpaceMinus = temp;
             }
@@ -1079,7 +1098,13 @@ double Movement::sideSpaceDetection(sensor_msgs::LaserScan& scan, int plus, int 
     for(int i=plus;i<scan.ranges.size();++i){
         if(!std::isnan(scan.ranges[i])){
             sumPlus += scan.ranges[i];
-            temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[i-1]));
+            for(int j=i-1;j>=0;--j){
+                if(!std::isnan(scan.ranges[j])){
+                    temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[j]));
+                    break;
+                }
+            }
+            //temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[i-1]));
             if(temp > maxSpacePlus){
                 maxSpacePlus = temp;
             }
@@ -1089,34 +1114,25 @@ double Movement::sideSpaceDetection(sensor_msgs::LaserScan& scan, int plus, int 
         }
     }
 
-    ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
-    ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
+    //ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
+    //ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
 
     double aveMinus = sumMinus/(minus - countNanMinus);
     double avePlus = sumPlus/(scan.ranges.size() - plus - countNanPlus);
-
-    double WALL_DISTANCE_THRESHOLD = 5.0;
-
-    //壁までの距離が遠い時は判定を行わない
-    if((aveMinus+avePlus)/2 > WALL_DISTANCE_THRESHOLD){
+    
+    //不確定 //壁までの距離が遠いときは平均距離が長いほうが良い、近いときは開いてる領域が大きい方が良い
+    if(maxSpaceMinus > maxSpacePlus && aveMinus > EMERGENCY_THRESHOLD){
+        ROS_INFO_STREAM("Found Right Space\n");
+        return (scan.angle_min + (scan.angle_increment * (scan.ranges.size()/2+minus)/2))/2;
+    }
+    else if(maxSpacePlus > maxSpaceMinus && avePlus > EMERGENCY_THRESHOLD){
+        ROS_INFO_STREAM("Found Left Space\n");
+        return (scan.angle_min + (scan.angle_increment * (plus + scan.ranges.size()/2)/2))/2;
+    }
+    else{
+        ROS_INFO_STREAM("Not Found Space\n");
         return 0;
     }
-    else{//不確定 //壁までの距離が遠いときは平均距離が長いほうが良い、近いときは開いてる領域が大きい方が良い
-        if(maxSpaceMinus > maxSpacePlus && aveMinus > EMERGENCY_THRESHOLD){
-            ROS_INFO_STREAM("Found Right Space\n");
-            return scan.angle_min + (scan.angle_increment * (scan.ranges.size()/2+minus)/2);
-        }
-        else if(maxSpacePlus > maxSpaceMinus && avePlus > EMERGENCY_THRESHOLD){
-            ROS_INFO_STREAM("Found Left Space\n");
-            return scan.angle_min + (scan.angle_increment * (plus + scan.ranges.size()/2)/2);
-        }
-        else{
-            ROS_INFO_STREAM("Not Found Space\n");
-            return 0;
-        }
-    }
-
-
 
     //平均距離が長い方にスペースがある//ダメでした
     // if(aveMinus > avePlus && aveMinus > EMERGENCY_THRESHOLD){
@@ -1142,6 +1158,6 @@ void Movement::functionCallTester(void){
     if(forwardWallDetection(scanDataOrigin,angle)){
         ROS_INFO_STREAM("Return Angle : " << angle << " [rad], " << angle*180/M_PI << " [deg]" << "\n");
     }
-    
+    std::cout << std::endl; 
 }
 #endif //MOVEMENT_H

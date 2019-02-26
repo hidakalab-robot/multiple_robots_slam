@@ -7,63 +7,42 @@
     <arg name="pose_log" default="pose_log"/>
     <arg name="goal" default="goal"/>
     <arg name="goal_list" default="goal_list"/>
-    <arg name="to_goal" default="to_goal"/>
-    <arg name="move_angle" default="move_angle"/>
     <arg name="visualization" default="visualization"/>
-    <arg name="bumper_continuity" default="bumper_continuity"/>
     <arg name="goal_delete" default="goal/delete"/>
     <arg name="goal_list_delete" default="goal_list/delete"/>
-    <arg name="to_goal_delete" default="to_goal/delete"/>
 
     <arg name="exploration_ns" default="exploration"/>
 
     <group ns="$(arg robot_name)/$(arg exploration_ns)">
-        <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
-            <remap from="scan" to="/$(arg robot_name)/scan"/>
-            <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
-
+        <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <param name="movebase_name" value="$(arg robot_name)/move_base"/>
+            
+            <remap from="map" to="/$(arg robot_name)/map"/>
             <remap from="pose" to="$(arg pose)"/>
             <remap from="pose_log" to="$(arg pose_log)"/>
             <remap from="goal" to="$(arg goal)"/>
             <remap from="goal_list" to="$(arg goal_list)"/>
-            <remap from="to_goal" to="$(arg to_goal)"/>
-            <remap from="move_angle" to="$(arg move_angle)"/>
-            <remap from="bumper" to="$(arg bumper_continuity)"/>
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
-            <remap from="to_goal/delete" to="$(arg to_goal_delete)"/>
-
-            <param name="velocity_gain" value="1.0"/>
         </node>
 
-        <node pkg="exploration" type="visualization_sbe" name="visualization_sbe">
-            <param name="exploration_method" value="SENSOR"/>
-
+        <node pkg="exploration" type="visualization_fbe" name="visualization_fbe">
+            <param name="exploration_method" value="FRONTIER"/>
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
             <remap from="pose" to="$(arg pose)"/>
             <remap from="goal" to="$(arg goal)"/>
             <remap from="goal_list" to="$(arg goal_list)"/>
-            <remap from="to_goal" to="$(arg to_goal)"/>
-            <remap from="move_angle" to="$(arg move_angle)"/>
             <remap from="pose_marker" to="$(arg visualization)"/>
             <remap from="goal_marker" to="$(arg visualization)"/>
             <remap from="goal_list_marker" to="$(arg visualization)"/>
-            <remap from="to_goal_marker" to="$(arg visualization)"/>
-            <remap from="move_angle_marker" to="$(arg visualization)"/>
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
-            <remap from="to_goal/delete" to="$(arg to_goal_delete)"/>
         </node>
 
         <node pkg="exploration" type="log" name="log">
             <remap from="pose" to="$(arg pose)"/>
             <remap from="pose_log" to="$(arg pose_log)"/>
-        </node>
-
-        <node pkg="exploration" type="continuity" name="continuity">
-            <param name="bumper_raw_topic" value="/$(arg robot_name)/mobile_base/events/bumper"/>
-            <param name="bumper_continuity_topic" value="$(arg bumper_continuity)"/>
         </node>
 
         <!-- <include file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
@@ -80,8 +59,6 @@
             <arg name="bumper" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg bumper_continuity)"/>
             <arg name="goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal)"/>
             <arg name="goal_list" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal_list)"/>
-            <arg name="to_goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg to_goal)"/>
-            <arg name="move_angle" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg move_angle)"/>
             <arg name="visualization" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization)"/>
             <arg name="bumper_raw" value="/$(arg robot_name)/mobile_base/events/bumper"/>
             <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
