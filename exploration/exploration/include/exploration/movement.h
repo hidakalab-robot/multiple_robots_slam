@@ -95,6 +95,11 @@ private:
     int INT_INFINITY;
     double DOUBLE_INFINITY;
 
+    double FORWARD_ANGLE;
+    double WALL_RATE_THRESHOLD;
+    double WALL_DISTANCE_UPPER_THRESHOLD;
+    double WALL_DISTANCE_LOWER_THRESHOLD;
+
     ros::NodeHandle ss;
     ros::Subscriber subScan;
     ros::CallbackQueue qScan;
@@ -214,6 +219,11 @@ Movement::Movement():p("~"){
 
     p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
+
+    p.param<double>("forward_angle", FORWARD_ANGLE, 0.17);
+    p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
+    p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
+    p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 3.0);
 
     ss.setCallbackQueue(&qScan);
     subScan = ss.subscribe("scan",1,&Movement::scanCB, this);
@@ -1028,7 +1038,6 @@ bool Movement::forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle)
     //その範囲にセンサデータが何割存在するかで壁かどうか決める
     //壁があった場合右と左のどっちに避けるか決定
 
-    const double FORWARD_ANGLE = 0.17;
 
     const int CENTER_SUBSCRIPT = scan.ranges.size()/2;
 
@@ -1048,9 +1057,6 @@ bool Movement::forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle)
     }
     //ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << (double)count/(PLUS-MINUS) << "\n");
 
-    double WALL_RATE_THRESHOLD = 0.8;
-    double WALL_DISTANCE_UPPER_THRESHOLD = 5.0;
-    double WALL_DISTANCE_LOWER_THRESHOLD = 3.0;
     double wallDistance = sum/count;
 
     //壁の割合が少ないときと、壁までの距離が遠い時は検出判定をしない
