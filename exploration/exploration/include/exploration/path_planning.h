@@ -11,29 +11,35 @@ class pathPlanning
 private:
     tf::TransformListener tf;
     costmap_2d::Costmap2DROS gcr;
-    std::string name;
+    //std::string plannerName;
     T planner;
 
     void rosSpinOnce(void);
 public:
-    pathPlanning();
-    pathPlanning(std::string name);
+    //pathPlanning();
+    //pathPlanning(std::string name);
+    pathPlanning(std::string costmapName, std::string plannerName);
     ~pathPlanning(){};
 
-    bool createPath(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& plan);
-    bool createPath(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map);
+    bool createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan);
+    bool createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map);
 };
 
-template<typename T>
-pathPlanning<T>::pathPlanning():tf(ros::Duration(10)),gcr("path_planner", tf){
-    name = "path_planner";
-    planner.initialize(name,&gcr);
-}
+// template<typename T>
+// pathPlanning<T>::pathPlanning():tf(ros::Duration(10)),gcr("global_costmap", tf){
+//     plannerName = "path_planner";
+//     planner.initialize(plannerName,&gcr);
+// }
+
+// template<typename T>
+// pathPlanning<T>::pathPlanning(std::string name):tf(ros::Duration(10)),gcr(name, tf){
+//     //name = ns;
+//     planner.initialize(name,&gcr);
+// }
 
 template<typename T>
-pathPlanning<T>::pathPlanning(std::string ns):tf(ros::Duration(10)),gcr(ns, tf){
-    name = ns;
-    planner.initialize(name,&gcr);
+pathPlanning<T>::pathPlanning(std::string costmapName, std::string plannerName):tf(ros::Duration(10)),gcr(costmapName, tf){
+    planner.initialize(plannerName,&gcr);
 }
 
 template<typename T>
@@ -42,20 +48,20 @@ void pathPlanning<T>::rosSpinOnce(void){
 }
 
 template<typename T>
-bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& plan){
+bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     rosSpinOnce();
     //T planner;
-    ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
+    //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
     //planner.initialize(name,&gcr);
 
     return planner.makePlan(start,goal,plan);
 }
 
 template<typename T>
-bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped start, geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map){
+bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map){
     rosSpinOnce();
     //T planner;
-    ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
+    //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
     //planner.initialize(name,&gcr);
 
     return planner.makePlan(start,goal,plan,map);

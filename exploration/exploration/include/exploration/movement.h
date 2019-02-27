@@ -84,6 +84,7 @@ private:
 
     double ROTATION_GAIN;
 
+    std::string COSTMAP_NAME;
     std::string PLANNER_NAME;
     int PLANNER_METHOD;
 
@@ -158,8 +159,8 @@ private:
 
     bool callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
 
-    bool callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
-    bool callNavfn(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
+    bool callVoronoiPlanner(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
+    bool callNavfn(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
 
     void directionFitting(double targetYaw);
     void directionFitting(geometry_msgs::Point target);
@@ -208,6 +209,7 @@ Movement::Movement():p("~"){
     p.param<double>("vfh_gain", VFH_GAIN, 0.5);
     p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
 
+    p.param<std::string>("costmap_name", COSTMAP_NAME, "global_costmap");
     p.param<std::string>("planner_name", PLANNER_NAME, "path_planner");
     p.param<int>("planner_method", PLANNER_METHOD, 0);
 
@@ -1004,23 +1006,25 @@ bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::P
     switch (PLANNER_METHOD){
         case 0:
             ROS_INFO_STREAM("call Navfn\n");
-            return callNavfn(PLANNER_NAME,start,goal,path);
+            return callNavfn(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
         case 1:
             ROS_INFO_STREAM("call VoronoiPlanner\n");
-            return callVoronoiPlanner(PLANNER_NAME,start,goal,path);
+            return callVoronoiPlanner(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
         default:
             ROS_ERROR_STREAM("planner method is unknown\n");
             return false;
     }
 }
 
-bool Movement::callNavfn(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
-    static pathPlanning<navfn::NavfnROS> pp(plannerName);
+bool Movement::callNavfn(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+    //static pathPlanning<navfn::NavfnROS> pp(plannerName);
+    static pathPlanning<navfn::NavfnROS> pp(costmapName,plannerName);
     return pp.createPath(start,goal,path);
 }
 
-bool Movement::callVoronoiPlanner(std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
-    pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
+bool Movement::callVoronoiPlanner(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+    //pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
+    pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
     if(PUBLISH_MY_VORONOI){
         nav_msgs::OccupancyGrid map;
         bool success = pp.createPath(start,goal,path,map);
