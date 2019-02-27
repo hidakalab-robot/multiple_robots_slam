@@ -17,6 +17,7 @@
         <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
             <param name="movebase_name" value="$(arg robot_name)/move_base"/>
+            <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
             
             <remap from="map" to="/$(arg robot_name)/map"/>
             <remap from="pose" to="$(arg pose)"/>
@@ -51,7 +52,7 @@
             <arg name="topics" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization) /$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /$(arg robot_name)/scan /tf /tf_static /$(arg robot_name)/camera/rgb/image_raw"/>
         </include> -->
 
-        <include file="$(find exploration)/launch/includes/rosbag_record_debug.launch.xml">
+        <!-- <include file="$(find exploration)/launch/includes/rosbag_record_debug.launch.xml">
             <arg name="dir" value="/home/ros1/rosbag_debug"/>
             <arg name="pose" value="$(arg pose)"/>
             <arg name="pose_log" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg pose_log)"/>
@@ -63,6 +64,6 @@
             <arg name="bumper_raw" value="/$(arg robot_name)/mobile_base/events/bumper"/>
             <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
             <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_color"/>
-        </include>
+        </include> -->
     </group>
 </launch>
