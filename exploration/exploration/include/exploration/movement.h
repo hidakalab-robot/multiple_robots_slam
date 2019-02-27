@@ -976,11 +976,17 @@ void Movement::publishToGoalDelete(void){
 
 void Movement::oneRotation(void){
     //ロボットがz軸周りに一回転する
+    ROS_DEBUG_STREAM("rotation\n");
+
     qPose.callOne(ros::WallDuration(1));
 
     double initYaw = qToYaw(poseData.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
     double yaw = initYaw;
+
+    if(std::isnan(initSign)){
+	    initSign = 1.0;
+    }
 
     //initYawが+の時は+回転
     //initYawが-の時は-回転
@@ -989,8 +995,12 @@ void Movement::oneRotation(void){
 
     int count = 0;
     double yawOld;
+
+    //ROS_DEBUG_STREAM("bool : " << (bool)(count < 3) << ", " << (bool)(count < 2) << ", " << (bool)(std::abs(yaw) < std::abs(initYaw)) << "\n");
+    //ROS_DEBUG_STREAM("yaw : " << yaw << ", count : " << count << ", initYaw : " << initYaw << ", initSign : " << initSign << "\n");
+    
     //yawの符号が３回変わる、または２回変わった後initYawより絶対値が大きくなったら
-    while((count < 3 || (count < 2 && std::abs(yaw) < std::abs(initYaw))) && ros::ok()){
+    while((count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok()){
         yawOld = yaw;
         pubVelocity.publish(vel);
         qPose.callOne(ros::WallDuration(1));
@@ -998,6 +1008,8 @@ void Movement::oneRotation(void){
         if(yawOld * yaw < 0){
             count++;
         }
+        //ROS_DEBUG_STREAM("bool : " << (bool)(count < 3) << ", " << (bool)(count < 2) << ", " << (bool)(std::abs(yaw) < std::abs(initYaw)) << "\n");
+        //ROS_DEBUG_STREAM("yaw : " << yaw << ", count : " << count << ", initYaw : " << initYaw << ", initSign : " << initSign << "\n");
     }
 }
 

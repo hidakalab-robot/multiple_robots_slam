@@ -235,8 +235,8 @@ target_link_libraries(visualization_test ${catkin_LIBRARIES})
 add_executable(function_test src/function_test.cpp)
 target_link_libraries(function_test ${catkin_LIBRARIES})
 
-add_executable(frontier_based_exploration src/fbe_main.cpp)
-target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
+add_executable(frontier_based_exploration_movebase src/fbe_movebase.cpp)
+target_link_libraries(frontier_based_exploration_movebase ${catkin_LIBRARIES})
 
 add_executable(visualization_fbe src/visualization_fbe.cpp)
 target_link_libraries(visualization_fbe ${catkin_LIBRARIES})
