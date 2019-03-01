@@ -1,8 +1,8 @@
 #include <exploration/frontier_search.h>
 #include <exploration/movement.h>
 #include <exploration/path_planning.h>
-#include <navfn/navfn_ros.h>
-#include <voronoi_planner/planner_core.h>
+//#include <navfn/navfn_ros.h>
+//#include <voronoi_planner/planner_core.h>
 
 int main(int argc, char *argv[])
 {
@@ -15,11 +15,11 @@ int main(int argc, char *argv[])
 
     geometry_msgs::Point goal;
 
-    std::vector<geometry_msgs::PoseStamped> plan;
+    //std::vector<geometry_msgs::PoseStamped> plan;
     while(ros::ok()){
         if(fs.getGoal(goal)){
             //mv.moveToGoal(goal,true);
-            plan = mv.createPath(goal);
+            //plan = mv.createPath(goal);
         }
         else{
             //mv.moveToForward();

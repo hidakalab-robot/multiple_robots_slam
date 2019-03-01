@@ -12,6 +12,9 @@
 #include <tf/tf.h>
 #include <Eigen/Dense>
 
+#include <pcl_ros/point_cloud.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <sensor_msgs/PointCloud2.h>
 
 class FrontierSearch
 {
@@ -45,6 +48,10 @@ private:
 
     std::string mapFrameId;
 
+    double CLUSTER_TOLERANCE;
+    int MIN_CLUSTER_SIZE;
+    int MAX_CLUSTER_SIZE;
+
     ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
@@ -67,6 +74,9 @@ private:
 	ros::NodeHandle pgld;
 	ros::Publisher pubGoalListDel;
 
+    ros::NodeHandle pcc;
+	ros::Publisher pubColorCloud;
+
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
 	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
@@ -74,9 +84,11 @@ private:
     void release(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY);
     void horizonDetection(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY);
     std::vector<Eigen::Vector2i> frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution);
-    std::vector<Eigen::Vector2i> frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution);
+    std::vector<Eigen::Vector2i> frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, nav_msgs::MapMetaData& mapInfo);
     void obstacleFilter(struct FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, float resolution);
     geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,double originX,double originY,float resolution);
+    Eigen::Vector2i coordinateToArray(double x,double y,double originX,double originY,float resolution);
+
     geometry_msgs::Point selectGoal(std::vector<geometry_msgs::Point> goals, geometry_msgs::PoseStamped pose);
 
     double qToYaw(geometry_msgs::Quaternion q);
@@ -107,13 +119,16 @@ FrontierSearch::FrontierSearch():p("~"){
 	pubGoalDel = pgd.advertise<std_msgs::Empty>("goal/delete", 1);
 	pubGoalListDel = pgld.advertise<std_msgs::Empty>("goal_list/delete", 1);
 
+    pubColorCloud = pcc.advertise<sensor_msgs::PointCloud2>("horizon_cluster/color", 1);
+
     p.param<std::string>("map_frame_id", mapFrameId, "map");
 
     p.param<float>("frontier_diameter_min", FRONTIER_DIAMETER_MIN, 0.4);
 	p.param<int>("frontier_thickness", FRONTIER_THICKNESS, 3);
-    if((FRONTIER_THICKNESS%2) == 0){
-        FRONTIER_THICKNESS++;
-    }
+    FRONTIER_THICKNESS += (FRONTIER_THICKNESS+1)%2;//偶数封じ
+    // if((FRONTIER_THICKNESS%2) == 0){
+    //     FRONTIER_THICKNESS++;
+    // }
     p.param<int>("frontier_detection_method", FRONTIER_DETECTION_METHOD, 0);
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
     p.param<bool>("obstacle_filter", OBSTACLE_FILTER, true);
@@ -121,6 +136,10 @@ FrontierSearch::FrontierSearch():p("~"){
     p.param<double>("direction_weight", DIRECTION_WEIGHT, 2.0);
 
     p.param<double>("previous_goal_threshold", PREVIOUS_GOAL_THRESHOLD, 1.0);
+
+    p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.3);
+    p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 50);
+    p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
     
     DOUBLE_MINUS_INFINITY = -10000000.0;
 }
@@ -149,7 +168,7 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
             index = frontierDetectionByContinuity(map,mapData.info.width,mapData.info.height,mapData.info.resolution);
             break;
         case 1:
-            index = frontierDetectionByClustering(map,mapData.info.width,mapData.info.height,mapData.info.resolution);
+            index = frontierDetectionByClustering(map,mapData.info);
             break;
         default:
             ROS_ERROR_STREAM("Frontier Detection Method is Unknown\n");
@@ -173,8 +192,6 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
         return false;
     }
     
-
-
     std::vector<geometry_msgs::Point> goals;
 
     for(int i=0;i<index.size();i++){
@@ -263,7 +280,7 @@ void FrontierSearch::horizonDetection(struct FrontierSearch::mapStruct& map, int
 }
 
 std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution){
-    ROS_INFO_STREAM("Frontier Detection\n");
+    ROS_INFO_STREAM("Frontier Detection by Continuity\n");
     
     const int FRONTIER_EDGE_RENGE = FRONTIER_THICKNESS / 2;
 
@@ -362,11 +379,105 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struc
     return index;
 }
 
-std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution){
-    //future work
-    // k-means and bunsan
-    std::vector<Eigen::Vector2i> index;
+std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, nav_msgs::MapMetaData& mapInfo){
+    
+    ROS_INFO_STREAM("Frontier Detection by Clustering\n");
+
+    //ROS_DEBUG_STREAM("mapStruct to tempVector\n");
+
+    std::vector<geometry_msgs::Point> points;
+    for(int y=0;y<mapInfo.height;++y){
+        for(int x=0;x<mapInfo.width;++x){
+            if(map.horizon[x][y] == 1){
+                points.emplace_back(arrayToCoordinate(x,y,mapInfo.origin.position.x,mapInfo.origin.position.y,mapInfo.resolution));
+            }
+        }
+    }
+
+    //ROS_DEBUG_STREAM("geometry_msgs::Point to pointcloud\n");
+    pcl::PointCloud<pcl::PointXYZ>::Ptr horizonMap(new pcl::PointCloud<pcl::PointXYZ>);
+    horizonMap -> points.reserve(points.size());
+
+    for(int i=0;i<points.size();++i){
+        horizonMap -> points.emplace_back(pcl::PointXYZ((float)points[i].x,(float)points[i].y,0.0f));
+    }
+
+    horizonMap -> width = horizonMap -> points.size();
+    horizonMap -> height = 1;
+    horizonMap -> is_dense = true;
+
+    //ROS_DEBUG_STREAM("clustering\n");
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud (horizonMap);
+
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    ec.setClusterTolerance (CLUSTER_TOLERANCE);//同じクラスタとみなす距離
+  	ec.setMinClusterSize (MIN_CLUSTER_SIZE);//クラスタを構成する最小の点数
+  	ec.setMaxClusterSize (MAX_CLUSTER_SIZE);//クラスタを構成する最大の点数
+	ec.setSearchMethod (tree);
+	ec.setInputCloud (horizonMap);
+
+    std::vector<pcl::PointIndices> indices;//クラスタリングした結果が格納される
+	ec.extract (indices);
+
+    //debug 用　カラーリング出力 スコープ
+    {
+        //ROS_DEBUG_STREAM("coloring\n");
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorMap(new pcl::PointCloud<pcl::PointXYZRGB>);
+
+        float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
+        int i=0;
+        int j=0;
+        for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it){
+            for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++){
+                colorMap -> points.emplace_back(pcl::PointXYZRGB());
+                colorMap -> points[j].x = horizonMap->points[*pit].x;
+                colorMap -> points[j].y = horizonMap->points[*pit].y;
+                colorMap -> points[j].z = 0.0f;
+                colorMap -> points[j].r = colors[i%12][0];
+			    colorMap -> points[j].g = colors[i%12][1];
+			    colorMap -> points[j].b = colors[i%12][2];
+                ++j;
+      	    }
+    	    ++i;
+  	    }
+        colorMap -> width = colorMap -> points.size();
+        colorMap -> height = 1;
+        colorMap -> is_dense = true;
+        
+        sensor_msgs::PointCloud2 colorMsg;
+        pcl::toROSMsg(*colorMap,colorMsg);
+        colorMsg.header.frame_id = mapFrameId;
+        colorMsg.header.stamp = ros::Time::now();
+        pubColorCloud.publish(colorMsg);
+    }
+
+    //ROS_DEBUG_STREAM("Centroids Calculation\n");
+    std::vector<Eigen::Vector2d> centroids(indices.size());
+    {
+        Eigen::Vector2d sum;
+        int i = 0;
+        for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it){
+            sum = Eigen::Vector2d::Zero();
+            for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); pit++){
+                sum.x() += horizonMap -> points[*pit].x;
+                sum.y() += horizonMap -> points[*pit].y;
+            }
+            centroids[i] = Eigen::Vector2d(sum.x()/indices[i].indices.size(),sum.y()/indices[i].indices.size());
+            ++i;
+        }
+    }
+    
+    //ROS_DEBUG_STREAM("centroids to index array\n");
+    std::vector<Eigen::Vector2i> index(centroids.size());
+    for(int i=0;i<centroids.size();++i){
+        index[i] = coordinateToArray(centroids[i].x(),centroids[i].y(),mapInfo.origin.position.x,mapInfo.origin.position.y,mapInfo.resolution);
+    }
     return index;
+}
+
+Eigen::Vector2i FrontierSearch::coordinateToArray(double x,double y,double originX,double originY,float resolution){
+    return Eigen::Vector2i((x-originX)/resolution,(y-originY)/resolution);
 }
 
 

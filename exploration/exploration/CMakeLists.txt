@@ -23,6 +23,7 @@ find_package(catkin REQUIRED COMPONENTS
   voronoi_planner
   move_base_msgs
   actionlib
+  pcl_ros
 )
 
 ## System dependencies are found with CMake's conventions
