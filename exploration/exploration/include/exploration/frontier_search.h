@@ -16,6 +16,8 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <sensor_msgs/PointCloud2.h>
 
+#include <geometry_msgs/PoseArray.h>
+
 class FrontierSearch
 {
 private:
@@ -52,6 +54,10 @@ private:
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
 
+    bool PUBLISH_POSE_ARRAY;
+
+    bool PREVIOUS_GOAL_EFFECT;
+
     ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
@@ -70,6 +76,9 @@ private:
 
 	ros::NodeHandle pgl;
 	ros::Publisher pubGoalList;
+
+    ros::NodeHandle pglpa;
+	ros::Publisher pubGoalListPoseArray;
 
 	ros::NodeHandle pgld;
 	ros::Publisher pubGoalListDel;
@@ -95,6 +104,7 @@ private:
 
     void publishGoal(geometry_msgs::Point goal);
 	void publishGoalList(std::vector<geometry_msgs::Point> goals);
+    void publishGoalListPoseArray(std::vector<geometry_msgs::Point> goals);
 
 	void publishGoalDelete(void);
 	void publishGoalListDelete(void);
@@ -103,7 +113,7 @@ public:
     FrontierSearch();
     ~FrontierSearch(){};
 
-    bool getGoal(geometry_msgs::Point& goal);
+    bool getGoal(geometry_msgs::Point& goal,bool enableSelectGoal=true);
 
 };
 
@@ -113,9 +123,16 @@ FrontierSearch::FrontierSearch():p("~"){
 
     sp.setCallbackQueue(&qPose);
     subPose = sp.subscribe("pose",1,&FrontierSearch::poseCB,this);
-
     pubGoal = pg.advertise<exploration_msgs::Goal>("goal", 1, true);
-	pubGoalList = pgl.advertise<exploration_msgs::GoalList>("goal_list", 1, true);
+
+    pubGoalList = pgl.advertise<exploration_msgs::GoalList>("goal_list", 1, true);
+
+    p.param<bool>("publish_pose_array", PUBLISH_POSE_ARRAY, false);
+
+    if(PUBLISH_POSE_ARRAY){
+        pubGoalListPoseArray = pglpa.advertise<geometry_msgs::PoseArray>("goal_list_pose_array", 1, true);
+    }
+	
 	pubGoalDel = pgd.advertise<std_msgs::Empty>("goal/delete", 1);
 	pubGoalListDel = pgld.advertise<std_msgs::Empty>("goal_list/delete", 1);
 
@@ -135,6 +152,8 @@ FrontierSearch::FrontierSearch():p("~"){
     p.param<double>("distance_weight", DISTANCE_WEIGHT, 1.0);
     p.param<double>("direction_weight", DIRECTION_WEIGHT, 2.0);
 
+    
+    p.param<bool>("previous_goal_effect", PREVIOUS_GOAL_EFFECT, true);
     p.param<double>("previous_goal_threshold", PREVIOUS_GOAL_THRESHOLD, 1.0);
 
     p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.3);
@@ -153,7 +172,7 @@ void FrontierSearch::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
     poseData = *msg;
 }
 
-bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
+bool FrontierSearch::getGoal(geometry_msgs::Point& goal, bool enableSelectGoal){
     qMap.callOne(ros::WallDuration(1));
     publishGoalDelete();
     struct FrontierSearch::mapStruct map;
@@ -201,12 +220,22 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     ROS_INFO_STREAM("Frontier Found : " << goals.size() << "\n");
 
     publishGoalList(goals);
+    
+    if(PUBLISH_POSE_ARRAY){
+        //ROS_DEBUG_STREAM("call publish_pose_array\n");
+        publishGoalListPoseArray(goals);
+    }
+
+    release(map, mapData.info.width,mapData.info.height);
+
+    if(!enableSelectGoal){
+        return true;
+    }
 
     qPose.callOne(ros::WallDuration(1));
 
     goal = selectGoal(goals,poseData);
 
-    release(map, mapData.info.width,mapData.info.height);
 
     if((int)goal.x == 0 && (int)goal.y == 0 && (int)goal.z == 0){
         ROS_INFO_STREAM("Found Frontier is Too Close\n");
@@ -580,9 +609,22 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
     struct FrontierSearch::goalStruct tempStruct;
 
     for(int i=0;i<goals.size();i++){
-        //前回の目標との差を計算
-        double temp = sqrt(pow(goals[i].x - previousGoal.x,2)+pow(goals[i].y - previousGoal.y,2));
-        if(temp > PREVIOUS_GOAL_THRESHOLD){
+        if(PREVIOUS_GOAL_EFFECT){
+            //処理が有効になっている場合前回の目標との差を計算
+            double temp = sqrt(pow(goals[i].x - previousGoal.x,2)+pow(goals[i].y - previousGoal.y,2));
+            if(temp > PREVIOUS_GOAL_THRESHOLD){
+                tempVec.x() = goals[i].x - pose.pose.position.x;
+                tempVec.y() = goals[i].y - pose.pose.position.y;
+                tempVec.normalize();
+
+                tempStruct.goal = goals[i];
+                tempStruct.distance = tempVec.norm();
+                tempStruct.dot = tempVec.dot(directionVec);
+
+                calced.push_back(tempStruct);
+            }
+        }
+        else{
             tempVec.x() = goals[i].x - pose.pose.position.x;
             tempVec.y() = goals[i].y - pose.pose.position.y;
             tempVec.normalize();
@@ -593,6 +635,7 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
 
             calced.push_back(tempStruct);
         }
+        
     }
 
     geometry_msgs::Point goal;
@@ -657,6 +700,26 @@ void FrontierSearch::publishGoalList(std::vector<geometry_msgs::Point> goals){
 
 	pubGoalList.publish(msg);
 	ROS_INFO_STREAM("Publish GoalList\n");
+}
+
+void FrontierSearch::publishGoalListPoseArray(std::vector<geometry_msgs::Point> goals){
+    geometry_msgs::PoseArray msg;
+    msg.poses.reserve(goals.size());
+
+	geometry_msgs::Pose temp;
+
+    for(int i=0;i<goals.size();++i){
+        temp.position = goals[i];
+        msg.poses.emplace_back(temp);
+    }
+
+	msg.header.frame_id = mapFrameId;
+    msg.header.stamp = ros::Time::now();
+
+    //ROS_DEBUG_STREAM("before publish_pose_array\n");
+
+	pubGoalListPoseArray.publish(msg);
+	ROS_INFO_STREAM("Publish GoalList PoseArray\n");
 }
 
 void FrontierSearch::publishGoalDelete(void){

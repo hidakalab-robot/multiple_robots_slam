@@ -43,6 +43,8 @@
             <param name="move_base_name" value="$(arg robot_name)/move_base"/>
             <param name="frontier_detection_method" value="1"/>
             <param name="obstacle_filter" value="false"/>
+            <param name="publish_pose_array" value="true"/>
+            <param name="previous_goal_effect" value="false"/>
         </node>
 
         <node pkg="exploration" type="visualization_test" name="visualization_test">
