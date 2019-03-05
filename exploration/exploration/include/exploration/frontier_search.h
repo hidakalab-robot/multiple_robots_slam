@@ -113,7 +113,8 @@ public:
     FrontierSearch();
     ~FrontierSearch(){};
 
-    bool getGoal(geometry_msgs::Point& goal,bool enableSelectGoal=true);
+    bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
+    bool getGoal(void);//only publish goal list
 
 };
 
@@ -172,7 +173,7 @@ void FrontierSearch::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
     poseData = *msg;
 }
 
-bool FrontierSearch::getGoal(geometry_msgs::Point& goal, bool enableSelectGoal){
+bool FrontierSearch::getGoal(void){
     qMap.callOne(ros::WallDuration(1));
     publishGoalDelete();
     struct FrontierSearch::mapStruct map;
@@ -228,9 +229,64 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal, bool enableSelectGoal){
 
     release(map, mapData.info.width,mapData.info.height);
 
-    if(!enableSelectGoal){
-        return true;
+    return true;
+}
+
+bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
+    qMap.callOne(ros::WallDuration(1));
+    publishGoalDelete();
+    struct FrontierSearch::mapStruct map;
+    initialize(map,mapData);
+
+    horizonDetection(map,mapData.info.width,mapData.info.height);
+
+    std::vector<Eigen::Vector2i> index;
+
+    switch (FRONTIER_DETECTION_METHOD){
+        case 0:
+            index = frontierDetectionByContinuity(map,mapData.info.width,mapData.info.height,mapData.info.resolution);
+            break;
+        case 1:
+            index = frontierDetectionByClustering(map,mapData.info);
+            break;
+        default:
+            ROS_ERROR_STREAM("Frontier Detection Method is Unknown\n");
+            release(map, mapData.info.width,mapData.info.height);
+            return false;
     }
+
+    //ROS_DEBUG_STREAM("Before Filter index size : " << index.size() << "\n");
+
+
+    if(OBSTACLE_FILTER){
+        obstacleFilter(map,index,mapData.info.width,mapData.info.height,mapData.info.resolution);
+    }
+    
+    //ROS_DEBUG_STREAM("After Filter Index Size : " << index.size() << "\n");
+
+    if(index.size() == 0){
+        ROS_INFO_STREAM("Frontier Do Not Found\n");
+        publishGoalListDelete();
+        release(map, mapData.info.width,mapData.info.height);
+        return false;
+    }
+    
+    std::vector<geometry_msgs::Point> goals;
+
+    for(int i=0;i<index.size();i++){
+        goals.push_back(arrayToCoordinate(index[i].x(),index[i].y(),mapData.info.origin.position.x,mapData.info.origin.position.y,mapData.info.resolution));
+    }
+
+    ROS_INFO_STREAM("Frontier Found : " << goals.size() << "\n");
+
+    publishGoalList(goals);
+    
+    if(PUBLISH_POSE_ARRAY){
+        //ROS_DEBUG_STREAM("call publish_pose_array\n");
+        publishGoalListPoseArray(goals);
+    }
+
+    release(map, mapData.info.width,mapData.info.height);
 
     qPose.callOne(ros::WallDuration(1));
 
