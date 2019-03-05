@@ -1,0 +1,13 @@
+#publish parameter
+map_frame_id: map
+
+#branchDetection parameter
+branch_angle: 0.04
+center_range_min: 1.0
+branch_range_limit: 5.0
+branch_diff_x_min: 1.0
+
+#duplicateDetection parameter
+duplicate_check: true
+duplicate_margin: 1.5
+

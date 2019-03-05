@@ -10,21 +10,26 @@
 #include <costmap_2d/costmap_2d.h>
 
 
+
 //register this planner as a BaseGlobalPlanner plugin
 PLUGINLIB_EXPORT_CLASS(voronoi_planner::VoronoiPlanner, nav_core::BaseGlobalPlanner)
 
 namespace voronoi_planner {
-
+    ros::Publisher VoronoiPlanner::plan_pub_;
+    ros::Publisher VoronoiPlanner::voronoi_grid_pub_;
+    bool VoronoiPlanner::initialized_publisher_ = false;
+    
 
     void visualize(const char *filename, DynamicVoronoi* voronoi, bool** map,
                    std::vector<std::pair<float, float> > *path) {
         // write pgm files
-
+        std::cout << "test6\n";
         FILE* F = fopen(filename, "w");
         if (!F) {
             std::cerr << "visualize: could not open file for writing!\n";
             return;
         }
+        std::cout << "test7\n";
         fprintf(F, "P6\n");
         fprintf(F, "%d %d 255\n", voronoi->getSizeX(), voronoi->getSizeY());
 
@@ -101,9 +106,12 @@ void VoronoiPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap
 
         unsigned int cx = costmap->getSizeInCellsX(), cy = costmap->getSizeInCellsY();
 
-
-        plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
-        voronoi_grid_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("voronoi_grid", 1);
+        if(!initialized_publisher_){
+            plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
+            voronoi_grid_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("voronoi_grid", 1);
+            initialized_publisher_ = true;
+        }
+        
 
 
         //get the tf prefix
@@ -340,10 +348,14 @@ bool VoronoiPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geo
 
     bool res1 = false, res2 = false, res3 = false;
 
+    std::cout << "test4\n";
+
     if( !voronoi_.isVoronoi(goal_x,goal_y) )
     {
+        std::cout << "test5\n";
         //        path3 = findPath( goal, init, A, 0, 1 );
         res3 = findPath( &path3, goal_x, goal_y, start_x, start_y, &voronoi_, 0, 1 );
+        std::cout << "test6\n";
         std::cout << "findPath 3 res " << res3 << std::endl;
         //        goal = path3(end,:);
         goal_x = std::get<0>( path3[path3.size()-1] );
@@ -355,6 +367,8 @@ bool VoronoiPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geo
         //        path3 = flipud(path3);
         std::reverse(path3.begin(), path3.end());
     }
+
+    std::cout << "test5\n";
 
     if( !voronoi_.isVoronoi(start_x,start_y) )
     {
@@ -416,9 +430,6 @@ bool VoronoiPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geo
 
 //        std::cout << "[" << new_goal.pose.position.x << "; " <<
 //                     new_goal.pose.position.y << "]" << std::endl;
-
-
-
         new_goal.pose.orientation.x = goal_quat.x();
         new_goal.pose.orientation.y = goal_quat.y();
         new_goal.pose.orientation.z = goal_quat.z();
@@ -433,7 +444,7 @@ bool VoronoiPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geo
 
     ROS_ERROR("\nTime to get plan: %f sec\n", (ros::Time::now() - t_b).toSec());
 
-    usleep(2e5);//publisherの準備ができるまで待機0.2秒 (単位が[us]なので)
+    //usleep(2e5);//publisherの準備ができるまで待機0.2秒 (単位が[us]なので)
 
     //publish the plan for visualization purposes
     publishPlan(plan);
@@ -726,6 +737,8 @@ bool VoronoiPlanner::findPath(std::vector<std::pair<float, float> > *path,
     unsigned int sizeX = voronoi->getSizeX();
     unsigned int sizeY = voronoi->getSizeY();
 
+    std::cout << "fp size : " << sizeX << ", " << sizeY << "\n";
+
     // closed cells grid (same size as map grid)
     bool **closed=NULL;
     closed = new bool*[sizeX];
@@ -733,11 +746,15 @@ bool VoronoiPlanner::findPath(std::vector<std::pair<float, float> > *path,
         (closed)[x] = new bool[sizeY];
     }
 
+    std::cout << "test4.1\n";
+
     for (int y=sizeY-1; y>=0; y--) {
         for (int x=0; x<sizeX; x++) {
             (closed)[x][y] = false;
         }
     }
+
+    std::cout << "test4.2\n";
 
     //heuristic = zeros(szA(1), szA(2));
     //for(i=1:szA(1))
@@ -757,6 +774,8 @@ bool VoronoiPlanner::findPath(std::vector<std::pair<float, float> > *path,
             (action)[x][y] = -1;
         }
     }
+
+    std::cout << "test4.3\n";
 
     // set current cell
     int x = init_x;
@@ -850,6 +869,8 @@ bool VoronoiPlanner::findPath(std::vector<std::pair<float, float> > *path,
         }
     }
 
+    std::cout << "test4.4\n";
+
     // Make reverse steps from goal to init to write path
     x = goal_x;
     y = goal_y;
@@ -869,6 +890,7 @@ bool VoronoiPlanner::findPath(std::vector<std::pair<float, float> > *path,
         x = x2;
         y = y2;
     }
+    std::cout << "test4.5\n";
 
     reverse(path->begin(), path->end());
     return true;

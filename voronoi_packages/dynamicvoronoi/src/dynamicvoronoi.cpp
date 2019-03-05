@@ -21,14 +21,29 @@ DynamicVoronoi::~DynamicVoronoi() {
 }
 
 void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
-  sizeX = _sizeX;
-  sizeY = _sizeY;
+  std::cout << "before size : " << sizeX << ", " << sizeY << "\n";
+
+  //sizeX = _sizeX;
+  //sizeY = _sizeY;
+  
+  std::cout << "test2.1\n";
+  std::cout << "data : " << data << "\n";
+
+
   if (data) {
+      std::cout << "test2.1.1\n";
     for (int x=0; x<sizeX; x++) delete[] data[x];
+      std::cout << "test2.1.2\n";
+
     delete[] data;
   }
+  std::cout << "test2.2\n";
+  sizeX = _sizeX;
+  sizeY = _sizeY;
+  std::cout << "after size : " << sizeX << ", " << sizeY << "\n";
   data = new dataCell*[sizeX];
   for (int x=0; x<sizeX; x++) data[x] = new dataCell[sizeY];
+    std::cout << "test2.3\n";
 
   if (initGridMap) {
     if (gridMap) {
@@ -38,7 +53,8 @@ void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
     gridMap = new bool*[sizeX];
     for (int x=0; x<sizeX; x++) gridMap[x] = new bool[sizeY];
   }
-  
+    std::cout << "test2.4\n";
+
   dataCell c;
   c.dist = INFINITY;
   c.sqdist = INT_MAX;
@@ -58,8 +74,11 @@ void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
 }
 
 void DynamicVoronoi::initializeMap(int _sizeX, int _sizeY, bool** _gridMap) {
+  std::cout << "test1\n";
   gridMap = _gridMap;
+  std::cout << "test2\n";
   initializeEmpty(_sizeX, _sizeY, false);
+  std::cout << "test3\n";
 
   for (int x=0; x<sizeX; x++) {
     for (int y=0; y<sizeY; y++) {
@@ -245,7 +264,9 @@ float DynamicVoronoi::getDistance( int x, int y ) {
 }
 
 bool DynamicVoronoi::isVoronoi( int x, int y ) {
+  //std::cout << "test4\n";
   dataCell c = data[x][y];
+  //std::cout << "test5\n";
   return (c.voronoi==free || c.voronoi==voronoiKeep);
 }
 

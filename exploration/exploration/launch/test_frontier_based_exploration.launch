@@ -16,9 +16,9 @@
     <arg name="exploration_ns" default="exploration"/>
     <arg name="costmap_name" default="global_costmap"/>
     <!-- used topic namespace if create path-->
-    <arg name="planner_name" default="NavfnROS"/>
+    <arg name="planner_name" default="voronoi_planner"/>
     <!-- path planning method  0:Navfn, 1:Voronoi -->
-    <arg name="planner_method" default="0"/>
+    <arg name="planner_method" default="1"/>
 
     <arg name="base_frame_id"   default="$(arg robot_name)/base_footprint"/>
   	<arg name="global_frame_id" default="$(arg robot_name)/map"/>
@@ -42,7 +42,7 @@
             <param name="planner_method" value="$(arg planner_method)"/>
             <param name="move_base_name" value="$(arg robot_name)/move_base"/>
             <param name="frontier_detection_method" value="1"/>
-            <param name="obstacle_filter" value="false"/>
+            <param name="obstacle_filter" value="true"/>
             <param name="publish_pose_array" value="true"/>
             <param name="previous_goal_effect" value="false"/>
         </node>

@@ -1,0 +1,27 @@
+#publish parameter
+map_frame_id: map
+
+#frontier search parameter (0:continuity, 1:clustering)
+frontier_detection_method: 0
+
+#continuity parameter
+frontier_diameter_min: 0.4
+frontier_thickness: 3
+filter_square_diameter: 0.4
+
+#clustering parameter
+cluster_tolerance: 0.3
+min_cluster_size: 50
+max_cluster_size: 15000
+
+#obstacle filter parameter
+obstacle_filter: true
+
+#select goal parameter
+previous_goal_effect: true
+previous_goal_threshold: 1.0
+distance_weight: 1.0
+direction_weight: 2.0
+
+#publish PoseArray parameter
+publish_pose_array: false

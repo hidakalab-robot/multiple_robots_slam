@@ -112,15 +112,17 @@ class VoronoiPlanner : public nav_core::BaseGlobalPlanner {
          */
         costmap_2d::Costmap2D* costmap_;
         std::string frame_id_;
-        ros::Publisher plan_pub_;
+        static ros::Publisher plan_pub_;
         bool initialized_;
 
         bool publish_voronoi_grid_;
-        ros::Publisher voronoi_grid_pub_;
+        static ros::Publisher voronoi_grid_pub_;
 
         bool smooth_path_;
         float weight_data_;
         float weight_smooth_;
+
+        static bool initialized_publisher_;
 
 
 

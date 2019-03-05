@@ -185,7 +185,7 @@ public:
 };
 
 Movement::Movement():p("~"){
-    p.param<double>("goal_margin", GOAL_TOLERANCE, 0.5);
+    p.param<double>("goal_tolerance", GOAL_TOLERANCE, 0.5);
     p.param<double>("gravity_gain", GRAVITY_GAIN, 1.2);
     p.param<double>("gravity_force_enable", GRAVITY_FORCE_ENABLE, 6.0);
     p.param<double>("gravity_diff_threshold", GRAVITH_DIFF_THRESHOLD, 0.1);
@@ -1036,15 +1036,15 @@ bool Movement::callNavfn(std::string costmapName,std::string plannerName,geometr
 
 bool Movement::callVoronoiPlanner(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
     //pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
-    pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
+    static pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
     if(PUBLISH_MY_VORONOI){
         nav_msgs::OccupancyGrid map;
-        bool success = pp.createPath(start,goal,path,map);
+        bool success = pp.createPath(start,goal,path,map,true);
         publishVoronoiMap(map);
         return success;
     }
     else{
-        return pp.createPath(start,goal,path);
+        return pp.createPath(start,goal,path,true);
     }
 }
 

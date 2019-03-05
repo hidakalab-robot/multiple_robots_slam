@@ -15,12 +15,13 @@ int main(int argc, char *argv[])
 
     geometry_msgs::Point goal;
 
-    //std::vector<geometry_msgs::PoseStamped> plan;
+    std::vector<geometry_msgs::PoseStamped> plan;
     while(ros::ok()){
-        //if(fs.getGoal(goal)){
-        if(fs.getGoal()){
+        if(fs.getGoal(goal)){
+        //if(fs.getGoal()){
+        //if(true){
             //mv.moveToGoal(goal,true);
-            //plan = mv.createPath(goal);
+            plan = mv.createPath(goal);
         }
         else{
             //mv.moveToForward();

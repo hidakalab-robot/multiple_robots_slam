@@ -1,0 +1,62 @@
+#basic move parameter
+forward_velocity: 0.2
+rotation_velocity: 0.5
+
+#速度設定用のゲイン(直接velocityをいじる方法との違いは謎)
+velocity_gain: 1.0 #
+rotation_gain: 1.0 #curve_gainとの違い不明
+curve_gain: 2.0 #rotation_gainとの違い不明
+
+#bumperCollision parameter
+back_velocity: -0.2
+back_time: 0.5
+bumper_rotation_time: 1.5
+
+#VFH parameter
+safe_distance: 0.75
+safe_space: 0.6
+scan_threshold: 1.2
+vfh_gain: 0.5 #VFHの目標に追従させるときのゲイン(謎)
+
+#emergency avoidance parameter
+emergency_threshold: 1.0
+avoidance_to_goal: true
+avoidance_gain: 0.3
+
+#roadCenterDetection parameter
+road_center_gain: 0.8
+road_center_threshold: 5.0
+road_threshold: 1.5
+
+#directionFitting parameter
+match_angle_threshold: 0.1
+match_rotation_velocity: 0.2
+
+#moveToGoal parameter
+goal_tolerance: 0.5
+
+#moveToGoal with goal parameter
+gravity_gain: 1.2
+gravity_force_enable: 6.0
+gravity_diff_threshold: 0.1
+try_count: 1
+
+#moveTogoal with path parameter
+path_radius: 0.5
+local_tolerance: 0.2
+
+#Wall Detection parameter
+forward_angle: 0.17
+wall_rate_threshold: 0.8
+wall_distance_upper_threshold: 5.0
+wall_distance_lower_threshold: 3.0
+
+#path Planner parameter
+planner_method: 0 #(0:NavfnROS, 1:Voronoi_Planner)
+costmap_name: global_costmap
+planner_name: path_planner
+publish_my_voronoi: false
+
+#move_base parameter 
+movebase_name: move_base
+map_frame_id: map
