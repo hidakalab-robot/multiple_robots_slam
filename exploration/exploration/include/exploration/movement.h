@@ -1035,16 +1035,19 @@ bool Movement::callNavfn(std::string costmapName,std::string plannerName,geometr
 }
 
 bool Movement::callVoronoiPlanner(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
-    //pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
-    static pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
+    ////pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
+    //static pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
+    pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
     if(PUBLISH_MY_VORONOI){
         nav_msgs::OccupancyGrid map;
-        bool success = pp.createPath(start,goal,path,map,true);
+        //bool success = pp.createPath(start,goal,path,map,true);
+        bool success = pp.createPath(start,goal,path,map,false);
         publishVoronoiMap(map);
         return success;
     }
     else{
-        return pp.createPath(start,goal,path,true);
+        //return pp.createPath(start,goal,path,true);
+        return pp.createPath(start,goal,path,false);
     }
 }
 

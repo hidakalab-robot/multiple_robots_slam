@@ -23,8 +23,8 @@ DynamicVoronoi::~DynamicVoronoi() {
 void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
   std::cout << "before size : " << sizeX << ", " << sizeY << "\n";
 
-  //sizeX = _sizeX;
-  //sizeY = _sizeY;
+  sizeX = _sizeX;
+  sizeY = _sizeY;
   
   std::cout << "test2.1\n";
   std::cout << "data : " << data << "\n";
@@ -38,8 +38,8 @@ void DynamicVoronoi::initializeEmpty(int _sizeX, int _sizeY, bool initGridMap) {
     delete[] data;
   }
   std::cout << "test2.2\n";
-  sizeX = _sizeX;
-  sizeY = _sizeY;
+  //sizeX = _sizeX;
+  //sizeY = _sizeY;
   std::cout << "after size : " << sizeX << ", " << sizeY << "\n";
   data = new dataCell*[sizeX];
   for (int x=0; x<sizeX; x++) data[x] = new dataCell[sizeY];
@@ -414,8 +414,12 @@ void DynamicVoronoi::visualize(const char *filename) {
 
 
 void DynamicVoronoi::prune() {
+  std::cout << "prune\n";
   // filler
+  int counta = 0;
   while(!pruneQueue.empty()) {
+    //std::cout << "prune1 : "<< ++counta << "\n";
+    counta++;
     INTPOINT p = pruneQueue.front();
     pruneQueue.pop();
     int x = p.x;
@@ -477,8 +481,10 @@ void DynamicVoronoi::prune() {
     } 
   }
 
-
+  int countb = 0;
   while(!open.empty()) {
+    //std::cout << "prune2 : "<< ++countb << "\n";
+    countb++;
     INTPOINT p = open.pop();
     dataCell c = data[p.x][p.y];
     int v = c.voronoi;
@@ -505,6 +511,7 @@ void DynamicVoronoi::prune() {
       }
     }
   }
+  std::cout << "prune count : "<< counta << ", " << countb << "\n";
   //  printf("match: %d\nnomat: %d\n", matchCount, noMatchCount);
 }
 

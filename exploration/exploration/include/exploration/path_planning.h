@@ -56,7 +56,9 @@ bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped& start, geometry_msg
     //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
     //planner.initialize(name,&gcr);
     if(initializer){
-        planner.initialize(plannerName_,&gcr);
+        T initPlanner;
+        initPlanner.initialize(plannerName_,&gcr);
+        return initPlanner.makePlan(start,goal,plan);
     }
     return planner.makePlan(start,goal,plan);
 }
@@ -68,7 +70,9 @@ bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped& start, geometry_msg
     //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
     //planner.initialize(name,&gcr);
     if(initializer){
-        planner.initialize(plannerName_,&gcr);
+        T initPlanner;
+        initPlanner.initialize(plannerName_,&gcr);
+        return initPlanner.makePlan(start,goal,plan,map);
     }
     return planner.makePlan(start,goal,plan,map);
 }

@@ -99,7 +99,9 @@ void VoronoiPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* cost
 }
 
 void VoronoiPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) {
+    std::cout << "initial initialized_ : "<< initialized_ << "\n";
     if (!initialized_) {
+        std::cout << "initialize\n";
         ros::NodeHandle private_nh("~/" + name);
         costmap_ = costmap;
         frame_id_ = frame_id;
@@ -454,6 +456,7 @@ bool VoronoiPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geo
     }
 
 //    delete potential_array_;
+    //initialized_ = false;
     return !plan.empty();
 }
 
@@ -705,7 +708,7 @@ bool VoronoiPlanner::makePlan(const geometry_msgs::PoseStamped& start, const geo
     if(publish_voronoi_grid_){
         publishVoronoiGrid(&voronoi_, emptyMap);
     }
-
+    //initialized_ = false;
 //    delete potential_array_;
     return !plan.empty();
 }
@@ -795,7 +798,8 @@ bool VoronoiPlanner::findPath(std::vector<std::pair<float, float> > *path,
     // no solution could be found flag
     bool resign = false;
 
-    while( !found && !resign )
+    int count = 0;
+    while( !found && !resign && ros::ok())
     {
         if (open.size() == 0)
         {
@@ -805,6 +809,7 @@ bool VoronoiPlanner::findPath(std::vector<std::pair<float, float> > *path,
         }
         else
         {
+            //std::cout << "count : "<< ++count << "size : " << sizeX * sizeY << "\n";
             // sort open by cost
             sort(open.begin(), open.end());
             reverse(open.begin(), open.end());
