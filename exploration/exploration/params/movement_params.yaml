@@ -52,11 +52,11 @@ wall_distance_upper_threshold: 5.0
 wall_distance_lower_threshold: 3.0
 
 #path Planner parameter
-planner_method: 0 #(0:NavfnROS, 1:Voronoi_Planner)
-costmap_name: global_costmap
-planner_name: path_planner
+#planner_method: 0 #(0:NavfnROS, 1:VoronoiPlanner)
+#costmap_name: global_costmap
+planner_name: VoronoiPlanner # NavfnROS or VoronoiPlanner
 publish_my_voronoi: false
 
-#move_base parameter 
+#move_base parameter # namespaceがつく場合はlaunchで上書きする必要あり
 movebase_name: move_base
 map_frame_id: map

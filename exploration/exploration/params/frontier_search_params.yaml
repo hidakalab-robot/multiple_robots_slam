@@ -2,7 +2,7 @@
 map_frame_id: map
 
 #frontier search parameter (0:continuity, 1:clustering)
-frontier_detection_method: 0
+frontier_detection_method: 1
 
 #continuity parameter
 frontier_diameter_min: 0.4
@@ -18,10 +18,10 @@ max_cluster_size: 15000
 obstacle_filter: true
 
 #select goal parameter
-previous_goal_effect: true
+previous_goal_effect: false
 previous_goal_threshold: 1.0
 distance_weight: 1.0
 direction_weight: 2.0
 
 #publish PoseArray parameter
-publish_pose_array: false
+publish_pose_array: true

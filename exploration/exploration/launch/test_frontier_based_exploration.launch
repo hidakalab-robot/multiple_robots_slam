@@ -14,40 +14,44 @@
 
     <!-- this group namespace-->
     <arg name="exploration_ns" default="exploration"/>
-    <arg name="costmap_name" default="global_costmap"/>
+    <!-- <arg name="costmap_name" default="global_costmap"/> -->
     <!-- used topic namespace if create path-->
-    <arg name="planner_name" default="voronoi_planner"/>
-    <!-- path planning method  0:Navfn, 1:Voronoi -->
-    <arg name="planner_method" default="1"/>
+    <!-- <arg name="planner_name" default="voronoi_planner"/> -->
+    <!-- path planning method  0:NavfnROS, 1:VoronoiPlanner -->
+    <!-- <arg name="planner_method" default="1"/> -->
 
     <arg name="base_frame_id"   default="$(arg robot_name)/base_footprint"/>
   	<arg name="global_frame_id" default="$(arg robot_name)/map"/>
 
     <group ns="$(arg robot_name)/$(arg exploration_ns)">
         <node pkg="exploration" type="frontier_based_exploration_test" name="fbe_test" output="screen">
-            <param name="map_frame_id" value="$(arg robot_name)/map"/>
             <remap from="map" to="$(arg map)"/>
             <remap from="pose" to="$(arg pose)"/>
             <remap from="goal" to="$(arg goal)"/>
             <remap from="goal_list" to="$(arg goal_list)"/>
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
-            <rosparam file="$(find exploration)/params/costmap_common_params.yaml" command="load" ns="$(arg costmap_name)"/>
-			<rosparam file="$(find exploration)/params/global_costmap_params.yaml" command="load" ns="$(arg costmap_name)"/>
-            <rosparam file="$(find exploration)/params/navfn_global_planner_params.yaml" command="load" ns="$(arg planner_name)"/>
-			<param name="$(arg costmap_name)/global_frame" value="$(arg global_frame_id)"/>
-    		<param name="$(arg costmap_name)/robot_base_frame" value="$(arg base_frame_id)"/>
-            <param name="costmap_name" value="$(arg costmap_name)"/>
-			<param name="planner_name" value="$(arg planner_name)"/>
-            <param name="planner_method" value="$(arg planner_method)"/>
+            <!-- <rosparam file="$(find exploration)/params/costmap_common_params.yaml" command="load" ns="$(arg costmap_name)"/>
+			<rosparam file="$(find exploration)/params/global_costmap_params.yaml" command="load" ns="$(arg costmap_name)"/> -->
+            <rosparam file="$(find exploration)/params/path_planner_params.yaml" command="load"/>
+            <!-- <rosparam file="$(find exploration)/params/navfn_global_planner_params.yaml" command="load"/> -->
+            <rosparam file="$(find exploration)/params/frontier_search_params.yaml" command="load"/>
+            <rosparam file="$(find exploration)/params/movement_params.yaml" command="load"/>
+			<param name="global_costmap/global_frame" value="$(arg global_frame_id)"/>
+    		<param name="global_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <!-- <param name="costmap_name" value="$(arg costmap_name)"/> -->
+			<!-- <param name="planner_name" value="$(arg planner_name)"/> -->
+            <!-- <param name="planner_method" value="$(arg planner_method)"/> -->
             <param name="move_base_name" value="$(arg robot_name)/move_base"/>
-            <param name="frontier_detection_method" value="1"/>
-            <param name="obstacle_filter" value="true"/>
-            <param name="publish_pose_array" value="true"/>
-            <param name="previous_goal_effect" value="false"/>
+            <!-- <param name="frontier_detection_method" value="1"/> -->
+            <!-- <param name="obstacle_filter" value="true"/> -->
+            <!-- <param name="publish_pose_array" value="true"/> -->
+            <!-- <param name="previous_goal_effect" value="false"/> -->
         </node>
 
         <node pkg="exploration" type="visualization_test" name="visualization_test">
+            <rosparam file="$(find exploration)/params/visualization_params.yaml" command="load"/>
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
             <remap from="goal" to="$(arg goal)"/>
             <remap from="goal_list" to="$(arg goal_list)"/>

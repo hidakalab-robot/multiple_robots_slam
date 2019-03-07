@@ -128,7 +128,7 @@ void VoronoiPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap
         dsrv_->setCallback(cb);
 
 
-        ros::Subscriber costmapUpdateSubscriber = private_nh.subscribe("/move_base/global_costmap/costmap_updates", 10, &VoronoiPlanner::costmapUpdateCallback, this);
+        static ros::Subscriber costmapUpdateSubscriber = private_nh.subscribe("/move_base/global_costmap/costmap_updates", 10, &VoronoiPlanner::costmapUpdateCallback, this);
         initialized_ = true;
     } else
         ROS_WARN("This planner has already been initialized, you can't call it twice, doing nothing");

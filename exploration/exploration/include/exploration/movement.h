@@ -1015,17 +1015,29 @@ void Movement::oneRotation(void){
 
 bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
     //navfnなどのグローバルパスプラナーを呼ぶ
-    switch (PLANNER_METHOD){
-        case 0:
-            ROS_INFO_STREAM("call Navfn\n");
-            return callNavfn(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
-        case 1:
-            ROS_INFO_STREAM("call VoronoiPlanner\n");
-            return callVoronoiPlanner(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
-        default:
-            ROS_ERROR_STREAM("planner method is unknown\n");
-            return false;
+    if(PLANNER_NAME == "NavfnROS"){
+        ROS_INFO_STREAM("call Navfn\n");
+        return callNavfn(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
     }
+    else if(PLANNER_NAME == "VoronoiPlanner"){
+        ROS_INFO_STREAM("call VoronoiPlanner\n");
+        return callVoronoiPlanner(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
+    }
+    else{
+        ROS_ERROR_STREAM("Unknown Planner Name!\n");
+        return false;
+    }
+    // switch (PLANNER_NAME){
+    //     case 'NavfnROS':
+    //         ROS_INFO_STREAM("call Navfn\n");
+    //         return callNavfn(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
+    //     case 'VoronoiPlanner':
+    //         ROS_INFO_STREAM("call VoronoiPlanner\n");
+    //         return callVoronoiPlanner(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
+    //     default:
+    //         ROS_ERROR_STREAM("planner name is unknown\n");
+    //         return false;
+    // }
 }
 
 bool Movement::callNavfn(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
