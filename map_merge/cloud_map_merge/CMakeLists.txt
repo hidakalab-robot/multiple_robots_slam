@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.3)
 project(cloud_map_merge)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
-# add_compile_options(-std=c++11)
+add_compile_options(-std=c++11)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -218,3 +218,6 @@ target_link_libraries(cloud_map_set ${catkin_LIBRARIES})
 add_executable(cloud_map_merge src/cloud_map_merge.cpp)
 add_dependencies(cloud_map_merge ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(cloud_map_merge ${catkin_LIBRARIES})
+
+add_executable(cloud_map_merge_test src/cloud_map_merge_test.cpp)
+target_link_libraries(cloud_map_merge_test ${catkin_LIBRARIES})

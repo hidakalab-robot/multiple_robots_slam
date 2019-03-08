@@ -57,7 +57,8 @@ private:
 public:
   GridCompositor(){
     //std::cout << "コンストラクタ" << std::endl;
-    pubOverlap = p.advertise<cloud_map_merge::OverlapArray>("grid_map_merge/overlap", 10);};
+    //pubOverlap = p.advertise<cloud_map_merge::OverlapArray>("grid_map_merge/overlap", 10);
+    };
   ~GridCompositor(){};
   nav_msgs::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids,
                                        const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, const std::vector<int>& mapOrder, const std::vector<cv::Rect>& fix_rois, cv::Rect& dst_roi, bool errorAvoidance);
