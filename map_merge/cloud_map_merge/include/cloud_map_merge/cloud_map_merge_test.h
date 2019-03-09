@@ -1,19 +1,19 @@
 #include <ros/ros.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/Pose2D.h>
 #include <pcl_ros/point_cloud.h>
 #include <thread>
 #include <mutex>
 #include <boost/thread.hpp>
+#include <forward_list>
 
 class CloudMapMerge
 {
 private:
     struct robotInfo{
-        //std::mutex mutex;
+        std::mutex mutex;
         std::string name;
-        double initX;
-        double initY;
-        double initYaw;
+        geometry_msgs::Pose2D initPose;
         ros::Subscriber mapSub;
         sensor_msgs::PointCloud2 rosMap;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr pclMap;
@@ -24,7 +24,10 @@ private:
     ros::NodeHandle sub;
     ros::NodeHandle pub;
     ros::NodeHandle param;
-    std::vector<CloudMapMerge::robotInfo> robotList;
+
+    //vectorよりlistの方がいいかも
+    //std::vector<robotInfo> robotList;
+    std::forward_list<robotInfo> robotList;
 
     std::string MAP_TOPIC;
     std::string MERGE_MAP_FRAME;
@@ -33,20 +36,19 @@ private:
     double FLOOR_HEIGHT;
     ros::Publisher mapPub;
 
+    void robotRegistration(void);//ロボットの情報を登録
     bool isMapTopic(ros::master::TopicInfo& topic);
     void initPoseLoad(CloudMapMerge::robotInfo& info);
     void mapUpdate(const sensor_msgs::PointCloud2::ConstPtr& msg, CloudMapMerge::robotInfo& info);//ロボットごとのマップを更新する
+    void mapMerging(void);//subscribeしたmapを合成
+    void registrationLoop(void);
+    void mergingLoop(void);
 
 public:
     CloudMapMerge();
     ~CloudMapMerge(){};
-
-    void robotRegistration(void);//ロボットの情報を登録
-    void mapMerging(void);//subscribeしたmapを合成
+    void multiThreadMainLoop(void);//登録とマージとマップの更新がマルチスレッドになってるループ
 };
-
-//std::lock_guard<std::mutex> s_lock(subscription.mutex);
-//boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
 
 CloudMapMerge::CloudMapMerge():param("~"){
     param.param<std::string>("map_topic",MAP_TOPIC,"rtabmap/cloud_obstacles");
@@ -58,7 +60,6 @@ CloudMapMerge::CloudMapMerge():param("~"){
 }
 
 void CloudMapMerge::robotRegistration(void){
-
     //masterに登録されているtopicを読み込み
     ros::master::V_TopicInfo topicList;
     ros::master::getTopics(topicList);
@@ -66,18 +67,21 @@ void CloudMapMerge::robotRegistration(void){
     //topicListの中からmapのトピックのみを抽出
     for(int i=0;i<topicList.size();++i){
         //maptopicであるか確認
-        if(!isMapTopic(topicList[i]))
-        {
+        if(!isMapTopic(topicList[i])){
             continue;
         }
         std::string robotName = ros::names::parentNamespace(topicList[i].name);
         //すでに登録されていないかロボットの名前を確認
         {
             bool isRegisterd = false;
-            for(int j=0;j<robotList.size();++j){
-                if(robotName == robotList[j].name)
-                {
-                    isRegisterd = true;
+            {
+                boost::shared_lock<boost::shared_mutex> bLock(robotListMutex);
+                //for(int j=0;j<robotList.size();++j){
+                for(auto& robot : robotList){
+                    std::lock_guard<std::mutex> lock(robot.mutex);
+                    if(robotName == robot.name){
+                        isRegisterd = true;
+                    }
                 }
             }
             if(isRegisterd){
@@ -85,11 +89,19 @@ void CloudMapMerge::robotRegistration(void){
             }
         }
         //登録されていない場合だけ以下で登録を行う
-        robotList.emplace_back();
-        CloudMapMerge::robotInfo& info = robotList.back();
-        info.name = robotName;
-        initPoseLoad(info);
-        info.mapSub = sub.subscribe<sensor_msgs::PointCloud2>(info.name+MAP_TOPIC, 1,boost::bind(&CloudMapMerge::mapUpdate,this,_1,info));
+        {
+            std::lock_guard<boost::shared_mutex> bLock(robotListMutex);
+            robotList.emplace_front();
+            CloudMapMerge::robotInfo& robot = robotList.front();
+            {
+                std::lock_guard<std::mutex> lock(robot.mutex);
+                robot.name = robotName;
+                initPoseLoad(robot);
+                //robot.mapSub = sub.subscribe<sensor_msgs::PointCloud2>(robot.name+MAP_TOPIC, 1,boost::bind(&CloudMapMerge::mapUpdate,this,_1,robot));
+                robot.mapSub = sub.subscribe<sensor_msgs::PointCloud2>(robot.name+MAP_TOPIC, 1, [this, &robot](const sensor_msgs::PointCloud2::ConstPtr& msg) {mapUpdate(msg, robot);});
+                robot.initialized = true;
+            }
+        }
     }
 }
 
@@ -99,47 +111,79 @@ bool CloudMapMerge::isMapTopic(ros::master::TopicInfo& topic){
     return isMap && isPointCloud;
 }
 
-void CloudMapMerge::initPoseLoad(CloudMapMerge::robotInfo& info){
-    std::string ns = ros::names::append(info.name,PARAM_NAMESPACE);
-    param.param<double>(ros::names::append(ns,"init_pose_x"), info.initX, 0.0);
-    param.param<double>(ros::names::append(ns,"init_pose_y"), info.initY, 0.0);
-    param.param<double>(ros::names::append(ns,"init_pose_yaw"), info.initYaw, 0.0);
+void CloudMapMerge::initPoseLoad(CloudMapMerge::robotInfo& robot){
+    std::string ns = ros::names::append(robot.name,PARAM_NAMESPACE);
+    param.param<double>(ros::names::append(ns,"init_pose_x"), robot.initPose.x, 0.0);
+    param.param<double>(ros::names::append(ns,"init_pose_y"), robot.initPose.y, 0.0);
+    param.param<double>(ros::names::append(ns,"init_pose_yaw"), robot.initPose.theta, 0.0);
 }
 
-void CloudMapMerge::mapUpdate(const sensor_msgs::PointCloud2::ConstPtr& msg, CloudMapMerge::robotInfo& info){
+void CloudMapMerge::mapUpdate(const sensor_msgs::PointCloud2::ConstPtr& msg, CloudMapMerge::robotInfo& robot){
     //timestampが進んでいたらsensor_msgを更新してpclに変換する
-    if(info.initialized && msg -> header.stamp > info.rosMap.header.stamp){
+    std::lock_guard<std::mutex> lock(robot.mutex);
+    if(robot.initialized && msg -> header.stamp > robot.rosMap.header.stamp){
         return;
     }
-
-    info.rosMap = *msg;
-    info.pclMap = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
-    pcl::fromROSMsg(*msg, *info.pclMap);
-    info.initialized = true;
+    robot.rosMap = *msg;
+    robot.pclMap = pcl::PointCloud<pcl::PointXYZRGB>::Ptr(new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::fromROSMsg(*msg, *robot.pclMap);
+    robot.initialized = true;
 }
 
 void CloudMapMerge::mapMerging(void){
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr mergeCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    for(int i=0;i<robotList.size();++i){
-        Eigen::Matrix2d rotation;
-        rotation << cos(robotList[i].initYaw) , -sin(robotList[i].initYaw) , sin(robotList[i].initYaw) , cos(robotList[i].initYaw);
+    {
+        boost::shared_lock<boost::shared_mutex> lock(robotListMutex);
+        //for(int i=0;i<robotList.size();++i){
+        for(auto& robot : robotList){
+            Eigen::Matrix2d rotation;
+            //std::lock_guard<std::mutex> lock(robotList[i].mutex);
+            //rotation << cos(robotList[i].initPose.theta) , -sin(robotList[i].initPose.theta) , sin(robotList[i].initPose.theta) , cos(robotList[i].initPose.theta);
 
-        Eigen::Vector2d tempPoint;
-        Eigen::Vector2d rotatePoint;
+            std::lock_guard<std::mutex> lock(robot.mutex);
+            rotation << cos(robot.initPose.theta) , -sin(robot.initPose.theta) , sin(robot.initPose.theta) , cos(robot.initPose.theta);
 
-        for(int j=0;j<robotList[i].pclMap->points.size();j++){
-            if(robotList[i].pclMap->points[j].z < CEILING_HEIGHT && robotList[i].pclMap->points[j].z > FLOOR_HEIGHT){
-                tempPoint << robotList[i].pclMap->points[j].x , robotList[i].pclMap->points[j].y;
-                rotatePoint = rotation * tempPoint;
-                mergeCloud -> points.emplace_back(pcl::PointXYZRGB());
-                pcl::PointXYZRGB& point = mergeCloud -> points.back();
-                point = robotList[i].pclMap->points[j];
-                point.x = rotatePoint.x() + robotList[i].initX;
-                point.y = rotatePoint.y() + robotList[i].initY;
+            Eigen::Vector2d tempPoint;
+            Eigen::Vector2d rotatePoint;
+
+            // for(int j=0;j<robotList[i].pclMap->points.size();j++){
+            //     if(robotList[i].pclMap->points[j].z < CEILING_HEIGHT && robotList[i].pclMap->points[j].z > FLOOR_HEIGHT){
+            //         tempPoint << robotList[i].pclMap->points[j].x , robotList[i].pclMap->points[j].y;
+            //         rotatePoint = rotation * tempPoint;
+            //         mergeCloud -> points.emplace_back(pcl::PointXYZRGB());
+            //         pcl::PointXYZRGB& point = mergeCloud -> points.back();
+            //         point = robotList[i].pclMap->points[j];
+            //         point.x = rotatePoint.x() + robotList[i].initPose.x;
+            //         point.y = rotatePoint.y() + robotList[i].initPose.y;
+            //     }
+            // }
+
+            // for(int j=0;j<robotList[i].pclMap.points.size();j++){
+            //     if(robotList[i].pclMap.points[j].z < CEILING_HEIGHT && robotList[i].pclMap.points[j].z > FLOOR_HEIGHT){
+            //         tempPoint << robotList[i].pclMap.points[j].x , robotList[i].pclMap.points[j].y;
+            //         rotatePoint = rotation * tempPoint;
+            //         mergeCloud -> points.emplace_back(pcl::PointXYZRGB());
+            //         pcl::PointXYZRGB& point = mergeCloud -> points.back();
+            //         point = robotList[i].pclMap.points[j];
+            //         point.x = rotatePoint.x() + robotList[i].initPose.x;
+            //         point.y = rotatePoint.y() + robotList[i].initPose.y;
+            //     }
+            // }
+
+            for(auto& point : robot.pclMap->points){
+                if(point.z < CEILING_HEIGHT && point.z > FLOOR_HEIGHT){
+                    tempPoint << point.x , point.y;
+                    rotatePoint = rotation * tempPoint;
+                    mergeCloud -> points.emplace_back(pcl::PointXYZRGB());
+                    pcl::PointXYZRGB& insertPoint = mergeCloud -> points.back();
+                    insertPoint = point;
+                    insertPoint.x = rotatePoint.x() + robot.initPose.x;
+                    insertPoint.y = rotatePoint.y() + robot.initPose.y;
+                }
             }
         }
-
     }
+    
     mergeCloud -> width = mergeCloud -> points.size();
     mergeCloud -> height = 1;
     mergeCloud -> is_dense = false;
@@ -149,4 +193,27 @@ void CloudMapMerge::mapMerging(void){
     msg.header.stamp = ros::Time::now();
     msg.header.frame_id = MERGE_MAP_FRAME;
     mapPub.publish(msg);
+}
+
+void CloudMapMerge::registrationLoop(void){
+    while(ros::ok()){
+        robotRegistration();
+    }
+}
+
+void CloudMapMerge::mergingLoop(void){
+    while(ros::ok()){
+        mergingLoop();
+    }
+}
+
+void CloudMapMerge::multiThreadMainLoop(void){
+    ros::spinOnce();
+    std::thread mergingThread([this]() { mergingLoop(); });
+    std::thread registrationThread([this]() { registrationLoop(); });
+    //std::thread mergingThread(&CloudMapMerge::mergingLoop,this);
+    //std::thread registrationThread(&CloudMapMerge::registrationLoop,this);
+    ros::spin();
+    mergingThread.join();//スレッドの終了を待つ??
+    registrationThread.join();
 }

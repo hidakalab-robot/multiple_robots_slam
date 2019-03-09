@@ -6,11 +6,7 @@ int main (int argc, char** argv)
 
   CloudMapMerge cmm;
 
-  while(ros::ok()){
-    cmm.robotRegistration();
-    ros::spinOnce();
-    cmm.mapMerging();
-  }
+  cmm.multiThreadMainLoop();
 
   return 0;
 }
