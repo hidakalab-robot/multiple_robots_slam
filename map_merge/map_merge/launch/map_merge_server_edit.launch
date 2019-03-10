@@ -1,0 +1,56 @@
+<launch>
+  <arg name="server_name" default="server"/>
+
+  <arg name="merge_map_frame" default="/$(arg server_name)/merge_map"/>
+  
+  <!-- 各ロボットの初期設定 -->
+  <!-- yawの設定値は -1.57 <= yaw <= 1.57 -->
+  <arg name="robot1_map_frame" default="/robot1/map"/>
+  <arg name="robot1_init_pose_x" default="0.0"/>
+  <arg name="robot1_init_pose_y" default="0.0"/>
+  <arg name="robot1_init_pose_yaw" default="0.0"/>
+  
+  <arg name="robot2_map_frame" default="/robot2/map"/>
+  <arg name="robot2_init_pose_x" default="0.0"/>
+  <arg name="robot2_init_pose_y" default="12.0"/>
+  <arg name="robot2_init_pose_yaw" default="0.0"/>
+
+  
+  <!-- ノードに渡すパラメータ用 -->
+  <group ns="/robot1/map_merge">
+    <param name="init_pose_x" value="$(arg robot1_init_pose_x)"/>
+    <param name="init_pose_y" value="$(arg robot1_init_pose_y)"/>
+    <param name="init_pose_z" value="0.0"/>
+    <param name="init_pose_yaw" value="$(arg robot1_init_pose_yaw)"/>
+  </group>
+
+  <group ns="/robot2/map_merge">
+    <param name="init_pose_x" value="$(arg robot2_init_pose_x)"/>
+    <param name="init_pose_y" value="$(arg robot2_init_pose_y)"/>
+    <param name="init_pose_z" value="0.0"/>
+    <param name="init_pose_yaw" value="$(arg robot2_init_pose_yaw)"/>
+  </group>
+
+  <group ns="$(arg server_name)">
+    <node pkg="tf" type="static_transform_publisher" name="robot1_maptf_broadcaster" args="$(arg robot1_init_pose_x) $(arg robot1_init_pose_y) 0 $(arg robot1_init_pose_yaw) 0 0 $(arg merge_map_frame) $(arg robot1_map_frame) 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="robot2_maptf_broadcaster" args="$(arg robot2_init_pose_x) $(arg robot2_init_pose_y) 0 $(arg robot2_init_pose_yaw) 0 0 $(arg merge_map_frame) $(arg robot2_map_frame) 100"/>
+
+    <node pkg="grid_map_merge" type="grid_map_merge" name="grid_map_merge" output="screen">
+      <param name="robot_map_topic" value="map"/>
+      <param name="robot_namespace" value=""/>
+      <param name="merged_map_topic" value="merge_map"/>
+      <param name="world_frame" value="$(arg merge_map_frame)"/>
+      <param name="known_init_poses" value="true"/>
+      <param name="merging_rate" value="2.0"/>
+      <param name="discovery_rate" value="0.5"/>
+      <param name="estimation_rate" value="0.5"/>
+      <param name="estimation_confidence" value="1.0"/>
+      <param name="map_num" value="1"/>
+    </node>
+
+    <node pkg="cloud_map_merge" type="cloud_map_merge_test" name="cloud_map_merge_test">
+      <param name="map_topic" value="/rtabmap/cloud_obstacles"/>
+      <param name="merge_map_frame" value="$(arg merge_map_frame)"/>
+    </node>
+  </group>
+</launch>

@@ -41,8 +41,6 @@
 
 #include <opencv2/core/utility.hpp>
 
-#include <cloud_map_merge/OverlapArray.h>
-
 #include <ros/ros.h>
 
 namespace combine_grids
@@ -51,18 +49,8 @@ namespace internal
 {
 class GridCompositor
 {
-private:
-  ros::Publisher pubOverlap;
-  ros::NodeHandle p;
 public:
-  GridCompositor(){
-    //std::cout << "コンストラクタ" << std::endl;
-    //pubOverlap = p.advertise<cloud_map_merge::OverlapArray>("grid_map_merge/overlap", 10);
-    };
-  ~GridCompositor(){};
-  nav_msgs::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids,
-                                       const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, const std::vector<int>& mapOrder, const std::vector<cv::Rect>& fix_rois, cv::Rect& dst_roi, bool errorAvoidance);
-  void publishOverlap(const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid>& grids_, const int& num_a, const int& num_b, cloud_map_merge::OverlapArray& overlaps);
+  nav_msgs::OccupancyGrid::Ptr compose(const std::vector<cv::Mat>& grids, const std::vector<cv::Rect>& rois, const std::vector<nav_msgs::OccupancyGrid::ConstPtr>& grids_, cv::Rect& dst_roi);
 };
 
 }  // namespace internal

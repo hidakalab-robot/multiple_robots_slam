@@ -56,10 +56,10 @@ class MergingPipeline
 {
 public:
   template <typename InputIt>
-  bool feed(InputIt grids_begin, InputIt grids_end);
+  void feed(InputIt grids_begin, InputIt grids_end);
   bool estimateTransforms(FeatureType feature = FeatureType::AKAZE,
                           double confidence = 1.0);
-  nav_msgs::OccupancyGrid::Ptr composeGrids(int map_num, bool errorAvoidance);
+  nav_msgs::OccupancyGrid::Ptr composeGrids(int map_num);
 
   std::vector<geometry_msgs::Transform> getTransforms() const;
   template <typename InputIt>
@@ -72,11 +72,11 @@ private:
   
   std::vector<int> mapOrder;
 
-  void fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>& transforms, int originNum);
+  void fixRois(std::vector<cv::Rect>& rois, const std::vector<cv::Mat>& transforms, int originNum);
 };
 
 template <typename InputIt>
-bool MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
+void MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
 {
   static_assert(std::is_assignable<nav_msgs::OccupancyGrid::ConstPtr&,
                                    decltype(*grids_begin)>::value,
@@ -89,56 +89,26 @@ bool MergingPipeline::feed(InputIt grids_begin, InputIt grids_end)
   grids_.clear();
   mapOrder.clear();
   bool errorAvoidance = false;
-  //std::cout << "test20" << std::endl;
-  //std::cout << "grid_size1 : " << grids_.size() << "\n";
   for (InputIt it = grids_begin; it != grids_end; ++it) {
-    //std::cout << "test21" << std::endl;
     if (*it && !(*it)->data.empty()) {
-      //std::cout << "test22" << std::endl;
       grids_.push_back(*it);
-      //std::cout << "test23" << std::endl;
-      //std::cout << "grids_" << (*it) -> info << '\n';
       /* convert to opencv images. it creates only a view for opencv and does
        * not copy or own actual data. */
-      images_.emplace_back((*it)->info.height, (*it)->info.width, CV_8UC1,
-                           const_cast<signed char*>((*it)->data.data()));
-      //std::cout << "test24" << std::endl;
+      images_.emplace_back((*it)->info.height, (*it)->info.width, CV_8UC1, const_cast<signed char*>((*it)->data.data()));
     } else {
-      //std::cout << "test25" << std::endl;
       grids_.emplace_back();
-      //std::cout << "test26" << std::endl;
       images_.emplace_back();
-      //std::cout << "test27" << std::endl;
       errorAvoidance = true;
     }
   }
-  //std::cout << "grid_size2 : " << grids_.size() << "\n";
-  //std::cout << "grids_ << " << grids_[0] << std::endl;
 
-  if(!errorAvoidance)
-  {
-    for(int i=0;i<grids_.size();i++)
-    {
-      //std::cout << "test28" << std::endl;
-      //std::cout << "****grids frame ******\n" << grids_[i] -> header.frame_id << std::endl;
-      //std::cout << "grid_size : " << grids_.size() << "\n";
-      //std::cout << "i : " << i << "\n";
-      //std::cout << grids_[i] -> header.frame_id << "\n";
+  if(!errorAvoidance){
+    for(int i=0;i<grids_.size();i++){
       std::string num = grids_[i] -> header.frame_id;
-      //std::cout << "test29" << std::endl;
-      //std::cout << "a"  << std::endl;
       char numPick = num[6];
-      //std::cout << "test30" << std::endl;
-      //std::cout << "b"  << std::endl;
       mapOrder.push_back((int)(numPick - '0'));
-      //std::cout << "test31" << std::endl;
-      //std::cout << "c"  << std::endl;
-      //std::cout << "order_num\n" << mapOrder[i] << std::endl;
-      //std::cout << "d"  << std::endl;
     }
   }
-
-  return errorAvoidance;
 }
 
 template <typename InputIt>
@@ -153,10 +123,8 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
   decltype(transforms_) transforms_buf;
   for (InputIt it = transforms_begin; it != transforms_end; ++it) {
     const geometry_msgs::Quaternion& q = it->rotation;
-    if ((q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w) <
-        std::numeric_limits<double>::epsilon()) {
+    if ((q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w) < std::numeric_limits<double>::epsilon()) {
       // represents invalid transform
-      //std::cout << "unknown point" << "\n";
       transforms_buf.emplace_back();
       continue;
     }
@@ -166,34 +134,21 @@ bool MergingPipeline::setTransforms(InputIt transforms_begin,
     double tx = it->translation.x;
     double ty = it->translation.y;
 
-    //std::cout << "tx : " << tx << "ty : " << ty << "\n";
-
     cv::Mat transform = cv::Mat::eye(3, 3, CV_64F);
     transform.at<double>(0, 0) = transform.at<double>(1, 1) = a;
     transform.at<double>(1, 0) = b;
     transform.at<double>(0, 1) = -b;
     transform.at<double>(0, 2) = tx;
     transform.at<double>(1, 2) = ty;
-
     transforms_buf.emplace_back(std::move(transform));
   }
 
   if (transforms_buf.size() != images_.size()) {
-    //std::cout << "return false" << "\n";
     return false;
-  }
-  for(int i=0;i<transforms_buf.size();i++)
-  {
-    //std::cout << transforms_buf[i] << "\n";
   }
 
   std::swap(transforms_, transforms_buf);
 
-  for(int i=0;i<transforms_.size();i++)
-  {
-    //std::cout << transforms_[i] << "\n";
-  }
-  //std::cout << "return true" << "\n";
   return true;
 }
 

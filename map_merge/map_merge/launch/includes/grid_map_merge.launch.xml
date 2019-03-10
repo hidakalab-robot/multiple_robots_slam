@@ -11,6 +11,9 @@
 <arg name="robot2_init_yaw"/>
 <arg name="map_num"/>
 
+<arg name="map_resolution" default="0.05"/>
+<arg name="affine" default="1.0"/>
+
 <group ns="/robot1/grid_map_merge">
   <param name="init_pose_x" value="$(arg robot1_init_x)"/>
   <param name="init_pose_y" value="$(arg robot1_init_y)"/>

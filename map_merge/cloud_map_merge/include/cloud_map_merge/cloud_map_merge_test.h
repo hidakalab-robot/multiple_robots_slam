@@ -51,9 +51,9 @@ public:
 };
 
 CloudMapMerge::CloudMapMerge():param("~"){
-    param.param<std::string>("map_topic",MAP_TOPIC,"rtabmap/cloud_obstacles");
+    param.param<std::string>("map_topic",MAP_TOPIC,"/rtabmap/cloud_obstacles");
     param.param<std::string>("merge_map_frame",MERGE_MAP_FRAME,"merge_map");
-    param.param<std::string>("param_namespace",PARAM_NAMESPACE,"cloud_map_merge");
+    param.param<std::string>("param_namespace",PARAM_NAMESPACE,"map_merge");
     param.param<double>("ceiling_height",CEILING_HEIGHT,2.4);
     param.param<double>("floor_height",FLOOR_HEIGHT,-0.05);
     mapPub = pub.advertise<sensor_msgs::PointCloud2>("merge_map",1,true);
@@ -65,12 +65,13 @@ void CloudMapMerge::robotRegistration(void){
     ros::master::getTopics(topicList);
     
     //topicListの中からmapのトピックのみを抽出
-    for(int i=0;i<topicList.size();++i){
+    //for(int i=0;i<topicList.size();++i){
+    for(auto& topic : topicList){
         //maptopicであるか確認
-        if(!isMapTopic(topicList[i])){
+        if(!isMapTopic(topic)){
             continue;
         }
-        std::string robotName = ros::names::parentNamespace(topicList[i].name);
+        std::string robotName = ros::names::parentNamespace(topic.name);
         //すでに登録されていないかロボットの名前を確認
         {
             bool isRegisterd = false;

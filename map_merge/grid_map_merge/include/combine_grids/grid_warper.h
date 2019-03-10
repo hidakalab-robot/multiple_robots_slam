@@ -46,9 +46,7 @@ namespace internal
 class GridWarper
 {
 public:
-  cv::Rect warp(const cv::Mat& grid, const cv::Mat& transform,
-                cv::Mat& warped_grid, cv::Rect& fix_roi);
-
+  cv::Rect warp(const cv::Mat& grid, const cv::Mat& transform, cv::Mat& warped_grid);
 private:
   cv::Rect warpRoi(const cv::Mat& grid, const cv::Mat& transform);
 };
