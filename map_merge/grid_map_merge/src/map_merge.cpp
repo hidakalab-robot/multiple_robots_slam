@@ -90,14 +90,12 @@ void MapMerge::topicSubscribing()
   for (const auto& topic : topic_infos) {
     // we check only map topic
     if (!isRobotMapTopic(topic)) {
-      //std::cout << "** check1 **" << "\n";
       continue;
     }
 
     robot_name = robotNameFromTopic(topic.name);
 
     if (have_initial_poses_ && !getInitPose(robot_name, init_pose)) {
-      //std::cout << "** check3 **" << "\n";
       ROS_WARN("Couldn't get initial position for robot [%s]\n"
                "did you defined parameters map_merge/init_pose_[xyz]? in robot "
                "namespace? If you want to run merging without known initial "
@@ -110,7 +108,6 @@ void MapMerge::topicSubscribing()
  
     if (robots_.count(robot_name)) {
       // we already know this robot
-      //std::cout << "** check2 **" << "\n";
       {
         boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
         for (auto& subscription : subscriptions_) {
@@ -165,45 +162,29 @@ void MapMerge::topicSubscribing()
 void MapMerge::mapMerging()
 {
   ROS_DEBUG("Map merging started.");
-  //std::cout << "test3" << std::endl;
-
-  bool errorAvoidance;
 
   if (have_initial_poses_) {
-    //std::cout << "test4" << std::endl;
     std::vector<nav_msgs::OccupancyGridConstPtr> grids;
     std::vector<geometry_msgs::Transform> transforms;
-    //std::cout << "test5" << std::endl;
     grids.reserve(subscriptions_size_);
     {
-      //std::cout << "test1" << std::endl;
       boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
-      //std::cout << "test2" << std::endl;
       for (auto& subscription : subscriptions_) {
-        //std::cout << "test6" << std::endl;
         std::lock_guard<std::mutex> s_lock(subscription.mutex);
-        //std::cout << "test7" << std::endl;
         grids.push_back(subscription.readonly_map);
-        //std::cout << "test8" << std::endl;
         transforms.push_back(subscription.initial_pose);
-	//std::cout << "subscription.initial_pose << " << subscription.initial_pose << "\n";
       }
     }
     // we don't need to lock here, because when have_initial_poses_ is true we
     // will not run concurrently on the pipeline
-    //std::cout << "test10" << std::endl;
-    errorAvoidance = pipeline_.feed(grids.begin(), grids.end());
-    //std::cout << "test13" << std::endl;
+    pipeline_.feed(grids.begin(), grids.end());
     pipeline_.setTransforms(transforms.begin(), transforms.end());
-    //std::cout << "test14" << std::endl;
   }
 
-  //std::cout << "test11" << std::endl;
   nav_msgs::OccupancyGridPtr merged_map;
-  //std::cout << "test12" << std::endl;
   {
     std::lock_guard<std::mutex> lock(pipeline_mutex_);
-    merged_map = pipeline_.composeGrids(map_num, errorAvoidance);
+    merged_map = pipeline_.composeGrids(map_num);
   }
   if (!merged_map) {
     return;
@@ -360,7 +341,7 @@ bool MapMerge::isRobotMapTopic(const ros::master::TopicInfo& topic)
 bool MapMerge::getInitPose(const std::string& name,
                            geometry_msgs::Transform& pose)
 {
-  std::string merging_namespace = ros::names::append(name, "grid_map_merge");
+  std::string merging_namespace = ros::names::append(name, "map_merge");
   double yaw = 0.0;
 
 
@@ -375,6 +356,14 @@ bool MapMerge::getInitPose(const std::string& name,
                       yaw);
 
   std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
+
+  //fix parameter
+  double resolution = 0.05;
+  pose.translation.x /= resolution;
+  pose.translation.y /= resolution;
+
+  std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
+
 
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);

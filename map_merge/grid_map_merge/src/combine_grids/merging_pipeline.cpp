@@ -142,8 +142,7 @@ bool MergingPipeline::estimateTransforms(FeatureType feature_type,
 }
 
 // checks whether given matrix is an identity, i.e. exactly appropriate Mat::eye
-static inline bool isIdentity(const cv::Mat& matrix)
-{
+static inline bool isIdentity(const cv::Mat& matrix){
   if (matrix.empty()) {
     return false;
   }
@@ -151,39 +150,12 @@ static inline bool isIdentity(const cv::Mat& matrix)
   return cv::countNonZero(diff) == 0;
 }
 
-nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool errorAvoidance)
-{
+nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num){
   ROS_ASSERT(images_.size() == transforms_.size());
   ROS_ASSERT(images_.size() == grids_.size());
 
-  //std::cout << "in composeGrid" << '\n';
-  //std::cout << transforms_.size() << '\n';
-
-  for(int i=0;i<transforms_.size();i++)
-  {
-    //std::cout << transforms_[i] << '\n';
-  }
-
   if (images_.empty()) {
     return nullptr;
-  }
-
-  //std::cout << "test" << std::endl;
-
-  //std::cout << "trans_size : " << transforms_.size() << std::endl;
-
-  std::vector<cv::Mat> transformSave;
-  //transformSave.reserve(transforms_.size());
-
-  for(int i=0;i<transforms_.size();i++){
-    //std::cout << "test1" << std::endl;
-    cv::Mat temp = transforms_[i].clone();
-    transformSave.push_back(temp);
-    //std::cout << "test2" << std::endl;
-  }
-
-  for(int i=0;i<transformSave.size();i++){
-    //std::cout << "save_check\n" << transformSave[i] << std::endl;
   }
 
   ROS_DEBUG("warping grids");
@@ -192,57 +164,35 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool err
   imgs_warped.reserve(images_.size());
   std::vector<cv::Rect> rois;
   rois.reserve(images_.size());
-  std::vector<cv::Rect> fix_rois;
-  fix_rois.reserve(images_.size());
-
-
 
   for (size_t i = 0; i < images_.size(); ++i) {
     if (!transforms_[i].empty() && !images_[i].empty()) {
       imgs_warped.emplace_back();
-      rois.emplace_back(
-          warper.warp(images_[i], transforms_[i], imgs_warped.back(), fix_rois[i]));
-      //std::cout << "for\n" << transforms_[i] << '\n';
+      rois.emplace_back(warper.warp(images_[i], transforms_[i], imgs_warped.back()));
     }
   }
 
-  //std::cout << "imgs_warped_size << " << imgs_warped.size() << '\n';
-
-  //std::cout << "warp1" << '\n';
-  //cv::imshow("imgs_warped_1",imgs_warped[0]);
-  //cv::waitKey(1);
-
-  //std::cout << "warp2" << '\n';
-  //cv::imshow("imgs_warped_2",imgs_warped[1]);
-  //cv::waitKey(1);
-
-  // std::cout << "rois1" << '\n';
-  //cv::imshow("rois_1",rois[0]);
-  // cv::waitKey(1);
-  //
-  // std::cout << "rois2" << '\n';
-  // cv::imshow("rois_2",imgs_warped[1]);
-  // cv::waitKey(1);
-
-
   if (imgs_warped.empty()) {
-    //std::cout << "nullptr" << '\n';
     return nullptr;
   }
 
+  //マップ原点の座標を見てroiを修正する
   ROS_DEBUG("fixing rois");
 
-  //マップ原点の座標を見てroiを修正する
-  fixRois(rois,transformSave,map_num);
+  fixRois(rois,transforms_,map_num);
+
 
   ROS_DEBUG("compositing result grid");
   nav_msgs::OccupancyGrid::Ptr result;
 
-  cv::Rect dst_roi;
 
   internal::GridCompositor compositor;
-  result = compositor.compose(imgs_warped, rois, grids_, mapOrder,fix_rois,dst_roi, errorAvoidance);
+  cv::Rect dst_roi;
+  result = compositor.compose(imgs_warped, rois, grids_,dst_roi);
 
+  ROS_INFO_STREAM("test1\n");//このあたりのコメント外すとエラー率が上がる（謎）（何かのタイミングを逃している）
+  ROS_INFO_STREAM("transform size : "<< transforms_.size() << "\n");
+  ROS_INFO_STREAM("grids size : " << grids_.size() << "\n");
   // set correct resolution to output grid. use resolution of identity (works
   // for estimated trasforms), or any resolution (works for know_init_positions)
   // - in that case all resolutions should be the same.
@@ -250,57 +200,39 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num, bool err
   for (size_t i = 0; i < transforms_.size(); ++i) {
     // check if this transform is the reference frame
     if (isIdentity(transforms_[i])) {
+      ROS_INFO_STREAM("if 1\n");
+      //ROS_INFO_STREAM("grid value : " << grids_[i]->info.resolution << "\n");
       result->info.resolution = grids_[i]->info.resolution;
+      ROS_INFO_STREAM("if 1 end\n");
       break;
     }
     if (grids_[i]) {
+      ROS_INFO_STREAM("if 2\n");
       any_resolution = grids_[i]->info.resolution;
     }
   }
+  ROS_INFO_STREAM("out for\n");
   if (result->info.resolution <= 0.f) {
+    ROS_INFO_STREAM("if 3\n");
     result->info.resolution = any_resolution;
   }
+  ROS_INFO_STREAM("test1.5\n");
 
-  for(int i;i<grids_.size();i++)
-  {
-    //std::cout << "grids_frames\n" << grids_[i] -> header.frame_id << std::endl;
-  }
-
-  for(int i=0;i<mapOrder.size();i++)
-  {
-    //std::cout << "check1" << std::endl;
-    if(mapOrder[i] == map_num)
-    {
+  for(int i=0;i<mapOrder.size();i++){
+    if(mapOrder[i] == map_num){
       // set grid origin to its centre
       result->info.origin.position.x = grids_[i]->info.origin.position.x + 0.05*dst_roi.tl().x;
-      //std::cout << "check2" << std::endl;
-      //-(result->info.width / 2.0) * double(result->info.resolution);
-      //-10.525;
       result->info.origin.position.y = grids_[i]->info.origin.position.y + 0.05*dst_roi.tl().y;
-      //std::cout << "check3" << std::endl;
-      //-(result->info.height / 2.0) * double(result->info.resolution);
-      //-10.525;
       result->info.origin.orientation.w = 1.0;
-      //std::cout << "check4" << std::endl;
     }
   }
 
-  //std::cout << "check5" << std::endl;
-
-  // // set grid origin to its centre
-  //     result->info.origin.position.x = grids_[map_num-1]->info.origin.position.x;
-  //     //-(result->info.width / 2.0) * double(result->info.resolution);
-  //     //-10.525;
-  //     result->info.origin.position.y = grids_[map_num-1]->info.origin.position.y;
-  //     //-(result->info.height / 2.0) * double(result->info.resolution);
-  //     //-10.525;
-  //     result->info.origin.orientation.w = 1.0;
-
+  ROS_INFO_STREAM("test2\n");
 
   return result;
 }
 
-void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>& transforms,int originNum)
+void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, const std::vector<cv::Mat>& transforms,int originNum)
 {
   //grids_ : マップの情報
   //map_order : 配列の順番
@@ -312,30 +244,17 @@ void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>&
   int originMapX;
   int originMapY;
 
-  for(int i=0;i<mapOrder.size();i++)
-  {
-    if(mapOrder[i] == originNum)
-    {
-      //std::cout << "check1" << std::endl;
+  for(int i=0;i<mapOrder.size();i++){
+    if(mapOrder[i] == originNum){
       originMapX = grids_[i]->info.origin.position.x / -0.05;
-      //std::cout << "check2" << std::endl;
       originMapY = grids_[i]->info.origin.position.y / -0.05;
     }
   }
 
-  //cv::Rect newRoi(saveH.at<double>(0, 2),saveH.at<double>(1, 2),roi.width,roi.height);
-  //cv::Rect newRoi(0,0,roi.width,roi.height);
-
-  int moveX;
-  int moveY;
-
-  int thisOriginX;
-  int thisOriginY;
-
+  int moveX, moveY;
+  int thisOriginX, thisOriginY;
   double vecX1,vecX2,vecY1,vecY2;
-
   double distX,distY;
-
   double rotation,rotationS,rotationC;
 
   for(int i=0;i<mapOrder.size();i++)
@@ -398,8 +317,9 @@ void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>&
       distX = vecX1 + vecX2;
       distY = vecY1 + vecY2;
 
-      cv::Rect newRoi(moveX-distX,moveY-distY,rois[i].width,rois[i].height);
-      rois[i] = newRoi;
+      // cv::Rect newRoi(moveX-distX,moveY-distY,rois[i].width,rois[i].height);
+      // rois[i] = newRoi;
+      rois[i] = cv::Rect(moveX-distX,moveY-distY,rois[i].width,rois[i].height);
 
       //comment area
       // { 
@@ -437,11 +357,8 @@ void MergingPipeline::fixRois(std::vector<cv::Rect>& rois, std::vector<cv::Mat>&
       //   std::cout << "true-moveX : " << moveX-distX << std::endl;
       //   std::cout << "true-moveY : " << moveY-distY << std::endl;
       // }
-
     }
   }
-
-
 }
 
 std::vector<geometry_msgs::Transform> MergingPipeline::getTransforms() const

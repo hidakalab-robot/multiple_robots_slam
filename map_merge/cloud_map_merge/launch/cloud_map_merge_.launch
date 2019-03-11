@@ -1,0 +1,39 @@
+<launch>
+    <!-- 各ロボットの初期設定 -->
+    <!-- yawの設定値は -1.57 <= yaw <= 1.57 -->
+    <arg name="robot1_map_frame" default="/robot1/map"/>
+    <arg name="robot1_init_pose_x" default="0.0"/>
+    <arg name="robot1_init_pose_y" default="0.0"/>
+    <arg name="robot1_init_pose_yaw" default="0.0"/>
+    
+    <arg name="robot2_map_frame" default="/robot2/map"/>
+    <arg name="robot2_init_pose_x" default="0.0"/>
+    <arg name="robot2_init_pose_y" default="12.0"/>
+    <arg name="robot2_init_pose_yaw" default="0.0"/>
+    
+    <!-- ノードに渡すパラメータ用 -->
+    <group ns="/robot1/map_merge">
+        <param name="init_pose_x" value="$(arg robot1_init_pose_x)"/>
+        <param name="init_pose_y" value="$(arg robot1_init_pose_y)"/>
+        <param name="init_pose_z" value="0.0"/>
+        <param name="init_pose_yaw" value="$(arg robot1_init_pose_yaw)"/>
+    </group>
+
+    <group ns="/robot2/map_merge">
+        <param name="init_pose_x" value="$(arg robot2_init_pose_x)"/>
+        <param name="init_pose_y" value="$(arg robot2_init_pose_y)"/>
+        <param name="init_pose_z" value="0.0"/>
+        <param name="init_pose_yaw" value="$(arg robot2_init_pose_yaw)"/>
+    </group>
+
+    <node pkg="cloud_map_merge" type="cloud_map_merge" name="cloud_map_merge">
+        <param name="map_topic" value="/rtabmap/cloud_obstacles"/>
+        <param name="merge_map_frame" value="$(arg merge_map_frame)"/>
+        <param name="merging_rate" value="1.0"/>
+        <param name="registration_rate" value="0.5"/>
+        <param name="floor_height" value="-0.05"/>
+        <param name="ceiling_height" value="2.4"/>
+        <remap from="merge_map" to="~merge_map"/>
+    </node>
+
+</launch>
