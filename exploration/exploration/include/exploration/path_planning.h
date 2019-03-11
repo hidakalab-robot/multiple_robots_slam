@@ -19,6 +19,7 @@ private:
 public:
     //pathPlanning();
     //pathPlanning(std::string name);
+    pathPlanning();
     pathPlanning(std::string costmapName, std::string plannerName);
     ~pathPlanning(){};
 
@@ -37,6 +38,11 @@ public:
 //     //name = ns;
 //     planner.initialize(name,&gcr);
 // }
+template<typename T>
+pathPlanning<T>::pathPlanning():tf(ros::Duration(10)),gcr("costmap", tf){
+    planner.initialize("path_planner",&gcr);
+    plannerName_ = "path_planner";
+}
 
 template<typename T>
 pathPlanning<T>::pathPlanning(std::string costmapName, std::string plannerName):tf(ros::Duration(10)),gcr(costmapName, tf){
