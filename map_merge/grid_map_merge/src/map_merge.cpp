@@ -362,6 +362,9 @@ bool MapMerge::getInitPose(const std::string& name,
   pose.translation.x /= resolution;
   pose.translation.y /= resolution;
 
+  std::cout << "name : " << name << " << init_pose_x : " << pose.translation.x << " << init_pose_y : " << pose.translation.y << " << init_pose_yaw : " << yaw << " << bool : " << success << "\n";
+
+
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);
   pose.rotation = toMsg(q);
