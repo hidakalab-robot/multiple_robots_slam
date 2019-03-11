@@ -8,7 +8,6 @@ find_package(catkin REQUIRED COMPONENTS
   nav_msgs
   roscpp
   tf2_geometry_msgs
-  cloud_map_merge
 )
 
 find_package(Boost REQUIRED COMPONENTS thread)
@@ -33,7 +32,6 @@ catkin_package(
     map_msgs
     nav_msgs
     tf2_geometry_msgs
-    cloud_map_merge
 )
 
 ###########

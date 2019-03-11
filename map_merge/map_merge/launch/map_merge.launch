@@ -50,7 +50,7 @@
       <param name="map_num" value="1"/>
     </node>
 
-    <node pkg="cloud_map_merge" type="cloud_map_merge_test" name="cloud_map_merge_test">
+    <node pkg="cloud_map_merge" type="cloud_map_merge" name="cloud_map_merge">
       <param name="map_topic" value="/rtabmap/cloud_obstacles"/>
       <param name="merge_map_frame" value="$(arg merge_map_frame)"/>
       <param name="merging_rate" value="1.0"/>
