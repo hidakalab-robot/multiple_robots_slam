@@ -179,17 +179,6 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num){
   //マップ原点の座標を見てroiを修正する
   ROS_DEBUG("fixing rois");
 
-  // std::vector<cv::Mat> transformSave;
-  // transformSave.reserve(transforms_.size());
-
-  // for(int i=0;i<transforms_.size();i++){
-  //   //cv::Mat temp = transforms_[i].clone();
-  //   //transformSave.push_back(temp);
-  //   transformSave.emplace_back(transforms_[i].clone());
-  // }
-
-  // fixRois(rois,transformSave,map_num);
-
   fixRois(rois,transforms_,map_num);
 
 
@@ -201,6 +190,9 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num){
   cv::Rect dst_roi;
   result = compositor.compose(imgs_warped, rois, grids_,dst_roi);
 
+  ROS_INFO_STREAM("test1\n");//このあたりのコメント外すとエラー率が上がる（謎）（何かのタイミングを逃している）
+  ROS_INFO_STREAM("transform size : "<< transforms_.size() << "\n");
+  ROS_INFO_STREAM("grids size : " << grids_.size() << "\n");
   // set correct resolution to output grid. use resolution of identity (works
   // for estimated trasforms), or any resolution (works for know_init_positions)
   // - in that case all resolutions should be the same.
@@ -208,16 +200,23 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num){
   for (size_t i = 0; i < transforms_.size(); ++i) {
     // check if this transform is the reference frame
     if (isIdentity(transforms_[i])) {
+      ROS_INFO_STREAM("if 1\n");
+      //ROS_INFO_STREAM("grid value : " << grids_[i]->info.resolution << "\n");
       result->info.resolution = grids_[i]->info.resolution;
+      ROS_INFO_STREAM("if 1 end\n");
       break;
     }
     if (grids_[i]) {
+      ROS_INFO_STREAM("if 2\n");
       any_resolution = grids_[i]->info.resolution;
     }
   }
+  ROS_INFO_STREAM("out for\n");
   if (result->info.resolution <= 0.f) {
+    ROS_INFO_STREAM("if 3\n");
     result->info.resolution = any_resolution;
   }
+  ROS_INFO_STREAM("test1.5\n");
 
   for(int i=0;i<mapOrder.size();i++){
     if(mapOrder[i] == map_num){
@@ -227,6 +226,8 @@ nav_msgs::OccupancyGrid::Ptr MergingPipeline::composeGrids(int map_num){
       result->info.origin.orientation.w = 1.0;
     }
   }
+
+  ROS_INFO_STREAM("test2\n");
 
   return result;
 }

@@ -49,12 +49,13 @@ namespace internal
 {
 cv::Rect GridWarper::warp(const cv::Mat& grid, const cv::Mat& transform, cv::Mat& warped_grid){
   ROS_ASSERT(transform.type() == CV_64F);
-  cv::Mat H(transform.rowRange(0, 2));
+
+  cv::Mat H(transform.rowRange(0, 2).clone());//cloneで渡さないとtransformが書き換わる
   cv::Rect roi = warpRoi(grid, H);//アフィンの逆でrectを移動//gridはサイズを見てるだけ,Hで移動
   
   H.at<double>(0, 2) -= roi.tl().x;//warpAffineを回転だけにする
   H.at<double>(1, 2) -= roi.tl().y;//warpAffineを回転だけにする
-
+  
   warpAffine(grid, warped_grid, H, roi.size(), cv::INTER_NEAREST,cv::BORDER_CONSTANT,cv::Scalar::all(255) /* this is -1 for signed char */);//grid:前景 warped:背景 H:前景の移動行列
 
   ROS_ASSERT(roi.size() == warped_grid.size());
