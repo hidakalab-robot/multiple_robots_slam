@@ -1,5 +1,5 @@
-#include <exploration/movement.h>
-#include <exploration/branch_search.h>
+#include <exploration/movement.hpp>
+#include <exploration/branch_search.hpp>
 
 int main(int argc, char *argv[])
 {

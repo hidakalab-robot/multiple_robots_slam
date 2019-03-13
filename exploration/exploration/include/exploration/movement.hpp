@@ -12,7 +12,7 @@
 #include <exploration_msgs/MoveAngle.h>
 #include <tf/tf.h>
 #include <std_msgs/Empty.h>
-#include <exploration/path_planning.h>
+#include <exploration/path_planning.hpp>
 #include <navfn/navfn_ros.h>
 #include <voronoi_planner/planner_core.h>
 #include <move_base_msgs/MoveBaseAction.h>

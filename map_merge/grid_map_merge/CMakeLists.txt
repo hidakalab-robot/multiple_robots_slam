@@ -107,6 +107,6 @@ if(CATKIN_ENABLE_TESTING)
   # test all launch files
   # do not test from_map_server.launch as we don't want to add dependency on map_server and this
   # launchfile is not critical
-  roslaunch_add_file_check(launch/map_merge.launch)
+  roslaunch_add_file_check(launch/grid_map_merge.launch)
   roslaunch_add_file_check(launch/experiments)
 endif()

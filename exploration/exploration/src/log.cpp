@@ -1,4 +1,4 @@
-#include <exploration/log.h>
+#include <exploration/log.hpp>
 
 int main(int argc, char *argv[])
 {

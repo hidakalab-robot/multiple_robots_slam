@@ -1,4 +1,4 @@
-#include <exploration/visualization.h>
+#include <exploration/visualization.hpp>
 
 int main(int argc, char *argv[])
 {

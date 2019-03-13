@@ -1,4 +1,4 @@
-#include <exploration/movement.h>
+#include <exploration/movement.hpp>
 
 int main(int argc, char *argv[])
 {

@@ -1,5 +1,5 @@
-#include <exploration/frontier_search.h>
-#include <exploration/movement.h>
+#include <exploration/frontier_search.hpp>
+#include <exploration/movement.hpp>
 
 int main(int argc, char *argv[])
 {

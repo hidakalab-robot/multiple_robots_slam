@@ -1,6 +1,6 @@
-#include <exploration/frontier_search.h>
-#include <exploration/movement.h>
-#include <exploration/path_planning.h>
+#include <exploration/frontier_search.hpp>
+#include <exploration/movement.hpp>
+#include <exploration/path_planning.hpp>
 //#include <navfn/navfn_ros.h>
 //#include <voronoi_planner/planner_core.h>
 
