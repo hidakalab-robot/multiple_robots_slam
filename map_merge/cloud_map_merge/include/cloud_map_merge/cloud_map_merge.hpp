@@ -42,8 +42,8 @@ private:
     ros::Publisher mapPub;
 
     void robotRegistration(void);//ロボットの情報を登録
-    bool isMapTopic(ros::master::TopicInfo& topic);
-    std::string robotNameFromTopicName(std::string& topicName);
+    bool isMapTopic(const ros::master::TopicInfo& topic);
+    std::string robotNameFromTopicName(const std::string& topicName);
     void initPoseLoad(CloudMapMerge::robotInfo& info);
     void mapUpdate(const sensor_msgs::PointCloud2::ConstPtr& msg, CloudMapMerge::robotInfo& info);//ロボットごとのマップを更新する
     void mapMerging(void);//subscribeしたmapを合成
@@ -124,7 +124,7 @@ void CloudMapMerge::robotRegistration(void){
     }
 }
 
-bool CloudMapMerge::isMapTopic(ros::master::TopicInfo& topic){
+bool CloudMapMerge::isMapTopic(const ros::master::TopicInfo& topic){
     //ROS_DEBUG_STREAM("registrationThread << isMapTopic\n");
     bool isMap = topic.name == ros::names::append(robotNameFromTopicName(topic.name),MAP_TOPIC);
     //ROS_DEBUG_STREAM("registrationThread << topic.name : " << topic.name << "\n");
@@ -137,7 +137,7 @@ bool CloudMapMerge::isMapTopic(ros::master::TopicInfo& topic){
     return isMap && isPointCloud;
 }
 
-std::string CloudMapMerge::robotNameFromTopicName(std::string& topicName){
+std::string CloudMapMerge::robotNameFromTopicName(const std::string& topicName){
     //ros::names::parentNamespace(std::string);はトピック名からネームスペースの文字列を返す
     //例
     ///robot1/map -> /robot1

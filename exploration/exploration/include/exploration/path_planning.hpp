@@ -23,8 +23,8 @@ public:
     pathPlanning(std::string costmapName, std::string plannerName);
     ~pathPlanning(){};
 
-    bool createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, bool initializer=false);
-    bool createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map, bool initializer=false);
+    bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, bool initializer=false);
+    bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map, bool initializer=false);
 };
 
 // template<typename T>
@@ -56,7 +56,7 @@ void pathPlanning<T>::rosSpinOnce(void){
 }
 
 template<typename T>
-bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, bool initializer){
+bool pathPlanning<T>::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, bool initializer){
     rosSpinOnce();
     //T planner;
     //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
@@ -70,7 +70,7 @@ bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped& start, geometry_msg
 }
 
 template<typename T>
-bool pathPlanning<T>::createPath(geometry_msgs::PoseStamped& start, geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map, bool initializer){
+bool pathPlanning<T>::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map, bool initializer){
     rosSpinOnce();
     //T planner;
     //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");

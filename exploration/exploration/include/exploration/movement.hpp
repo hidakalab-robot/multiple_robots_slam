@@ -141,42 +141,42 @@ private:
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
     void approx(std::vector<float>& scan);
-    void vfhMovement(bool isStraight, geometry_msgs::Point goal);
+    void vfhMovement(bool isStraight, const geometry_msgs::Point& goal);
     void vfhMovement(bool isStraight, double angle);
-    bool bumperCollision(kobuki_msgs::BumperEvent bumper);
-    double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle = 0.0);
-    double localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose);
-    double qToYaw(geometry_msgs::Quaternion q);
-    bool emergencyAvoidance(sensor_msgs::LaserScan scan);
+    bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
+    double vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double goalAngle = 0.0);
+    double localAngleCalculation(const geometry_msgs::Point& goal,const geometry_msgs::PoseStamped& pose);
+    double qToYaw(const geometry_msgs::Quaternion& q);
+    bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
     void recoveryRotation(void);
     void velocityPublisher(double theta, double v, double t);
-    bool roadCenterDetection(sensor_msgs::LaserScan scan);
-    void publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal);
-    void publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel);
+    bool roadCenterDetection(const sensor_msgs::LaserScan& scan);
+    void publishToGoal(const geometry_msgs::Pose& pose, const geometry_msgs::Point& goal);
+    void publishMoveAngle(double angle, const geometry_msgs::Pose& pose, const geometry_msgs::Twist& vel);
     void publishToGoalDelete(void);
 
-    void publishVoronoiMap(nav_msgs::OccupancyGrid map);
+    void publishVoronoiMap(const nav_msgs::OccupancyGrid& map);
 
-    bool callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
+    bool callPathPlanner(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& path);
 
-    bool callVoronoiPlanner(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
-    bool callNavfn(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path);
+    bool callVoronoiPlanner(const std::string& costmapName, const std::string& plannerName, const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& path);
+    bool callNavfn(const std::string& costmapName, const std::string& plannerName, const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& path);
 
     void directionFitting(double targetYaw);
-    void directionFitting(geometry_msgs::Point target);
+    void directionFitting(const geometry_msgs::Point& target);
 
     //moveToForwardのときの障害物回避で、前方に壁があったときの処理
-    bool forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle);
-    double sideSpaceDetection(sensor_msgs::LaserScan& scan, int plus, int minus);
+    bool forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle);
+    double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
 
 public:
     Movement();
     ~Movement(){};
 
-    std::vector<geometry_msgs::PoseStamped> createPath(geometry_msgs::Point goal);
-    void moveToGoal(geometry_msgs::Point goal,bool movebase);
-    void moveToGoal(geometry_msgs::Point goal);
-    void moveToGoal(std::vector<geometry_msgs::PoseStamped> path); // not stable
+    std::vector<geometry_msgs::PoseStamped> createPath(const geometry_msgs::Point& goal);
+    void moveToGoal(const geometry_msgs::Point& goal,bool movebase);
+    void moveToGoal(const geometry_msgs::Point& goal);
+    void moveToGoal(const std::vector<geometry_msgs::PoseStamped>& path); // not stable
 
     void moveToForward(void);
     void oneRotation(void);
@@ -313,7 +313,7 @@ void Movement::approx(std::vector<float>& scan){
     }
 }
 
-std::vector<geometry_msgs::PoseStamped> Movement::createPath(geometry_msgs::Point goal){
+std::vector<geometry_msgs::PoseStamped> Movement::createPath(const geometry_msgs::Point& goal){
     qPose.callOne(ros::WallDuration(1));
     geometry_msgs::PoseStamped start;
     start = poseData;
@@ -332,7 +332,7 @@ std::vector<geometry_msgs::PoseStamped> Movement::createPath(geometry_msgs::Poin
     return path;
 }
 
-void Movement::moveToGoal(geometry_msgs::Point goal,bool movebase){
+void Movement::moveToGoal(const geometry_msgs::Point& goal,bool movebase){
     if(!movebase){
         moveToGoal(goal);
     }
@@ -369,7 +369,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal,bool movebase){
     }
 }
 
-void Movement::moveToGoal(geometry_msgs::Point goal){
+void Movement::moveToGoal(const geometry_msgs::Point& goal){
     ROS_INFO_STREAM("Goal Recieved : (" << goal.x << "," << goal.y << ")\n");
 
     existGoal = true;
@@ -445,7 +445,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
     publishToGoalDelete();
 }
 
-void Movement::moveToGoal(std::vector<geometry_msgs::PoseStamped> path){
+void Movement::moveToGoal(const std::vector<geometry_msgs::PoseStamped>& path){
     //planの中で半径x[m]より外で一番近いところを探す
     //初めに目標と角度合わせる
     //目標近くについたらplanの中で半径x[m]より外で次に近いところを探す
@@ -569,7 +569,7 @@ void Movement::directionFitting(double targetYaw){
     }
 }
 
-void Movement::vfhMovement(bool isStraight, geometry_msgs::Point goal){
+void Movement::vfhMovement(bool isStraight, const geometry_msgs::Point& goal){
     double resultAngle;
 
     qBumper.callOne(ros::WallDuration(1));
@@ -615,7 +615,7 @@ void Movement::vfhMovement(bool isStraight, double angle){
     }
 }
 
-bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
+bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     //壁に衝突してるかを確認して、してたらバック
     //バックの後に回転動作をさせる
     if(bumperData.state){
@@ -657,7 +657,7 @@ bool Movement::bumperCollision(kobuki_msgs::BumperEvent bumper){
     return false;
 }
 
-double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double goalAngle){
+double Movement::vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double goalAngle){
     //要求角度と最も近くなる配列の番号を探索
     //安全な角度マージンの定義
     //要求角度に最も近くなる右側と左側の番号を探索
@@ -780,7 +780,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
     return moveAngle;
 }
 
-double Movement::localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::PoseStamped pose){
+double Movement::localAngleCalculation(const geometry_msgs::Point& goal, const geometry_msgs::PoseStamped& pose){
     double tempAngle;
     double localAngle;
 
@@ -799,14 +799,14 @@ double Movement::localAngleCalculation(geometry_msgs::Point goal,geometry_msgs::
     return localAngle;
 }
 
-double Movement::qToYaw(geometry_msgs::Quaternion q){
+double Movement::qToYaw(const geometry_msgs::Quaternion& q){
     tf::Quaternion tq(q.x, q.y, q.z, q.w);
     double roll, pitch, yaw;
     tf::Matrix3x3(tq).getRPY(roll,pitch,yaw);
     return yaw;
 }
 
-bool Movement::emergencyAvoidance(sensor_msgs::LaserScan scan){
+bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     double aveP;
     double aveM;
     double sum = 0;
@@ -905,15 +905,19 @@ void Movement::moveToForward(void){
     
 }
 
-bool Movement::roadCenterDetection(sensor_msgs::LaserScan scan){
+bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     std::vector<float> fixRanges;
     std::vector<float> fixAngles;
 
+    fixRanges.reserve(scan.ranges.size());
+    fixRanges.reserve(scan.ranges.size());
+
     for(int i=0;i<scan.ranges.size();i++){
         if(!std::isnan(scan.ranges[i])){
-            if(scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)) <= ROAD_CENTER_THRESHOLD){
-                fixRanges.push_back(scan.ranges[i]);
-                fixAngles.push_back(scan.angle_min+(scan.angle_increment*i));
+            double tempAngle = scan.angle_min+(scan.angle_increment*i);
+            if(scan.ranges[i]*cos(tempAngle) <= ROAD_CENTER_THRESHOLD){
+                fixRanges.emplace_back(scan.ranges[i]);
+                fixAngles.emplace_back(std::move(tempAngle));
             }
         }
     }
@@ -938,7 +942,7 @@ bool Movement::roadCenterDetection(sensor_msgs::LaserScan scan){
     return false;
 }
 
-void Movement::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal){
+void Movement::publishToGoal(const geometry_msgs::Pose& pose, const geometry_msgs::Point& goal){
     exploration_msgs::ToGoal msg;
 
     msg.pose = pose;
@@ -949,7 +953,7 @@ void Movement::publishToGoal(geometry_msgs::Pose pose, geometry_msgs::Point goal
     ROS_INFO_STREAM("Publish ToGoal\n");
 }
 
-void Movement::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry_msgs::Twist vel){
+void Movement::publishMoveAngle(double angle, const geometry_msgs::Pose& pose, const geometry_msgs::Twist& vel){
     exploration_msgs::MoveAngle msg;
 
     msg.local_angle = angle;
@@ -962,7 +966,7 @@ void Movement::publishMoveAngle(double angle, geometry_msgs::Pose pose, geometry
     ROS_INFO_STREAM("Publish MoveAngle\n");
 }
 
-void Movement::publishVoronoiMap(nav_msgs::OccupancyGrid map){
+void Movement::publishVoronoiMap(const nav_msgs::OccupancyGrid& map){
     pubVoronoiMap.publish(map);
     ROS_DEBUG_STREAM("Publish My Voronoi Map\n");
 }
@@ -1013,7 +1017,7 @@ void Movement::oneRotation(void){
     }
 }
 
-bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+bool Movement::callPathPlanner(const geometry_msgs::PoseStamped& start,const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& path){
     //navfnなどのグローバルパスプラナーを呼ぶ
     if(PLANNER_NAME == "NavfnROS"){
         ROS_INFO_STREAM("call Navfn\n");
@@ -1040,13 +1044,13 @@ bool Movement::callPathPlanner(geometry_msgs::PoseStamped start,geometry_msgs::P
     // }
 }
 
-bool Movement::callNavfn(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+bool Movement::callNavfn(const std::string& costmapName,const std::string& plannerName,const geometry_msgs::PoseStamped& start,const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& path){
     //static pathPlanning<navfn::NavfnROS> pp(plannerName);
     static pathPlanning<navfn::NavfnROS> pp(costmapName,plannerName);
     return pp.createPath(start,goal,path);
 }
 
-bool Movement::callVoronoiPlanner(std::string costmapName,std::string plannerName,geometry_msgs::PoseStamped start,geometry_msgs::PoseStamped goal, std::vector<geometry_msgs::PoseStamped>& path){
+bool Movement::callVoronoiPlanner(const std::string& costmapName,const std::string& plannerName,const geometry_msgs::PoseStamped& start,const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& path){
     ////pathPlanning<voronoi_planner::VoronoiPlanner> pp(plannerName);
     //static pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
     pathPlanning<voronoi_planner::VoronoiPlanner> pp(costmapName,plannerName);
@@ -1063,7 +1067,7 @@ bool Movement::callVoronoiPlanner(std::string costmapName,std::string plannerNam
     }
 }
 
-bool Movement::forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle){
+bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle){
     //前方に壁があるかどうかを判定する
     //前方何度まで見るかを決める
     //その範囲にセンサデータが何割存在するかで壁かどうか決める
@@ -1103,7 +1107,7 @@ bool Movement::forwardWallDetection(sensor_msgs::LaserScan& scan, double& angle)
     }
 }
 
-double Movement::sideSpaceDetection(sensor_msgs::LaserScan& scan, int plus, int minus){
+double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus){
     //minus
     double sumMinus = 0;
     int countNanMinus = 0;

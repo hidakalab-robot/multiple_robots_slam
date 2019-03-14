@@ -99,7 +99,7 @@ private:
     void goalListDelCB(const std_msgs::Empty::ConstPtr& msg);
     void toGoalDelCB(const std_msgs::Empty::ConstPtr& msg);
 
-    double qToYaw(geometry_msgs::Quaternion q);
+    double qToYaw(const geometry_msgs::Quaternion& q);
 
 public:
     Visualization();
@@ -131,7 +131,7 @@ Visualization::Visualization():p("~"){
     p.param<std::string>("map_frame_id", mapFrameId, "map");
 }
 
-double Visualization::qToYaw(geometry_msgs::Quaternion q){
+double Visualization::qToYaw(const geometry_msgs::Quaternion& q){
     tf::Quaternion temp(q.x, q.y, q.z, q.w);
     double roll, pitch, yaw;
     tf::Matrix3x3(temp).getRPY(roll,pitch,yaw);

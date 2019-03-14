@@ -89,12 +89,12 @@ private:
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
 	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
-    void initialize(struct FrontierSearch::mapStruct& map, nav_msgs::OccupancyGrid source);
-    void release(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY);
-    void horizonDetection(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY);
-    std::vector<Eigen::Vector2i> frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution);
-    std::vector<Eigen::Vector2i> frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, nav_msgs::MapMetaData& mapInfo);
-    void obstacleFilter(struct FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, float resolution);
+    void initialize(FrontierSearch::mapStruct& map, nav_msgs::OccupancyGrid source);
+    void release(FrontierSearch::mapStruct& map, int sizeX, int sizeY);
+    void horizonDetection(FrontierSearch::mapStruct& map, int sizeX, int sizeY);
+    std::vector<Eigen::Vector2i> frontierDetectionByContinuity(FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution);
+    std::vector<Eigen::Vector2i> frontierDetectionByClustering(FrontierSearch::mapStruct& map, nav_msgs::MapMetaData& mapInfo);
+    void obstacleFilter(FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, float resolution);
     geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,double originX,double originY,float resolution);
     Eigen::Vector2i coordinateToArray(double x,double y,double originX,double originY,float resolution);
 
@@ -176,7 +176,7 @@ void FrontierSearch::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
 bool FrontierSearch::getGoal(void){
     qMap.callOne(ros::WallDuration(1));
     publishGoalDelete();
-    struct FrontierSearch::mapStruct map;
+    FrontierSearch::mapStruct map;
     initialize(map,mapData);
 
     horizonDetection(map,mapData.info.width,mapData.info.height);
@@ -235,7 +235,7 @@ bool FrontierSearch::getGoal(void){
 bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     qMap.callOne(ros::WallDuration(1));
     publishGoalDelete();
-    struct FrontierSearch::mapStruct map;
+    FrontierSearch::mapStruct map;
     initialize(map,mapData);
 
     horizonDetection(map,mapData.info.width,mapData.info.height);
@@ -304,7 +304,7 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     }
 }
 
-void FrontierSearch::initialize(struct FrontierSearch::mapStruct& map, nav_msgs::OccupancyGrid source){
+void FrontierSearch::initialize(FrontierSearch::mapStruct& map, nav_msgs::OccupancyGrid source){
     
     const int sizeX = source.info.width;
     const int sizeY = source.info.height;
@@ -336,7 +336,7 @@ void FrontierSearch::initialize(struct FrontierSearch::mapStruct& map, nav_msgs:
     ROS_INFO_STREAM("Memory initialize complete\n");
 }
 
-void FrontierSearch::horizonDetection(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY){
+void FrontierSearch::horizonDetection(FrontierSearch::mapStruct& map, int sizeX, int sizeY){
     ROS_INFO_STREAM("Horizon Detection\n");
     //x axis horizon
     for(int y=0;y<sizeY;y++){
@@ -364,7 +364,7 @@ void FrontierSearch::horizonDetection(struct FrontierSearch::mapStruct& map, int
     ROS_INFO_STREAM("Horizon Detection complete\n");
 }
 
-std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution){
+std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(FrontierSearch::mapStruct& map, int sizeX, int sizeY, float resolution){
     ROS_INFO_STREAM("Frontier Detection by Continuity\n");
     
     const int FRONTIER_EDGE_RENGE = FRONTIER_THICKNESS / 2;
@@ -464,7 +464,7 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByContinuity(struc
     return index;
 }
 
-std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struct FrontierSearch::mapStruct& map, nav_msgs::MapMetaData& mapInfo){
+std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(FrontierSearch::mapStruct& map, nav_msgs::MapMetaData& mapInfo){
     
     ROS_INFO_STREAM("Frontier Detection by Clustering\n");
 
@@ -566,7 +566,7 @@ Eigen::Vector2i FrontierSearch::coordinateToArray(double x,double y,double origi
 }
 
 
-void FrontierSearch::obstacleFilter(struct FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, float resolution){
+void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index, int sizeX, int sizeY, float resolution){
     ROS_INFO_STREAM("Obstacle Filter\n");
     
     //add obstacle cell
@@ -661,8 +661,8 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
     //変更点：前回の移動方向では無く現在のロボットの向きで評価する
 
     Eigen::Vector2d tempVec;
-    std::vector<struct FrontierSearch::goalStruct> calced;
-    struct FrontierSearch::goalStruct tempStruct;
+    std::vector<FrontierSearch::goalStruct> calced;
+    FrontierSearch::goalStruct tempStruct;
 
     for(int i=0;i<goals.size();i++){
         if(PREVIOUS_GOAL_EFFECT){
@@ -723,7 +723,7 @@ double FrontierSearch::qToYaw(geometry_msgs::Quaternion q){
     return yaw;
 }
 
-void FrontierSearch::release(struct FrontierSearch::mapStruct& map, int sizeX, int sizeY){
+void FrontierSearch::release(FrontierSearch::mapStruct& map, int sizeX, int sizeY){
     ROS_INFO_STREAM("Memory release\n");
 
     //mapのメモリを解放
