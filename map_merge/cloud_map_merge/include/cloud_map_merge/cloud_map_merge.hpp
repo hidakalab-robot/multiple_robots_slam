@@ -18,7 +18,9 @@ private:
         ros::Subscriber mapSub;
         sensor_msgs::PointCloud2 rosMap;
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr pclMap;
+        pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr processedPclMap;
         bool initialized;
+        bool update;
     };
 
     boost::shared_mutex robotListMutex;
@@ -116,6 +118,7 @@ void CloudMapMerge::robotRegistration(void){
                 //robot.mapSub = sub.subscribe<sensor_msgs::PointCloud2>(robot.name+MAP_TOPIC, 1,boost::bind(&CloudMapMerge::mapUpdate,this,_1,robot));
                 robot.mapSub = sub.subscribe<sensor_msgs::PointCloud2>(robot.name+MAP_TOPIC, 1, [this, &robot](const sensor_msgs::PointCloud2::ConstPtr& msg) {mapUpdate(msg, robot);});
                 robot.initialized = false;
+                robot.update = false;
             }
         }
     }
@@ -165,6 +168,7 @@ void CloudMapMerge::mapUpdate(const sensor_msgs::PointCloud2::ConstPtr& msg, Clo
     }
     robot.rosMap = *msg;
     pcl::fromROSMsg(*msg, *robot.pclMap);
+    robot.update = true;
 }
 
 void CloudMapMerge::mapMerging(void){
@@ -173,6 +177,7 @@ void CloudMapMerge::mapMerging(void){
     Eigen::Matrix2d rotation;
     Eigen::Vector2d tempPoint;
     Eigen::Vector2d rotatePoint;
+    //updateされているかどうかで処理を変える
     {
         boost::shared_lock<boost::shared_mutex> lock(robotListMutex);
         //for(int i=0;i<robotList.size();++i){
@@ -182,23 +187,31 @@ void CloudMapMerge::mapMerging(void){
                 continue;
             }
             std::lock_guard<std::mutex> lock(robot.mutex);
-            rotation << cos(robot.initPose.theta) , -sin(robot.initPose.theta) , sin(robot.initPose.theta) , cos(robot.initPose.theta);
-            //ROS_INFO_STREAM("mergingThread << iterate points size " << robot.pclMap->points.size() << "\n");
-            for(auto& point : robot.pclMap->points){
-                if(point.z < CEILING_HEIGHT && point.z > FLOOR_HEIGHT){
-                    tempPoint << point.x , point.y;
-                    rotatePoint = rotation * tempPoint;
-                    mergeCloud -> points.emplace_back(pcl::PointXYZRGB());
-                    pcl::PointXYZRGB& assignedPoint = mergeCloud -> points.back();
-                    //insertPoint = point;
-                    assignedPoint.x = rotatePoint.x() + robot.initPose.x;
-                    assignedPoint.y = rotatePoint.y() + robot.initPose.y;
-                    assignedPoint.z = point.z;
-                    assignedPoint.r = point.r;
-                    assignedPoint.g = point.g;
-                    assignedPoint.b = point.b;
+            if(robot.update){
+                pcl::PointCloud<pcl::PointXYZRGB>::Ptr tempCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+                rotation << cos(robot.initPose.theta) , -sin(robot.initPose.theta) , sin(robot.initPose.theta) , cos(robot.initPose.theta);
+                //ROS_INFO_STREAM("mergingThread << iterate points size " << robot.pclMap->points.size() << "\n");
+                for(auto& point : robot.pclMap->points){
+                    if(point.z < CEILING_HEIGHT && point.z > FLOOR_HEIGHT){
+                        tempPoint << point.x , point.y;
+                        rotatePoint = rotation * tempPoint;
+                        //mergeCloud -> points.emplace_back(pcl::PointXYZRGB());
+                        //pcl::PointXYZRGB& assignedPoint = mergeCloud -> points.back();
+                        tempCloud -> points.emplace_back(pcl::PointXYZRGB());
+                        pcl::PointXYZRGB& assignedPoint = tempCloud -> points.back();
+                        //assignedPoint = point;
+                        assignedPoint.x = rotatePoint.x() + robot.initPose.x;
+                        assignedPoint.y = rotatePoint.y() + robot.initPose.y;
+                        assignedPoint.z = point.z;
+                        assignedPoint.r = point.r;
+                        assignedPoint.g = point.g;
+                        assignedPoint.b = point.b;
+                    }
                 }
+                robot.processedPclMap = tempCloud;
+                robot.update = false;
             }
+            *mergeCloud += *robot.processedPclMap;
         }
     }
     
