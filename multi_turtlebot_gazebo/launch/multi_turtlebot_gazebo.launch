@@ -7,7 +7,7 @@
     <arg name="stacks"    value="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons --> 
     <arg name="3d_sensor" value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro -->
 
-    <arg name="mapping" value="false"/>
+    <arg name="mapping" value="true"/>
 
     <arg name="rtabmap" value="true"/>
     <arg name="gmapping" value="false"/>
@@ -45,10 +45,6 @@
             <arg name="init_yaw" value="$(arg robot1_init_yaw)"/>
         </include>
 
-        <!-- <include if="$(arg mapping)" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
-            <arg name="robot_name"  value="$(arg robot1_name)"/>
-        </include> -->
-
         <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
         </include>
@@ -58,7 +54,7 @@
         </include>
     </group>
 
-    <group ns="$(arg robot2_name)">
+    <!-- <group ns="$(arg robot2_name)">
         <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
             <arg name="robot_name" value="$(arg robot2_name)"/>
             <arg name="base" value="$(arg base)"/>
@@ -69,10 +65,6 @@
             <arg name="init_yaw" value="$(arg robot2_init_yaw)"/>
         </include>
 
-        <!-- <include if="$(arg mapping)" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
-            <arg name="robot_name"  value="$(arg robot2_name)"/>
-        </include> -->
-
         <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot2_name)"/>
         </include>
@@ -80,7 +72,7 @@
         <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
             <arg name="robot_name"  value="$(arg robot2_name)"/>
         </include>
-    </group>
+    </group> -->
 </launch>
 <!-- 
 -x
