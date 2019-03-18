@@ -1,0 +1,19 @@
+<launch>
+    <arg name="robot1_name" default="robot1"/>
+    <arg name="robot2_name" default="robot2"/>
+    <arg name="server_frame_id" default="server/merge_map"/>
+
+    <group ns="$(arg robot1_name)">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
+            <arg name="robot_name"  value="$(arg robot1_name)"/>
+            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
+        </include>
+    </group>
+
+     <group ns="$(arg robot2_name)">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
+            <arg name="robot_name"  value="$(arg robot2_name)"/>
+            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
+        </include>
+    </group>
+</launch>

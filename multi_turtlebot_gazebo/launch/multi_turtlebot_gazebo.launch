@@ -1,0 +1,90 @@
+<launch>
+    <env name="GAZEBO_MODEL_PATH" value="$(find multi_turtlebot_gazebo)/world/models:$(optenv GAZEBO_MODEL_PATH)" /> 
+    <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/tdu_1-13_corridor.world"/>
+
+    <arg name="base"      value="$(optenv TURTLEBOT_BASE kobuki)"/> <!-- create, roomba -->
+    <arg name="gui" default="true"/>
+    <arg name="stacks"    value="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons --> 
+    <arg name="3d_sensor" value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro -->
+
+    <arg name="mapping" value="true"/>
+
+    <arg name="rtabmap" value="true"/>
+    <arg name="gmapping" value="false"/>
+
+    <arg name="server_frame_id" default="server/merge_map"/>
+
+    <!-- ロボットを追加するときはarg部とgroup部をコピペして書き換えてください -->
+
+    <!-- gazebo上でのロボットの初期位置 (map_mergeのような相対座標ではなく絶対座標で記述)-->
+    <arg name="robot1_name" default="robot1"/>
+    <arg name="robot1_init_x" default="0.0"/>
+    <arg name="robot1_init_y" default="0.0"/>
+    <arg name="robot1_init_yaw" default="0.0"/>
+
+    <arg name="robot2_name" default="robot2"/>
+    <arg name="robot2_init_x" default="39.3"/>
+    <arg name="robot2_init_y" default="12.0"/>
+    <arg name="robot2_init_yaw" default="3.14"/>
+
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="use_sim_time" value="true"/>
+        <arg name="debug" value="false"/>
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="world_name" value="$(arg world_file)"/>
+    </include>
+
+
+    <group ns="$(arg robot1_name)">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
+            <arg name="robot_name" value="$(arg robot1_name)"/>
+            <arg name="base" value="$(arg base)"/>
+            <arg name="stacks" value="$(arg stacks)"/>
+            <arg name="3d_sensor" value="$(arg 3d_sensor)"/>
+            <arg name="init_x" value="$(arg robot1_init_x)"/>
+            <arg name="init_y" value="$(arg robot1_init_y)"/>
+            <arg name="init_yaw" value="$(arg robot1_init_yaw)"/>
+        </include>
+
+        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
+            <arg name="robot_name"  value="$(arg robot1_name)"/>
+            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
+        </include>
+
+        <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
+            <arg name="robot_name"  value="$(arg robot1_name)"/>
+            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
+        </include>
+    </group>
+
+    <group ns="$(arg robot2_name)">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
+            <arg name="robot_name" value="$(arg robot2_name)"/>
+            <arg name="base" value="$(arg base)"/>
+            <arg name="stacks" value="$(arg stacks)"/>
+            <arg name="3d_sensor" value="$(arg 3d_sensor)"/>
+            <arg name="init_x" value="$(arg robot2_init_x)"/>
+            <arg name="init_y" value="$(arg robot2_init_y)"/>
+            <arg name="init_yaw" value="$(arg robot2_init_yaw)"/>
+        </include>
+
+        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
+            <arg name="robot_name"  value="$(arg robot2_name)"/>
+            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
+        </include>
+
+        <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
+            <arg name="robot_name"  value="$(arg robot2_name)"/>
+            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
+        </include>
+    </group>
+</launch>
+<!-- 
+-x
+-y
+-z
+-R
+-P
+-Y
+-->

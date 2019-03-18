@@ -340,7 +340,7 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal,bool movebase){
         static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
         
         while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
-            ROS_INFO_STREAM("wait for action server\n");
+            ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME << "\n");
         }
 
         move_base_msgs::MoveBaseGoal movebaseGoal;

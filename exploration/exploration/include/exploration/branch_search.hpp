@@ -59,12 +59,12 @@ private:
 	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 	void poseLogCB(const geometry_msgs::PoseArray::ConstPtr& msg);
 
-	geometry_msgs::Point getGoalBranch(sensor_msgs::LaserScan scan,geometry_msgs::PoseStamped pose);
-	bool branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,geometry_msgs::PoseStamped pose);
-	double qToYaw(geometry_msgs::Quaternion q);
-    bool duplicateDetection(geometry_msgs::Point goal);
-	void publishGoal(geometry_msgs::Point global, geometry_msgs::Point local);
-	void publishGoalList(std::vector<geometry_msgs::Point> global, std::vector<geometry_msgs::Point> local);
+	geometry_msgs::Point getGoalBranch(const sensor_msgs::LaserScan& scan,const geometry_msgs::PoseStamped& pose);
+	bool branchDetection(const std::vector<float>& ranges, const std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::PoseStamped& pose);
+	double qToYaw(const geometry_msgs::Quaternion& q);
+    bool duplicateDetection(const geometry_msgs::Point& goal);
+	void publishGoal(const geometry_msgs::Point& global, const geometry_msgs::Point& local);
+	void publishGoalList(const std::vector<geometry_msgs::Point>& global, const std::vector<geometry_msgs::Point>& local);
 
 	void publishGoalDelete(void);
 	void publishGoalListDelete(void);
@@ -136,7 +136,7 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
     }
 }
 
-geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, geometry_msgs::PoseStamped pose){
+geometry_msgs::Point BranchSearch::getGoalBranch(const sensor_msgs::LaserScan& scan, const geometry_msgs::PoseStamped& pose){
     const int scanWidth = BRANCH_ANGLE / scan.angle_increment;
     const int scanMin = (scan.ranges.size()/2)-1 - scanWidth;
     const int scanMax = (scan.ranges.size()/2) + scanWidth;
@@ -177,7 +177,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(sensor_msgs::LaserScan scan, ge
     return goal;
 }
 
-bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,geometry_msgs::PoseStamped pose){
+bool BranchSearch::branchDetection(const std::vector<float>& ranges, const std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::PoseStamped& pose){
 
 	ROS_DEBUG_STREAM("Searching Branch\n");
 
@@ -262,14 +262,14 @@ bool BranchSearch::branchDetection(std::vector<float>& ranges, std::vector<float
     return find;
 }
 
-double BranchSearch::qToYaw(geometry_msgs::Quaternion q){
+double BranchSearch::qToYaw(const geometry_msgs::Quaternion& q){
     tf::Quaternion tq(q.x, q.y, q.z, q.w);
     double roll, pitch, yaw;
     tf::Matrix3x3(tq).getRPY(roll,pitch,yaw);
     return yaw;
 }
 
-bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
+bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
 	double globalX;//分岐領域の世界座標
 	double globalY;//分岐領域の世界座標
 	double xPlus;
@@ -298,7 +298,7 @@ bool BranchSearch::duplicateDetection(geometry_msgs::Point goal){
 	return false;
 }
 
-void BranchSearch::publishGoal(geometry_msgs::Point global, geometry_msgs::Point local){
+void BranchSearch::publishGoal(const geometry_msgs::Point& global, const geometry_msgs::Point& local){
 	exploration_msgs::Goal msg;
 	msg.global = global;
 	msg.local = local;
@@ -309,7 +309,7 @@ void BranchSearch::publishGoal(geometry_msgs::Point global, geometry_msgs::Point
 	ROS_INFO_STREAM("Publish Goal\n");
 }
 
-void BranchSearch::publishGoalList(std::vector<geometry_msgs::Point> global, std::vector<geometry_msgs::Point> local){
+void BranchSearch::publishGoalList(const std::vector<geometry_msgs::Point>& global, const std::vector<geometry_msgs::Point>& local){
 	exploration_msgs::GoalList msg;
 	msg.global = global;
 	msg.local = local;

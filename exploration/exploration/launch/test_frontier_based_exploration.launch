@@ -3,7 +3,8 @@
 
     <arg name="robot_name" default="robot1"/>
 
-    <arg name="map" default="/$(arg robot_name)/map"/>
+    <!-- <arg name="map" default="/$(arg robot_name)/map"/> -->
+    <arg name="map" default="/server/grid_map_merge/merge_map"/>
     <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
     <arg name="pose_log" default="pose_log"/>
     <arg name="goal" default="goal"/>
@@ -31,6 +32,7 @@
             <remap from="goal_list" to="$(arg goal_list)"/>
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+            <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
             <!-- <rosparam file="$(find exploration)/params/costmap_common_params.yaml" command="load" ns="$(arg costmap_name)"/>
 			<rosparam file="$(find exploration)/params/global_costmap_params.yaml" command="load" ns="$(arg costmap_name)"/> -->
             <rosparam file="$(find exploration)/params/path_planner_params.yaml" command="load"/>
@@ -40,10 +42,11 @@
 			<param name="global_costmap/global_frame" value="$(arg global_frame_id)"/>
     		<param name="global_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <param name="merge_map_frame_id" value="/server/merge_map"/>
             <!-- <param name="costmap_name" value="$(arg costmap_name)"/> -->
 			<!-- <param name="planner_name" value="$(arg planner_name)"/> -->
             <!-- <param name="planner_method" value="$(arg planner_method)"/> -->
-            <param name="move_base_name" value="$(arg robot_name)/move_base"/>
+            <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
             <!-- <param name="frontier_detection_method" value="1"/> -->
             <!-- <param name="obstacle_filter" value="true"/> -->
             <!-- <param name="publish_pose_array" value="true"/> -->
@@ -59,6 +62,11 @@
             <remap from="goal_list_marker" to="$(arg visualization)"/>
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+        </node>
+
+        <node pkg="exploration" type="log" name="log">
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="$(arg pose_log)"/>
         </node>
 
     </group>
