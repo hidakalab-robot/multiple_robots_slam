@@ -17,16 +17,13 @@
     <arg name="camera_info_topic" default="/$(arg robot_name)/camera/rgb/camera_info"/>
     
     <arg name="wait_for_transform"  default="0.2"/>
-    
-    <!-- 
-        robot_state_publisher's publishing frequency in "turtlebot_bringup/launch/includes/robot.launch.xml" 
-        can be increase from 5 to 10 Hz to avoid some TF warnings.
-    -->
 
+    <arg name="global_frame_id" default="$(arg robot_name)/map"/>
 
     <!-- Navigation stuff (move_base) -->
-    <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/move_base.launch.xml">
+    <include file="$(find multi_turtlebot_gazebo)/launch/includes/move_base.launch.xml">
         <arg name="robot_name" value="$(arg robot_name)"/>
+        <arg name="global_frame_id" value="$(arg global_frame_id)"/>
     </include>
   
     <!-- Mapping -->
@@ -57,7 +54,7 @@
             <param name="RGBD/ProximityBySpace"        type="string" value="true"/>   <!-- Local loop closure detection (using estimated position) with locations in WM -->
             <param name="RGBD/OptimizeFromGraphEnd"    type="string" value="false"/>  <!-- Set to false to generate map correction between /map and /odom -->
             <param name="Kp/MaxDepth"                  type="string" value="4.0"/>
-            <param name="Reg/Strategy"                 type="string" value="2"/>      <!-- Loop closure transformation: 0=Visual, 1=ICP, 2=Visual+ICP -->
+            <param name="Reg/Strategy"                 type="string" value="0"/>      <!-- Loop closure transformation: 0=Visual, 1=ICP, 2=Visual+ICP -->
             <param name="Icp/CorrespondenceRatio"      type="string" value="0.3"/>
             <param name="Vis/MinInliers"               type="string" value="15"/>      <!-- 3D visual words minimum inliers to accept loop closure -->
             <param name="Vis/InlierDistance"           type="string" value="0.1"/>    <!-- 3D visual words correspondence distance -->

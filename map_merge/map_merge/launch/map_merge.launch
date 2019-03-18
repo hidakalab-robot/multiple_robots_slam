@@ -13,9 +13,9 @@
   <arg name="robot1_init_pose_yaw" default="0.0"/>
   
   <arg name="robot2_map_frame" default="/robot2/map"/>
-  <arg name="robot2_init_pose_x" default="0.0"/>
+  <arg name="robot2_init_pose_x" default="39.3"/>
   <arg name="robot2_init_pose_y" default="12.0"/>
-  <arg name="robot2_init_pose_yaw" default="0.0"/>
+  <arg name="robot2_init_pose_yaw" default="3.14"/>
 
   
   <!-- ノードに渡すパラメータ用 -->

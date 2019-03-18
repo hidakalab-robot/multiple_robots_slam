@@ -18,6 +18,8 @@
 
 #include <geometry_msgs/PoseArray.h>
 
+#include <tf/transform_listener.h>
+
 class FrontierSearch
 {
 private:
@@ -48,7 +50,7 @@ private:
     double DISTANCE_WEIGHT;
     double DIRECTION_WEIGHT;
 
-    std::string mapFrameId;
+    std::string MAP_FRAME_ID;
 
     double CLUSTER_TOLERANCE;
     int MIN_CLUSTER_SIZE;
@@ -57,6 +59,9 @@ private:
     bool PUBLISH_POSE_ARRAY;
 
     bool PREVIOUS_GOAL_EFFECT;
+
+    bool USE_MERGE_MAP;
+    std::string MERGE_MAP_FRAME_ID;
 
     ros::NodeHandle sp;
     ros::Subscriber subPose;
@@ -101,10 +106,13 @@ private:
     geometry_msgs::Point selectGoal(std::vector<geometry_msgs::Point> goals, geometry_msgs::PoseStamped pose);
 
     double qToYaw(geometry_msgs::Quaternion q);
+    double qToYaw(tf::Quaternion q);
 
     void publishGoal(geometry_msgs::Point goal);
 	void publishGoalList(std::vector<geometry_msgs::Point> goals);
     void publishGoalListPoseArray(std::vector<geometry_msgs::Point> goals);
+
+    void globalCoordinateToLocal(std::vector<geometry_msgs::Point>& goal);
 
 	void publishGoalDelete(void);
 	void publishGoalListDelete(void);
@@ -139,7 +147,7 @@ FrontierSearch::FrontierSearch():p("~"){
 
     pubColorCloud = pcc.advertise<sensor_msgs::PointCloud2>("horizon_cluster/color", 1);
 
-    p.param<std::string>("map_frame_id", mapFrameId, "map");
+    p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
 
     p.param<float>("frontier_diameter_min", FRONTIER_DIAMETER_MIN, 0.4);
 	p.param<int>("frontier_thickness", FRONTIER_THICKNESS, 3);
@@ -160,6 +168,9 @@ FrontierSearch::FrontierSearch():p("~"){
     p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.3);
     p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 50);
     p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
+
+    p.param<bool>("use_merge_map", USE_MERGE_MAP, false);
+    p.param<std::string>("merge_map_frame_id", MERGE_MAP_FRAME_ID, "merge_map");
     
     DOUBLE_MINUS_INFINITY = -10000000.0;
 }
@@ -220,6 +231,10 @@ bool FrontierSearch::getGoal(void){
 
     ROS_INFO_STREAM("Frontier Found : " << goals.size() << "\n");
 
+    if(USE_MERGE_MAP){
+        globalCoordinateToLocal(goals);
+    }
+
     publishGoalList(goals);
     
     if(PUBLISH_POSE_ARRAY){
@@ -278,6 +293,10 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     }
 
     ROS_INFO_STREAM("Frontier Found : " << goals.size() << "\n");
+
+    if(USE_MERGE_MAP){
+        globalCoordinateToLocal(goals);
+    }
 
     publishGoalList(goals);
     
@@ -532,7 +551,7 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struc
         
         sensor_msgs::PointCloud2 colorMsg;
         pcl::toROSMsg(*colorMap,colorMsg);
-        colorMsg.header.frame_id = mapFrameId;
+        colorMsg.header.frame_id = MAP_FRAME_ID;
         colorMsg.header.stamp = ros::Time::now();
         pubColorCloud.publish(colorMsg);
     }
@@ -646,6 +665,38 @@ geometry_msgs::Point FrontierSearch::arrayToCoordinate(int indexX,int indexY,dou
     return coordinate;
 }
 
+void FrontierSearch::globalCoordinateToLocal(std::vector<geometry_msgs::Point>& goals){
+    //merge_map - map のtfを取得して座標修正
+    static bool initialized = false;
+    static tf::TransformListener listener;
+    if(!initialized){
+        listener.waitForTransform(MERGE_MAP_FRAME_ID, MAP_FRAME_ID, ros::Time(), ros::Duration(1.0));
+        initialized = true;
+    }
+    
+    tf::StampedTransform transform;
+    listener.lookupTransform(MERGE_MAP_FRAME_ID, MAP_FRAME_ID, ros::Time(0), transform);
+
+    double transYaw = qToYaw(transform.getRotation());
+    double transX = transform.getOrigin().getX();
+    double transY = transform.getOrigin().getY();
+    
+    ROS_DEBUG_STREAM(MAP_FRAME_ID << " -> " <<  MERGE_MAP_FRAME_ID << ": ( " << transX << "," << transY << "," << transYaw << " )\n");
+
+    Eigen::Vector2d tempPoint;
+    Eigen::Matrix2d rotation;
+
+    rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+
+    for(auto& goal : goals){
+        tempPoint << goal.x - transX,goal.y - transY;
+        tempPoint = rotation * tempPoint;
+
+        goal.x = tempPoint.x();
+        goal.y = tempPoint.y();
+    }
+}
+
 geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point> goals, geometry_msgs::PoseStamped pose){
     //現在位置からそれぞれのフロンティア座標に対して距離とベクトルを計算し、評価関数によって目標を決定
     //前回の目標から近いところは目標に取らないようにする
@@ -671,10 +722,11 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
             if(temp > PREVIOUS_GOAL_THRESHOLD){
                 tempVec.x() = goals[i].x - pose.pose.position.x;
                 tempVec.y() = goals[i].y - pose.pose.position.y;
-                tempVec.normalize();
-
-                tempStruct.goal = goals[i];
                 tempStruct.distance = tempVec.norm();
+                
+                tempVec.normalize();
+                tempStruct.goal = goals[i];
+                
                 tempStruct.dot = tempVec.dot(directionVec);
 
                 calced.push_back(tempStruct);
@@ -683,10 +735,10 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
         else{
             tempVec.x() = goals[i].x - pose.pose.position.x;
             tempVec.y() = goals[i].y - pose.pose.position.y;
+            tempStruct.distance = tempVec.norm();
             tempVec.normalize();
 
             tempStruct.goal = goals[i];
-            tempStruct.distance = tempVec.norm();
             tempStruct.dot = tempVec.dot(directionVec);
 
             calced.push_back(tempStruct);
@@ -705,6 +757,7 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
     //評価値が最大となる目標値を選択
     for(int i=0;i<calced.size();i++){
         value = DIRECTION_WEIGHT * calced[i].dot - DISTANCE_WEIGHT * calced[i].distance;
+        ROS_DEBUG_STREAM("goal ( " << calced[i].goal.x << "," << calced[i].goal.y << " )  value : " << value << ", dot : " << calced[i].dot << ", distance :  "<< calced[i].distance << "\n");
         if(value > max){
             max = value;
             goal = calced[i].goal;
@@ -718,6 +771,12 @@ geometry_msgs::Point FrontierSearch::selectGoal(std::vector<geometry_msgs::Point
 
 double FrontierSearch::qToYaw(geometry_msgs::Quaternion q){
     tf::Quaternion tq(q.x, q.y, q.z, q.w);
+    double roll, pitch, yaw;
+    tf::Matrix3x3(tq).getRPY(roll,pitch,yaw);
+    return yaw;
+}
+
+double FrontierSearch::qToYaw(tf::Quaternion tq){
     double roll, pitch, yaw;
     tf::Matrix3x3(tq).getRPY(roll,pitch,yaw);
     return yaw;
@@ -742,7 +801,7 @@ void FrontierSearch::publishGoal(geometry_msgs::Point goal){
     exploration_msgs::Goal msg;
 	msg.global = goal;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = mapFrameId;
+	msg.header.frame_id = MAP_FRAME_ID;
 
 	pubGoal.publish(msg);
 	ROS_INFO_STREAM("Publish Goal\n");
@@ -752,7 +811,7 @@ void FrontierSearch::publishGoalList(std::vector<geometry_msgs::Point> goals){
     exploration_msgs::GoalList msg;
 	msg.global = goals;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = mapFrameId;
+	msg.header.frame_id = MAP_FRAME_ID;
 
 	pubGoalList.publish(msg);
 	ROS_INFO_STREAM("Publish GoalList\n");
@@ -769,7 +828,7 @@ void FrontierSearch::publishGoalListPoseArray(std::vector<geometry_msgs::Point> 
         msg.poses.emplace_back(temp);
     }
 
-	msg.header.frame_id = mapFrameId;
+	msg.header.frame_id = MAP_FRAME_ID;
     msg.header.stamp = ros::Time::now();
 
     //ROS_DEBUG_STREAM("before publish_pose_array\n");
