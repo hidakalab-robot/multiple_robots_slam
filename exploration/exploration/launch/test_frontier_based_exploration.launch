@@ -3,8 +3,8 @@
 
     <arg name="robot_name" default="robot1"/>
 
-    <!-- <arg name="map" default="/$(arg robot_name)/map"/> -->
-    <arg name="map" default="/server/grid_map_merge/merge_map"/>
+    <arg name="map" default="/$(arg robot_name)/map"/>
+    <!-- <arg name="map" default="/server/grid_map_merge/merge_map"/> -->
     <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
     <arg name="pose_log" default="pose_log"/>
     <arg name="goal" default="goal"/>
@@ -43,6 +43,7 @@
     		<param name="global_costmap/robot_base_frame" value="$(arg base_frame_id)"/>
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
             <param name="merge_map_frame_id" value="/server/merge_map"/>
+            <param name="use_merge_map" value="false"/>
             <!-- <param name="costmap_name" value="$(arg costmap_name)"/> -->
 			<!-- <param name="planner_name" value="$(arg planner_name)"/> -->
             <!-- <param name="planner_method" value="$(arg planner_method)"/> -->

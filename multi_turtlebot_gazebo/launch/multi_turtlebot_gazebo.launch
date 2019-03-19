@@ -12,8 +12,6 @@
     <arg name="rtabmap" value="true"/>
     <arg name="gmapping" value="false"/>
 
-    <arg name="server_frame_id" default="server/merge_map"/>
-
     <!-- ロボットを追加するときはarg部とgroup部をコピペして書き換えてください -->
 
     <!-- gazebo上でのロボットの初期位置 (map_mergeのような相対座標ではなく絶対座標で記述)-->
@@ -49,16 +47,14 @@
 
         <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
-            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
         </include>
 
         <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
-            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
         </include>
     </group>
 
-    <group ns="$(arg robot2_name)">
+    <!-- <group ns="$(arg robot2_name)">
         <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
             <arg name="robot_name" value="$(arg robot2_name)"/>
             <arg name="base" value="$(arg base)"/>
@@ -71,14 +67,12 @@
 
         <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot2_name)"/>
-            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
         </include>
 
         <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
             <arg name="robot_name"  value="$(arg robot2_name)"/>
-            <!-- <arg name="global_frame_id" value="$(arg server_frame_id)"/> -->
         </include>
-    </group>
+    </group> -->
 </launch>
 <!-- 
 -x
