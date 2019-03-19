@@ -63,6 +63,8 @@ private:
     bool USE_MERGE_MAP;
     std::string MERGE_MAP_FRAME_ID;
 
+    bool COLOR_CLUSTER;
+
     ros::NodeHandle sp;
     ros::Subscriber subPose;
     ros::CallbackQueue qPose;
@@ -171,6 +173,8 @@ FrontierSearch::FrontierSearch():p("~"){
 
     p.param<bool>("use_merge_map", USE_MERGE_MAP, false);
     p.param<std::string>("merge_map_frame_id", MERGE_MAP_FRAME_ID, "merge_map");
+
+    p.param<bool>("color_cluster", COLOR_CLUSTER, true);
     
     DOUBLE_MINUS_INFINITY = -10000000.0;
 }
@@ -525,7 +529,7 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struc
 	ec.extract (indices);
 
     //debug 用　カラーリング出力 スコープ
-    {
+    if(COLOR_CLUSTER){
         //ROS_DEBUG_STREAM("coloring\n");
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorMap(new pcl::PointCloud<pcl::PointXYZRGB>);
 
@@ -571,6 +575,9 @@ std::vector<Eigen::Vector2i> FrontierSearch::frontierDetectionByClustering(struc
             ++i;
         }
     }
+
+    //xの分散とyの分散が両方小さかったらそのクラスタは削除
+    
     
     //ROS_DEBUG_STREAM("centroids to index array\n");
     std::vector<Eigen::Vector2i> index(centroids.size());

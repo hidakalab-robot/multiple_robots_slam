@@ -1,0 +1,68 @@
+<launch>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+
+    <arg name="robot_name" default="robot1"/>
+
+    <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
+    <arg name="pose_log" default="pose_log"/>
+    <arg name="goal" default="goal"/>
+    <arg name="goal_list" default="goal_list"/>
+    <arg name="visualization" default="visualization"/>
+    <arg name="bumper_continuity" default="bumper_continuity"/>
+    <arg name="goal_delete" default="goal/delete"/>
+    <arg name="goal_list_delete" default="goal_list/delete"/>
+    <arg name="to_goal_delete" default="to_goal/delete"/>
+
+    <arg name="exploration_ns" default="exploration"/>
+
+    <group ns="$(arg robot_name)/$(arg exploration_ns)">
+        <node pkg="exploration" type="sensor_based_exploration_movebase" name="sensor_based_exploration" output="screen">
+            <rosparam file="$(find exploration)/params/branch_search_params.yaml" command="load"/>
+            <rosparam file="$(find exploration)/params/movement_params.yaml" command="load"/>
+            <remap from="scan" to="/$(arg robot_name)/scan"/>
+            <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="$(arg pose_log)"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="bumper" to="$(arg bumper_continuity)"/>
+            <remap from="goal/delete" to="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
+        </node>
+
+        <node pkg="exploration" type="visualization_test" name="visualization_test">
+            <rosparam file="$(find exploration)/params/visualization_params.yaml" command="load"/>
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
+            <remap from="goal" to="$(arg goal)"/>
+            <remap from="goal_list" to="$(arg goal_list)"/>
+            <remap from="goal_marker" to="$(arg visualization)"/>
+            <remap from="goal_list_marker" to="$(arg visualization)"/>
+            <remap from="goal/delete" to="$(arg goal_delete)"/>
+            <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
+        </node>
+
+        <node pkg="exploration" type="log" name="log">
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="$(arg pose_log)"/>
+        </node>
+
+        <node pkg="exploration" type="continuity" name="continuity">
+            <param name="bumper_raw_topic" value="/$(arg robot_name)/mobile_base/events/bumper"/>
+            <param name="bumper_continuity_topic" value="$(arg bumper_continuity)"/>
+        </node>
+
+        <include file="$(find exploration)/launch/includes/rosbag_record_debug_movebase.launch.xml">
+            <arg name="dir" value="/home/ros1/rosbag_debug"/>
+            <arg name="pose" value="$(arg pose)"/>
+            <arg name="pose_log" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg pose_log)"/>
+            <arg name="scan" value="/$(arg robot_name)/scan"/>
+            <arg name="goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal)"/>
+            <arg name="goal_list" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal_list)"/>
+            <arg name="visualization" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization)"/>
+            <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
+            <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_color"/>
+        </include>
+    </group>
+</launch>

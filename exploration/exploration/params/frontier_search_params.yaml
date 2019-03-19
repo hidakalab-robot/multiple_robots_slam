@@ -29,3 +29,6 @@ publish_pose_array: true
 #merge map parameter
 use_merge_map: false
 merge_map_frame: merge_map
+
+#debug
+color_cluster: true
