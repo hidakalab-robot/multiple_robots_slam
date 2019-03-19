@@ -102,7 +102,7 @@
 	  <param name="GridGlobal/MinSize"           type="string" value="20"/>
     <param name="RGBD/OptimizeMaxError"        type="string" value="0.1"/>
     <param name="Grid/FromDepth" type="string" value="true"/>
-
+    <param name="Grid/RangeMax" type="double" value="6.0"/>
 	  
 	  <!-- localization mode -->
 	  <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>
