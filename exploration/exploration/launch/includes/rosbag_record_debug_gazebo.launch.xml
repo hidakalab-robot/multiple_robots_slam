@@ -1,0 +1,14 @@
+<launch>
+    <arg name="name" default="rosbag"/>
+    <arg name="dir" default="/home/rosdesk/rosbag/$(arg name)"/>
+
+    <arg name="pose"/>
+    <arg name="pose_log"/>
+    <arg name="scan"/>
+    <arg name="velocity"/>
+    <arg name="etc"/>
+    
+    <arg name="topics" default="$(arg pose) $(arg pose_log) $(arg scan) $(arg velocity) $(arg etc)"/>
+    
+    <node pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-o $(arg dir) $(arg topics)"/>
+</launch>

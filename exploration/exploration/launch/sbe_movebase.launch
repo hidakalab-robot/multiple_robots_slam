@@ -23,9 +23,10 @@
             <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
             <remap from="pose" to="$(arg pose)"/>
             <remap from="pose_log" to="$(arg pose_log)"/>
+            <remap from="bumper" to="$(arg bumper_continuity)"/>
+
             <remap from="goal" to="$(arg goal)"/>
             <remap from="goal_list" to="$(arg goal_list)"/>
-            <remap from="bumper" to="$(arg bumper_continuity)"/>
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
             <param name="map_frame_id" value="$(arg robot_name)/map"/>
@@ -53,16 +54,12 @@
             <param name="bumper_continuity_topic" value="$(arg bumper_continuity)"/>
         </node>
 
-        <include file="$(find exploration)/launch/includes/rosbag_record_debug_movebase.launch.xml">
-            <arg name="dir" value="/home/ros1/rosbag_debug"/>
+        <include file="$(find exploration)/launch/includes/rosbag_record_debug_gazebo.launch.xml">
             <arg name="pose" value="$(arg pose)"/>
             <arg name="pose_log" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg pose_log)"/>
             <arg name="scan" value="/$(arg robot_name)/scan"/>
-            <arg name="goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal)"/>
-            <arg name="goal_list" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal_list)"/>
-            <arg name="visualization" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization)"/>
             <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
-            <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_color"/>
+            <arg name="etc" value="/$(arg robot_name)/map /tf /tf_static /$(arg robot_name)/$(arg exploration_ns)/$(arg bumper_continuity)"/>
         </include>
     </group>
 </launch>
