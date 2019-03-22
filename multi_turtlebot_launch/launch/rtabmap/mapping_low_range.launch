@@ -30,7 +30,7 @@
 
   <!-- sensor range for using depth and laserscan -->
   <arg name="sensor_range_max_for_map" default="6.0"/>
-  <arg name="sensor_range_max_for_laser" default="6.0"/>
+  <arg name="sensor_range_max_for_laser" default="10.0"/>
 
   <arg name="database_path"     default="rtabmap.db"/>
   <arg name="rgbd_odometry"     default="true"/>

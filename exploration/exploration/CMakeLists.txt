@@ -241,3 +241,6 @@ target_link_libraries(frontier_based_exploration_movebase ${catkin_LIBRARIES})
 
 add_executable(visualization_fbe src/visualization_fbe.cpp)
 target_link_libraries(visualization_fbe ${catkin_LIBRARIES})
+
+add_executable(sensor_based_exploration_movebase src/sbe_movebase.cpp)
+target_link_libraries(sensor_based_exploration_movebase ${catkin_LIBRARIES})

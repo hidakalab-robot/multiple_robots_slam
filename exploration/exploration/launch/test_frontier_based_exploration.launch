@@ -15,11 +15,6 @@
 
     <!-- this group namespace-->
     <arg name="exploration_ns" default="exploration"/>
-    <!-- <arg name="costmap_name" default="global_costmap"/> -->
-    <!-- used topic namespace if create path-->
-    <!-- <arg name="planner_name" default="voronoi_planner"/> -->
-    <!-- path planning method  0:NavfnROS, 1:VoronoiPlanner -->
-    <!-- <arg name="planner_method" default="1"/> -->
 
     <arg name="base_frame_id"   default="$(arg robot_name)/base_footprint"/>
   	<arg name="global_frame_id" default="$(arg robot_name)/map"/>
@@ -33,10 +28,7 @@
             <remap from="goal/delete" to="$(arg goal_delete)"/>
             <remap from="goal_list/delete" to="$(arg goal_list_delete)"/>
             <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
-            <!-- <rosparam file="$(find exploration)/params/costmap_common_params.yaml" command="load" ns="$(arg costmap_name)"/>
-			<rosparam file="$(find exploration)/params/global_costmap_params.yaml" command="load" ns="$(arg costmap_name)"/> -->
             <rosparam file="$(find exploration)/params/path_planner_params.yaml" command="load"/>
-            <!-- <rosparam file="$(find exploration)/params/navfn_global_planner_params.yaml" command="load"/> -->
             <rosparam file="$(find exploration)/params/frontier_search_params.yaml" command="load"/>
             <rosparam file="$(find exploration)/params/movement_params.yaml" command="load"/>
 			<param name="global_costmap/global_frame" value="$(arg global_frame_id)"/>
@@ -69,6 +61,18 @@
             <remap from="pose" to="$(arg pose)"/>
             <remap from="pose_log" to="$(arg pose_log)"/>
         </node>
+
+	<include file="$(find exploration)/launch/includes/rosbag_record_debug_movebase.launch.xml">
+        <arg name="dir" value="/home/ros1/rosbag_debug"/>
+        <arg name="pose" value="$(arg pose)"/>
+        <arg name="pose_log" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg pose_log)"/>
+        <arg name="scan" value="/$(arg robot_name)/scan"/>
+        <arg name="goal" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal)"/>
+        <arg name="goal_list" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg goal_list)"/>
+        <arg name="visualization" value="/$(arg robot_name)/$(arg exploration_ns)/$(arg visualization)"/>
+        <arg name="velocity" value="/$(arg robot_name)/mobile_base/commands/velocity"/>
+        <arg name="etc" value="/$(arg robot_name)/map /$(arg robot_name)/rtabmap/cloud_obstacles /tf /tf_static /$(arg robot_name)/camera/rgb/image_color"/>
+    </include>
 
     </group>
 </launch>

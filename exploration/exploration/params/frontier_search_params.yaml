@@ -11,7 +11,7 @@ filter_square_diameter: 0.4
 
 #clustering parameter
 cluster_tolerance: 0.3
-min_cluster_size: 25
+min_cluster_size: 40
 max_cluster_size: 15000
 
 #obstacle filter parameter
@@ -27,5 +27,8 @@ direction_weight: 2.0
 publish_pose_array: true
 
 #merge map parameter
-use_merge_map: true
+use_merge_map: false
 merge_map_frame: merge_map
+
+#debug
+color_cluster: true

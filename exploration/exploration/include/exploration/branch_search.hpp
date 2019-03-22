@@ -20,8 +20,9 @@ private:
 	ros::NodeHandle p;
     double BRANCH_ANGLE;
     double CENTER_RANGE_MIN;
-	double BRANCH_DIST_LIMIT;
+	double BRANCH_MAX_X;
 	double BRANCH_DIFF_X_MIN;
+	double BRANCH_DIFF_X_MAX;
 	double DUPLICATE_MARGIN;
 	bool DUPLICATE_CHECK;
 	double DOUBLE_INFINITY;
@@ -97,7 +98,7 @@ BranchSearch::BranchSearch():p("~"){
 
 	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
 	p.param<double>("center_range_min", CENTER_RANGE_MIN, 1.0);
-	p.param<double>("branch_range_limit", BRANCH_DIST_LIMIT, 5.0);
+	p.param<double>("branch_max_x", BRANCH_MAX_X, 6.0);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
 	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.5);
 	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
@@ -184,9 +185,10 @@ bool BranchSearch::branchDetection(const std::vector<float>& ranges, const std::
 	float scanX,scanY,nextScanX,nextScanY;
 	float diffX,diffY;
 
+	//branch_diff_x_min = 1.0, branch_max_x = 6.0, anglemax = 0.52 rad
 	//分岐のy座標の差がこの値の範囲内の場合のみ分岐として検出
-	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(angleMax);
-	const float BRANCH_MAX_Y = BRANCH_DIST_LIMIT*tan(angleMax);
+	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(angleMax);//1.0 * tan(0.52) = 0.57
+	const float BRANCH_MAX_Y = BRANCH_MAX_X*tan(angleMax);//5.0 * tan(0.52) = 2.86 //この二つの差が正しいのでは // 6.0/tan(1.05)
 
 	std::vector<geometry_msgs::Point> list;
 	geometry_msgs::Point tempGoal;
@@ -195,16 +197,24 @@ bool BranchSearch::branchDetection(const std::vector<float>& ranges, const std::
     //２つ目のfor文で最も近い分岐を選ぶ
     //選んだ最も近い分岐に対して重複探査の確認を行いtrueが帰ってきたらその分岐を除いて再度最も近い分岐を探す
 
+
+	//角度が正側と負側で処理を分ける
+	//マイナス
+
 	for(int i=0;i<ranges.size()-1;i++){
+		//二つの角度の符号が違うときスキップ
+		if(angles[i]*angles[i+1]<0){
+			continue;
+		}
 		scanX = ranges[i]*cos(angles[i]);
 		nextScanX = ranges[i+1]*cos(angles[i+1]);
-		if(scanX <= BRANCH_DIST_LIMIT && nextScanX <= BRANCH_DIST_LIMIT){
+		if(scanX <= BRANCH_MAX_X && nextScanX <= BRANCH_MAX_X){//距離が遠い分岐は信用できないフィルタ
 			diffX = std::abs(nextScanX - scanX);
-			if(diffX >= BRANCH_DIFF_X_MIN){
+			if(diffX >= BRANCH_DIFF_X_MIN){//x座標の差(分岐の幅)が一定以上じゃないと分岐と認めないフィルタ
 				scanY = ranges[i]*sin(angles[i]);
 				nextScanY = ranges[i+1]*sin(angles[i+1]);
 				diffY = std::abs(nextScanY - scanY);
-				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){
+				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){//分岐のy座標の差は一定の範囲に入っていないと分岐にしないフィルタ
 					tempGoal.x = (nextScanX + scanX)/2;
 					tempGoal.y = (nextScanY + scanY)/2;
 					list.push_back(tempGoal);

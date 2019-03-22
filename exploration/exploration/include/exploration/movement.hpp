@@ -171,6 +171,8 @@ private:
 
     void calcGoalOrientation(geometry_msgs::Pose& goalPose, const geometry_msgs::Pose& startPose);
 
+    void calcGoalOrientation(geometry_msgs::Pose& goalPose, const geometry_msgs::Pose& startPose);
+
 public:
     Movement();
     ~Movement(){};
@@ -879,10 +881,11 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
             ROS_INFO_STREAM("Avoidance to Right\n");
         }
         else{
+            ROS_WARN_STREAM("I can not avoid it\n");
             return false;
         }
+        velocityPublisher(sign*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN);
     }
-    velocityPublisher(sign*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN);
 
     return true;
 }
@@ -907,7 +910,7 @@ void Movement::velocityPublisher(double theta, double v, double t){
 
     publishMoveAngle(theta,poseData.pose,vel);
     pubVelocity.publish(vel);
-    ROS_INFO_STREAM("Publish Velocity\n");
+    //ROS_INFO_STREAM("Publish Velocity\n");
 }
 
 void Movement::moveToForward(void){
@@ -987,7 +990,7 @@ void Movement::publishMoveAngle(double angle, const geometry_msgs::Pose& pose, c
     msg.header.stamp = ros::Time::now();
 
     pubMoveAngle.publish(msg);
-    ROS_INFO_STREAM("Publish MoveAngle\n");
+    //ROS_INFO_STREAM("Publish MoveAngle\n");
 }
 
 void Movement::publishVoronoiMap(const nav_msgs::OccupancyGrid& map){
