@@ -20,7 +20,7 @@ private:
 
 public:
     Continuity(std::string subTopic, std::string pubTopic);
-    ~Continuity(){};
+    //~Continuity(){};
     void publish(void);
 };
 

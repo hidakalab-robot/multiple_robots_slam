@@ -26,6 +26,7 @@ private:
 	double DUPLICATE_MARGIN;
 	bool DUPLICATE_CHECK;
 	double DOUBLE_INFINITY;
+	std::string MAP_FRAME_ID;
 
 	ros::NodeHandle spl;
     ros::Subscriber subPoseLog;
@@ -54,7 +55,6 @@ private:
     ros::CallbackQueue qPose;
     geometry_msgs::PoseStamped poseData;
 
-	std::string mapFrameId;
 
 	void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
 	void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
@@ -72,7 +72,7 @@ private:
 
 public:
     BranchSearch();
-    ~BranchSearch(){};
+    //~BranchSearch(){};
 
 	bool getGoal(geometry_msgs::Point& goal);
 };
@@ -92,7 +92,7 @@ BranchSearch::BranchSearch():p("~"){
 	pubGoalDel = pgd.advertise<std_msgs::Empty>("goal/delete", 1);
 	pubGoalListDel = pgld.advertise<std_msgs::Empty>("goal_list/delete", 1);
 
-	p.param<std::string>("map_frame_id", mapFrameId, "map");
+	p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
 
 	//branch_searchパラメータの読み込み(基本変更しなくて良い)
 
@@ -145,7 +145,7 @@ geometry_msgs::Point BranchSearch::getGoalBranch(const sensor_msgs::LaserScan& s
     geometry_msgs::Point goal;
 	geometry_msgs::Point localGoal;
 
-    for(int i = scanMin;i<scanMax;i++){
+    for(int i = scanMin;i!=scanMax;++i){
 		if(!std::isnan(scan.ranges[i]) && scan.ranges[i] < CENTER_RANGE_MIN){
 			ROS_ERROR_STREAM("It may be Close to Obstacles\n");
 			return goal;
@@ -153,9 +153,11 @@ geometry_msgs::Point BranchSearch::getGoalBranch(const sensor_msgs::LaserScan& s
     }
 
     std::vector<float> fixRanges;
+	fixRanges.reserve(scan.ranges.size());
     std::vector<float> fixAngles;
+	fixAngles.reserve(scan.ranges.size());
 
-    for(int i=0;i<scan.ranges.size();i++){
+    for(int i=0;i!=scan.ranges.size();++i){
 		if(!std::isnan(scan.ranges[i])){
 			fixRanges.push_back(scan.ranges[i]);
 			fixAngles.push_back(scan.angle_min+(scan.angle_increment*i));
@@ -171,8 +173,9 @@ geometry_msgs::Point BranchSearch::getGoalBranch(const sensor_msgs::LaserScan& s
 		publishGoal(goal,localGoal);
     }
 	else{
-		geometry_msgs::Point temp;
-        goal = temp;
+        goal.x = 0;
+		goal.y = 0;
+		goal.z = 0;
 	}
 
     return goal;
@@ -191,7 +194,7 @@ bool BranchSearch::branchDetection(const std::vector<float>& ranges, const std::
 	const float BRANCH_MAX_Y = BRANCH_MAX_X*tan(angleMax);//5.0 * tan(0.52) = 2.86 //この二つの差が正しいのでは // 6.0/tan(1.05)
 
 	std::vector<geometry_msgs::Point> list;
-	geometry_msgs::Point tempGoal;
+	list.reserve(ranges.size());
 
     //はじめのfor文では条件を満たした分岐領域を探す
     //２つ目のfor文で最も近い分岐を選ぶ
@@ -201,7 +204,7 @@ bool BranchSearch::branchDetection(const std::vector<float>& ranges, const std::
 	//角度が正側と負側で処理を分ける
 	//マイナス
 
-	for(int i=0;i<ranges.size()-1;i++){
+	for(int i=0;i!=ranges.size()-1;++i){
 		//二つの角度の符号が違うときスキップ
 		if(angles[i]*angles[i+1]<0){
 			continue;
@@ -215,41 +218,43 @@ bool BranchSearch::branchDetection(const std::vector<float>& ranges, const std::
 				nextScanY = ranges[i+1]*sin(angles[i+1]);
 				diffY = std::abs(nextScanY - scanY);
 				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){//分岐のy座標の差は一定の範囲に入っていないと分岐にしないフィルタ
+					geometry_msgs::Point tempGoal;
 					tempGoal.x = (nextScanX + scanX)/2;
 					tempGoal.y = (nextScanY + scanY)/2;
-					list.push_back(tempGoal);
+					list.emplace_back(std::move(tempGoal));
 				}
 			}
 		}
 	}
 	
-    bool find = false;
+    //bool find = false;
 
 	if(list.size()>0){
 		ROS_DEBUG_STREAM("Branch Candidate Found\n");
 
 		int near;
 		float centerDist;
-        bool tempCenterDist;
 		double yaw = qToYaw(pose.pose.orientation);
 
 		std::vector<geometry_msgs::Point> globalList;
-		globalList.resize(list.size());
-		geometry_msgs::Point tempGlobal;
+		globalList.reserve(list.size());
+		
 
-		for(int i=0;i<list.size();i++){
-			tempGlobal.x = pose.pose.position.x + (cos(yaw)*list[i].x) - (sin(yaw)*list[i].y);
-			tempGlobal.y = pose.pose.position.y + (cos(yaw)*list[i].y) + (sin(yaw)*list[i].x);
-			globalList[i] = tempGlobal;
+		//for(int i=0;i<list.size();++i){
+		for(auto branch : list){
+			geometry_msgs::Point tempGlobal;
+			tempGlobal.x = pose.pose.position.x + (cos(yaw)*branch.x) - (sin(yaw)*branch.y);
+			tempGlobal.y = pose.pose.position.y + (cos(yaw)*branch.y) + (sin(yaw)*branch.x);
+			globalList.emplace_back(std::move(tempGlobal));
 		}
 
 		publishGoalList(globalList,list);
 
-		for(int k=list.size();k>0;k--){
+		for(int k=list.size();k!=0;--k){
 			centerDist = DOUBLE_INFINITY;
-			for(int j=0;j<list.size();j++){
-				tempCenterDist = std::abs(list[j].x)+std::abs(list[j].y);
-				if(tempCenterDist <= centerDist){
+			for(int j=0;j!=list.size();++j){
+				float tempCenterDist = std::abs(list[j].x)+std::abs(list[j].y);
+				if(tempCenterDist > 0 && tempCenterDist <= centerDist){
 					centerDist = tempCenterDist;
 					goal = globalList[j];
 					localGoal = list[j];
@@ -260,16 +265,20 @@ bool BranchSearch::branchDetection(const std::vector<float>& ranges, const std::
 			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
 
 			if(DUPLICATE_CHECK && duplicateDetection(goal)){
-				list.erase(list.begin() + near);
-				find = false;
+				//list.erase(list.begin() + near);
+				list[near].x = 0;
+				list[near].y = 0;
+				//find = false;
 			}
 			else{
-				find = true;
-				break;
+				//find = true;
+				///break;
+				return true;
 			}
 		}	
     }
-    return find;
+    //return find;
+	return false;
 }
 
 double BranchSearch::qToYaw(const geometry_msgs::Quaternion& q){
@@ -295,7 +304,7 @@ bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
 	yPlus = goal.y + DUPLICATE_MARGIN;
 	yMinus = goal.y - DUPLICATE_MARGIN;
 
-	for(int i=0;i<poseLogData.poses.size()-lOG_NEWER_LIMIT;i++){
+	for(int i=0;i!=poseLogData.poses.size()-lOG_NEWER_LIMIT;++i){
 		//過去のオドメトリが許容範囲の中に入っているか//
 		if((xPlus >= poseLogData.poses[i].position.x) && (xMinus <= poseLogData.poses[i].position.x)){
 			if((yPlus >= poseLogData.poses[i].position.y) && (yMinus <= poseLogData.poses[i].position.y)){
@@ -313,7 +322,7 @@ void BranchSearch::publishGoal(const geometry_msgs::Point& global, const geometr
 	msg.global = global;
 	msg.local = local;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = mapFrameId;
+	msg.header.frame_id = MAP_FRAME_ID;
 
 	pubGoal.publish(msg);
 	ROS_INFO_STREAM("Publish Goal\n");
@@ -324,7 +333,7 @@ void BranchSearch::publishGoalList(const std::vector<geometry_msgs::Point>& glob
 	msg.global = global;
 	msg.local = local;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = mapFrameId;
+	msg.header.frame_id = MAP_FRAME_ID;
 
 	pubGoalList.publish(msg);
 	ROS_INFO_STREAM("Publish GoalList\n");
