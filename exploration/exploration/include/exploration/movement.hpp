@@ -170,9 +170,6 @@ private:
     double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
 
     void calcGoalOrientation(geometry_msgs::Pose& goalPose, const geometry_msgs::Pose& startPose);
-
-    void calcGoalOrientation(geometry_msgs::Pose& goalPose, const geometry_msgs::Pose& startPose);
-
 public:
     Movement();
     ~Movement(){};
