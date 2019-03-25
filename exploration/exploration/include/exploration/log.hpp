@@ -23,16 +23,12 @@ private:
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
 public:
-    Log();
-    ~Log(){};
+    Log(){};
+    //~Log(){};
 
     void poseLogInitialize(void);
     void publishPoseLog(void);
 };
-
-Log::Log(){
-    
-}
 
 void Log::poseLogInitialize(void){
     sp.setCallbackQueue(&qPose);

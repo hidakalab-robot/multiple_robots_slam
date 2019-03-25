@@ -6,8 +6,10 @@ int main(int argc, char *argv[])
 
     Movement mv;
 
+    ros::Rate rate(1.0);
     while(ros::ok()){
        mv.functionCallTester();
+       rate.sleep();
     }
     
     return 0;

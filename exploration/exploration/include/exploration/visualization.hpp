@@ -103,7 +103,7 @@ private:
 
 public:
     Visualization();
-    ~Visualization(){};
+    //~Visualization(){};
 
     void poseMarkerInitialize(void);
     void publishPoseMarker(void);

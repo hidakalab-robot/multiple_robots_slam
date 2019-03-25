@@ -172,12 +172,12 @@ private:
     void calcGoalOrientation(geometry_msgs::Pose& goalPose, const geometry_msgs::Pose& startPose);
 public:
     Movement();
-    ~Movement(){};
+    //~Movement(){};
 
     std::vector<geometry_msgs::PoseStamped> createPath(const geometry_msgs::Point& goal);
     void moveToGoal(const geometry_msgs::Point& goal,bool movebase);
     void moveToGoal(const geometry_msgs::Point& goal);
-    void moveToGoal(const std::vector<geometry_msgs::PoseStamped>& path); // not stable
+    //void moveToGoal(const std::vector<geometry_msgs::PoseStamped>& path); // not stable
 
     void moveToForward(void);
     void oneRotation(void);
@@ -373,6 +373,7 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal,bool movebase){
 
         //movebaseGoal.target_pose.pose.orientation.w = 1.0;
 
+        
         ROS_INFO_STREAM("send goal to move_base\n");
         ac.sendGoal(movebaseGoal);
 
@@ -387,6 +388,7 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal,bool movebase){
         else{
             ROS_WARN_STREAM("I do not Reached Given Target");
         }
+    
 
         //return ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED;
     }
@@ -468,114 +470,114 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
     publishToGoalDelete();
 }
 
-void Movement::moveToGoal(const std::vector<geometry_msgs::PoseStamped>& path){
-    //planの中で半径x[m]より外で一番近いところを探す
-    //初めに目標と角度合わせる
-    //目標近くについたらplanの中で半径x[m]より外で次に近いところを探す
-    //以下ループ
+// void Movement::moveToGoal(const std::vector<geometry_msgs::PoseStamped>& path){
+//     //planの中で半径x[m]より外で一番近いところを探す
+//     //初めに目標と角度合わせる
+//     //目標近くについたらplanの中で半径x[m]より外で次に近いところを探す
+//     //以下ループ
 
-    ROS_INFO_STREAM("Path Recieved\n");
+//     ROS_INFO_STREAM("Path Recieved\n");
 
-    qPose.callOne(ros::WallDuration(1));
+//     qPose.callOne(ros::WallDuration(1));
 
-    //double yaw = qToYaw(poseData.pose.orientation);
+//     //double yaw = qToYaw(poseData.pose.orientation);
 
-    if(path.size() == 0){
-        ROS_ERROR_STREAM("Path is Empty\n");
-        return;
-    }
+//     if(path.size() == 0){
+//         ROS_ERROR_STREAM("Path is Empty\n");
+//         return;
+//     }
 
-    //double PATH_RADIUS = 0.5;
+//     //double PATH_RADIUS = 0.5;
 
-    //目標位置との角度
+//     //目標位置との角度
 
-    int tempI = INT_INFINITY;
+//     int tempI = INT_INFINITY;
 
-    double localDistance;
-    //planの中で半径x[m]より外で一番近いところを探す
-    for(int i=0;i<path.size();i++){
-        localDistance = sqrt(pow(path[i].pose.position.x - poseData.pose.position.x,2) + pow(path[i].pose.position.y - poseData.pose.position.y,2));
-        if(localDistance > PATH_RADIUS){
-            tempI = i;
-            break;
-        }
-    }
-    if(tempI == INT_INFINITY){
-        //すでに目的地近辺にいるとき
-        ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
-        return;
-    }
+//     double localDistance;
+//     //planの中で半径x[m]より外で一番近いところを探す
+//     for(int i=0;i<path.size();i++){
+//         localDistance = sqrt(pow(path[i].pose.position.x - poseData.pose.position.x,2) + pow(path[i].pose.position.y - poseData.pose.position.y,2));
+//         if(localDistance > PATH_RADIUS){
+//             tempI = i;
+//             break;
+//         }
+//     }
+//     if(tempI == INT_INFINITY){
+//         //すでに目的地近辺にいるとき
+//         ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
+//         return;
+//     }
 
-    existGoal = true;
+//     existGoal = true;
 
-    //初めに目標と角度合わせる
+//     //初めに目標と角度合わせる
     
-    //目標の角度計算(多分できるはず)
-    double goalYaw = qToYaw(path[tempI].pose.orientation);
-    // double yaw = qToYaw(poseData.pose.orientation);
+//     //目標の角度計算(多分できるはず)
+//     double goalYaw = qToYaw(path[tempI].pose.orientation);
+//     // double yaw = qToYaw(poseData.pose.orientation);
 
-    // double MATCH_ANGLE_THRESHOLD = 0.1;
-    // double MATCH_ROTATION_VELOCITY = 0.2;
+//     // double MATCH_ANGLE_THRESHOLD = 0.1;
+//     // double MATCH_ROTATION_VELOCITY = 0.2;
 
-    // geometry_msgs::Twist vel;
-    // vel.angular.z = MATCH_ROTATION_VELOCITY;
+//     // geometry_msgs::Twist vel;
+//     // vel.angular.z = MATCH_ROTATION_VELOCITY;
 
-    directionFitting(goalYaw);
+//     directionFitting(goalYaw);
 
-    //移動する
-    geometry_msgs::Point tempGoal;
-    tempGoal.x = path[tempI].pose.position.x;
-    tempGoal.y = path[tempI].pose.position.y;
+//     //移動する
+//     geometry_msgs::Point tempGoal;
+//     tempGoal.x = path[tempI].pose.position.x;
+//     tempGoal.y = path[tempI].pose.position.y;
 
-    //移動の終了条件 pathの最後の座標との距離が閾値以下
-    geometry_msgs::Point goal;
-    goal.x = path[path.size()-1].pose.position.x;
-    goal.y = path[path.size()-1].pose.position.y;
+//     //移動の終了条件 pathの最後の座標との距離が閾値以下
+//     geometry_msgs::Point goal;
+//     goal.x = path[path.size()-1].pose.position.x;
+//     goal.y = path[path.size()-1].pose.position.y;
 
-    double goalDistance;
-    goalDistance = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
-    //localDistance = sqrt(pow(tempGoal.x - poseData.pose.position.x,2) + pow(tempGoal.y - poseData.pose.position.y,2));
+//     double goalDistance;
+//     goalDistance = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
+//     //localDistance = sqrt(pow(tempGoal.x - poseData.pose.position.x,2) + pow(tempGoal.y - poseData.pose.position.y,2));
 
-    //const double LOCAL_TOLERANCE = 0.2;
+//     //const double LOCAL_TOLERANCE = 0.2;
 
-    int tempIOld;
+//     int tempIOld;
 
-    while(GOAL_TOLERANCE < goalDistance){//最終目標との距離を見る
-        while(LOCAL_TOLERANCE < localDistance){//一時的な目標との距離
-            //publishToGoal(poseData.pose, tempGoal);
-            vfhMovement(false,tempGoal);//目標方向に一回だけpublish
-            qPose.callOne(ros::WallDuration(1));
-            localDistance = sqrt(pow(path[tempI].pose.position.x - poseData.pose.position.x,2) + pow(path[tempI].pose.position.y - poseData.pose.position.y,2));
-        }
-        //ここまでで一時的な目標にたどり着いたはず
-        //次の目標を検索
-        tempIOld = tempI;
-        for(int i=tempI+1;i<path.size();i++){
-            localDistance = sqrt(pow(path[i].pose.position.x - poseData.pose.position.x,2) + pow(path[i].pose.position.y - poseData.pose.position.y,2));
-            if(localDistance > PATH_RADIUS){
-                tempI = i;
-                break;
-            }
-        }
-        if(tempI == tempIOld){
-            //すでに目的地近辺にいる
-            ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
-            existGoal = false;
-            return;
-        }
-        //新たに一時的な目標をセット
-        tempGoal.x = path[tempI].pose.position.x;
-        tempGoal.y = path[tempI].pose.position.y;
+//     while(GOAL_TOLERANCE < goalDistance){//最終目標との距離を見る
+//         while(LOCAL_TOLERANCE < localDistance){//一時的な目標との距離
+//             //publishToGoal(poseData.pose, tempGoal);
+//             vfhMovement(false,tempGoal);//目標方向に一回だけpublish
+//             qPose.callOne(ros::WallDuration(1));
+//             localDistance = sqrt(pow(path[tempI].pose.position.x - poseData.pose.position.x,2) + pow(path[tempI].pose.position.y - poseData.pose.position.y,2));
+//         }
+//         //ここまでで一時的な目標にたどり着いたはず
+//         //次の目標を検索
+//         tempIOld = tempI;
+//         for(int i=tempI+1;i<path.size();i++){
+//             localDistance = sqrt(pow(path[i].pose.position.x - poseData.pose.position.x,2) + pow(path[i].pose.position.y - poseData.pose.position.y,2));
+//             if(localDistance > PATH_RADIUS){
+//                 tempI = i;
+//                 break;
+//             }
+//         }
+//         if(tempI == tempIOld){
+//             //すでに目的地近辺にいる
+//             ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
+//             existGoal = false;
+//             return;
+//         }
+//         //新たに一時的な目標をセット
+//         tempGoal.x = path[tempI].pose.position.x;
+//         tempGoal.y = path[tempI].pose.position.y;
 
-        goalDistance = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
-    }
+//         goalDistance = sqrt(pow(goal.x - poseData.pose.position.x,2) + pow(goal.y - poseData.pose.position.y,2));
+//     }
 
-    ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
+//     ROS_INFO_STREAM("Maybe Robot Got to the Target\n");
 
-    //publishToGoalDelete();
-    existGoal = false;
+//     //publishToGoalDelete();
+//     existGoal = false;
 
-}
+// }
 
 void Movement::directionFitting(double targetYaw){
     geometry_msgs::Twist vel;
@@ -804,11 +806,13 @@ double Movement::vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCente
 }
 
 double Movement::localAngleCalculation(const geometry_msgs::Point& goal, const geometry_msgs::PoseStamped& pose){
-    double tempAngle;
-    double localAngle;
+    //double tempAngle;
+    //double localAngle;
 
-    tempAngle = atan2(goal.y - pose.pose.position.y, goal.x - pose.pose.position.x);
-    localAngle = tempAngle - qToYaw(pose.pose.orientation);
+    // tempAngle = atan2(goal.y - pose.pose.position.y, goal.x - pose.pose.position.x);
+    // localAngle = tempAngle - qToYaw(pose.pose.orientation);
+
+    double localAngle = atan2(goal.y - pose.pose.position.y, goal.x - pose.pose.position.x) - qToYaw(pose.pose.orientation);
 
     if(localAngle < -M_PI){
         localAngle = 2*M_PI + localAngle;
@@ -1043,6 +1047,7 @@ void Movement::oneRotation(void){
 
 bool Movement::callPathPlanner(const geometry_msgs::PoseStamped& start,const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& path){
     //navfnなどのグローバルパスプラナーを呼ぶ
+    //std::stringはswitch出来ない
     if(PLANNER_NAME == "NavfnROS"){
         ROS_INFO_STREAM("call Navfn\n");
         return callNavfn(COSTMAP_NAME,PLANNER_NAME,start,goal,path);
@@ -1110,7 +1115,7 @@ bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& 
 
     for(int i=MINUS;i<PLUS;i++){
         if(!std::isnan(scan.ranges[i])){
-            count++;
+            ++count;
             sum += scan.ranges[i];
         }
     }
@@ -1142,7 +1147,8 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
             sumMinus += scan.ranges[i];
             for(int j=i+1;j<minus;++j){
                 if(!std::isnan(scan.ranges[j])){
-                    temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[j]));
+                    //temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[j]));//この計算なに?距離計算してるなら違う
+                    temp = std::abs(scan.ranges[i]*cos(scan.angle_min + scan.angle_increment*i)-scan.ranges[j]*cos(scan.angle_min + scan.angle_increment*j));
                     break;
                 }
             }
@@ -1152,7 +1158,7 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
             }
         }
         else{
-            countNanMinus++;
+            ++countNanMinus;
         }
     }
 
@@ -1165,7 +1171,8 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
             sumPlus += scan.ranges[i];
             for(int j=i-1;j>=0;--j){
                 if(!std::isnan(scan.ranges[j])){
-                    temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[j]));
+                    //temp = std::abs(cos(scan.ranges[i])-cos(scan.ranges[j]));
+                    temp = std::abs(scan.ranges[i]*cos(scan.angle_min + scan.angle_increment*i)-scan.ranges[j]*cos(scan.angle_min + scan.angle_increment*j));
                     break;
                 }
             }
@@ -1175,12 +1182,12 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
             }
         }
         else{
-            countNanPlus++;
+            ++countNanPlus;
         }
     }
 
-    //ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
-    //ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
+    ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
+    ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
 
     double aveMinus = sumMinus/(minus - countNanMinus);
     double avePlus = sumPlus/(scan.ranges.size() - plus - countNanPlus);

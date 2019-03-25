@@ -21,7 +21,7 @@ public:
     //pathPlanning(std::string name);
     pathPlanning();
     pathPlanning(std::string costmapName, std::string plannerName);
-    ~pathPlanning(){};
+    //~pathPlanning(){};
 
     bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, bool initializer=false);
     bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map, bool initializer=false);
