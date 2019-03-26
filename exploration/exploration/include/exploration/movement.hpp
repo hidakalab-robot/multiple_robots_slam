@@ -960,7 +960,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     for(int i=scan.ranges.size()/2;i!=scan.ranges.size();++i){
         if(!std::isnan(scan.ranges[i])){
             //sum += scan.ranges[i];
-            aveM += scan.ranges[i];
+            aveP += scan.ranges[i];
         }
         else{
             ++nanP;
@@ -971,6 +971,8 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     nanP /= scan.ranges.size()/2;
 
     //nan率が高かったらfalseで返したい
+
+    //ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM << "\n");
 
     if(aveP < EMERGENCY_THRESHOLD && aveM < EMERGENCY_THRESHOLD){
         ROS_WARN_STREAM("Close to Obstacles !!\n");
@@ -1039,7 +1041,12 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
     previousOrientation = theta / std::abs(theta);
+    //t /= ROTATION_GAIN;
     return CommonLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
+    //geometry_msgs::Twist vel = CommonLib::msgTwist(v,(CURVE_GAIN*theta)/t);
+    //ROS_DEBUG_STREAM("vel : " << vel << "\n");
+    //return CommonLib::msgTwist(v,(CURVE_GAIN*theta)/t);
+    //return vel;
 }
 
 void Movement::moveToForward(void){
