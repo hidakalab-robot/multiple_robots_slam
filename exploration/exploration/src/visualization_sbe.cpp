@@ -9,20 +9,20 @@ int main(int argc, char *argv[])
     v.poseMarkerInitialize();
     v.goalMarkerInitialize();
     v.goalListMarkerInitialize();
-    v.toGoalMarkerInitialize();
+    //v.toGoalMarkerInitialize();
     //v.moveAngleMarkerInitialize();
     v.goalDeleteInitialize();
     v.goalListDeleteInitialize();
-    v.toGoalDeleteInitialize();
+    //v.toGoalDeleteInitialize();
 
     while(ros::ok()){
         v.publishGoalDelete();
         v.publishGoalListDelete();
-        v.publishToGoalDelete();
+        //v.publishToGoalDelete();
         v.publishPoseMarker();
         v.publishGoalMarker();
         v.publishGoalListMarker();
-        v.publishToGoalMarker();
+        //v.publishToGoalMarker();
         //v.publishMoveAngleMarker();
     }
     

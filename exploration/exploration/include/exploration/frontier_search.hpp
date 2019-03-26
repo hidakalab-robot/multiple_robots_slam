@@ -20,6 +20,8 @@
 
 #include <tf/transform_listener.h>
 
+//#include <exploration/common_libraly.h>
+
 class FrontierSearch
 {
 private:
@@ -54,27 +56,18 @@ private:
     int FRONTIER_DETECTION_METHOD;
     float FILTER_SQUARE_DIAMETER;
     bool OBSTACLE_FILTER;
-
     double DOUBLE_MINUS_INFINITY;
-
     double PREVIOUS_GOAL_THRESHOLD;
-
     double DISTANCE_WEIGHT;
     double DIRECTION_WEIGHT;
-
     std::string MAP_FRAME_ID;
-
     double CLUSTER_TOLERANCE;
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
-
     bool PUBLISH_POSE_ARRAY;
-
     bool PREVIOUS_GOAL_EFFECT;
-
     bool USE_MERGE_MAP;
     std::string MERGE_MAP_FRAME_ID;
-
     bool COLOR_CLUSTER;
 
     ros::NodeHandle sp;

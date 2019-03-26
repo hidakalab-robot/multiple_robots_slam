@@ -23,7 +23,7 @@ private:
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
 
 public:
-    Log(){};
+    Log(){poseLogInitialize();};
     //~Log(){};
 
     void poseLogInitialize(void);

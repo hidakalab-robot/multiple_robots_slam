@@ -16,11 +16,11 @@
 
     <!-- gazebo上でのロボットの初期位置 (map_mergeのような相対座標ではなく絶対座標で記述)-->
     <arg name="robot1_name" default="robot1"/>
-    <!-- <arg name="robot1_init_x" default="0.0"/> -->
-    <arg name="robot1_init_x" default="19.0"/>
+    <arg name="robot1_init_x" default="0.0"/>
+    <!-- <arg name="robot1_init_x" default="19.0"/> -->
     <arg name="robot1_init_y" default="0.0"/>
-    <!-- <arg name="robot1_init_yaw" default="0.0"/> -->
-    <arg name="robot1_init_yaw" default="3.14"/>
+    <arg name="robot1_init_yaw" default="0.0"/>
+    <!-- <arg name="robot1_init_yaw" default="3.14"/> -->
 
     <arg name="robot2_name" default="robot2"/>
     <arg name="robot2_init_x" default="39.3"/>
