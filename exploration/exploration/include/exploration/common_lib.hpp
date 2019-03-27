@@ -21,13 +21,23 @@ struct subStruct{
     subStruct(const std::string& topic,uint32_t queue_size){
         n.setCallbackQueue(&q);
         sub = n.subscribe<T>(topic, queue_size, [this](const boost::shared_ptr<const T>& msg) {data = *msg;});//データをコピーするコールバック関数を自動生成
-    }
+    };
 
     template <class U,class V>
-    subStruct(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U *obj){
+    subStruct(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U* obj){
         n.setCallbackQueue(&q);
         sub = n.subscribe(topic,queue_size,fp,obj);
-    }
+    };
+};
+
+struct subStructSimple{
+    ros::NodeHandle n;
+    ros::Subscriber sub;
+
+    template <class U,class V>
+    subStructSimple(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U *obj){
+        sub = n.subscribe(topic,queue_size,fp,obj);
+    };
 };
 
 template<typename T>
@@ -36,7 +46,7 @@ struct pubStruct{
     ros::Publisher pub;
     pubStruct(const std::string& topic,uint32_t queue_size,bool latch=false){
         pub = n.advertise<T>(topic, queue_size, latch);
-    }
+    };
 };
 
 double qToYaw(const tf::Quaternion& q){
@@ -58,7 +68,7 @@ geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0){
     return msg;
 }
 
-std_msgs::Empty msgEmpty(){
+std_msgs::Empty msgEmpty(void){
     std_msgs::Empty msg;
     return msg;
 }

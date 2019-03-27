@@ -22,7 +22,7 @@ private:
 		scanStruct(int size,float angle):angleMax(angle){
 			ranges.reserve(size);
 			angles.reserve(size);
-		}
+		};
 	};
 	//パラメータ
 	ros::NodeHandle p;
@@ -41,9 +41,7 @@ private:
 	CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
 
 	CommonLib::pubStruct<exploration_msgs::Goal> goal_;
-	CommonLib::pubStruct<std_msgs::Empty> goalDel_;
 	CommonLib::pubStruct<exploration_msgs::GoalList> goalList_;
-	CommonLib::pubStruct<std_msgs::Empty> goalListDel_;
 
 	//bool branchDetection(const std::vector<float>& ranges, const std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
 	bool branchDetection(const BranchSearch::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
@@ -63,9 +61,7 @@ BranchSearch::BranchSearch()
 	,scan_("scan",1)
 	,pose_("pose",1)
 	,goal_("goal", 1, true)
-	,goalDel_("goal/delete", 1)
 	,goalList_("goal_list", 1, true)
-	,goalListDel_("goal_list/delete", 1)
 	,DOUBLE_INFINITY(10000.0){
 
 	//branch_searchパラメータの読み込み(基本変更しなくて良い)
@@ -81,9 +77,6 @@ BranchSearch::BranchSearch()
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	pose_.q.callOne(ros::WallDuration(1));
 	scan_.q.callOne(ros::WallDuration(1));
-
-	goalDel_.pub.publish(CommonLib::msgEmpty());
-	goalListDel_.pub.publish(CommonLib::msgEmpty());
 
 	const int scanWidth = BRANCH_ANGLE / scan_.data.angle_increment;
     const int scanMin = (scan_.data.ranges.size()/2)-1 - scanWidth;

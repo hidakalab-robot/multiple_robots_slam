@@ -6,19 +6,7 @@ int main(int argc, char *argv[])
 
     Visualization v;
 
-    v.poseMarkerInitialize();
-    v.goalMarkerInitialize();
-    v.goalListMarkerInitialize();
-    v.goalDeleteInitialize();
-    v.goalListDeleteInitialize();
-
-    while(ros::ok()){
-        v.publishGoalDelete();
-        v.publishGoalListDelete();
-        v.publishPoseMarker();
-        v.publishGoalMarker();
-        v.publishGoalListMarker();
-    }
+    ros::spin();
     
     return 0;
 }

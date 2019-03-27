@@ -37,7 +37,7 @@ private:
                     frontierMap[x][y] = 0;
                 }
             }
-        }
+        };
     };
 
     ros::NodeHandle p;
@@ -65,10 +65,8 @@ private:
     CommonLib::subStruct<nav_msgs::OccupancyGrid> map_;
 
     CommonLib::pubStruct<exploration_msgs::Goal> goal_;
-    CommonLib::pubStruct<std_msgs::Empty> goalDel_;
     CommonLib::pubStruct<exploration_msgs::GoalList> goalList_;
     CommonLib::pubStruct<geometry_msgs::PoseArray> goalPoseArray_;
-    CommonLib::pubStruct<std_msgs::Empty> goalListDel_;
     CommonLib::pubStruct<sensor_msgs::PointCloud2> colorCloud_;
     
     void horizonDetection(FrontierSearch::mapStruct& map);
@@ -99,8 +97,6 @@ FrontierSearch::FrontierSearch()
     ,pose_("pose",1)
     ,goal_("goal",1,true)
     ,goalList_("goal_list",1,true)
-    ,goalDel_("goal/delete",1)
-    ,goalListDel_("goal_list/delete",1)
     ,goalPoseArray_("goal_list_pose_array",1,true)
     ,colorCloud_("horizon_cluster/color",1)
     ,DOUBLE_MINUS_INFINITY(-10000000.0){
@@ -127,7 +123,6 @@ FrontierSearch::FrontierSearch()
 
 bool FrontierSearch::getGoal(void){
     map_.q.callOne(ros::WallDuration(1));
-    goalDel_.pub.publish(CommonLib::msgEmpty());
     
     FrontierSearch::mapStruct map(map_.data);
 
@@ -154,7 +149,6 @@ bool FrontierSearch::getGoal(void){
     //ROS_DEBUG_STREAM("After Filter Index Size : " << index.size() << "\n");
     if(index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found\n");
-        goalListDel_.pub.publish(CommonLib::msgEmpty());
         return false;
     }
     
@@ -182,7 +176,6 @@ bool FrontierSearch::getGoal(void){
 
 bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     map_.q.callOne(ros::WallDuration(1));
-    goalDel_.pub.publish(CommonLib::msgEmpty());
     FrontierSearch::mapStruct map(map_.data);
 
     horizonDetection(map);
@@ -211,7 +204,6 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
 
     if(index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found\n");
-        goalListDel_.pub.publish(CommonLib::msgEmpty());
         return false;
     }
     
