@@ -17,7 +17,7 @@
 
     <arg name="rosbag" default="true"/>
     <arg name="debug_mode" default="false"/>
-
+    
     <group ns="$(arg robot_name)/$(arg exploration_ns)">
         <node pkg="exploration" type="sensor_based_exploration_movebase" name="sensor_based_exploration" output="screen">
             <rosparam file="$(find exploration)/params/branch_search_params.yaml" command="load"/>
@@ -54,9 +54,9 @@
             <remap from="pose_log" to="$(arg pose_log)"/>
         </node>
 
-        <node pkg="exploration" type="continuity" name="continuity">
-            <param name="bumper_raw_topic" value="/$(arg robot_name)/mobile_base/events/bumper"/>
-            <param name="bumper_continuity_topic" value="$(arg bumper_continuity)"/>
+        <node pkg="exploration" type="continuity" name="continuity">\
+            <remap from="sub_topic" to="/$(arg robot_name)/mobile_base/events/bumper"/>
+            <remap from="pub_topic" to="$(arg bumper_continuity)"/>
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record_debug_gazebo.launch.xml">

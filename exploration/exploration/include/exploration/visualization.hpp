@@ -1,5 +1,5 @@
-#ifndef VISUALIZATION_H
-#define VISUALIZATION_H
+#ifndef VISUALIZATION_HPP
+#define VISUALIZATION_HPP
 
 //topicの情報をrvizで表示するためのクラス
 #include <ros/ros.h>
