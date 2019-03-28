@@ -1,6 +1,0 @@
-<launch>
-    <arg name="robot_name"/>
-
-    <node pkg="topic_tools" type="relay" name="tf_relay" args="/tf /$(arg robot_name)/tf" output="screen"/>
-
-</launch>

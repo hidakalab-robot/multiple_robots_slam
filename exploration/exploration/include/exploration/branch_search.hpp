@@ -30,7 +30,6 @@ private:
     double CENTER_RANGE_MIN;
 	double BRANCH_MAX_X;
 	double BRANCH_DIFF_X_MIN;
-	double BRANCH_DIFF_X_MAX;
 	double DUPLICATE_MARGIN;
 	bool DUPLICATE_CHECK;
 	double DOUBLE_INFINITY;

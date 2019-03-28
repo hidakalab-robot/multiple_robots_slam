@@ -41,11 +41,11 @@ public:
 Visualization::Visualization()
     :p("~")
     ,pose_("pose",1,&Visualization::poseCB, this)
-    ,poseMarker_("pose_marker", 1)
+    ,poseMarker_("visualization", 1)
     ,goal_("goal",1,&Visualization::goalCB, this)
-    ,goalMarker_("goal_marker", 1)
+    ,goalMarker_("visualization", 1)
     ,goalList_("goal_list",1,&Visualization::goalListCB, this)
-    ,goalListMarker_("goal_list_marker", 1){
+    ,goalListMarker_("visualization", 1){
 
     std::string MAP_FRAME_ID;
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
@@ -67,9 +67,7 @@ Visualization::Visualization()
     p.param<double>("goal_size", goalSize, 0.5);
     gm.header.frame_id = MAP_FRAME_ID;
     gm.pose.orientation.w = 1.0;
-    gm.scale.x = goalSize;
-    gm.scale.y = goalSize;
-    gm.scale.z = goalSize;
+    gm.scale.x = gm.scale.y = gm.scale.z = goalSize;
     gm.pose.position.z = 0;
     gm.type = visualization_msgs::Marker::CUBE;
     gm.action = visualization_msgs::Marker::ADD;
@@ -85,9 +83,7 @@ Visualization::Visualization()
     p.param<double>("goal_list_size", goalListSize, 0.3);
     glm.header.frame_id = MAP_FRAME_ID;
     glm.pose.orientation.w = 1.0;
-    glm.scale.x = goalListSize;
-    glm.scale.y = goalListSize;
-    glm.scale.z = goalListSize;
+    glm.scale.x = glm.scale.y = glm.scale.z = goalListSize;
     glm.type = visualization_msgs::Marker::CUBE_LIST;
     glm.action = visualization_msgs::Marker::ADD;
     glm.lifetime = ros::Duration(0);

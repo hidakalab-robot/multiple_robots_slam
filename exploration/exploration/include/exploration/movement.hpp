@@ -41,7 +41,7 @@ private:
     double GOAL_TOLERANCE;
     double GRAVITY_FORCE_ENABLE;
     double GRAVITY_GAIN;
-    double GRAVITH_DIFF_THRESHOLD;
+    double GRAVITY_DIFF_THRESHOLD;
     double SAFE_DISTANCE;
     double SAFE_SPACE;
     double SCAN_THRESHOLD;
@@ -60,17 +60,9 @@ private:
     double AVOIDANCE_GAIN;
     double VFH_GAIN;
     double ROAD_CENTER_GAIN;
-    double MATCH_ANGLE_THRESHOLD;
-    double MATCH_ROTATION_VELOCITY;
-    double PATH_RADIUS;
-    double LOCAL_TOLERANCE;
     double ROTATION_GAIN;
-    std::string COSTMAP_NAME;
-    std::string PLANNER_NAME;
-    int PLANNER_METHOD;
     std::string MOVEBASE_NAME;
     std::string MAP_FRAME_ID;
-    bool PUBLISH_MY_VORONOI;
     int INT_INFINITY;
     double DOUBLE_INFINITY;
     double FORWARD_ANGLE;
@@ -109,8 +101,6 @@ public:
     void moveToGoal(const geometry_msgs::Point& goal);
     void moveToForward(void);
     void oneRotation(void);
-
-    void functionCallTester(void);
 };
 
 Movement::Movement()
@@ -127,7 +117,7 @@ Movement::Movement()
     p.param<double>("goal_tolerance", GOAL_TOLERANCE, 0.5);
     p.param<double>("gravity_gain", GRAVITY_GAIN, 1.2);
     p.param<double>("gravity_force_enable", GRAVITY_FORCE_ENABLE, 6.0);
-    p.param<double>("gravity_diff_threshold", GRAVITH_DIFF_THRESHOLD, 0.1);
+    p.param<double>("gravity_diff_threshold", GRAVITY_DIFF_THRESHOLD, 0.1);
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
     p.param<double>("safe_space", SAFE_SPACE, 0.6);
     p.param<double>("scan_threshold", SCAN_THRESHOLD, 1.2);
@@ -147,13 +137,6 @@ Movement::Movement()
     p.param<double>("avoidance_gain", AVOIDANCE_GAIN, 0.3);
     p.param<double>("vfh_gain", VFH_GAIN, 0.5);
     p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
-    p.param<std::string>("costmap_name", COSTMAP_NAME, "global_costmap");
-    p.param<std::string>("planner_name", PLANNER_NAME, "path_planner");
-    p.param<int>("planner_method", PLANNER_METHOD, 0);
-    p.param<double>("match_angle_threshold", MATCH_ANGLE_THRESHOLD, 0.1);
-    p.param<double>("match_rotation_velocity", MATCH_ROTATION_VELOCITY, 0.2);
-    p.param<double>("path_radius", PATH_RADIUS, 0.5);
-    p.param<double>("local_tolerance", LOCAL_TOLERANCE, 0.2);
     p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<double>("forward_angle", FORWARD_ANGLE, 0.17);
@@ -283,7 +266,7 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
         distToGoal = sqrt(pow(goal.x - pose_.data.pose.position.x,2) + pow(goal.y - pose_.data.pose.position.y,2));
         diff += distToGoal - distToGoalOld;
         ROS_INFO_STREAM("Refresh Distance to Goal : " << distToGoal << " [m]\n");
-        if(std::abs(diff) > GRAVITH_DIFF_THRESHOLD){
+        if(std::abs(diff) > GRAVITY_DIFF_THRESHOLD){
             if(diff*sign < 0){
                 sign *= -1;
                 count++;
@@ -807,13 +790,4 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
     }
 }
 
-void Movement::functionCallTester(void){
-    scan_.q.callOne(ros::WallDuration(1));
-
-    double angle;
-    if(forwardWallDetection(scan_.data,angle)){
-        ROS_INFO_STREAM("Return Angle : " << angle << " [rad], " << angle*180/M_PI << " [deg]" << "\n");
-    }
-    std::cout << std::endl; 
-}
 #endif //MOVEMENT_HPP

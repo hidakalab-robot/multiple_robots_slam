@@ -55,7 +55,6 @@ private:
     double CLUSTER_TOLERANCE;
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
-    bool PUBLISH_POSE_ARRAY;
     bool PREVIOUS_GOAL_EFFECT;
     bool USE_MERGE_MAP;
     std::string MERGE_MAP_FRAME_ID;
@@ -101,7 +100,6 @@ FrontierSearch::FrontierSearch()
     ,colorCloud_("horizon_cluster/color",1)
     ,DOUBLE_MINUS_INFINITY(-10000000.0){
 
-    p.param<bool>("publish_pose_array", PUBLISH_POSE_ARRAY, false);
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<float>("frontier_diameter_min", FRONTIER_DIAMETER_MIN, 0.4);
 	p.param<int>("frontier_thickness", FRONTIER_THICKNESS, 3);
@@ -166,11 +164,8 @@ bool FrontierSearch::getGoal(void){
     }
 
     publishGoalList(goals);
-    
-    if(PUBLISH_POSE_ARRAY){
-        //ROS_DEBUG_STREAM("call publish_pose_array\n");
-        publishGoalListPoseArray(goals);
-    }
+    publishGoalListPoseArray(goals);
+
     return true;
 }
 
@@ -221,11 +216,7 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     }
 
     publishGoalList(goals);
-    
-    if(PUBLISH_POSE_ARRAY){
-        //ROS_DEBUG_STREAM("call publish_pose_array\n");
-        publishGoalListPoseArray(goals);
-    }
+    publishGoalListPoseArray(goals);
 
     pose_.q.callOne(ros::WallDuration(1));
 

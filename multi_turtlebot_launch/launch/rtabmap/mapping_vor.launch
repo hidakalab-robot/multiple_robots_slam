@@ -136,9 +136,11 @@
     </node>
   </group>
 
-  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/robot_pose_publisher.launch.xml">
-    <arg name="robot_name" value="$(arg robot_name)"/>
-  </include>   
+  <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="robot_pose_publisher">
+    <param name="map_frame" value="$(arg robot_name)/map"/>
+    <param name="base_frame" value="$(arg robot_name)/base_link"/>
+    <param name="is_stamped" value="true"/>
+  </node> 
 </group>
 
 </launch>
