@@ -10,6 +10,7 @@
 #include <exploration_msgs/GoalList.h>
 #include <std_msgs/Empty.h>
 #include <exploration/common_lib.hpp>
+#include <exploration/frontier_search.hpp>
 
 //分岐領域を検出
 class BranchSearch
@@ -132,6 +133,8 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
     //２つ目のfor文で最も近い分岐を選ぶ
     //選んだ最も近い分岐に対して重複探査の確認を行いtrueが帰ってきたらその分岐を除いて再度最も近い分岐を探す
 
+	//重複探査で全部弾かれた場合でもフロンティア領域との関係を見て
+
 	//角度が正側と負側で処理を分ける
 	//マイナス
 
@@ -192,8 +195,29 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
 			else{
 				return true;
 			}
-		}	
+		}
+
+		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
+		//リストの座標を渡して、その方向にあるフロンティアの面積を教えてもらう
+		FrontierSearch fs;
+		fs.frontierDetection();
+		int max = 0;
+		for(const auto& g : globalList){
+			int num = fs.countCloseFrontier(pose,Eigen::Vector2d(g.x-pose.position.x,g.y-pose.position.y));
+			if(num > max){
+				max = std::move(num);
+				goal = g;
+			}
+		}
+		//最後に直進方向のフロンティア面積と比較する
+		if(max >= fs.countCloseFrontier(pose)){
+			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
+			ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");
+			return true;
+		}
     }
+
+
 	return false;
 }
 

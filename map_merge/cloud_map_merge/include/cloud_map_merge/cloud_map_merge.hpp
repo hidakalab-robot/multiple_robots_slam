@@ -138,7 +138,7 @@ void CloudMapMerge::mapUpdate(const sensor_msgs::PointCloud2::ConstPtr& msg, Clo
     //timestampが進んでいたらsensor_msgを更新してpclに変換する
     ROS_INFO_STREAM("suscribeThread << mapUpdate\n");
     std::lock_guard<std::mutex> lock(robot.mutex);
-    if(robot.initialized && robot.rosMap.header.stamp > msg -> header.stamp){
+    if(robot.initialized && !(msg -> header.stamp > robot.rosMap.header.stamp)){
         return;
     }
     if(!robot.initialized){
