@@ -1,86 +1,66 @@
-#ifndef PATH_PLANNING_H
-#define PATH_PLANNING_H
+#ifndef PATH_PLANNING_HPP
+#define PATH_PLANNING_HPP
 
 #include <ros/ros.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <geometry_msgs/PoseStamped.h>
 
+/*
+path_planning tutorial
+
+In launch file 
+    <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
+    <param name="global_costmap/global_frame" value="map"/>
+    <param name="global_costmap/robot_base_frame" value="base_footprint"/>
+
+In source file
+
+    if you want to use NavfnROS
+        #include <exploration/path_planning.h>
+        #include <navfn/navfn_ros.h>
+            
+            static pathPlanning<navfn::NavfnROS> pp("global_cosmap","NavfnROS");
+            pp.createPath(start,goal,path); // createPath return bool and insert Navfn-path from start to goal into path 
+
+    if you want to use VoronoiPlanner
+        #include <exploration/path_planning.h>
+        #include <voronoi_planner/planner_core.h>
+
+            pathPlanning<voronoi_planner::VoronoiPlanner> pp("global_cosmap","voronoi_planner");
+            pp.createPath(start,goal,path); // createPath return bool and insert voronoi-path from start to goal into path
+
+            or
+
+            pp.createPath(start,goal,path,map); // In addition to the above, insert voronoi-grid into map
+*/
+
+
 template<typename T>
 class pathPlanning
 {
 private:
-    tf::TransformListener tf;
+    tf::TransformListener tfl;
     costmap_2d::Costmap2DROS gcr;
-    //std::string plannerName;
     T planner;
-    std::string plannerName_;
 
-    void rosSpinOnce(void);
 public:
-    //pathPlanning();
-    //pathPlanning(std::string name);
-    pathPlanning();
-    pathPlanning(std::string costmapName, std::string plannerName);
-    ~pathPlanning(){};
+    pathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
+        planner.initialize("path_planner",&gcr);
+    };
+    
+    pathPlanning(const std::string& costmapName, const std::string& plannerName):tfl(ros::Duration(10)),gcr(costmapName, tfl){
+        planner.initialize(plannerName,&gcr);
+    };
 
-    bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, bool initializer=false);
-    bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map, bool initializer=false);
+    bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
+        ros::spinOnce();
+        return planner.makePlan(start,goal,plan);
+    };
+
+    bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map){//only voronoi
+        ros::spinOnce();
+        return planner.makePlan(start,goal,plan,map);
+    };
 };
 
-// template<typename T>
-// pathPlanning<T>::pathPlanning():tf(ros::Duration(10)),gcr("global_costmap", tf){
-//     plannerName = "path_planner";
-//     planner.initialize(plannerName,&gcr);
-// }
-
-// template<typename T>
-// pathPlanning<T>::pathPlanning(std::string name):tf(ros::Duration(10)),gcr(name, tf){
-//     //name = ns;
-//     planner.initialize(name,&gcr);
-// }
-template<typename T>
-pathPlanning<T>::pathPlanning():tf(ros::Duration(10)),gcr("costmap", tf){
-    planner.initialize("path_planner",&gcr);
-    plannerName_ = "path_planner";
-}
-
-template<typename T>
-pathPlanning<T>::pathPlanning(std::string costmapName, std::string plannerName):tf(ros::Duration(10)),gcr(costmapName, tf){
-    planner.initialize(plannerName,&gcr);
-    plannerName_ = plannerName;
-}
-
-template<typename T>
-void pathPlanning<T>::rosSpinOnce(void){
-    ros::spinOnce();
-}
-
-template<typename T>
-bool pathPlanning<T>::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, bool initializer){
-    rosSpinOnce();
-    //T planner;
-    //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
-    //planner.initialize(name,&gcr);
-    if(initializer){
-        T initPlanner;
-        initPlanner.initialize(plannerName_,&gcr);
-        return initPlanner.makePlan(start,goal,plan);
-    }
-    return planner.makePlan(start,goal,plan);
-}
-
-template<typename T>
-bool pathPlanning<T>::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map, bool initializer){
-    rosSpinOnce();
-    //T planner;
-    //ROS_DEBUG_STREAM("Path planner name : " << name << "\n");
-    //planner.initialize(name,&gcr);
-    if(initializer){
-        T initPlanner;
-        initPlanner.initialize(plannerName_,&gcr);
-        return initPlanner.makePlan(start,goal,plan,map);
-    }
-    return planner.makePlan(start,goal,plan,map);
-}
-
-#endif //PATH_PLANNING_H
+#endif //PATH_PLANNING_HPP

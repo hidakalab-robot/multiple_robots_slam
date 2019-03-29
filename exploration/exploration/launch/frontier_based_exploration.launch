@@ -3,44 +3,41 @@
 
     <arg name="robot_name" default="robot1"/>
 
+    <arg name="map" default="/$(arg robot_name)/map"/>
+    <!-- <arg name="map" default="/server/grid_map_merge/merge_map"/> -->
     <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
+
     <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
     <arg name="scan" default="/$(arg robot_name)/scan"/>
     <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
-    <arg name="bumper_continuity" default="bumper_continuity"/>
     <arg name="map_frame_id" default="$(arg robot_name)/map"/>
+
+    <arg name="rosbag" default="true"/>
+    <arg name="debug_mode" default="false">
+
 
     <arg name="ns" default="exploration"/>
 
-    <arg name="rosbag" default="true"/>
-    <arg name="debug_mode" default="false"/>
-    
     <group ns="$(arg robot_name)/$(arg ns)">
-        <node pkg="exploration" type="sensor_based_exploration_movebase" name="sensor_based_exploration" output="screen">
-            <remap from="scan" to="$(arg scan)"/>
-            <remap unless="$(arg debug_mode)" from="velocity" to="$(arg velocity)"/>
+        <node pkg="exploration" type="frontier_based_exploration_test" name="fbe_test" output="screen">
+            <remap from="map" to="$(arg map)"/>
             <remap from="pose" to="$(arg pose)"/>
-            <remap from="bumper" to="$(arg bumper_continuity)"/>
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-            <param name="avoidance_gain" value="0.2"/>
             <param name="debug_mode" value="$(arg debug_mode)"/>
+            <!-- <param name="merge_map_frame_id" value="/server/merge_map"/> -->
+            <!-- <param name="use_merge_map" value="true"/> -->
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
-            <param name="map_frame_id" value="$(arg map_frame_id)"/>
+            <param name="map_frame_id" value="$(arg robot_name)/map"/>
         </node>
 
         <node pkg="exploration" type="log" name="log">
             <remap from="pose" to="$(arg pose)"/>
         </node>
 
-        <node pkg="exploration" type="continuity" name="continuity">
-            <remap from="sub_topic" to="$(arg bumper_raw)"/>
-            <remap from="pub_topic" to="$(arg bumper_continuity)"/>
-        </node>
-
-        <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
+	<include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
             <!-- <arg name="dir" value="/home/ros1/rosbag_debug"/> -->
             <arg name="topics" value="  $(arg pose) 
                                         pose_log 
@@ -55,5 +52,6 @@
                                         /$(arg robot_name)/NavfnROS/plan"
             />
         </include>
+
     </group>
 </launch>

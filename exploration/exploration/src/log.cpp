@@ -6,8 +6,6 @@ int main(int argc, char *argv[])
 
     Log l;
 
-    l.poseLogInitialize();
-
     while(ros::ok()){
         l.publishPoseLog();
     }

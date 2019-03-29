@@ -5,6 +5,8 @@
 
   <arg name="merge_map_frame" default="/$(arg server_name)/merge_map"/>
   
+  <!-- ロボットを追加するときは初期設定、パラメータ、tfをコピペ -->
+
   <!-- 各ロボットの初期設定 -->
   <!-- yawの設定値は -1.57 <= yaw <= 1.57 -->
   <arg name="robot1_map_frame" default="/robot1/map"/>

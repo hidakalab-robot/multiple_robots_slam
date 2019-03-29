@@ -1,67 +1,30 @@
-#ifndef LOG_H
-#define LOG_H
+#ifndef LOG_HPP
+#define LOG_HPP
 
 #include <ros/ros.h>
-#include <ros/callback_queue.h>
+#include <exploration/common_lib.hpp>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
 
 class Log
 {
 private:
-    ros::NodeHandle sp;
-    ros::Subscriber subPose;
-    ros::CallbackQueue qPose;
-    geometry_msgs::PoseStamped poseData;
+    CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
+    CommonLib::pubStruct<geometry_msgs::PoseArray> poseArray_;
 
-    ros::NodeHandle ppl;
-	ros::Publisher pubPoseLog;
     geometry_msgs::PoseArray poseLog;
-
-    bool inputPose;
-
-    void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
-
 public:
-    Log();
-    ~Log(){};
+    Log():pose_("pose",1),poseArray_("pose_log",1){};
 
-    void poseLogInitialize(void);
-    void publishPoseLog(void);
+    void publishPoseLog(void){
+        pose_.q.callOne(ros::WallDuration(1));
+        if(pose_.data.header.stamp > poseLog.header.stamp){
+            poseLog.header = pose_.data.header;
+            poseLog.header.stamp = ros::Time::now();
+            poseLog.poses.push_back(pose_.data.pose);
+        }
+        poseArray_.pub.publish(poseLog);
+    };
 };
 
-Log::Log(){
-    
-}
-
-void Log::poseLogInitialize(void){
-    sp.setCallbackQueue(&qPose);
-    subPose = sp.subscribe("pose",1,&Log::poseCB,this);
-	pubPoseLog = ppl.advertise<geometry_msgs::PoseArray>("pose_log", 1);
-    inputPose = false; 
-}
-
-void Log::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    poseData = *msg;
-    inputPose = true;
-}
-
-void Log::publishPoseLog(void){
-    qPose.callOne(ros::WallDuration(1));
-
-    if(inputPose){
-        inputPose = false;
-    }
-    else{
-        pubPoseLog.publish(poseLog);
-        return;
-    }
-
-    poseLog.poses.push_back(poseData.pose);
-    poseLog.header = poseData.header;
-    poseLog.header.stamp = ros::Time::now();
-
-    pubPoseLog.publish(poseLog);
-}
-
-#endif //LOG_H
+#endif //LOG_HPP

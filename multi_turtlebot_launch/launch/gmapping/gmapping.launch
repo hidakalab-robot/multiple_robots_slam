@@ -3,7 +3,7 @@
    <group ns="$(arg robot_name)">
   <!-- 3D sensor -->
   <arg name="3d_sensor" default="$(env TURTLEBOT_3D_SENSOR)"/>  <!-- r200, kinect, asus_xtion_pro -->
-  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/3dsensor.launch.xml">
+  <include file="$(find multi_turtlebot_launch)/launch/gmapping/includes/3dsensor.launch.xml">
     <arg name="robot_name" value="$(arg robot_name)"/>
     <arg name="rgb_processing" value="false" />
     <arg name="depth_registration" value="false" />
@@ -21,14 +21,15 @@
   </include>
 
   <!-- Move base -->
-  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/move_base.launch.xml">
-
+  <include file="$(find multi_turtlebot_launch)/launch/gmapping/includes/move_base.launch.xml">
     <arg name="robot_name" value="$(arg robot_name)"/>
   </include>
 
-  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/robot_pose_publisher.launch.xml">
-    <arg name="robot_name" value="$(arg robot_name)"/>
-  </include>
+  <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="robot_pose_publisher">
+    <param name="map_frame" value="$(arg robot_name)/map"/>
+    <param name="base_frame" value="$(arg robot_name)/base_link"/>
+    <param name="is_stamped" value="true"/>
+  </node>
 
   </group>
 
