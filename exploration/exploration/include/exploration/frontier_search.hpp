@@ -68,7 +68,7 @@ private:
     CommonLib::pubStruct<geometry_msgs::PoseArray> goalPoseArray_;
     CommonLib::pubStruct<sensor_msgs::PointCloud2> colorCloud_;
 
-    std::vector<geometry_msgs::Point> frontiers;
+    //std::vector<geometry_msgs::Point> frontiers;
     
     void horizonDetection(FrontierSearch::mapStruct& map);
     std::vector<Eigen::Vector2i> frontierDetectionByContinuity(FrontierSearch::mapStruct& map);
@@ -90,8 +90,8 @@ public:
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
     bool frontierDetection(void);//only publish goal list
 
-    int countCloseFrontier(const geometry_msgs::Pose& pose,const Eigen::Vector2d& vec);
-    int countCloseFrontier(const geometry_msgs::Pose& pose);
+    //int countCloseFrontier(const geometry_msgs::Pose& pose,const Eigen::Vector2d& vec);
+    //int countCloseFrontier(const geometry_msgs::Pose& pose);
 
 };
 
@@ -123,34 +123,34 @@ FrontierSearch::FrontierSearch()
     p.param<std::string>("merge_map_frame_id", MERGE_MAP_FRAME_ID, "merge_map");
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
 }
-int FrontierSearch::countCloseFrontier(const geometry_msgs::Pose& pose){
-    //前向きのベクトルを自動生成
-    return countCloseFrontier(pose,Eigen::Vector2d(cos(CommonLib::qToYaw(pose.orientation)),sin(CommonLib::qToYaw(pose.orientation))));
-}
+// int FrontierSearch::countCloseFrontier(const geometry_msgs::Pose& pose){
+//     //前向きのベクトルを自動生成
+//     return countCloseFrontier(pose,Eigen::Vector2d(cos(CommonLib::qToYaw(pose.orientation)),sin(CommonLib::qToYaw(pose.orientation))));
+// }
 
-int FrontierSearch::countCloseFrontier(const geometry_msgs::Pose& pose,const Eigen::Vector2d& vec){
-    //poseからベクトル方向のフロンティア面積を計算
-    int num;
-    //全部フロンティア出して、その中から方向と一致したやつの数
-    //ざっと右に曲がるととかでも良い
+// int FrontierSearch::countCloseFrontier(const geometry_msgs::Pose& pose,const Eigen::Vector2d& vec){
+//     //poseからベクトル方向のフロンティア面積を計算
+//     int num;
+//     //全部フロンティア出して、その中から方向と一致したやつの数
+//     //ざっと右に曲がるととかでも良い
    
-    for(const auto& frontier : frontiers){
-        //poseからvec方向に向かった場合に出会える可能性があるフロンティアの数
-        //一番近くなるフロンティアの数
-        //そちらの方向に行った時の全フロンティアに対する距離を計算して、それが最小となる方向へ行く？
-        //角度の総和が最小？
-        //この時のフロンティアは大きめのやつだけ使う
-        //そもそも二つ以上の分岐があった時点でその選択の時にフロンティアを考慮すべき
-        //前進の方は分岐までの距離の平均値だけ進んだ場合
-        //フロンティアへの角度とそのフロンティアの大きさを評価値とする
-        //その位置からフロンティアへのパスを引いた時の長さ
-        //poseからfrontierベクトルとvecのなす角が閾値以下
-        //分岐の座標からの角度の方が良いかも
-         //Eigen::Vector2d toFrontier()
-    }
+//     for(const auto& frontier : frontiers){
+//         //poseからvec方向に向かった場合に出会える可能性があるフロンティアの数
+//         //一番近くなるフロンティアの数
+//         //そちらの方向に行った時の全フロンティアに対する距離を計算して、それが最小となる方向へ行く？
+//         //角度の総和が最小？
+//         //この時のフロンティアは大きめのやつだけ使う
+//         //そもそも二つ以上の分岐があった時点でその選択の時にフロンティアを考慮すべき
+//         //前進の方は分岐までの距離の平均値だけ進んだ場合
+//         //フロンティアへの角度とそのフロンティアの大きさを評価値とする
+//         //その位置からフロンティアへのパスを引いた時の長さ
+//         //poseからfrontierベクトルとvecのなす角が閾値以下
+//         //分岐の座標からの角度の方が良いかも
+//          //Eigen::Vector2d toFrontier()
+//     }
 
-    return num;
-}
+//     return num;
+// }
 
 bool FrontierSearch::frontierDetection(void){
     map_.q.callOne(ros::WallDuration(1));
@@ -199,7 +199,7 @@ bool FrontierSearch::frontierDetection(void){
     publishGoalList(goals);
     publishGoalListPoseArray(goals);
 
-    frontiers = goals;
+    //frontiers = goals;
 
     return true;
 }
