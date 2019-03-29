@@ -1,6 +1,8 @@
 # multiple_robots_slam
 
-## This packages need ros-kinetic and are used to do multiple-robots SLAM
+now working repositry
+
+This packages need ros-kinetic and are used to do multiple-robots SLAM
 
 <!-- 
 #### "robot_name" require robot-number (ex. robot1, robot2, etc.)
