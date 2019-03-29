@@ -8,6 +8,7 @@
 #include <exploration_msgs/GoalList.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -68,7 +69,7 @@ private:
     CommonLib::pubStruct<geometry_msgs::PoseArray> goalPoseArray_;
     CommonLib::pubStruct<sensor_msgs::PointCloud2> colorCloud_;
 
-    //std::vector<geometry_msgs::Point> frontiers;
+    std::vector<geometry_msgs::Point> frontiers;
     
     void horizonDetection(FrontierSearch::mapStruct& map);
     std::vector<Eigen::Vector2i> frontierDetectionByContinuity(FrontierSearch::mapStruct& map);
@@ -88,10 +89,10 @@ public:
     FrontierSearch();
 
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
-    bool frontierDetection(void);//only publish goal list
+    bool frontierDetection(bool visualize=true);//only publish goal list
 
-    //int countCloseFrontier(const geometry_msgs::Pose& pose,const Eigen::Vector2d& vec);
-    //int countCloseFrontier(const geometry_msgs::Pose& pose);
+    double sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec);
+    double sumFrontierAngle(const geometry_msgs::Pose& pose,double forward);
 
 };
 
@@ -109,7 +110,7 @@ FrontierSearch::FrontierSearch()
     p.param<float>("frontier_diameter_min", FRONTIER_DIAMETER_MIN, 0.4);
 	p.param<int>("frontier_thickness", FRONTIER_THICKNESS, 3);
     FRONTIER_THICKNESS += (FRONTIER_THICKNESS+1)%2;//偶数封じ
-    p.param<int>("frontier_detection_method", FRONTIER_DETECTION_METHOD, 0);
+    p.param<int>("frontier_detection_method", FRONTIER_DETECTION_METHOD, 1);
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
     p.param<bool>("obstacle_filter", OBSTACLE_FILTER, true);
     p.param<double>("distance_weight", DISTANCE_WEIGHT, 1.0);
@@ -123,39 +124,56 @@ FrontierSearch::FrontierSearch()
     p.param<std::string>("merge_map_frame_id", MERGE_MAP_FRAME_ID, "merge_map");
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
 }
-// int FrontierSearch::countCloseFrontier(const geometry_msgs::Pose& pose){
-//     //前向きのベクトルを自動生成
-//     return countCloseFrontier(pose,Eigen::Vector2d(cos(CommonLib::qToYaw(pose.orientation)),sin(CommonLib::qToYaw(pose.orientation))));
-// }
 
-// int FrontierSearch::countCloseFrontier(const geometry_msgs::Pose& pose,const Eigen::Vector2d& vec){
-//     //poseからベクトル方向のフロンティア面積を計算
-//     int num;
-//     //全部フロンティア出して、その中から方向と一致したやつの数
-//     //ざっと右に曲がるととかでも良い
-   
-//     for(const auto& frontier : frontiers){
-//         //poseからvec方向に向かった場合に出会える可能性があるフロンティアの数
-//         //一番近くなるフロンティアの数
-//         //そちらの方向に行った時の全フロンティアに対する距離を計算して、それが最小となる方向へ行く？
-//         //角度の総和が最小？
-//         //この時のフロンティアは大きめのやつだけ使う
-//         //そもそも二つ以上の分岐があった時点でその選択の時にフロンティアを考慮すべき
-//         //前進の方は分岐までの距離の平均値だけ進んだ場合
-//         //フロンティアへの角度とそのフロンティアの大きさを評価値とする
-//         //その位置からフロンティアへのパスを引いた時の長さ
-//         //poseからfrontierベクトルとvecのなす角が閾値以下
-//         //分岐の座標からの角度の方が良いかも
-//          //Eigen::Vector2d toFrontier()
-//     }
+double FrontierSearch::sumFrontierAngle(const geometry_msgs::Pose& pose, double forward){
+    //前向きのベクトルを自動生成
+    double yaw = CommonLib::qToYaw(pose.orientation);
+    double cosYaw = cos(yaw);
+    double sinYaw = sin(yaw);
+    return sumFrontierAngle(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw));
+}
 
-//     return num;
-// }
+double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec){
+    //poseからベクトル方向のフロンティア面積を計算
+    //全部フロンティア出して、その中から方向と一致したやつの数
+    //ざっと右に曲がるととかでも良い
+    //ベクトル正規化したら大きさが１なので内積＝cos(theta)
+    //外積はsinになる
+    //内積と外積を使って左右のどっちにあるかだけを判断して、フロンティアの方向と分岐の方向が一致したのがいくつあるか
+    //前進の場合のsin範囲を設定して、その範囲内であれば前進したときに行ける、違う場合、そちらに曲がった場合いける
+    //曲がった場合に近くなる領域があるかで判断
+    //内積のacosで角度が出るので
 
-bool FrontierSearch::frontierDetection(void){
+    double sum = 0;
+    for(const auto& frontier : frontiers){
+        sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.x - origin.x,frontier.y - origin.y).normalized())));
+        //poseからvec方向に向かった場合に出会える可能性があるフロンティアの数
+        //一番近くなるフロンティアの数
+        //そちらの方向に行った時の全フロンティアに対する距離を計算して、それが最小となる方向へ行く？
+        //角度の総和が最小？
+        //この時のフロンティアは大きめのやつだけ使う
+        //そもそも二つ以上の分岐があった時点でその選択の時にフロンティアを考慮すべき
+        //前進の方は分岐までの距離の平均値だけ進んだ場合
+        //フロンティアへの角度とそのフロンティアの大きさを評価値とする
+        //その位置からフロンティアへのパスを引いた時の長さ
+        //poseからfrontierベクトルとvecのなす角が閾値以下
+        //分岐の座標からの角度の方が良いかも
+        //曲がった場合に到達できるフロンティアがある場合曲がるとかでも良いかも
+        //残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
+        //Eigen::Vector2d toFrontier()
+    }
+
+    ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum << "\n");
+
+    return sum;
+}
+
+bool FrontierSearch::frontierDetection(bool visualize){
     map_.q.callOne(ros::WallDuration(1));
     
     FrontierSearch::mapStruct map(map_.data);
+
+    ROS_DEBUG_STREAM("map size : " << map.info.height << " X " << map.info.width << "\n");
 
     horizonDetection(map);
 
@@ -196,10 +214,12 @@ bool FrontierSearch::frontierDetection(void){
         globalCoordinateToLocal(goals);
     }
 
-    publishGoalList(goals);
-    publishGoalListPoseArray(goals);
-
-    //frontiers = goals;
+    if(visualize){
+        publishGoalList(goals);
+        publishGoalListPoseArray(goals);
+    }
+    
+    frontiers = goals;
 
     return true;
 }

@@ -31,7 +31,7 @@ private:
     double CENTER_RANGE_MIN;
 	double BRANCH_MAX_X;
 	double BRANCH_DIFF_X_MIN;
-	double DUPLICATE_MARGIN;
+	double DUPLICATE_TOLERANCE;
 	bool DUPLICATE_CHECK;
 	double DOUBLE_INFINITY;
 	std::string MAP_FRAME_ID;
@@ -70,7 +70,7 @@ BranchSearch::BranchSearch()
 	p.param<double>("center_range_min", CENTER_RANGE_MIN, 1.0);
 	p.param<double>("branch_max_x", BRANCH_MAX_X, 6.0);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
-	p.param<double>("duplicate_margin", DUPLICATE_MARGIN, 1.5);
+	p.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
 	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
 }
 
@@ -106,6 +106,7 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	geometry_msgs::Point localGoal;
 
 	if(branchDetection(scanRect,goal,localGoal,pose_.data.pose)){
+		ROS_DEBUG_STREAM("debug1\n");
 		publishGoal(goal,localGoal);
 		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")\n");
 		return true;
@@ -159,7 +160,7 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
 	}
 	
 	if(list.size()>0){
-		ROS_DEBUG_STREAM("Branch Candidate Found\n");
+		ROS_DEBUG_STREAM("Branch Candidate Found : " << list.size() << "\n");
 
 		int near;
 		float centerDist;
@@ -174,11 +175,17 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
 
 		publishGoalList(globalList,list);
 
+		std::vector<int> excludeList;
+		excludeList.reserve(list.size());
+
 		for(int k=list.size();k!=0;--k){
 			centerDist = DOUBLE_INFINITY;
 			for(int j=0,e=list.size();j!=e;++j){
+				if(excludeList.size()>0 && std::any_of(excludeList.begin(), excludeList.end(), [j](int n){ return n == j; })){
+					continue;
+				}
 				float tempCenterDist = std::abs(list[j].x)+std::abs(list[j].y);
-				if(tempCenterDist > 0 && tempCenterDist <= centerDist){
+				if(tempCenterDist <= centerDist){
 					centerDist = std::move(tempCenterDist);
 					goal = globalList[j];
 					localGoal = list[j];
@@ -189,8 +196,9 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
 			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
 
 			if(DUPLICATE_CHECK && duplicateDetection(goal)){
-				list[near].x = 0;
-				list[near].y = 0;
+				excludeList.push_back(near);
+				// list[near].x = 0;
+				// list[near].y = 0;
 			}
 			else{
 				return true;
@@ -198,23 +206,26 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
 		}
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
-		//リストの座標を渡して、その方向にあるフロンティアの面積を教えてもらう
-		// FrontierSearch fs;
-		// fs.frontierDetection();
-		// int max = 0;
-		// for(const auto& g : globalList){
-		// 	int num = fs.countCloseFrontier(pose,Eigen::Vector2d(g.x-pose.position.x,g.y-pose.position.y));
-		// 	if(num > max){
-		// 		max = std::move(num);
-		// 		goal = g;
-		// 	}
-		// }
-		// //最後に直進方向のフロンティア面積と比較する
-		// if(max >= fs.countCloseFrontier(pose)){
-		// 	ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
-		// 	ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");
-		// 	return true;
-		// }
+		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
+		static FrontierSearch fs;
+		if(fs.frontierDetection(false)){
+			double min = DOUBLE_INFINITY;
+			for(int i=0,ei=globalList.size();i!=ei;++i){
+				double sum = fs.sumFrontierAngle(globalList[i],Eigen::Vector2d(globalList[i].x-pose.position.x,globalList[i].y-pose.position.y).normalized());
+				if(min > sum){
+					min = std::move(sum);
+					goal = globalList[i];
+					localGoal = list[i];
+				}
+			}
+			//最後に直進方向のフロンティア面積と比較する
+			if(fs.sumFrontierAngle(pose,BRANCH_MAX_X) > min){
+				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")\n");
+				ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");
+				return true;
+			}
+		}
+		
     }
 
 
@@ -232,10 +243,12 @@ bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
 
 	poseLog_.q.callOne(ros::WallDuration(1));
 
-	xPlus = goal.x + DUPLICATE_MARGIN;
-	xMinus = goal.x - DUPLICATE_MARGIN;
-	yPlus = goal.y + DUPLICATE_MARGIN;
-	yMinus = goal.y - DUPLICATE_MARGIN;
+	xPlus = goal.x + DUPLICATE_TOLERANCE;
+	xMinus = goal.x - DUPLICATE_TOLERANCE;
+	yPlus = goal.y + DUPLICATE_TOLERANCE;
+	yMinus = goal.y - DUPLICATE_TOLERANCE;
+
+	ROS_DEBUG_STREAM("duplicate log size : " << poseLog_.data.poses.size() << "\n");
 
 	for(int i=0,e=poseLog_.data.poses.size()-lOG_NEWER_LIMIT;i!=e;++i){
 		//過去のオドメトリが許容範囲の中に入っているか//
@@ -252,11 +265,14 @@ bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
 
 void BranchSearch::publishGoal(const geometry_msgs::Point& global, const geometry_msgs::Point& local){
 	exploration_msgs::Goal msg;
+	ROS_DEBUG_STREAM("debug2\n");
 	msg.global = global;
+	ROS_DEBUG_STREAM("debug3\n");
 	msg.local = local;
+	ROS_DEBUG_STREAM("debug4\n");
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = MAP_FRAME_ID;
-
+	ROS_DEBUG_STREAM("debug5\n");
 	goal_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish Goal\n");
 }

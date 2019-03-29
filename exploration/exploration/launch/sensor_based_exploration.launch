@@ -10,6 +10,9 @@
     <arg name="bumper_continuity" default="bumper_continuity"/>
     <arg name="map_frame_id" default="$(arg robot_name)/map"/>
 
+    <arg name="map" default="/$(arg robot_name)/map"/>
+    <!-- <arg name="map" default="/server/grid_map_merge/merge_map"/> -->
+
     <arg name="ns" default="exploration"/>
 
     <arg name="rosbag" default="true"/>
@@ -17,6 +20,7 @@
     
     <group ns="$(arg robot_name)/$(arg ns)">
         <node pkg="exploration" type="sensor_based_exploration_movebase" name="sensor_based_exploration" output="screen">
+            <remap from="map" to="$(arg map)"/>
             <remap from="scan" to="$(arg scan)"/>
             <remap unless="$(arg debug_mode)" from="velocity" to="$(arg velocity)"/>
             <remap from="pose" to="$(arg pose)"/>
@@ -25,6 +29,8 @@
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
             <param name="avoidance_gain" value="0.2"/>
             <param name="debug_mode" value="$(arg debug_mode)"/>
+            <param name="color_cluster" value="false"/>
+            <param name="min_cluster_size" value="80"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
@@ -43,11 +49,11 @@
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
             <!-- <arg name="dir" value="/home/ros1/rosbag_debug"/> -->
             <arg name="topics" value="  $(arg pose) 
-                                        pose_log 
+                                        /$(arg robot_name)/$(arg ns)/pose_log 
                                         $(arg bumper_raw) 
                                         $(arg scan) 
                                         $(arg velocity) 
-                                        visualization 
+                                        /$(arg robot_name)/$(arg ns)/visualization 
                                         /tf 
                                         /tf_static 
                                         /$(arg robot_name)/map 
