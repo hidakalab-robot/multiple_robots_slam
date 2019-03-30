@@ -16,7 +16,7 @@ void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Pu
         std::cout << "ここ行っても良い？ y/n" << std::endl;
         char judge;
         std::cin >> judge;
-        if((judge == 'n') || (judge== 'no')){
+        if(judge == 'n'){
             pub.publish(newId);
             lastId = newId;
             adhesion = true;
@@ -39,7 +39,6 @@ int main(int argc, char *argv[])
     std::string ns;
     p.getParam("ns",ns);
     ros::Publisher pub = nh.advertise<actionlib_msgs::GoalID>(ros::names::append(ns,"move_base/cancel"),1,true);
-    //ros::Subscriber sub = nh.subscribe("move_base/status",1,callback);
     ros::Subscriber sub = nh.subscribe<actionlib_msgs::GoalStatusArray>(ros::names::append(ns,"move_base/status"),1,boost::bind(callback,_1,pub));
 
     ros::spin();

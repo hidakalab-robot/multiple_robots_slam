@@ -43,6 +43,8 @@ private:
 	CommonLib::pubStruct<exploration_msgs::Goal> goal_;
 	CommonLib::pubStruct<exploration_msgs::GoalList> goalList_;
 
+	FrontierSearch fs;
+
 	//bool branchDetection(const std::vector<float>& ranges, const std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
 	bool branchDetection(const BranchSearch::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
     bool duplicateDetection(const geometry_msgs::Point& goal);
@@ -207,11 +209,11 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
-		static FrontierSearch fs;
-		if(fs.frontierDetection(false)){
+		std::vector<geometry_msgs::Point> frontiers(fs.frontierDetection(false));
+		if(frontiers.size()!=0){
 			double min = DOUBLE_INFINITY;
 			for(int i=0,ei=globalList.size();i!=ei;++i){
-				double sum = fs.sumFrontierAngle(globalList[i],Eigen::Vector2d(globalList[i].x-pose.position.x,globalList[i].y-pose.position.y).normalized());
+				double sum = fs.sumFrontierAngle(globalList[i],Eigen::Vector2d(globalList[i].x-pose.position.x,globalList[i].y-pose.position.y).normalized(),frontiers);
 				if(min > sum){
 					min = std::move(sum);
 					goal = globalList[i];
@@ -219,7 +221,7 @@ bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_m
 				}
 			}
 			//最後に直進方向のフロンティア面積と比較する
-			if(fs.sumFrontierAngle(pose,BRANCH_MAX_X) > min){
+			if(fs.sumFrontierAngle(pose,BRANCH_MAX_X,frontiers) > min){
 				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")\n");
 				ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");
 				return true;
