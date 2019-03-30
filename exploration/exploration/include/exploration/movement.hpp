@@ -38,10 +38,6 @@ class Movement
 private:
     //parameters
     ros::NodeHandle p;
-    double GOAL_TOLERANCE;
-    double GRAVITY_FORCE_ENABLE;
-    double GRAVITY_GAIN;
-    double GRAVITY_DIFF_THRESHOLD;
     double SAFE_DISTANCE;
     double SAFE_SPACE;
     double SCAN_THRESHOLD;
@@ -54,7 +50,6 @@ private:
     double ROAD_CENTER_THRESHOLD;
     double ROAD_THRESHOLD;
     double CURVE_GAIN;
-    int TRY_COUNT;
     bool AVOIDANCE_TO_GOAL;
     double VELOCITY_GAIN;
     double AVOIDANCE_GAIN;
@@ -76,15 +71,11 @@ private:
     CommonLib::pubStruct<geometry_msgs::Twist> velocity_;
 
     double previousOrientation;
-    double goalDirection;
-    bool existGoal;
     
     void approx(std::vector<float>& scanRanges);
-    void vfhMovement(bool isStraight, const geometry_msgs::Point& goal);
-    void vfhMovement(bool isStraight, double angle);
+    void vfhMovement(sensor_msgs::LaserScan& scan,bool straight, double angle);
     bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
-    double vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double goalAngle = 0.0);
-    double localAngleCalculation(const geometry_msgs::Point& goal,const geometry_msgs::Pose& pose);
+    double vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double angle);
     bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
     geometry_msgs::Twist velocityGenerator(double theta, double v, double t);
     bool roadCenterDetection(const sensor_msgs::LaserScan& scan);
@@ -97,7 +88,6 @@ private:
 public:
     Movement();
 
-    void moveToGoal(const geometry_msgs::Point& goal,bool movebase);
     void moveToGoal(const geometry_msgs::Point& goal);
     void moveToForward(void);
     void oneRotation(void);
@@ -110,14 +100,8 @@ Movement::Movement()
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
     ,INT_INFINITY(1000000)
-    ,DOUBLE_INFINITY(100000.0)
-    ,goalDirection(0)
-    ,existGoal(false){
+    ,DOUBLE_INFINITY(100000.0){
 
-    p.param<double>("goal_tolerance", GOAL_TOLERANCE, 0.5);
-    p.param<double>("gravity_gain", GRAVITY_GAIN, 1.2);
-    p.param<double>("gravity_force_enable", GRAVITY_FORCE_ENABLE, 6.0);
-    p.param<double>("gravity_diff_threshold", GRAVITY_DIFF_THRESHOLD, 0.1);
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
     p.param<double>("safe_space", SAFE_SPACE, 0.6);
     p.param<double>("scan_threshold", SCAN_THRESHOLD, 1.2);
@@ -130,7 +114,6 @@ Movement::Movement()
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
-    p.param<int>("try_count", TRY_COUNT, 1);
     p.param<bool>("avoidance_to_goal", AVOIDANCE_TO_GOAL, true);
     p.param<double>("velocity_gain", VELOCITY_GAIN, 1.0);
     p.param<double>("rotation_gain", ROTATION_GAIN, 1.0);
@@ -191,152 +174,72 @@ void Movement::approx(std::vector<float>& scanRanges){
     }
 }
 
-void Movement::moveToGoal(const geometry_msgs::Point& goal,bool movebase){
-    if(!movebase){
-        moveToGoal(goal);
+void Movement::moveToGoal(const geometry_msgs::Point& goal){
+
+    static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
+    
+    while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
+        ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME << "\n");
+    }
+
+    move_base_msgs::MoveBaseGoal movebaseGoal;
+    movebaseGoal.target_pose.header.frame_id = MAP_FRAME_ID;
+    movebaseGoal.target_pose.header.stamp = ros::Time::now();
+    movebaseGoal.target_pose.pose.position.x =  goal.x;
+    movebaseGoal.target_pose.pose.position.y =  goal.y;
+
+    pose_.q.callOne(ros::WallDuration(1.0));
+
+    //ゴールでの姿勢を計算
+    Eigen::Vector2d startToGoal(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
+    startToGoal.normalize();
+    Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
+    movebaseGoal.target_pose.pose.orientation.x = q.x();
+    movebaseGoal.target_pose.pose.orientation.y = q.y();
+    movebaseGoal.target_pose.pose.orientation.z = q.z();
+    movebaseGoal.target_pose.pose.orientation.w = q.w();
+
+    ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose << "\n");
+    
+    ROS_INFO_STREAM("send goal to move_base\n");
+    ac.sendGoal(movebaseGoal);
+
+    ROS_INFO_STREAM("wait for result\n");
+    ac.waitForResult();
+
+    ROS_INFO_STREAM("move_base was finished\n");
+
+    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
+        ROS_INFO_STREAM("I Reached Given Target");
     }
     else{
-        static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
-        
-        while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
-            ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME << "\n");
-        }
-
-        move_base_msgs::MoveBaseGoal movebaseGoal;
-        movebaseGoal.target_pose.header.frame_id = MAP_FRAME_ID;
-        movebaseGoal.target_pose.header.stamp = ros::Time::now();
-        movebaseGoal.target_pose.pose.position.x =  goal.x;
-        movebaseGoal.target_pose.pose.position.y =  goal.y;
-
-        pose_.q.callOne(ros::WallDuration(1.0));
-
-        //ゴールでの姿勢を計算
-        Eigen::Vector2d startToGoal(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
-        startToGoal.normalize();
-        Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
-        movebaseGoal.target_pose.pose.orientation.x = q.x();
-        movebaseGoal.target_pose.pose.orientation.y = q.y();
-        movebaseGoal.target_pose.pose.orientation.z = q.z();
-        movebaseGoal.target_pose.pose.orientation.w = q.w();
-
-        ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose << "\n");
-        
-        ROS_INFO_STREAM("send goal to move_base\n");
-        ac.sendGoal(movebaseGoal);
-
-        ROS_INFO_STREAM("wait for result\n");
-        ac.waitForResult();
-
-        ROS_INFO_STREAM("move_base was finished\n");
-
-        if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-            ROS_INFO_STREAM("I Reached Given Target");
-        }
-        else{
-            ROS_WARN_STREAM("I do not Reached Given Target");
-        }
+        ROS_WARN_STREAM("I do not Reached Given Target");
     }
+    
 }
 
-void Movement::moveToGoal(const geometry_msgs::Point& goal){
-    ROS_INFO_STREAM("Goal Recieved : (" << goal.x << "," << goal.y << ")\n");
+void Movement::moveToForward(void){
+    ROS_INFO_STREAM("Moving Straight\n");
 
-    existGoal = true;
+    scan_.q.callOne(ros::WallDuration(1));
 
-    pose_.q.callOne(ros::WallDuration(1));
-
-    const double GRAVITY_ENABLE = std::abs(goal.y - pose_.data.pose.position.y) + GRAVITY_GAIN;
-    double distToGoalOld;
-    double diff = 0;
-    int count = 0;
-    const int end = TRY_COUNT * 2 - 1; 
-    int sign = -1;
-
-    double distToGoal = sqrt(pow(goal.x - pose_.data.pose.position.x,2) + pow(goal.y - pose_.data.pose.position.y,2));
-
-    ROS_INFO_STREAM("Distance to Goal : " << distToGoal << " [m]\n");
-
-    geometry_msgs::Point nullGoal;
-    bool exitFlag = false;
-
-    auto moveFunction = [&](){
-        distToGoalOld = distToGoal;
-        vfhMovement(true,nullGoal);
-        pose_.q.callOne(ros::WallDuration(1));
-        distToGoal = sqrt(pow(goal.x - pose_.data.pose.position.x,2) + pow(goal.y - pose_.data.pose.position.y,2));
-        diff += distToGoal - distToGoalOld;
-        ROS_INFO_STREAM("Refresh Distance to Goal : " << distToGoal << " [m]\n");
-        if(std::abs(diff) > GRAVITY_DIFF_THRESHOLD){
-            if(diff*sign < 0){
-                sign *= -1;
-                count++;
-                if(count == end){
-                    count = 0;
-                    sign = -1;
-                    ROS_WARN_STREAM("This Goal Can Not Reach !\n");
-                    exitFlag = true;
-                }
-            }
-            diff = 0;
-        }
-    };
-
-    while(GRAVITY_ENABLE < distToGoal && distToGoal < GRAVITY_FORCE_ENABLE && ros::ok()){
-        moveFunction();
-        if(exitFlag){
-            exitFlag = false;
-            break;
-        }
+    double angle;
+    if(forwardWallDetection(scan_.data, angle)){
+        vfhMovement(scan_.data,false,std::move(angle));
     }
-
-    while(GOAL_TOLERANCE < distToGoal && ros::ok()){
-        moveFunction();
-        if(exitFlag){
-            exitFlag = false;
-            break;
-        }
+    else if(!roadCenterDetection(scan_.data)){
+        vfhMovement(scan_.data,true,0.0);
     }
-
-    existGoal = false;
+    
 }
 
-void Movement::vfhMovement(bool isStraight, const geometry_msgs::Point& goal){
+void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
     bumper_.q.callOne(ros::WallDuration(1));
     if(!bumperCollision(bumper_.data)){
-        scan_.q.callOne(ros::WallDuration(1));
-        approx(scan_.data.ranges);
-        double resultAngle;
-        if(isStraight){
-            resultAngle = vfhCalculation(scan_.data,true);
-        }
-        else{
-            resultAngle = vfhCalculation(scan_.data,false,localAngleCalculation(goal,pose_.data.pose));
-        }
+        approx(scan.ranges);
+        double resultAngle = vfhCalculation(scan,straight,angle);
         if((int)resultAngle == INT_INFINITY){
-            if(!emergencyAvoidance(scan_.data)){
-                recoveryRotation();
-            }
-        }
-        else{
-            velocity_.pub.publish(velocityGenerator(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN));
-        }
-    }
-}
-
-void Movement::vfhMovement(bool isStraight, double angle){
-    bumper_.q.callOne(ros::WallDuration(1));
-    if(!bumperCollision(bumper_.data)){
-        scan_.q.callOne(ros::WallDuration(1));
-        approx(scan_.data.ranges);
-        double resultAngle;
-        if(isStraight){
-            resultAngle = vfhCalculation(scan_.data,true);
-        }
-        else{
-            resultAngle = vfhCalculation(scan_.data,false,angle);
-        }
-        if((int)resultAngle == INT_INFINITY){
-            if(!emergencyAvoidance(scan_.data)){
+            if(!emergencyAvoidance(scan)){
                 recoveryRotation();
             }
         }
@@ -388,36 +291,32 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     return false;
 }
 
-double Movement::vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double goalAngle){
+double Movement::vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double angle){
     //要求角度と最も近くなる配列の番号を探索
     //安全な角度マージンの定義
     //要求角度に最も近くなる右側と左側の番号を探索
     ROS_DEBUG_STREAM("VFH Calculation\n");
 
-    ROS_DEBUG_STREAM("Goal Angle : " << goalAngle << " [deg]\n");
+    ROS_DEBUG_STREAM("Goal Angle : " << angle << " [deg]\n");
 
     static int centerPosition = 0;
     int goalI;
 
     if(isCenter){
         goalI = scan.ranges.size() / 2 - centerPosition;
-        if(centerPosition == 0){
-		    centerPosition = 1;
-	    }
-	    else{
-		    centerPosition = 0;
-        }
+        centerPosition = (centerPosition == 0) ? 1 : 0;
     }
     else{
         double min = DOUBLE_INFINITY;
         for(int i=0,e=scan.ranges.size();i!=e;++i){
-		    double diff = std::abs(goalAngle - (scan.angle_min + scan.angle_increment * i));
+		    double diff = std::abs(angle - (scan.angle_min + scan.angle_increment * i));
 		    if(diff < min){
 			    min = std::move(diff);
 			    goalI = i;
 		    }
         }
     }
+
     const int SAFE_NUM = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
     int start;
     int k;
@@ -475,55 +374,16 @@ double Movement::vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCente
 		}
 	}
 
-    double moveAngle;
-
     if(plus != INT_INFINITY || minus != INT_INFINITY){
-		double pd;
-		double md;
+		double pd = (plus == INT_INFINITY) ? INT_INFINITY : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
+		double md = (minus == INT_INFINITY) ? INT_INFINITY : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
 
-		if(plus == INT_INFINITY){
-			pd = INT_INFINITY;
-		}
-        else{
-            pd = std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
-        }
-
-		if(minus == INT_INFINITY){
-			md = INT_INFINITY;
-		}
-        else{
-            md = std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
-        }
-
-		if(pd<=md){
-			moveAngle = scan.angle_min + scan.angle_increment * plus;
-		}
-		else{
-			moveAngle = scan.angle_min + scan.angle_increment * minus;
-		}
-        ROS_DEBUG_STREAM("Move Angle : " << moveAngle << " [deg]\n");
+        return (pd<=md) ? scan.angle_min + scan.angle_increment * plus : scan.angle_min + scan.angle_increment * minus;
     }
     else{
-        moveAngle = INT_INFINITY;
         ROS_DEBUG_STREAM("Move Angle : Not Found\n");
+        return INT_INFINITY;
     }
-
-    return moveAngle;
-}
-
-double Movement::localAngleCalculation(const geometry_msgs::Point& goal, const geometry_msgs::Pose& pose){
-    double localAngle = atan2(goal.y - pose.position.y, goal.x - pose.position.x) - CommonLib::qToYaw(pose.orientation);
-
-    if(localAngle < -M_PI){
-        localAngle = 2*M_PI + localAngle;
-    }
-    if(localAngle > M_PI){
-        localAngle = -2*M_PI + localAngle;
-    }
-
-    goalDirection = localAngle / std::abs(localAngle);
-
-    return localAngle;
 }
 
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
@@ -558,7 +418,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
     //nan率が高かったらfalseで返したい
 
-    //ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM << "\n");
+    ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM << "\n");
 
     if(aveP < EMERGENCY_THRESHOLD && aveM < EMERGENCY_THRESHOLD){
         ROS_WARN_STREAM("Close to Obstacles !!\n");
@@ -570,14 +430,8 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         }
         velocity_.pub.publish(velocityGenerator(sign * scan.angle_max/6 * VELOCITY_GAIN,0.0,AVOIDANCE_GAIN));
     }
-    else{
-        //両方向に回避が可能かつゴールが設定されているときはゴール方向に回避
-        if(AVOIDANCE_TO_GOAL && existGoal && aveP >= EMERGENCY_THRESHOLD && aveM >= EMERGENCY_THRESHOLD){
-            //ここでローカルでのゴールの角度を計算(local_angleの計算でやってる)
-            sign = goalDirection;
-            ROS_INFO_STREAM("Avoidance to Goal Derection\n");
-        }
-        else if(aveP > aveM){
+    else{//aveがnanになるとどうなるの
+        if(aveP > aveM){
             sign = 1.0;
             ROS_INFO_STREAM("Avoidance to Left\n");
         }
@@ -598,7 +452,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 void Movement::recoveryRotation(void){
     //どうしようもなくなった時に回転する
     ROS_WARN_STREAM("Recovery Rotation !\n");
-    velocity_.pub.publish(CommonLib::msgTwist(0,-1 * previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
+    velocity_.pub.publish(CommonLib::msgTwist(0,previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
@@ -606,49 +460,29 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t)
     return CommonLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
 }
 
-void Movement::moveToForward(void){
-    ROS_INFO_STREAM("Moving Straight\n");
 
-    scan_.q.callOne(ros::WallDuration(1));
-    pose_.q.callOne(ros::WallDuration(1));
-
-    double angle;
-    if(forwardWallDetection(scan_.data, angle)){
-        vfhMovement(false,std::move(angle));
-    }
-    else{
-        if(!roadCenterDetection(scan_.data)){
-            vfhMovement(true,CommonLib::msgPoint());
-        }
-    }
-    
-}
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
-    std::vector<float> fixRanges;
-    std::vector<float> fixAngles;
-
-    fixRanges.reserve(scan.ranges.size());
-    fixRanges.reserve(scan.ranges.size());
+    CommonLib::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             double tempAngle = scan.angle_min+(scan.angle_increment*i);
             if(scan.ranges[i]*cos(tempAngle) <= ROAD_CENTER_THRESHOLD){
-                fixRanges.emplace_back(scan.ranges[i]);
-                fixAngles.emplace_back(std::move(tempAngle));
+                scanRect.ranges.emplace_back(scan.ranges[i]);
+                scanRect.angles.emplace_back(std::move(tempAngle));
             }
         }
     }
 
-    if(fixRanges.size() < 2){
+    if(scanRect.ranges.size() < 2){
         return false;
     }
 
-    for(int i=0,e=fixRanges.size()-1;i!=e;++i){
-        if(std::abs(fixRanges[i+1]*sin(fixAngles[i+1]) - fixRanges[i]*sin(fixAngles[i])) >= ROAD_THRESHOLD){
+    for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
+        if(std::abs(scanRect.ranges[i+1]*sin(scanRect.angles[i+1]) - scanRect.ranges[i]*sin(scanRect.angles[i])) >= ROAD_THRESHOLD){
             ROS_DEBUG_STREAM("Road Center Found\n");
-            velocity_.pub.publish(velocityGenerator((fixAngles[i]+fixAngles[i+1])/2*VELOCITY_GAIN,FORWARD_VELOCITY*VELOCITY_GAIN,ROAD_CENTER_GAIN));
+            velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2*VELOCITY_GAIN,FORWARD_VELOCITY*VELOCITY_GAIN,ROAD_CENTER_GAIN));
             return true;
         }
     }
