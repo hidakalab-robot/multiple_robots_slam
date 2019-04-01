@@ -13,7 +13,7 @@
     <arg name="map_frame_id" default="$(arg robot_name)/map"/>
 
     <arg name="rosbag" default="true"/>
-    <arg name="debug_mode" default="false">
+    <arg name="debug" default="false">
 
 
     <arg name="ns" default="exploration"/>
@@ -24,7 +24,7 @@
             <remap from="pose" to="$(arg pose)"/>
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-            <param name="debug_mode" value="$(arg debug_mode)"/>
+            <param name="debug_mode" value="$(arg debug)"/>
             <!-- <param name="merge_map_frame_id" value="/server/merge_map"/> -->
             <!-- <param name="use_merge_map" value="true"/> -->
         </node>

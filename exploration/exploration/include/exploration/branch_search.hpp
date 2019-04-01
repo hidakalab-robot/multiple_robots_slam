@@ -116,6 +116,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	float scanX,scanY,nextScanX,nextScanY;
 	float diffX,diffY;
 
+	//壁として見えたものが一定以上の長さで続いていないとダメ//点や人が少し通っただけで分岐になるとうっとおしい
+
 	//分岐のy座標の差がこの値の範囲内の場合のみ分岐として検出
 	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(ss.angleMax);//1.0 * tan(0.52) = 0.57
 	const float BRANCH_MAX_Y = BRANCH_MAX_X*tan(ss.angleMax);//5.0 * tan(0.52) = 2.86 //この二つの差が正しいのでは // 6.0/tan(1.05)
@@ -132,6 +134,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	//角度が正側と負側で処理を分ける
 	//マイナス
 
+	const double yLengthThreshold = 0.5;
+
 	for(int i=0,e=ss.ranges.size()-1;i!=e;++i){
 		//二つの角度の符号が違うときスキップ
 		if(ss.angles[i]*ss.angles[i+1]<0){
@@ -146,7 +150,20 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				nextScanY = ss.ranges[i+1]*sin(ss.angles[i+1]);
 				diffY = std::abs(nextScanY - scanY);
 				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){//分岐のy座標の差は一定の範囲に入っていないと分岐にしないフィルタ
-					list.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
+					double dxRight = ss.ranges[i]*cos(ss.angles[i]) - ss.ranges[0]*cos(ss.angles[0]);
+					double dyRight = ss.ranges[i]*sin(ss.angles[i]) - ss.ranges[0]*sin(ss.angles[0]);
+					double yLengthRight = sqrt(dxRight*dxRight+dyRight*dyRight);
+
+					double dxLeft = ss.ranges[i+1]*cos(ss.angles[i+1]) - ss.ranges[e]*cos(ss.angles[e]);
+					double dyLeft = ss.ranges[i+1]*sin(ss.angles[i+1]) - ss.ranges[e]*sin(ss.angles[e]);
+					double yLengthLeft = sqrt(dxLeft*dxLeft+dyLeft*dyLeft);
+
+					ROS_DEBUG_STREAM("yLengthRight : " << yLengthRight << ", yLengthLeft : " << yLengthLeft << "\n");
+
+
+					if(yLengthLeft > yLengthThreshold && yLengthRight > yLengthThreshold){//見つけた分岐から左右に一定以上センサデータが続いていないと分岐にしないフィルタ
+						list.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
+					}
 				}
 			}
 		}

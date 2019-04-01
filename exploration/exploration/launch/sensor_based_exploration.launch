@@ -16,19 +16,19 @@
     <arg name="ns" default="exploration"/>
 
     <arg name="rosbag" default="true"/>
-    <arg name="debug_mode" default="false"/>
+    <arg name="debug" default="false"/>
     
     <group ns="$(arg robot_name)/$(arg ns)">
         <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
             <remap from="map" to="$(arg map)"/>
             <remap from="scan" to="$(arg scan)"/>
-            <remap unless="$(arg debug_mode)" from="velocity" to="$(arg velocity)"/>
+            <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
             <remap from="pose" to="$(arg pose)"/>
             <remap from="bumper" to="$(arg bumper_continuity)"/>
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-            <param name="avoidance_gain" value="0.2"/>
-            <param name="debug_mode" value="$(arg debug_mode)"/>
+            <!-- <param name="avoidance_gain" value="0.2"/> -->
+            <param name="debug_mode" value="$(arg debug)"/>
             <param name="color_cluster" value="false"/>
             <param name="min_cluster_size" value="80"/>
         </node>

@@ -50,7 +50,6 @@ private:
     double ROAD_CENTER_THRESHOLD;
     double ROAD_THRESHOLD;
     double CURVE_GAIN;
-    bool AVOIDANCE_TO_GOAL;
     double VELOCITY_GAIN;
     double AVOIDANCE_GAIN;
     double VFH_GAIN;
@@ -64,6 +63,7 @@ private:
     double WALL_RATE_THRESHOLD;
     double WALL_DISTANCE_UPPER_THRESHOLD;
     double WALL_DISTANCE_LOWER_THRESHOLD;
+    double EMERGENCY_DIFF_THRESHOLD = 0.3;
 
     CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -100,21 +100,21 @@ Movement::Movement()
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
     ,INT_INFINITY(1000000)
-    ,DOUBLE_INFINITY(100000.0){
+    ,DOUBLE_INFINITY(100000.0)
+    ,previousOrientation(1.0){
 
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
     p.param<double>("safe_space", SAFE_SPACE, 0.6);
-    p.param<double>("scan_threshold", SCAN_THRESHOLD, 1.2);
+    p.param<double>("scan_threshold", SCAN_THRESHOLD, 1.5);
     p.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
     p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
     p.param<double>("back_time", BACK_TIME, 0.5);
     p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.5);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
-    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 1.0);
+    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.5);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
-    p.param<bool>("avoidance_to_goal", AVOIDANCE_TO_GOAL, true);
     p.param<double>("velocity_gain", VELOCITY_GAIN, 1.0);
     p.param<double>("rotation_gain", ROTATION_GAIN, 1.0);
     p.param<double>("avoidance_gain", AVOIDANCE_GAIN, 0.3);
@@ -126,6 +126,7 @@ Movement::Movement()
     p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
     p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
     p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 3.0);
+    p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.3);
 }
 
 void Movement::approx(std::vector<float>& scanRanges){
@@ -388,71 +389,72 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 }
 
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
-   
-    static double sign = 0;
 
     //minus側の平均
-    double aveM,nanM = 0;
-    int count = 0;
+    double aveM=0;//,nanM = 0;
+    //int count = 0;
     for(int i=0,e=scan.ranges.size()/2;i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             aveM += scan.ranges[i];
         }
         else{
-            ROS_DEBUG_STREAM("minus : " << ++count << "\n");
-            ++nanM;
+            //ROS_DEBUG_STREAM("minus : " << ++count << "\n");
+            //++nanM;
         }
     }
     aveM /= scan.ranges.size()/2;
-    nanM /= scan.ranges.size()/2;
+    //nanM /= scan.ranges.size()/2;
 
     //plus側
-    double aveP,nanP = 0;
-    count = 0;
+    double aveP=0;//,nanP = 0;
+    //count = 0;
     for(int i=scan.ranges.size()/2,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             aveP += scan.ranges[i];
         }
         else{
-            ROS_DEBUG_STREAM("plus : " << ++count << "\n");
-            ++nanP;
+            //ROS_DEBUG_STREAM("plus : " << ++count << "\n");
+            //++nanP;
         }
     }
     aveP /= scan.ranges.size()/2;
-    nanP /= scan.ranges.size()/2;
+    //nanP /= scan.ranges.size()/2;
 
     //nan率が高かったらfalseで返したい
     //左右の差がそんなにないなら前回避けた方向を採用する
+    //一回目に避けた方向に基本的に従う
+    //一回避けたら大きく差が出ない限りおなじほうこうに避ける
 
-    ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM << "\n");
+    //ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM << "\n");
 
-    if(aveP < EMERGENCY_THRESHOLD && aveM < EMERGENCY_THRESHOLD){
-        ROS_WARN_STREAM("Close to Obstacles !!\n");
-        if(sign > 0){
-            ROS_INFO_STREAM("Avoidance to Left\n");
+    //まずよけれる範囲化
+    if(aveP > EMERGENCY_THRESHOLD || aveM > EMERGENCY_THRESHOLD){
+        if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD){//大きさが変わった時の処理
+            if(aveP > aveM){
+                previousOrientation = 1.0;
+                ROS_INFO_STREAM("Avoidance to Left\n");
+            }
+            else{
+                previousOrientation = -1.0;
+                ROS_INFO_STREAM("Avoidance to Right\n");
+            }
         }
-        else{
-            ROS_INFO_STREAM("Avoidance to Right\n");
+        else{//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
+            if(previousOrientation > 0){
+                ROS_INFO_STREAM("Avoidance to Left\n");
+            }
+            else{
+                ROS_INFO_STREAM("Avoidance to Right\n");
+            }
         }
-        velocity_.pub.publish(velocityGenerator(sign * scan.angle_max/6 * VELOCITY_GAIN,0.0,AVOIDANCE_GAIN));
+        //velocity_.pub.publish(velocityGenerator(sign * scan.angle_max/6 * VELOCITY_GAIN,0.0,AVOIDANCE_GAIN));
+        velocity_.pub.publish(velocityGenerator(previousOrientation*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
+        return true;
     }
-    else{//aveがnanになるとどうなるの
-        if(aveP > aveM){
-            sign = 1.0;
-            ROS_INFO_STREAM("Avoidance to Left\n");
-        }
-        else if(aveP < aveM){
-            sign = -1.0;
-            ROS_INFO_STREAM("Avoidance to Right\n");
-        }
-        else{
-            ROS_WARN_STREAM("I can not avoid it\n");
-            return false;
-        }
-        velocity_.pub.publish(velocityGenerator(sign*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
+    else{
+        ROS_WARN_STREAM("I can not avoid it\n");
+        return false;
     }
-
-    return true;
 }
 
 void Movement::recoveryRotation(void){
@@ -462,11 +464,9 @@ void Movement::recoveryRotation(void){
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
-    previousOrientation = theta / std::abs(theta);
+    //previousOrientation = theta / std::abs(theta);
     return CommonLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
 }
-
-
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     CommonLib::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
