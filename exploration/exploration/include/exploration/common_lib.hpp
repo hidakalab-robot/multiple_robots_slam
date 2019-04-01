@@ -49,6 +49,16 @@ struct pubStruct{
     };
 };
 
+struct scanStruct{
+    std::vector<float> ranges;
+    std::vector<float> angles;
+    float angleMax;
+    scanStruct(int size,float angle):angleMax(angle){
+        ranges.reserve(size);
+        angles.reserve(size);
+    };
+};
+
 double qToYaw(const tf::Quaternion& q){
     double roll, pitch, yaw;
     tf::Matrix3x3(q).getRPY(roll,pitch,yaw);

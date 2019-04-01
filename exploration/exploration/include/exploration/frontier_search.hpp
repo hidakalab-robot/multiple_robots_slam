@@ -158,11 +158,9 @@ std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visuali
         ROS_INFO_STREAM("Frontier Do Not Found\n");
         return goals;
     }
-    else{
-        goals.reserve(index.size());
-    }
     
-
+    goals.reserve(index.size());
+    
     for(const auto& i : index) {
         goals.push_back(arrayToCoordinate(i.x(),i.y(),map.info));
     }
@@ -345,41 +343,16 @@ void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<E
         return;
     }
 
-    int RIGHT,LEFT;
-    int TOP, BOTTOM;
     std::vector<Eigen::Vector2i> filteredIndex;
     filteredIndex.reserve(index.size());
 
     for(const auto& i : index){
+        int LEFT = (i.x()-FILTER_HALF_CELL < 0) ? i.x() : FILTER_HALF_CELL;
+        int RIGHT = (i.x()+FILTER_HALF_CELL > map.info.width-1) ? (map.info.width-1)-i.x() : FILTER_HALF_CELL;
+        int TOP = (i.y()-FILTER_HALF_CELL < 0) ? i.y() : FILTER_HALF_CELL;
+        int BOTTOM = (i.y()+FILTER_HALF_CELL > map.info.height-1) ? (map.info.height-1)-i.y() : FILTER_HALF_CELL;
+
         int sum = 0;
-        //left shape
-        if(i.x()-FILTER_HALF_CELL < 0){
-			LEFT = i.x();
-		}
-		else{
-			LEFT = FILTER_HALF_CELL;
-		}
-        //right shape
-		if(i.x()+FILTER_HALF_CELL > map.info.width-1){
-			RIGHT = (map.info.width-1)-i.x();
-		}
-		else{
-			RIGHT  = FILTER_HALF_CELL;
-		}
-        //top shape
-		if(i.y()-FILTER_HALF_CELL < 0){
-			TOP = i.y();
-		}
-		else{
-			TOP = FILTER_HALF_CELL;
-		}
-        //bottom shape
-		if(i.y()+FILTER_HALF_CELL > map.info.height-1){
-			BOTTOM = (map.info.height-1)-i.y();
-		}
-		else{
-			BOTTOM = FILTER_HALF_CELL;
-		}
         for(int y=i.y()-TOP,ey=i.y()+BOTTOM+1;y!=ey;++y){
             for(int x=i.x()-LEFT,ex=i.x()+RIGHT+1;x!=ex;++x){
                 sum += (int)map.frontierMap[x][y];

@@ -19,7 +19,7 @@
     <arg name="debug_mode" default="false"/>
     
     <group ns="$(arg robot_name)/$(arg ns)">
-        <node pkg="exploration" type="sensor_based_exploration_movebase" name="sensor_based_exploration" output="screen">
+        <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
             <remap from="map" to="$(arg map)"/>
             <remap from="scan" to="$(arg scan)"/>
             <remap unless="$(arg debug_mode)" from="velocity" to="$(arg velocity)"/>
@@ -58,8 +58,7 @@
                                         /tf_static 
                                         /$(arg robot_name)/map 
                                         /$(arg robot_name)/move_base/global_costmap/costmap 
-                                        /$(arg robot_name)/NavfnROS/plan"
-            />
+                                        /$(arg robot_name)/NavfnROS/plan"/>
         </include>
     </group>
 </launch>

@@ -75,7 +75,7 @@ private:
     void approx(std::vector<float>& scanRanges);
     void vfhMovement(sensor_msgs::LaserScan& scan,bool straight, double angle);
     bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
-    double vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double angle);
+    double vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double angle);
     bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
     geometry_msgs::Twist velocityGenerator(double theta, double v, double t);
     bool roadCenterDetection(const sensor_msgs::LaserScan& scan);
@@ -236,7 +236,6 @@ void Movement::moveToForward(void){
 void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
     bumper_.q.callOne(ros::WallDuration(1));
     if(!bumperCollision(bumper_.data)){
-        approx(scan.ranges);
         double resultAngle = vfhCalculation(scan,straight,angle);
         if((int)resultAngle == INT_INFINITY){
             if(!emergencyAvoidance(scan)){
@@ -291,13 +290,15 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     return false;
 }
 
-double Movement::vfhCalculation(const sensor_msgs::LaserScan& scan, bool isCenter, double angle){
+double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double angle){
     //要求角度と最も近くなる配列の番号を探索
     //安全な角度マージンの定義
     //要求角度に最も近くなる右側と左側の番号を探索
     ROS_DEBUG_STREAM("VFH Calculation\n");
 
     ROS_DEBUG_STREAM("Goal Angle : " << angle << " [deg]\n");
+
+    approx(scan.ranges);
 
     static int centerPosition = 0;
     int goalI;
@@ -392,11 +393,13 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
     //minus側の平均
     double aveM,nanM = 0;
+    int count = 0;
     for(int i=0,e=scan.ranges.size()/2;i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             aveM += scan.ranges[i];
         }
         else{
+            ROS_DEBUG_STREAM("minus : " << ++count << "\n");
             ++nanM;
         }
     }
@@ -405,11 +408,13 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
     //plus側
     double aveP,nanP = 0;
+    count = 0;
     for(int i=scan.ranges.size()/2,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             aveP += scan.ranges[i];
         }
         else{
+            ROS_DEBUG_STREAM("plus : " << ++count << "\n");
             ++nanP;
         }
     }
@@ -417,8 +422,9 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     nanP /= scan.ranges.size()/2;
 
     //nan率が高かったらfalseで返したい
+    //左右の差がそんなにないなら前回避けた方向を採用する
 
-    ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM << "\n");
+    ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM << "\n");
 
     if(aveP < EMERGENCY_THRESHOLD && aveM < EMERGENCY_THRESHOLD){
         ROS_WARN_STREAM("Close to Obstacles !!\n");

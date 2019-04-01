@@ -16,15 +16,7 @@
 class BranchSearch
 {
 private:
-	struct scanStruct{
-		std::vector<float> ranges;
-		std::vector<float> angles;
-		float angleMax;
-		scanStruct(int size,float angle):angleMax(angle){
-			ranges.reserve(size);
-			angles.reserve(size);
-		};
-	};
+	
 	//パラメータ
 	ros::NodeHandle p;
     double BRANCH_ANGLE;
@@ -45,8 +37,7 @@ private:
 
 	FrontierSearch fs;
 
-	//bool branchDetection(const std::vector<float>& ranges, const std::vector<float>& angles,float angleMax,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
-	bool branchDetection(const BranchSearch::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
+	bool branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
     bool duplicateDetection(const geometry_msgs::Point& goal);
 	void publishGoal(const geometry_msgs::Point& global, const geometry_msgs::Point& local);
 	void publishGoalList(const std::vector<geometry_msgs::Point>& global, const std::vector<geometry_msgs::Point>& local);
@@ -91,7 +82,7 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 		}
     }
 
-	BranchSearch::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
+	CommonLib::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
 
 	for(int i=0,e=scan_.data.ranges.size();i!=e;++i){
 		if(!std::isnan(scan_.data.ranges[i])){
@@ -119,7 +110,7 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	}
 }
 
-bool BranchSearch::branchDetection(const BranchSearch::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose){
+bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose){
 	ROS_DEBUG_STREAM("Searching Branch\n");
 
 	float scanX,scanY,nextScanX,nextScanY;

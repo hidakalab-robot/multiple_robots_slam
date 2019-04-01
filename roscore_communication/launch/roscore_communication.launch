@@ -7,7 +7,12 @@
 		</node>
 
 		<node pkg="master_sync_fkie" type="master_sync" name="master_sync" output="screen">
-			<rosparam param="sync_topics">['/robot*/map','/robot*/map_updates', '/robot*/robot_pose', '/robot*/camera/rgb/image_color/compressed','/robot*/rtabmap/cloud_obstacles','*/cmd_vel_mux/input/teleop']</rosparam>
+			<rosparam param="sync_topics">[ '/robot*/map',
+											'/robot*/map_updates',
+											'/robot*/robot_pose',
+											'/robot*/camera/rgb/image_color/compressed',
+											'/robot*/rtabmap/cloud_obstacles',
+											'*/cmd_vel_mux/input/teleop']</rosparam>
 		</node>
 	</group>
 </launch>

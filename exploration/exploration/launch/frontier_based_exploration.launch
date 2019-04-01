@@ -19,7 +19,7 @@
     <arg name="ns" default="exploration"/>
 
     <group ns="$(arg robot_name)/$(arg ns)">
-        <node pkg="exploration" type="frontier_based_exploration_test" name="fbe_test" output="screen">
+        <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
             <remap from="map" to="$(arg map)"/>
             <remap from="pose" to="$(arg pose)"/>
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
@@ -49,8 +49,7 @@
                                         /tf_static 
                                         /$(arg robot_name)/map 
                                         /$(arg robot_name)/move_base/global_costmap/costmap 
-                                        /$(arg robot_name)/NavfnROS/plan"
-            />
+                                        /$(arg robot_name)/NavfnROS/plan"/>
         </include>
 
     </group>

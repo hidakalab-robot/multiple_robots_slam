@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
     
     while(ros::ok()){
         if(bs.getGoal(goal) && !DEBUG_MODE){
-            mv.moveToGoal(goal,true);
+            mv.moveToGoal(goal);
         }
         else{
             mv.moveToForward();

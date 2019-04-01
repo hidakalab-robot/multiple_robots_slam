@@ -216,14 +216,11 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(sensor_based_exploration_not_movebase src/sbe_not_movebase.cpp)
-target_link_libraries(sensor_based_exploration_not_movebase ${catkin_LIBRARIES})
+add_executable(sensor_based_exploration src/sbe_main.cpp)
+target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
 
-add_executable(sensor_based_exploration_movebase src/sbe_movebase.cpp)
-target_link_libraries(sensor_based_exploration_movebase ${catkin_LIBRARIES})
-
-add_executable(frontier_based_exploration_movebase src/fbe_movebase.cpp)
-target_link_libraries(frontier_based_exploration_movebase ${catkin_LIBRARIES})
+add_executable(frontier_based_exploration src/fbe_main.cpp)
+target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
 
 add_executable(log src/log.cpp)
 target_link_libraries(log ${catkin_LIBRARIES})
