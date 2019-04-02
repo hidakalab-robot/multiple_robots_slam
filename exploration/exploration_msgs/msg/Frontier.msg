@@ -1,0 +1,4 @@
+geometry_msgs/Point coordinate
+float64 area
+float64 x_variance
+float64 y_variance

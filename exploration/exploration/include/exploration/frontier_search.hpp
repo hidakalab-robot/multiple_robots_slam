@@ -125,8 +125,9 @@ double FrontierSearch::sumFrontierAngle(const geometry_msgs::Pose& pose, double 
 
 double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<geometry_msgs::Point>& frontiers){
     double sum = 0;
+    //frontierの大きさで重みをつけたい
     for(const auto& frontier : frontiers){
-        sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.x - origin.x,frontier.y - origin.y).normalized())));
+        sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.x - origin.x,frontier.y - origin.y).normalized())));//正規化したベクトル同士の内積のacosを取ると二つのベクトルがなす角度がわかる
     }
 
     ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum << "\n");
@@ -295,8 +296,13 @@ std::vector<Eigen::Vector2i> FrontierSearch::clusterDetection(const mapStruct& m
     }
 
     //ROS_DEBUG_STREAM("Centroids Calculation\n");
+
+    //ここで分散も求めたい
+    //上下左右のmax値を取って面積を求める
     std::vector<Eigen::Vector2d> centroids;
+    std::vector<double> areas;
     centroids.reserve(indices.size());
+    areas.reserve(indices.size());
     {
         for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it){
             Eigen::Vector2d sum(0,0);

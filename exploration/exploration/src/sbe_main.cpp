@@ -10,11 +10,15 @@ int main(int argc, char *argv[])
 
     geometry_msgs::Point goal;
     ros::NodeHandle p("~");
-    bool DEBUG_MODE;
-    p.param<bool>("debug_mode",DEBUG_MODE,false);
+    bool DEBUG;
+    p.param<bool>("debug",DEBUG,false);
     
+    if(!DEBUG){
+        mv.oneRotation();
+    }
+
     while(ros::ok()){
-        if(bs.getGoal(goal) && !DEBUG_MODE){
+        if(bs.getGoal(goal) && !DEBUG){
             mv.moveToGoal(goal);
         }
         else{

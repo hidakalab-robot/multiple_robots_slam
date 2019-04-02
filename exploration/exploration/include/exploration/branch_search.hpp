@@ -84,6 +84,8 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 
 	CommonLib::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
 
+	//ここの
+
 	for(int i=0,e=scan_.data.ranges.size();i!=e;++i){
 		if(!std::isnan(scan_.data.ranges[i])){
 			scanRect.ranges.push_back(scan_.data.ranges[i]);
@@ -99,7 +101,7 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	geometry_msgs::Point localGoal;
 
 	if(branchDetection(scanRect,goal,localGoal,pose_.data.pose)){
-		ROS_DEBUG_STREAM("debug1\n");
+		//ROS_DEBUG_STREAM("debug1\n");
 		publishGoal(goal,localGoal);
 		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")\n");
 		return true;
@@ -117,6 +119,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	float diffX,diffY;
 
 	//壁として見えたものが一定以上の長さで続いていないとダメ//点や人が少し通っただけで分岐になるとうっとおしい
+	//ダメっぽいので一定フレームの間存在したら
 
 	//分岐のy座標の差がこの値の範囲内の場合のみ分岐として検出
 	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(ss.angleMax);//1.0 * tan(0.52) = 0.57
@@ -134,7 +137,10 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	//角度が正側と負側で処理を分ける
 	//マイナス
 
-	const double yLengthThreshold = 0.5;
+	const double yLengthThreshold = 0.75;
+
+	//xyのmaxではなくrangesのmaxで制限しないと意味ないのでは
+	//ロボットが壁に垂直な状態でしか
 
 	for(int i=0,e=ss.ranges.size()-1;i!=e;++i){
 		//二つの角度の符号が違うときスキップ
@@ -159,6 +165,10 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					double yLengthLeft = sqrt(dxLeft*dxLeft+dyLeft*dyLeft);
 
 					ROS_DEBUG_STREAM("yLengthRight : " << yLengthRight << ", yLengthLeft : " << yLengthLeft << "\n");
+					ROS_DEBUG_STREAM("diffX : " << diffX << ", diffY : " << diffY << "\n");
+
+					//やはり前後にいくつ続いているかを見たほうが良い
+					
 
 
 					if(yLengthLeft > yLengthThreshold && yLengthRight > yLengthThreshold){//見つけた分岐から左右に一定以上センサデータが続いていないと分岐にしないフィルタ
@@ -243,22 +253,17 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 }
 
 bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
-	double globalX;//分岐領域の世界座標
-	double globalY;//分岐領域の世界座標
-	double xPlus;
-	double xMinus;
-	double yPlus;
-	double yMinus;
+
 	const int lOG_NEWER_LIMIT = 30;//ログの取得が1Hzの場合30秒前までのログで重複検出
 
 	poseLog_.q.callOne(ros::WallDuration(1));
 
-	xPlus = goal.x + DUPLICATE_TOLERANCE;
-	xMinus = goal.x - DUPLICATE_TOLERANCE;
-	yPlus = goal.y + DUPLICATE_TOLERANCE;
-	yMinus = goal.y - DUPLICATE_TOLERANCE;
+	double xPlus = goal.x + DUPLICATE_TOLERANCE;
+	double xMinus = goal.x - DUPLICATE_TOLERANCE;
+	double yPlus = goal.y + DUPLICATE_TOLERANCE;
+	double yMinus = goal.y - DUPLICATE_TOLERANCE;
 
-	ROS_DEBUG_STREAM("duplicate log size : " << poseLog_.data.poses.size() << "\n");
+	//ROS_DEBUG_STREAM("duplicate log size : " << poseLog_.data.poses.size() << "\n");
 
 	for(int i=0,e=poseLog_.data.poses.size()-lOG_NEWER_LIMIT;i!=e;++i){
 		//過去のオドメトリが許容範囲の中に入っているか//
@@ -275,14 +280,10 @@ bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
 
 void BranchSearch::publishGoal(const geometry_msgs::Point& global, const geometry_msgs::Point& local){
 	exploration_msgs::Goal msg;
-	ROS_DEBUG_STREAM("debug2\n");
 	msg.global = global;
-	ROS_DEBUG_STREAM("debug3\n");
 	msg.local = local;
-	ROS_DEBUG_STREAM("debug4\n");
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = MAP_FRAME_ID;
-	ROS_DEBUG_STREAM("debug5\n");
 	goal_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish Goal\n");
 }

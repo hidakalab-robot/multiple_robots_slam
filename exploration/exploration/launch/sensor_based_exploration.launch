@@ -28,7 +28,7 @@
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
             <!-- <param name="avoidance_gain" value="0.2"/> -->
-            <param name="debug_mode" value="$(arg debug)"/>
+            <param name="debug" value="$(arg debug)"/>
             <param name="color_cluster" value="false"/>
             <param name="min_cluster_size" value="80"/>
         </node>
@@ -37,7 +37,7 @@
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
         </node>
 
-        <node pkg="exploration" type="log" name="log">
+        <node unless="$(arg debug)" pkg="exploration" type="log" name="log">
             <remap from="pose" to="$(arg pose)"/>
         </node>
 

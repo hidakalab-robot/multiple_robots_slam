@@ -1,6 +1,13 @@
 #include<ros/ros.h>
 #include<actionlib_msgs/GoalStatusArray.h>
 
+/*
+how to use
+
+$ rosrun exploration movebase_breaker ns:=robot1
+ns == namespace of move_base topic
+*/
+
 void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Publisher& pub){
     static actionlib_msgs::GoalID lastId;
     static bool adhesion = false;
