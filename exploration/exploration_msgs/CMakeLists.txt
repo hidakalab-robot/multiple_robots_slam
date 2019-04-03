@@ -51,10 +51,9 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    PointArray.msg
-   ToGoal.msg
-   MoveAngle.msg
    Goal.msg
-   GoalList.msg
+   GoalStamped.msg
+   GoalArray.msg
    Frontier.msg
    FrontierArray.msg
  )

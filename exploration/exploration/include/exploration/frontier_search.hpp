@@ -16,6 +16,7 @@
 #include <tf/transform_listener.h>
 #include <exploration/common_lib.hpp>
 #include <std_msgs/Empty.h>
+#include <exploration_msgs/FrontierArray.h>
 
 class FrontierSearch
 {
@@ -41,11 +42,27 @@ private:
         };
     };
 
+    struct clusterStruct{
+        std::vector<Eigen::Vector3i> index;
+        std::vector<double> areas;
+        std::vector<Eigen::Vector2d> variances;
+
+        clusterStruct(const std::vector<Eigen::Vector3i>& i,const std::vector<double>& a, const std::vector<Eigen::Vector2d>& v)
+            :index(i)
+            ,areas(a)
+            ,variances(v){};
+
+        clusterStruct(const clusterStruct& cs)
+            :index(cs.index)
+            ,areas(cs.areas)
+            ,variances(cs.variances){};
+    };
+
     ros::NodeHandle p;
 
     float FILTER_SQUARE_DIAMETER;
     bool OBSTACLE_FILTER;
-    double DOUBLE_MINUS_INFINITY;
+    double DOUBLE_INFINITY;
     double PREVIOUS_GOAL_THRESHOLD;
     double DISTANCE_WEIGHT;
     double DIRECTION_WEIGHT;
@@ -67,23 +84,28 @@ private:
     CommonLib::pubStruct<sensor_msgs::PointCloud2> colorCloud_;
     
     void horizonDetection(mapStruct& map);
-    std::vector<Eigen::Vector2i> clusterDetection(const mapStruct& map);
-    void obstacleFilter(mapStruct& map,std::vector<Eigen::Vector2i>& index);
+    // std::vector<Eigen::Vector3i> clusterDetection(const mapStruct& map);
+    clusterStruct clusterDetection(const mapStruct& map);
+    void obstacleFilter(mapStruct& map,std::vector<Eigen::Vector3i>& index);
     geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info);
-    Eigen::Vector2i coordinateToArray(double x,double y,const nav_msgs::MapMetaData& info);
+    Eigen::Vector3i coordinateToArray(double x,double y,const nav_msgs::MapMetaData& info);
 
     bool selectGoal(const std::vector<geometry_msgs::Point>& goals, const geometry_msgs::Pose& pose, geometry_msgs::Point& goal);
     void publishGoal(const geometry_msgs::Point& goal);
 	void publishGoalList(const std::vector<geometry_msgs::Point>& goals);
     void publishGoalListPoseArray(const std::vector<geometry_msgs::Point>& goals);
 
-    void globalCoordinateToLocal(std::vector<geometry_msgs::Point>& goal);
+    // void globalCoordinateToLocal(std::vector<geometry_msgs::Point>& goal);
+    void globalCoordinateToLocal(exploration_msgs::FrontierArray& goal);
+
+    std::vector<geometry_msgs::Point> frontierArrayToPointVector(const exploration_msgs::FrontierArray& fa);
 
 public:
     FrontierSearch();
 
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
-    std::vector<geometry_msgs::Point> frontierDetection(bool visualize=true);//only publish goal list
+    // std::vector<geometry_msgs::Point> frontierDetection(bool visualize=true);//only publish goal list
+    exploration_msgs::FrontierArray frontierDetection(bool visualize=true);
 
     double sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<geometry_msgs::Point>& frontiers);
     double sumFrontierAngle(const geometry_msgs::Pose& pose,double forward,const std::vector<geometry_msgs::Point>& frontiers);
@@ -98,7 +120,7 @@ FrontierSearch::FrontierSearch()
     ,goalList_("goal_list",1,true)
     ,goalPoseArray_("goal_list_pose_array",1,true)
     ,colorCloud_("horizon_cluster/color",1)
-    ,DOUBLE_MINUS_INFINITY(-10000000.0){
+    ,DOUBLE_INFINITY(10000000.0){
 
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
@@ -135,7 +157,7 @@ double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const
     return sum;
 }
 
-std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visualize){
+exploration_msgs::FrontierArray FrontierSearch::frontierDetection(bool publish){
     map_.q.callOne(ros::WallDuration(1));
     
     mapStruct map(map_.data);
@@ -144,44 +166,59 @@ std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visuali
 
     horizonDetection(map);
 
-    std::vector<Eigen::Vector2i> index(clusterDetection(map));
+    // std::vector<Eigen::Vector3i> index(clusterDetection(map));
+    clusterStruct cluster(clusterDetection(map));
 
     //ROS_DEBUG_STREAM("Before Filter index size : " << index.size() << "\n");
     if(OBSTACLE_FILTER){
-        obstacleFilter(map,index);
+        obstacleFilter(map,cluster.index);
     }
     
     //ROS_DEBUG_STREAM("After Filter Index Size : " << index.size() << "\n");
 
-    std::vector<geometry_msgs::Point> goals;
+    //std::vector<geometry_msgs::Point> goals;
+    exploration_msgs::FrontierArray fa;
 
-    if(index.size() == 0){
+    if(cluster.index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found\n");
-        return goals;
+        // return goals;
+        return fa;
     }
     
-    goals.reserve(index.size());
+    // goals.reserve(cluster.index.size());
+    fa.frontiers.reserve(cluster.index.size());
+
     
-    for(const auto& i : index) {
-        goals.push_back(arrayToCoordinate(i.x(),i.y(),map.info));
+    // for(const auto& i : cluster.index) {
+    //     goals.push_back(arrayToCoordinate(i.x(),i.y(),map.info));
+    // }
+
+    for(int i=0,e=cluster.index.size();i!=e;++i){
+        // goals.push_back(arrayToCoordinate(i.x(),i.y(),map.info));
+        if(cluster.index[i].z() == 0){
+            continue;
+        }
+        fa.frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgPoint(cluster.variances[i].x(),cluster.variances[i].y())));
     }
 
-    ROS_INFO_STREAM("Frontier Found : " << goals.size() << "\n");
+    // ROS_INFO_STREAM("Frontier Found : " << goals.size() << "\n");
+    ROS_INFO_STREAM("Frontier Found : " << fa.frontiers.size() << "\n");
 
     if(USE_MERGE_MAP){
-        globalCoordinateToLocal(goals);
+        globalCoordinateToLocal(fa);
     }
 
-    if(visualize){
+    if(publish){
         publishGoalList(goals);
         publishGoalListPoseArray(goals);
     }
     
-    return goals;
+    // return goals;
+    return fa;
 }
 
 bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
-    std::vector<geometry_msgs::Point> goals(frontierDetection());
+    std::vector<geometry_msgs::Point> goals(frontierArrayToPointVector(frontierDetection()));
 
     if(goals.size()==0){
         return false;
@@ -198,6 +235,15 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
 		ROS_INFO_STREAM("Found Frontier is Too Close\n");
         return false;
     }
+}
+
+std::vector<geometry_msgs::Point> FrontierSearch::frontierArrayToPointVector(const exploration_msgs::FrontierArray& fa){
+    std::vector<geometry_msgs::Point> p;
+    p.reserve(fa.frontiers.size());
+    for(const auto& f : fa.frontiers){
+        p.emplace_back(f.coordinate);
+    }
+    return p;
 }
 
 void FrontierSearch::horizonDetection(mapStruct& map){
@@ -229,7 +275,7 @@ void FrontierSearch::horizonDetection(mapStruct& map){
 }
 
 
-std::vector<Eigen::Vector2i> FrontierSearch::clusterDetection(const mapStruct& map){
+FrontierSearch::clusterStruct FrontierSearch::clusterDetection(const mapStruct& map){
     
     ROS_INFO_STREAM("Frontier Detection by Clustering\n");
 
@@ -300,42 +346,74 @@ std::vector<Eigen::Vector2i> FrontierSearch::clusterDetection(const mapStruct& m
     //ここで分散も求めたい
     //上下左右のmax値を取って面積を求める
     std::vector<Eigen::Vector2d> centroids;
+
     std::vector<double> areas;
+    std::vector<Eigen::Vector2d> variances;
     centroids.reserve(indices.size());
     areas.reserve(indices.size());
-    {
-        for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it){
-            Eigen::Vector2d sum(0,0);
-            for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-                sum.x() += horizonMap -> points[*pit].x;
-                sum.y() += horizonMap -> points[*pit].y;
+    variances.reserve(indices.size());
+
+    for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it){
+        Eigen::Vector2d sum(0,0);
+        Eigen::Vector2d max(-DOUBLE_INFINITY,-DOUBLE_INFINITY);
+        Eigen::Vector2d min(DOUBLE_INFINITY,DOUBLE_INFINITY);
+
+        for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
+            sum.x() += horizonMap -> points[*pit].x;
+            sum.y() += horizonMap -> points[*pit].y;
+
+            if(horizonMap -> points[*pit].x > max.x()){
+                max.x() = horizonMap -> points[*pit].x;
             }
-            centroids.emplace_back(Eigen::Vector2d(sum.x()/it->indices.size(),sum.y()/it->indices.size()));
+            else if(horizonMap -> points[*pit].x < min.x()){
+                min.x() = horizonMap -> points[*pit].x;
+            }
+
+            if(horizonMap -> points[*pit].y > max.y()){
+                min.y() = horizonMap -> points[*pit].y;
+            }
+            else if(horizonMap -> points[*pit].y < min.y()){
+                min.y() = horizonMap -> points[*pit].y;
+            }
         }
+        Eigen::Vector2d centroid(sum.x()/it->indices.size(),sum.y()/it->indices.size());
+        Eigen::Vector2d deviation(0,0);
+        //分散を求めたい
+        for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
+            deviation.x() += (horizonMap -> points[*pit].x - centroid.x()) * (horizonMap -> points[*pit].x - centroid.x());
+            deviation.y() += (horizonMap -> points[*pit].y - centroid.y()) * (horizonMap -> points[*pit].y - centroid.y());
+        }
+
+        variances.emplace_back(std::move(deviation)/std::distance(it->indices.begin(),it->indices.end()));
+        centroids.emplace_back(std::move(centroid));
+        Eigen::Vector2d diff(max-min);
+        areas.emplace_back(std::abs(diff.x()*diff.y()));
+
     }
 
     //xの分散とyの分散が両方小さかったらそのクラスタは削除
     
     //ROS_DEBUG_STREAM("centroids to index array\n");
-    std::vector<Eigen::Vector2i> index;
+    std::vector<Eigen::Vector3i> index;
     index.reserve(centroids.size());
     for(const auto& centroid : centroids){
         index.emplace_back(coordinateToArray(centroid.x(),centroid.y(),map.info));
     }
-    return index;
+    // return index;
+    return clusterStruct(index,areas,variances);
 }
 
-Eigen::Vector2i FrontierSearch::coordinateToArray(double x,double y,const nav_msgs::MapMetaData& info){
-    return Eigen::Vector2i((x-info.origin.position.x)/info.resolution,(y-info.origin.position.y)/info.resolution);
+Eigen::Vector3i FrontierSearch::coordinateToArray(double x,double y,const nav_msgs::MapMetaData& info){
+    return Eigen::Vector3i((x-info.origin.position.x)/info.resolution,(y-info.origin.position.y)/info.resolution,1);
 }
 
-void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<Eigen::Vector2i>& index){
+void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<Eigen::Vector3i>& index){
     ROS_INFO_STREAM("Obstacle Filter\n");
     
     //add obstacle cell
     for(int x=0,ex=map.info.width;x!=ex;++x){
         for(int y=0,ey=map.info.height;y!=ey;++y){
-            if((int)map.source[x][y] == 100){
+            if(map.source[x][y] == 100){
                 map.frontierMap[x][y] = 100;
             }
         }
@@ -349,29 +427,35 @@ void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<E
         return;
     }
 
-    std::vector<Eigen::Vector2i> filteredIndex;
-    filteredIndex.reserve(index.size());
+    for(auto&& i : index){
 
-    for(const auto& i : index){
+        if(map.frontierMap[i.x()][i.y()] == 100){
+            i.z() = 0;
+            continue;
+        }
+
         int LEFT = (i.x()-FILTER_HALF_CELL < 0) ? i.x() : FILTER_HALF_CELL;
         int RIGHT = (i.x()+FILTER_HALF_CELL > map.info.width-1) ? (map.info.width-1)-i.x() : FILTER_HALF_CELL;
         int TOP = (i.y()-FILTER_HALF_CELL < 0) ? i.y() : FILTER_HALF_CELL;
         int BOTTOM = (i.y()+FILTER_HALF_CELL > map.info.height-1) ? (map.info.height-1)-i.y() : FILTER_HALF_CELL;
 
-        int sum = 0;
+        //int sum = 0;
         for(int y=i.y()-TOP,ey=i.y()+BOTTOM+1;y!=ey;++y){
             for(int x=i.x()-LEFT,ex=i.x()+RIGHT+1;x!=ex;++x){
-                sum += (int)map.frontierMap[x][y];
+                if(map.frontierMap[x][y] == 100){//障害部があったら終了
+                    map.frontierMap[i.x()][i.y()] = 0;
+                    i.z() = 0;
+                    x = ex -1;//ラムダで関数作ってreturnで終わっても良いかも
+                    y = ey -1;
+                }
+                //sum += (int)map.frontierMap[x][y];
             }
         }
-        if(sum>100){
-            map.frontierMap[i.x()][i.y()] = 0;
-        }
-        else{
-            filteredIndex.push_back(i);
-        }
+        // if(sum>100){
+        //     map.frontierMap[i.x()][i.y()] = 0;
+        //     i.z() = 0;
+        // }
     }
-    index = filteredIndex;
     ROS_INFO_STREAM("Obstacle Filter complete\n");
 }
 
@@ -379,7 +463,8 @@ geometry_msgs::Point FrontierSearch::arrayToCoordinate(int indexX,int indexY,con
     return CommonLib::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
 }
 
-void FrontierSearch::globalCoordinateToLocal(std::vector<geometry_msgs::Point>& goals){
+// void FrontierSearch::globalCoordinateToLocal(std::vector<geometry_msgs::Point>& goals){
+void FrontierSearch::globalCoordinateToLocal(exploration_msgs::FrontierArray& frontiers){
     //merge_map - map のtfを取得して座標修正
     static bool initialized = false;
     static tf::TransformListener listener;
@@ -400,10 +485,16 @@ void FrontierSearch::globalCoordinateToLocal(std::vector<geometry_msgs::Point>& 
     Eigen::Matrix2d rotation;
     rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
 
-    for(auto& goal : goals){
-        Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(goal.x - transX,goal.y - transY));
-        goal.x = tempPoint.x();
-        goal.y = tempPoint.y();
+    // for(auto& goal : goals){
+    //     Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(goal.x - transX,goal.y - transY));
+    //     goal.x = tempPoint.x();
+    //     goal.y = tempPoint.y();
+    // }
+
+    for(auto& f : frontiers.frontiers){
+        Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(f.coordinate.x - transX,f.coordinate.y - transY));
+        f.coordinate.x = tempPoint.x();
+        f.coordinate.y = tempPoint.y();
     }
 }
 
@@ -418,7 +509,7 @@ bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, 
 
     //変更点：前回の移動方向では無く現在のロボットの向きで評価する
 
-    double max = DOUBLE_MINUS_INFINITY;
+    double max = -DOUBLE_INFINITY;
     for(auto& g : goals){
         if(PREVIOUS_GOAL_EFFECT && sqrt(pow(g.x - previousGoal.x,2)+pow(g.y - previousGoal.y,2)) <= PREVIOUS_GOAL_THRESHOLD){
             continue;
@@ -432,7 +523,7 @@ bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, 
         }
     }
 
-    if(max > DOUBLE_MINUS_INFINITY){
+    if(max > -DOUBLE_INFINITY){
         previousGoal = goal;
         return true;
     }

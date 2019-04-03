@@ -9,6 +9,7 @@
 #include <tf/tf.h>
 #include <pcl_ros/point_cloud.h>
 #include <geometry_msgs/Pose.h>
+#include <exploration_msgs/Frontier.h>
 
 namespace CommonLib
 {
@@ -107,6 +108,14 @@ pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){
     p.g = g;
     p.b = b;
     return p;
+}
+
+exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, const geometry_msgs::Point& v){
+    exploration_msgs::Frontier f;
+    f.coordinate = c;
+    f.area = a;
+    f.variance = v;
+    return f;
 }
 
 }
