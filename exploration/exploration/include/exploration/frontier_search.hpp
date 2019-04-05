@@ -2,9 +2,7 @@
 #define FRONTIER_SEARCH_HPP
 
 #include <ros/ros.h>
-// #include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
-
 #include <geometry_msgs/PoseStamped.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -16,7 +14,6 @@
 #include <exploration/common_lib.hpp>
 #include <std_msgs/Empty.h>
 #include <exploration_msgs/Frontier.h>
-
 #include <geometry_msgs/PointStamped.h>
 #include <exploration_msgs/PointArray.h>
 
@@ -70,7 +67,6 @@ private:
 
     float FILTER_SQUARE_DIAMETER;
     bool OBSTACLE_FILTER;
-    double DOUBLE_INFINITY;
     double PREVIOUS_GOAL_THRESHOLD;
     double DISTANCE_WEIGHT;
     double DIRECTION_WEIGHT;
@@ -125,8 +121,7 @@ FrontierSearch::FrontierSearch()
     ,goal_("goal",1,true)
     ,goalArray_("goal_array",1,true)
     ,goalPoseArray_("goal_pose_array",1,true)
-    ,colorCloud_("horizon_cluster/color",1)
-    ,DOUBLE_INFINITY(10000000.0){
+    ,colorCloud_("horizon_cluster/color",1){
 
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
@@ -376,8 +371,8 @@ FrontierSearch::clusterStruct FrontierSearch::clusterDetection(const mapStruct& 
 
     for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it){
         Eigen::Vector2d sum(0,0);
-        Eigen::Vector2d max(-DOUBLE_INFINITY,-DOUBLE_INFINITY);
-        Eigen::Vector2d min(DOUBLE_INFINITY,DOUBLE_INFINITY);
+        Eigen::Vector2d max(-DBL_MAX,-DBL_MAX);
+        Eigen::Vector2d min(DBL_MAX,DBL_MAX);
 
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
             sum.x() += horizonMap -> points[*pit].x;
@@ -455,7 +450,6 @@ void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<E
         int TOP = (i.y()-FILTER_HALF_CELL < 0) ? i.y() : FILTER_HALF_CELL;
         int BOTTOM = (i.y()+FILTER_HALF_CELL > map.info.height-1) ? (map.info.height-1)-i.y() : FILTER_HALF_CELL;
 
-        //int sum = 0;
         for(int y=i.y()-TOP,ey=i.y()+BOTTOM+1;y!=ey;++y){
             for(int x=i.x()-LEFT,ex=i.x()+RIGHT+1;x!=ex;++x){
                 if(map.frontierMap[x][y] == 100){//障害部があったら終了
@@ -464,13 +458,8 @@ void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<E
                     x = ex -1;//ラムダで関数作ってreturnで終わっても良いかも
                     y = ey -1;
                 }
-                //sum += (int)map.frontierMap[x][y];
             }
         }
-        // if(sum>100){
-        //     map.frontierMap[i.x()][i.y()] = 0;
-        //     i.z() = 0;
-        // }
     }
     ROS_INFO_STREAM("Obstacle Filter complete\n");
 }
@@ -518,7 +507,7 @@ bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, 
 
     //変更点：前回の移動方向では無く現在のロボットの向きで評価する
 
-    double max = -DOUBLE_INFINITY;
+    double max = -DBL_MAX;
     for(auto& g : goals){
         if(PREVIOUS_GOAL_EFFECT && sqrt(pow(g.x - previousGoal.x,2)+pow(g.y - previousGoal.y,2)) <= PREVIOUS_GOAL_THRESHOLD){
             continue;
@@ -532,7 +521,7 @@ bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, 
         }
     }
 
-    if(max > -DOUBLE_INFINITY){
+    if(max > -DBL_MAX){
         previousGoal = goal;
         return true;
     }

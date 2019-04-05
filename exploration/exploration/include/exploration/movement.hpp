@@ -57,13 +57,11 @@ private:
     double ROTATION_GAIN;
     std::string MOVEBASE_NAME;
     std::string MAP_FRAME_ID;
-    int INT_INFINITY;
-    double DOUBLE_INFINITY;
     double FORWARD_ANGLE;
     double WALL_RATE_THRESHOLD;
     double WALL_DISTANCE_UPPER_THRESHOLD;
     double WALL_DISTANCE_LOWER_THRESHOLD;
-    double EMERGENCY_DIFF_THRESHOLD = 0.3;
+    double EMERGENCY_DIFF_THRESHOLD;
 
     CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -99,8 +97,6 @@ Movement::Movement()
     ,pose_("pose",1)
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
-    ,INT_INFINITY(1000000)
-    ,DOUBLE_INFINITY(100000.0)
     ,previousOrientation(1.0){
 
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
@@ -238,7 +234,7 @@ void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double a
     bumper_.q.callOne(ros::WallDuration(1));
     if(!bumperCollision(bumper_.data)){
         double resultAngle = vfhCalculation(scan,straight,angle);
-        if((int)resultAngle == INT_INFINITY){
+        if((int)resultAngle == INT_MAX){
             if(!emergencyAvoidance(scan)){
                 recoveryRotation();
             }
@@ -309,7 +305,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
         centerPosition = (centerPosition == 0) ? 1 : 0;
     }
     else{
-        double min = DOUBLE_INFINITY;
+        double min = DBL_MAX;
         for(int i=0,e=scan.ranges.size();i!=e;++i){
 		    double diff = std::abs(angle - (scan.angle_min + scan.angle_increment * i));
 		    if(diff < min){
@@ -323,8 +319,8 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
     int start;
     int k;
     int count;
-    int plus = INT_INFINITY;
-    int minus = INT_INFINITY;
+    int plus = INT_MAX;
+    int minus = INT_MAX;
 
     //plus側
     for(int i=goalI,e=scan.ranges.size();i!=e;++i){
@@ -376,51 +372,38 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 		}
 	}
 
-    if(plus != INT_INFINITY || minus != INT_INFINITY){
-		double pd = (plus == INT_INFINITY) ? INT_INFINITY : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
-		double md = (minus == INT_INFINITY) ? INT_INFINITY : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
+    if(plus != INT_MAX || minus != INT_MAX){
+		double pd = (plus == INT_MAX) ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
+		double md = (minus == INT_MAX) ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
 
         return (pd<=md) ? scan.angle_min + scan.angle_increment * plus : scan.angle_min + scan.angle_increment * minus;
     }
     else{
         ROS_DEBUG_STREAM("Move Angle : Not Found\n");
-        return INT_INFINITY;
+        return INT_MAX;
     }
 }
 
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
     //minus側の平均
-    double aveM=0;//,nanM = 0;
-    //int count = 0;
+    double aveM=0;
     for(int i=0,e=scan.ranges.size()/2;i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             aveM += scan.ranges[i];
         }
-        else{
-            //ROS_DEBUG_STREAM("minus : " << ++count << "\n");
-            //++nanM;
-        }
     }
     aveM /= scan.ranges.size()/2;
-    //nanM /= scan.ranges.size()/2;
 
     //plus側
-    double aveP=0;//,nanP = 0;
-    //count = 0;
+    double aveP=0;
     for(int i=scan.ranges.size()/2,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             aveP += scan.ranges[i];
         }
-        else{
-            //ROS_DEBUG_STREAM("plus : " << ++count << "\n");
-            //++nanP;
-        }
     }
     aveP /= scan.ranges.size()/2;
-    //nanP /= scan.ranges.size()/2;
 
-    //nan率が高かったらfalseで返したい
     //左右の差がそんなにないなら前回避けた方向を採用する
     //一回目に避けた方向に基本的に従う
     //一回避けたら大きく差が出ない限りおなじほうこうに避ける
@@ -447,7 +430,6 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
                 ROS_INFO_STREAM("Avoidance to Right\n");
             }
         }
-        //velocity_.pub.publish(velocityGenerator(sign * scan.angle_max/6 * VELOCITY_GAIN,0.0,AVOIDANCE_GAIN));
         velocity_.pub.publish(velocityGenerator(previousOrientation*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
         return true;
     }
@@ -458,13 +440,11 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 }
 
 void Movement::recoveryRotation(void){
-    //どうしようもなくなった時に回転する
     ROS_WARN_STREAM("Recovery Rotation !\n");
     velocity_.pub.publish(CommonLib::msgTwist(0,previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
-    //previousOrientation = theta / std::abs(theta);
     return CommonLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
 }
 
