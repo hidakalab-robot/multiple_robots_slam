@@ -92,11 +92,11 @@ geometry_msgs::Twist msgTwist(double x=0,double z=0){
 }
 
 geometry_msgs::Pose pointToPose(const geometry_msgs::Point& point){
-    geometry_msgs::Pose pose;
-    pose.position.x = point.x;
-    pose.position.y = point.y;
-    pose.position.z = point.z;
-    return pose;
+    geometry_msgs::Pose msg;
+    msg.position.x = point.x;
+    msg.position.y = point.y;
+    msg.position.z = point.z;
+    return msg;
 }
 
 pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){
@@ -111,11 +111,11 @@ pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){
 }
 
 exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, const geometry_msgs::Point& v){
-    exploration_msgs::Frontier f;
-    f.coordinate = c;
-    f.area = a;
-    f.variance = v;
-    return f;
+    exploration_msgs::Frontier msg;
+    msg.coordinate = c;
+    msg.area = a;
+    msg.variance = v;
+    return msg;
 }
 
 }

@@ -6,11 +6,14 @@
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/PoseArray.h>
-#include <exploration_msgs/Goal.h>
-#include <exploration_msgs/GoalList.h>
+// #include <exploration_msgs/Goal.h>
+// #include <exploration_msgs/GoalList.h>
+#include <geometry_msgs/PointStamped.h>
+#include <exploration_msgs/PointArray.h>
 #include <std_msgs/Empty.h>
 #include <exploration/common_lib.hpp>
 #include <exploration/frontier_search.hpp>
+#include <exploration_msgs/Frontier.h>
 
 //分岐領域を検出
 class BranchSearch
@@ -32,15 +35,15 @@ private:
 	CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
 	CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
 
-	CommonLib::pubStruct<exploration_msgs::Goal> goal_;
-	CommonLib::pubStruct<exploration_msgs::GoalList> goalList_;
+	CommonLib::pubStruct<geometry_msgs::Point> goal_;
+	CommonLib::pubStruct<exploration_msgs::PointArray> goalArray_;
 
 	FrontierSearch fs;
 
-	bool branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose);
+	bool branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose);
     bool duplicateDetection(const geometry_msgs::Point& goal);
-	void publishGoal(const geometry_msgs::Point& global, const geometry_msgs::Point& local);
-	void publishGoalList(const std::vector<geometry_msgs::Point>& global, const std::vector<geometry_msgs::Point>& local);
+	void publishGoal(const geometry_msgs::Point& goal);
+	void publishGoalArray(const std::vector<geometry_msgs::Point>& goals);
 
 
 public:
@@ -54,7 +57,7 @@ BranchSearch::BranchSearch()
 	,scan_("scan",1)
 	,pose_("pose",1)
 	,goal_("goal", 1, true)
-	,goalList_("goal_list", 1, true)
+	,goalArray_("goal_array", 1, true)
 	,DOUBLE_INFINITY(10000.0){
 
 	//branch_searchパラメータの読み込み(基本変更しなくて良い)
@@ -84,8 +87,6 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 
 	CommonLib::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
 
-	//ここの
-
 	for(int i=0,e=scan_.data.ranges.size();i!=e;++i){
 		if(!std::isnan(scan_.data.ranges[i])){
 			scanRect.ranges.push_back(scan_.data.ranges[i]);
@@ -98,11 +99,9 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 		return false;
     }
 
-	geometry_msgs::Point localGoal;
-
-	if(branchDetection(scanRect,goal,localGoal,pose_.data.pose)){
+	if(branchDetection(scanRect,goal,pose_.data.pose)){
 		//ROS_DEBUG_STREAM("debug1\n");
-		publishGoal(goal,localGoal);
+		publishGoal(goal);
 		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")\n");
 		return true;
     }
@@ -112,7 +111,7 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	}
 }
 
-bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,geometry_msgs::Point& localGoal,const geometry_msgs::Pose& pose){
+bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose){
 	ROS_DEBUG_STREAM("Searching Branch\n");
 
 	float scanX,scanY,nextScanX,nextScanY;
@@ -125,8 +124,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(ss.angleMax);//1.0 * tan(0.52) = 0.57
 	const float BRANCH_MAX_Y = BRANCH_MAX_X*tan(ss.angleMax);//5.0 * tan(0.52) = 2.86 //この二つの差が正しいのでは // 6.0/tan(1.05)
 
-	std::vector<geometry_msgs::Point> list;
-	list.reserve(ss.ranges.size());
+	std::vector<geometry_msgs::Point> localList;
+	localList.reserve(ss.ranges.size());
 
     //はじめのfor文では条件を満たした分岐領域を探す
     //２つ目のfor文で最も近い分岐を選ぶ
@@ -168,57 +167,51 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					ROS_DEBUG_STREAM("diffX : " << diffX << ", diffY : " << diffY << "\n");
 
 					//やはり前後にいくつ続いているかを見たほうが良い
-					
-
 
 					if(yLengthLeft > yLengthThreshold && yLengthRight > yLengthThreshold){//見つけた分岐から左右に一定以上センサデータが続いていないと分岐にしないフィルタ
-						list.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
+						localList.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
 					}
 				}
 			}
 		}
 	}
 	
-	if(list.size()>0){
-		ROS_DEBUG_STREAM("Branch Candidate Found : " << list.size() << "\n");
+	if(localList.size()>0){
+		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size() << "\n");
 
-		int near;
-		float centerDist;
 		double yaw = CommonLib::qToYaw(pose.orientation);
 
 		std::vector<geometry_msgs::Point> globalList;
-		globalList.reserve(list.size());
+		globalList.reserve(localList.size());
 		
-		for(const auto& branch : list){
+		for(const auto& branch : localList){
 			globalList.emplace_back(CommonLib::msgPoint(pose.position.x + (cos(yaw)*branch.x) - (sin(yaw)*branch.y),pose.position.y + (cos(yaw)*branch.y) + (sin(yaw)*branch.x)));
 		}
 
-		publishGoalList(globalList,list);
+		publishGoalArray(globalList);
 
 		std::vector<int> excludeList;
-		excludeList.reserve(list.size());
+		excludeList.reserve(localList.size());
 
-		for(int k=list.size();k!=0;--k){
-			centerDist = DOUBLE_INFINITY;
-			for(int j=0,e=list.size();j!=e;++j){
+		for(int k=localList.size();k!=0;--k){
+			float dist = DOUBLE_INFINITY;
+			int id;
+			for(int j=0,e=localList.size();j!=e;++j){
 				if(excludeList.size()>0 && std::any_of(excludeList.begin(), excludeList.end(), [j](int n){ return n == j; })){
 					continue;
 				}
-				float tempCenterDist = std::abs(list[j].x)+std::abs(list[j].y);
-				if(tempCenterDist <= centerDist){
-					centerDist = std::move(tempCenterDist);
+				float tempDist = std::abs(localList[j].x)+std::abs(localList[j].y);
+				if(tempDist <= dist){
+					dist = std::move(tempDist);
 					goal = globalList[j];
-					localGoal = list[j];
-					near = j;
+					id = j;
 				}
 			}
 
 			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
 
 			if(DUPLICATE_CHECK && duplicateDetection(goal)){
-				excludeList.push_back(near);
-				// list[near].x = 0;
-				// list[near].y = 0;
+				excludeList.push_back(id);
 			}
 			else{
 				return true;
@@ -227,7 +220,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
-		std::vector<geometry_msgs::Point> frontiers(fs.frontierDetection(false));
+		std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
 		if(frontiers.size()!=0){
 			double min = DOUBLE_INFINITY;
 			for(int i=0,ei=globalList.size();i!=ei;++i){
@@ -235,7 +228,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				if(min > sum){
 					min = std::move(sum);
 					goal = globalList[i];
-					localGoal = list[i];
 				}
 			}
 			//最後に直進方向のフロンティア面積と比較する
@@ -247,7 +239,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		}
 		
     }
-
 
 	return false;
 }
@@ -278,24 +269,22 @@ bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
 	return false;
 }
 
-void BranchSearch::publishGoal(const geometry_msgs::Point& global, const geometry_msgs::Point& local){
-	exploration_msgs::Goal msg;
-	msg.global = global;
-	msg.local = local;
+void BranchSearch::publishGoal(const geometry_msgs::Point& goal){
+	geometry_msgs::PointStamped msg;
+	msg.point = goal;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = MAP_FRAME_ID;
 	goal_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish Goal\n");
 }
 
-void BranchSearch::publishGoalList(const std::vector<geometry_msgs::Point>& global, const std::vector<geometry_msgs::Point>& local){
-	exploration_msgs::GoalList msg;
-	msg.global = global;
-	msg.local = local;
+void BranchSearch::publishGoalArray(const std::vector<geometry_msgs::Point>& goals){
+	exploration_msgs::PointArray msg;
+	msg.points = goals;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = MAP_FRAME_ID;
 
-	goalList_.pub.publish(msg);
+	goalArray_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish GoalList\n");
 }
 

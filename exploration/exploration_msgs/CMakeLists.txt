@@ -51,11 +51,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_message_files(
    FILES
    PointArray.msg
-   Goal.msg
-   GoalStamped.msg
-   GoalArray.msg
    Frontier.msg
-   FrontierArray.msg
  )
 
 ## Generate services in the 'srv' folder
