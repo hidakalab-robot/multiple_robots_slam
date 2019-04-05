@@ -20,6 +20,7 @@ private:
 	
 	//パラメータ
 	ros::NodeHandle p;
+	double SCAN_RANGE_THRESHOLD;
     double BRANCH_ANGLE;
     double CENTER_RANGE_MIN;
 	double BRANCH_MAX_X;
@@ -34,7 +35,7 @@ private:
 	CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
 	CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
 
-	CommonLib::pubStruct<geometry_msgs::Point> goal_;
+	CommonLib::pubStruct<geometry_msgs::PointStamped> goal_;
 	CommonLib::pubStruct<exploration_msgs::PointArray> goalArray_;
 
 	FrontierSearch fs;
@@ -68,6 +69,7 @@ BranchSearch::BranchSearch()
 	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
 	p.param<double>("length_threshold_y", LENGTH_THRESHOLD_Y, 0.75);
 	p.param<int>("log_newer_limit", LOG_NEWER_LIMIT, 30);
+	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -132,7 +134,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	//角度が正側と負側で処理を分ける
 	//マイナス
 
-	//xyのmaxではなくrangesのmaxで制限しないと意味ないのでは
 	//ロボットが壁に垂直な状態でしか
 
 	for(int i=0,e=ss.ranges.size()-1;i!=e;++i){
@@ -140,9 +141,10 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		if(ss.angles[i]*ss.angles[i+1]<0){
 			continue;
 		}
-		double scanX = ss.ranges[i]*cos(ss.angles[i]);
-		double nextScanX = ss.ranges[i+1]*cos(ss.angles[i+1]);
-		if(scanX <= BRANCH_MAX_X && nextScanX <= BRANCH_MAX_X){//距離が遠い分岐は信用できないフィルタ
+		// if(scanX <= BRANCH_MAX_X && nextScanX <= BRANCH_MAX_X){//距離が遠い分岐は信用できないフィルタ
+		if(ss.ranges[i] < SCAN_RANGE_THRESHOLD && ss.ranges[i+1] < SCAN_RANGE_THRESHOLD){//距離が遠いのは信用できないのでだめ
+			double scanX = ss.ranges[i]*cos(ss.angles[i]);
+			double nextScanX = ss.ranges[i+1]*cos(ss.angles[i+1]);
 			if(std::abs(nextScanX - scanX) >= BRANCH_DIFF_X_MIN){//x座標の差(分岐の幅)が一定以上じゃないと分岐と認めないフィルタ
 				double scanY = ss.ranges[i]*sin(ss.angles[i]);
 				double nextScanY = ss.ranges[i+1]*sin(ss.angles[i+1]);
@@ -212,12 +214,46 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			double min = DBL_MAX;
 			for(int i=0,ei=globalList.size();i!=ei;++i){
 				double sum = fs.sumFrontierAngle(globalList[i],Eigen::Vector2d(globalList[i].x-pose.position.x,globalList[i].y-pose.position.y).normalized(),frontiers);
+				//まずここで逆方向に言った場合と比較する
 				if(min > sum){
 					min = std::move(sum);
 					goal = globalList[i];
 				}
 			}
-			//最後に直進方向のフロンティア面積と比較する
+			//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
+			//初めに逆方向見る
+			//逆方向のベクトル作成(yをマイナスにすればいいだけ)//ｘ軸に並行な向きの時だけだった
+			// Eigen::Vector3d vec(goal.x-pose.position.x,goal.y-pose.position.y,0.0);
+
+			//mapを埋めるやつ先に作る
+
+			//poselogにスタンプつけておいて時間で見る
+
+			//さっき通ったばかりのところは行きたくないよ関数//重複探査阻止の中で一番優先度が高い
+
+			// double yaw = CommonLib::qToYaw(pose.orientation);
+			// Eigen::Vector3d forwardVec(cos(yaw),sin(yaw),0.0);//このベクトルを軸とした座標系に変換する//普通に回転行列かければ良いのか？
+			// Eigen::Quaterniond q=Eigen::Quaterniond::FromTwoVectors(forwardVec,vec);//forward->vecの回転
+
+			// Eigen::Vector3d vecInverse(q*forwardVec);//逆方向のベクトル
+
+			//逆方向の座標
+			//逆方向が良かったらそっちに回転すればいいだけ？
+			
+			//二つのベクトルから回転行列を作って、その逆を掛ける
+
+			// std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))
+
+
+			//自分の前方ベクトルに対して線対称なベクトル
+			
+			// if(min > fs.sumFrontierAngle(goal,Eigen::Vector2d(vecInverse.x(),vecInverse.y()).normalized(),frontiers)){//上で複数の分岐があった場合は両方向見てる可能性が高いから逆方向を見るのは最小を判定した後で良い
+			// 	//逆方向の方が良かった場合goalを逆方向に書き換える
+			// 	//ベクトルから角度を計算して回転行列を計算する
+			// 	goal.y = goal.y - 2*(goal.y-pose.position.y);
+			// }
+
+			//次に前方
 			if(fs.sumFrontierAngle(pose,BRANCH_MAX_X,frontiers) > min){
 				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")\n");
 				ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");

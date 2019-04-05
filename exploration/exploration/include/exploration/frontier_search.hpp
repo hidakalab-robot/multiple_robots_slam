@@ -51,7 +51,6 @@ private:
             areas.reserve(size);
             variances.reserve(size);
         };
-
         clusterStruct(const std::vector<Eigen::Vector3i>& i,const std::vector<double>& a, const std::vector<Eigen::Vector2d>& v)
             :index(i)
             ,areas(a)
@@ -150,7 +149,9 @@ double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const
     double sum = 0;
     //frontierの大きさで重みをつけたい
     for(const auto& frontier : frontiers){
-        sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));//正規化したベクトル同士の内積のacosを取ると二つのベクトルがなす角度がわかる
+        sum += (frontier.variance.x>frontier.variance.y)? std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))*frontier.variance.x*frontier.variance.x
+                                                        : std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))*frontier.variance.y*frontier.variance.y;
+        // sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));//正規化したベクトル同士の内積のacosを取ると二つのベクトルがなす角度がわかる
     }
 
     ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum << "\n");
