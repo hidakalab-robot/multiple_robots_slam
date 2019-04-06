@@ -45,7 +45,6 @@ private:
 	void publishGoal(const geometry_msgs::Point& goal);
 	void publishGoalArray(const std::vector<geometry_msgs::Point>& goals);
 
-
 public:
     BranchSearch();
 	bool getGoal(geometry_msgs::Point& goal);
@@ -115,9 +114,6 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose){
 	ROS_DEBUG_STREAM("Searching Branch\n");
 
-	//壁として見えたものが一定以上の長さで続いていないとダメ//点や人が少し通っただけで分岐になるとうっとおしい
-	//ダメっぽいので一定フレームの間存在したら
-
 	//分岐のy座標の差がこの値の範囲内の場合のみ分岐として検出
 	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(ss.angleMax);//1.0 * tan(0.52) = 0.57
 	const float BRANCH_MAX_Y = BRANCH_MAX_X*tan(ss.angleMax);//5.0 * tan(0.52) = 2.86 //この二つの差が正しいのでは // 6.0/tan(1.05)
@@ -128,13 +124,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
     //はじめのfor文では条件を満たした分岐領域を探す
     //２つ目のfor文で最も近い分岐を選ぶ
     //選んだ最も近い分岐に対して重複探査の確認を行いtrueが帰ってきたらその分岐を除いて再度最も近い分岐を探す
-
 	//重複探査で全部弾かれた場合でもフロンティア領域との関係を見て
-
-	//角度が正側と負側で処理を分ける
-	//マイナス
-
-	//ロボットが壁に垂直な状態でしか
 
 	for(int i=0,e=ss.ranges.size()-1;i!=e;++i){
 		//二つの角度の符号が違うときスキップ
@@ -152,11 +142,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){//分岐のy座標の差は一定の範囲に入っていないと分岐にしないフィルタ
 					double yLengthRight = Eigen::Vector2d(ss.ranges[i]*cos(ss.angles[i]) - ss.ranges[0]*cos(ss.angles[0]),ss.ranges[i]*sin(ss.angles[i]) - ss.ranges[0]*sin(ss.angles[0])).norm();
 					double yLengthLeft = Eigen::Vector2d(ss.ranges[i+1]*cos(ss.angles[i+1]) - ss.ranges[e]*cos(ss.angles[e]),ss.ranges[i+1]*sin(ss.angles[i+1]) - ss.ranges[e]*sin(ss.angles[e])).norm();
-
 					ROS_DEBUG_STREAM("yLengthRight : " << yLengthRight << ", yLengthLeft : " << yLengthLeft << "\n");
-
-					//やはり前後にいくつ続いているかを見たほうが良い?
-
 					if(yLengthLeft > LENGTH_THRESHOLD_Y && yLengthRight > LENGTH_THRESHOLD_Y){//見つけた分岐から左右に一定以上センサデータが続いていないと分岐にしないフィルタ
 						localList.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
 					}
@@ -214,53 +200,18 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			double min = DBL_MAX;
 			for(int i=0,ei=globalList.size();i!=ei;++i){
 				double sum = fs.sumFrontierAngle(globalList[i],Eigen::Vector2d(globalList[i].x-pose.position.x,globalList[i].y-pose.position.y).normalized(),frontiers);
-				//まずここで逆方向に言った場合と比較する
 				if(min > sum){
 					min = std::move(sum);
 					goal = globalList[i];
 				}
 			}
 			//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
-			//初めに逆方向見る
-			//逆方向のベクトル作成(yをマイナスにすればいいだけ)//ｘ軸に並行な向きの時だけだった
-			// Eigen::Vector3d vec(goal.x-pose.position.x,goal.y-pose.position.y,0.0);
-
-			//mapを埋めるやつ先に作る
-
-			//poselogにスタンプつけておいて時間で見る
-
-			//さっき通ったばかりのところは行きたくないよ関数//重複探査阻止の中で一番優先度が高い
-
-			// double yaw = CommonLib::qToYaw(pose.orientation);
-			// Eigen::Vector3d forwardVec(cos(yaw),sin(yaw),0.0);//このベクトルを軸とした座標系に変換する//普通に回転行列かければ良いのか？
-			// Eigen::Quaterniond q=Eigen::Quaterniond::FromTwoVectors(forwardVec,vec);//forward->vecの回転
-
-			// Eigen::Vector3d vecInverse(q*forwardVec);//逆方向のベクトル
-
-			//逆方向の座標
-			//逆方向が良かったらそっちに回転すればいいだけ？
-			
-			//二つのベクトルから回転行列を作って、その逆を掛ける
-
-			// std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))
-
-
-			//自分の前方ベクトルに対して線対称なベクトル
-			
-			// if(min > fs.sumFrontierAngle(goal,Eigen::Vector2d(vecInverse.x(),vecInverse.y()).normalized(),frontiers)){//上で複数の分岐があった場合は両方向見てる可能性が高いから逆方向を見るのは最小を判定した後で良い
-			// 	//逆方向の方が良かった場合goalを逆方向に書き換える
-			// 	//ベクトルから角度を計算して回転行列を計算する
-			// 	goal.y = goal.y - 2*(goal.y-pose.position.y);
-			// }
-
-			//次に前方
 			if(fs.sumFrontierAngle(pose,BRANCH_MAX_X,frontiers) > min){
 				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")\n");
 				ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");
 				return true;
 			}
 		}
-		
     }
 
 	return false;
@@ -301,7 +252,6 @@ void BranchSearch::publishGoalArray(const std::vector<geometry_msgs::Point>& goa
 	msg.points = goals;
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = MAP_FRAME_ID;
-
 	goalArray_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish GoalList\n");
 }

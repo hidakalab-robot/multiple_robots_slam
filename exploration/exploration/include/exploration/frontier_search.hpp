@@ -4,7 +4,6 @@
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <pcl_ros/point_cloud.h>
 #include <pcl/segmentation/extract_clusters.h>
@@ -92,14 +91,11 @@ private:
     geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info);
     Eigen::Vector3i coordinateToArray(double x,double y,const nav_msgs::MapMetaData& info);
     Eigen::Vector3i coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info);
-
     bool selectGoal(const std::vector<geometry_msgs::Point>& goals, const geometry_msgs::Pose& pose, geometry_msgs::Point& goal);
     void publishGoal(const geometry_msgs::Point& goal);
 	void publishGoalArray(const std::vector<geometry_msgs::Point>& goals);
     void publishGoalArrayAsPose(const std::vector<geometry_msgs::Point>& goals);
-
     void mergeMapCoordinateToLocal(std::vector<exploration_msgs::Frontier>& goal);
-
     std::vector<geometry_msgs::Point> frontiersToPoints(const std::vector<exploration_msgs::Frontier>& fa);
 
 public:
@@ -151,7 +147,6 @@ double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const
     for(const auto& frontier : frontiers){
         sum += (frontier.variance.x>frontier.variance.y)? std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))*frontier.variance.x*frontier.variance.x
                                                         : std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))*frontier.variance.y*frontier.variance.y;
-        // sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));//正規化したベクトル同士の内積のacosを取ると二つのベクトルがなす角度がわかる
     }
 
     ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum << "\n");
