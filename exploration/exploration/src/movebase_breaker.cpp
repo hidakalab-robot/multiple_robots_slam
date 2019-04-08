@@ -38,8 +38,7 @@ void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Pu
     }
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     ros::init(argc, argv, "movebase_breaker");
     ros::NodeHandle nh;
     ros::NodeHandle p("~");

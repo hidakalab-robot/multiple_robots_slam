@@ -1,8 +1,7 @@
 #include <exploration/frontier_search.hpp>
 #include <exploration/movement.hpp>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     ros::init(argc, argv, "frontier_based_exploration_movebase");
 
     FrontierSearch fs;

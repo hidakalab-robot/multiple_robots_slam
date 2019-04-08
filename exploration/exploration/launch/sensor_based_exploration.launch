@@ -20,7 +20,8 @@
     
     <group ns="$(arg robot_name)/$(arg ns)">
         <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
-            <remap from="map" to="$(arg map)"/>
+            <!-- <remap from="map" to="$(arg map)"/> -->
+            <remap from="map" to="fill_map"/>
             <remap from="scan" to="$(arg scan)"/>
             <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
             <remap from="pose" to="$(arg pose)"/>
@@ -44,6 +45,10 @@
         <node pkg="exploration" type="continuity" name="continuity">
             <remap from="sub_topic" to="$(arg bumper_raw)"/>
             <remap from="pub_topic" to="$(arg bumper_continuity)"/>
+        </node>
+
+        <node pkg="exploration" type="map_fill" name="map_fill">
+            <remap from="map" to="$(arg map)"/>
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">

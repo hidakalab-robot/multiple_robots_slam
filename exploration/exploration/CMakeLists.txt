@@ -27,6 +27,8 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
 )
 
+find_package(OpenCV REQUIRED)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -136,6 +138,7 @@ include_directories(
  include
   ${catkin_INCLUDE_DIRS}
   "/usr/include/eigen3"
+  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -233,3 +236,6 @@ target_link_libraries(continuity ${catkin_LIBRARIES})
 
 add_executable(movebase_breaker src/movebase_breaker.cpp)
 target_link_libraries(movebase_breaker ${catkin_LIBRARIES})
+
+add_executable(map_fill src/map_fill.cpp)
+target_link_libraries(map_fill ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})

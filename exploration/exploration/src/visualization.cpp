@@ -1,7 +1,6 @@
 #include <exploration/visualization.hpp>
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]){
     ros::init(argc, argv, "visualization_fbe");
 
     Visualization v;
