@@ -27,6 +27,7 @@ private:
 	bool DUPLICATE_CHECK;
 	double LENGTH_THRESHOLD_Y;
 	int LOG_NEWER_LIMIT;//if 30 -> ログの取得が1Hzの場合30秒前までのログで重複検出
+	double FORWARD_DISTANCE;
 	std::string MAP_FRAME_ID;
 
 	CommonLib::subStruct<geometry_msgs::PoseArray> poseLog_;
@@ -66,6 +67,7 @@ BranchSearch::BranchSearch()
 	p.param<double>("length_threshold_y", LENGTH_THRESHOLD_Y, 0.75);
 	p.param<int>("log_newer_limit", LOG_NEWER_LIMIT, 30);
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
+	p.param<double>("forard_distance", FORWARD_DISTANCE, 2.0);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -125,9 +127,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 	for(int i=0,e=ss.ranges.size()-1;i!=e;++i){
 		//二つの角度の符号が違うときスキップ
-		if(ss.angles[i]*ss.angles[i+1]<0){
-			continue;
-		}
+		if(ss.angles[i]*ss.angles[i+1]<0) continue;
 		// if(scanX <= BRANCH_MAX_X && nextScanX <= BRANCH_MAX_X){//距離が遠い分岐は信用できないフィルタ
 		if(ss.ranges[i] < SCAN_RANGE_THRESHOLD && ss.ranges[i+1] < SCAN_RANGE_THRESHOLD){//距離が遠いのは信用できないのでだめ
 			double scanX = ss.ranges[i]*cos(ss.angles[i]);
@@ -140,9 +140,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					double yLengthRight = Eigen::Vector2d(ss.ranges[i]*cos(ss.angles[i]) - ss.ranges[0]*cos(ss.angles[0]),ss.ranges[i]*sin(ss.angles[i]) - ss.ranges[0]*sin(ss.angles[0])).norm();
 					double yLengthLeft = Eigen::Vector2d(ss.ranges[i+1]*cos(ss.angles[i+1]) - ss.ranges[e]*cos(ss.angles[e]),ss.ranges[i+1]*sin(ss.angles[i+1]) - ss.ranges[e]*sin(ss.angles[e])).norm();
 					ROS_DEBUG_STREAM("yLengthRight : " << yLengthRight << ", yLengthLeft : " << yLengthLeft << "\n");
-					if(yLengthLeft > LENGTH_THRESHOLD_Y && yLengthRight > LENGTH_THRESHOLD_Y){//見つけた分岐から左右に一定以上センサデータが続いていないと分岐にしないフィルタ
-						localList.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
-					}
+					//見つけた分岐から左右に一定以上センサデータが続いていないと分岐にしないフィルタ
+					if(yLengthLeft > LENGTH_THRESHOLD_Y && yLengthRight > LENGTH_THRESHOLD_Y) localList.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
 				}
 			}
 		}
@@ -156,9 +155,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		std::vector<geometry_msgs::Point> globalList;
 		globalList.reserve(localList.size());
 		
-		for(const auto& branch : localList){
-			globalList.emplace_back(CommonLib::msgPoint(pose.position.x + (cos(yaw)*branch.x) - (sin(yaw)*branch.y),pose.position.y + (cos(yaw)*branch.y) + (sin(yaw)*branch.x)));
-		}
+		for(const auto& l : localList) globalList.emplace_back(CommonLib::msgPoint(pose.position.x+(cos(yaw)*l.x)-(sin(yaw)*l.y),pose.position.y+(cos(yaw)*l.y)+(sin(yaw)*l.x)));
 
 		publishGoalArray(globalList);
 
@@ -169,9 +166,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			float dist = DBL_MAX;
 			int id;
 			for(int j=0,e=localList.size();j!=e;++j){
-				if(excludeList.size()>0 && std::any_of(excludeList.begin(), excludeList.end(), [j](int n){ return n == j; })){
-					continue;
-				}
+				if(excludeList.size()>0 && std::any_of(excludeList.begin(), excludeList.end(), [j](int n){ return n == j; })) continue;
 				float tempDist = std::abs(localList[j].x)+std::abs(localList[j].y);
 				if(tempDist <= dist){
 					dist = std::move(tempDist);
@@ -182,12 +177,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
 
-			if(DUPLICATE_CHECK && duplicateDetection(goal)){
-				excludeList.push_back(id);
-			}
-			else{
-				return true;
-			}
+			if(DUPLICATE_CHECK && duplicateDetection(goal)) excludeList.push_back(id);
+			else return true;
 		}
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
@@ -203,7 +194,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				}
 			}
 			//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
-			if(fs.sumFrontierAngle(pose,BRANCH_MAX_X,frontiers) > min){
+			if(fs.sumFrontierAngle(pose,FORWARD_DISTANCE,frontiers) > min){
 				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")\n");
 				ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");
 				return true;

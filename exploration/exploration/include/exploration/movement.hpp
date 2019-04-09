@@ -164,14 +164,11 @@ void Movement::approx(std::vector<float>& scanRanges){
     }		
     if(std::isnan(scanRanges[0])){
         scanRanges[0] = scanRanges[1] - (scanRanges[2] - scanRanges[1]);
-        if(scanRanges[0] < 0){
-            scanRanges[0] = 0;
-        }
+        if(scanRanges[0] < 0) scanRanges[0] = 0;
     }
 }
 
 void Movement::moveToGoal(const geometry_msgs::Point& goal){
-
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
     
     while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
@@ -205,13 +202,8 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
 
     ROS_INFO_STREAM("move_base was finished\n");
 
-    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED){
-        ROS_INFO_STREAM("I Reached Given Target");
-    }
-    else{
-        ROS_WARN_STREAM("I do not Reached Given Target");
-    }
-    
+    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) ROS_INFO_STREAM("I Reached Given Target");
+    else ROS_WARN_STREAM("I do not Reached Given Target");
 }
 
 void Movement::moveToForward(void){
@@ -220,12 +212,8 @@ void Movement::moveToForward(void){
     scan_.q.callOne(ros::WallDuration(1));
 
     double angle;
-    if(forwardWallDetection(scan_.data, angle)){
-        vfhMovement(scan_.data,false,std::move(angle));
-    }
-    else if(!roadCenterDetection(scan_.data)){
-        vfhMovement(scan_.data,true,0.0);
-    }
+    if(forwardWallDetection(scan_.data, angle)) vfhMovement(scan_.data,false,std::move(angle));
+    else if(!roadCenterDetection(scan_.data)) vfhMovement(scan_.data,true,0.0);
     
 }
 
@@ -234,9 +222,7 @@ void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double a
     if(!bumperCollision(bumper_.data)){
         double resultAngle = vfhCalculation(scan,straight,angle);
         if((int)resultAngle == INT_MAX){
-            if(!emergencyAvoidance(scan)){
-                recoveryRotation();
-            }
+            if(!emergencyAvoidance(scan)) recoveryRotation();
         }
         else{
             velocity_.pub.publish(velocityGenerator(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN));
@@ -334,9 +320,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 			if(count == SAFE_NUM && start >= SAFE_NUM){
 				count = 0;
 				for(int j=start,f=start-SAFE_NUM;j!=f;--j){
-					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM){
-						++count;
-					}
+					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM) ++count;
 				}
 				if(count == SAFE_NUM){
 					plus = start;
@@ -359,9 +343,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 			if(count == SAFE_NUM && start <= scan.ranges.size()-SAFE_NUM){
 				count = 0;
 				for(int j=start,e=start+SAFE_NUM;j!=e;++j){
-					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM){
-						++count;
-					}
+					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM) ++count;
 				}
 				if(count == SAFE_NUM){
 					minus = start;
@@ -388,18 +370,14 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     //minus側の平均
     double aveM=0;
     for(int i=0,e=scan.ranges.size()/2;i!=e;++i){
-        if(!std::isnan(scan.ranges[i])){
-            aveM += scan.ranges[i];
-        }
+        if(!std::isnan(scan.ranges[i])) aveM += scan.ranges[i];
     }
     aveM /= scan.ranges.size()/2;
 
     //plus側
     double aveP=0;
     for(int i=scan.ranges.size()/2,e=scan.ranges.size();i!=e;++i){
-        if(!std::isnan(scan.ranges[i])){
-            aveP += scan.ranges[i];
-        }
+        if(!std::isnan(scan.ranges[i])) aveP += scan.ranges[i];
     }
     aveP /= scan.ranges.size()/2;
 
@@ -422,12 +400,8 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
             }
         }
         else{//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
-            if(previousOrientation > 0){
-                ROS_INFO_STREAM("Avoidance to Left\n");
-            }
-            else{
-                ROS_INFO_STREAM("Avoidance to Right\n");
-            }
+            if(previousOrientation > 0) ROS_INFO_STREAM("Avoidance to Left\n");
+            else ROS_INFO_STREAM("Avoidance to Right\n");
         }
         velocity_.pub.publish(velocityGenerator(previousOrientation*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
         return true;
@@ -460,9 +434,7 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
         }
     }
 
-    if(scanRect.ranges.size() < 2){
-        return false;
-    }
+    if(scanRect.ranges.size() < 2) return false;
 
     for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
         if(std::abs(scanRect.ranges[i+1]*sin(scanRect.angles[i+1]) - scanRect.ranges[i]*sin(scanRect.angles[i])) >= ROAD_THRESHOLD){
@@ -484,9 +456,7 @@ void Movement::oneRotation(void){
     double initYaw,yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
 
-    if(std::isnan(initSign)){
-	    initSign = 1.0;
-    }
+    if(std::isnan(initSign)) initSign = 1.0;
 
     //initYawが+の時は+回転
     //initYawが-の時は-回転
@@ -497,9 +467,7 @@ void Movement::oneRotation(void){
         velocity_.pub.publish(vel);
         pose_.q.callOne(ros::WallDuration(1));
         yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
-        if(yawOld * yaw < 0){
-            count++;
-        }
+        if(yawOld * yaw < 0) ++count;
     }
 }
 
@@ -556,9 +524,7 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
                     break;
                 }
             }
-            if(temp > maxSpaceMinus){
-                maxSpaceMinus = std::move(temp);
-            }
+            if(temp > maxSpaceMinus) maxSpaceMinus = std::move(temp);
         }
         else{
             ++countNanMinus;
@@ -579,9 +545,7 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
                     break;
                 }
             }
-            if(temp > maxSpacePlus){
-                maxSpacePlus = std::move(temp);
-            }
+            if(temp > maxSpacePlus) maxSpacePlus = std::move(temp);
         }
         else{
             ++countNanPlus;
