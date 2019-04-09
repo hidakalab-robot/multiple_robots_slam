@@ -12,9 +12,6 @@
 class Visualization
 {
 private:
-    //共通変数
-    ros::NodeHandle p;
-
     //pose
     CommonLib::subStructSimple pose_;
     CommonLib::pubStruct<visualization_msgs::Marker> poseMarker_;    
@@ -39,13 +36,14 @@ public:
 };
 
 Visualization::Visualization()
-    :p("~")
-    ,pose_("pose",1,&Visualization::poseCB, this)
+    :pose_("pose",1,&Visualization::poseCB, this)
     ,poseMarker_("visualization", 1)
     ,goal_("goal",1,&Visualization::goalCB, this)
     ,goalMarker_("visualization", 1)
     ,goalArray_("goal_Array",1,&Visualization::goalArrayCB, this)
     ,goalArrayMarker_("visualization", 1){
+
+    ros::NodeHandle p("~");
 
     std::string MAP_FRAME_ID;
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");

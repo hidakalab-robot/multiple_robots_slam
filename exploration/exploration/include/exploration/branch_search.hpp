@@ -17,9 +17,7 @@
 class BranchSearch
 {
 private:
-	
 	//パラメータ
-	ros::NodeHandle p;
 	double SCAN_RANGE_THRESHOLD;
     double BRANCH_ANGLE;
     double CENTER_RANGE_MIN;
@@ -51,12 +49,13 @@ public:
 };
 
 BranchSearch::BranchSearch()
-	:p("~")
-	,poseLog_("pose_log",1)
+	:poseLog_("pose_log",1)
 	,scan_("scan",1)
 	,pose_("pose",1)
 	,goal_("goal", 1, true)
 	,goalArray_("goal_array", 1, true){
+
+	ros::NodeHandle p("~");
 
 	//branch_searchパラメータの読み込み(基本変更しなくて良い)
 	p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");

@@ -61,8 +61,6 @@ private:
             ,variances(cs.variances){};
     };
 
-    ros::NodeHandle p;
-
     float FILTER_SQUARE_DIAMETER;
     bool OBSTACLE_FILTER;
     double PREVIOUS_GOAL_THRESHOLD;
@@ -110,13 +108,14 @@ public:
 };
 
 FrontierSearch::FrontierSearch()
-    :p("~")
-    ,map_("map",1)
+    :map_("map",1)
     ,pose_("pose",1)
     ,goal_("goal",1,true)
     ,goalArray_("goal_array",1,true)
     ,goalPoseArray_("goal_pose_array",1,true)
     ,colorCloud_("horizon_cluster/color",1){
+
+    ros::NodeHandle p("~");
 
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);

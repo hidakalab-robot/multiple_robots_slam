@@ -37,7 +37,6 @@ class Movement
 {
 private:
     //parameters
-    ros::NodeHandle p;
     double SAFE_DISTANCE;
     double SAFE_SPACE;
     double SCAN_THRESHOLD;
@@ -92,12 +91,13 @@ public:
 };
 
 Movement::Movement()
-    :p("~")
-    ,scan_("scan",1)
+    :scan_("scan",1)
     ,pose_("pose",1)
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
     ,previousOrientation(1.0){
+
+    ros::NodeHandle p("~");
 
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
     p.param<double>("safe_space", SAFE_SPACE, 0.6);
