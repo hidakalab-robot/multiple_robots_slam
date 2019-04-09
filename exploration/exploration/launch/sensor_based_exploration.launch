@@ -30,8 +30,8 @@
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
             <!-- <param name="avoidance_gain" value="0.2"/> -->
             <param name="debug" value="$(arg debug)"/>
-            <param name="color_cluster" value="false"/>
-            <param name="min_cluster_size" value="80"/>
+            <param name="color_cluster" value="true"/>
+            <param name="min_cluster_size" value="50"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">

@@ -34,7 +34,6 @@ struct subStruct{
 struct subStructSimple{
     ros::NodeHandle n;
     ros::Subscriber sub;
-
     template <class U,class V>
     subStructSimple(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U *obj){
         sub = n.subscribe(topic,queue_size,fp,obj);

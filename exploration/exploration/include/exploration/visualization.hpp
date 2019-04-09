@@ -44,7 +44,6 @@ Visualization::Visualization()
     ,goalArrayMarker_("visualization", 1){
 
     ros::NodeHandle p("~");
-
     std::string MAP_FRAME_ID;
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     //poseMarker

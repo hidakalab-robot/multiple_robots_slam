@@ -100,9 +100,9 @@ public:
     FrontierSearch();
 
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
-    template<typename T> T frontierDetection(bool visualize=true);
+    template<typename T> T frontierDetection(bool goalArray=true);
 
-    double sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);
+    double sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin:=branch coordinate
     double sumFrontierAngle(const geometry_msgs::Pose& pose,double forward,const std::vector<exploration_msgs::Frontier>& frontiers);
 
 };
@@ -116,7 +116,6 @@ FrontierSearch::FrontierSearch()
     ,colorCloud_("horizon_cluster/color",1){
 
     ros::NodeHandle p("~");
-
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
     p.param<bool>("obstacle_filter", OBSTACLE_FILTER, true);
@@ -143,9 +142,12 @@ double FrontierSearch::sumFrontierAngle(const geometry_msgs::Pose& pose, double 
 double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers){
     double sum = 0;
     //frontierの大きさで重みをつけたい
+    //距離にも重みをつける
+
     for(const auto& frontier : frontiers){
-        sum += (frontier.variance.x>frontier.variance.y)? std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))*frontier.variance.x*frontier.variance.x
-                                                        : std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())))*frontier.variance.y*frontier.variance.y;
+        Eigen::Vector2d toFrontier(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y);
+        sum += (frontier.variance.x>frontier.variance.y)? std::abs(acos(vec.dot(toFrontier.normalized()))) * toFrontier.lpNorm<1>()  / frontier.variance.x
+                                                        : std::abs(acos(vec.dot(toFrontier.normalized()))) * toFrontier.lpNorm<1>()  / frontier.variance.y;
     }
 
     ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum << "\n");
@@ -153,7 +155,7 @@ double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const
     return sum;
 }
 
-template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool publish){
+template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visualizeGoalArray){
     map_.q.callOne(ros::WallDuration(1));
     
     mapStruct map(map_.data);
@@ -191,7 +193,7 @@ template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(b
 
     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
 
-    if(publish){
+    if(visualizeGoalArray){
         publishGoalArray(goals);
         publishGoalArrayAsPose(goals);
     }
@@ -199,7 +201,7 @@ template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(b
     return goals;
 }
 
-template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetection(bool publish){
+template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetection(bool visualizeGoalArray){
     map_.q.callOne(ros::WallDuration(1));
     mapStruct map(map_.data);
 
@@ -234,7 +236,7 @@ template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetec
         mergeMapCoordinateToLocal(frontiers);
     }
 
-    if(publish){
+    if(visualizeGoalArray){
         std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
         publishGoalArray(goals);
         publishGoalArrayAsPose(goals);

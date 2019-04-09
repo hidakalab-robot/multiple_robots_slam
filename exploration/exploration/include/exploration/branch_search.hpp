@@ -56,8 +56,6 @@ BranchSearch::BranchSearch()
 	,goalArray_("goal_array", 1, true){
 
 	ros::NodeHandle p("~");
-
-	//branch_searchパラメータの読み込み(基本変更しなくて良い)
 	p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
 	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
 	p.param<double>("center_range_min", CENTER_RANGE_MIN, 1.0);

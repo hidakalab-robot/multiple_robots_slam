@@ -98,7 +98,6 @@ Movement::Movement()
     ,previousOrientation(1.0){
 
     ros::NodeHandle p("~");
-
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
     p.param<double>("safe_space", SAFE_SPACE, 0.6);
     p.param<double>("scan_threshold", SCAN_THRESHOLD, 1.5);

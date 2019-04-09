@@ -18,13 +18,15 @@ private:
     double FILL_SIZE_MIN;
 
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
+
 public:
     MapFill():map_("map", 1, &MapFill::mapCB, this),mapImage_("fill_map",1){
         ros::NodeHandle p("~");
-        p.param<double>("fill_size_max",FILL_SIZE_MAX,500);
-        p.param<double>("fill_size_min",FILL_SIZE_MIN,0);
+        p.param<double>("fill_size_max",FILL_SIZE_MAX,1000);
+        p.param<double>("fill_size_min",FILL_SIZE_MIN,10);
     };
 };
+
 
 void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     ROS_INFO_STREAM("map input\n");
