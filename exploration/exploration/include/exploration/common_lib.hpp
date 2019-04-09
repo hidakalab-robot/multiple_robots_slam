@@ -10,6 +10,7 @@
 #include <pcl_ros/point_cloud.h>
 #include <geometry_msgs/Pose.h>
 #include <exploration_msgs/Frontier.h>
+#include <std_msgs/Bool.h>
 
 namespace CommonLib
 {
@@ -24,7 +25,7 @@ struct subStruct{
         sub = n.subscribe<T>(topic, queue_size, [this](const boost::shared_ptr<const T>& msg) {data = *msg;});//データをコピーするコールバック関数を自動生成
     };
 
-    template <class U,class V>
+    template <class U,typename V>
     subStruct(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U* obj){
         n.setCallbackQueue(&q);
         sub = n.subscribe(topic,queue_size,fp,obj);
@@ -34,19 +35,18 @@ struct subStruct{
 struct subStructSimple{
     ros::NodeHandle n;
     ros::Subscriber sub;
-    template <class U,class V>
-    subStructSimple(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U *obj){
-        sub = n.subscribe(topic,queue_size,fp,obj);
-    };
+    template <class U,typename V>
+    subStructSimple(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U *obj){ sub = n.subscribe(topic,queue_size,fp,obj);};
+
+    template<typename V>
+    subStructSimple(const std::string& topic,uint32_t queue_size, void(*fp)(V)){ sub = n.subscribe(topic,queue_size,fp);};
 };
 
 template<typename T>
 struct pubStruct{
     ros::NodeHandle n;
     ros::Publisher pub;
-    pubStruct(const std::string& topic,uint32_t queue_size,bool latch=false){
-        pub = n.advertise<T>(topic, queue_size, latch);
-    };
+    pubStruct(const std::string& topic,uint32_t queue_size,bool latch=false){ pub = n.advertise<T>(topic, queue_size, latch);};
 };
 
 struct scanStruct{
@@ -66,8 +66,9 @@ double qToYaw(const tf::Quaternion& q){
 }
 
 double qToYaw(const geometry_msgs::Quaternion& q){
-    tf::Quaternion tq(q.x, q.y, q.z, q.w);
-    return qToYaw(tq);
+    // tf::Quaternion tq(q.x, q.y, q.z, q.w);
+    // return qToYaw(tq);
+    return qToYaw(tf::Quaternion(q.x, q.y, q.z, q.w));
 }
 
 geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0){
@@ -78,15 +79,16 @@ geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0){
     return msg;
 }
 
-std_msgs::Empty msgEmpty(void){
-    std_msgs::Empty msg;
-    return msg;
-}
-
 geometry_msgs::Twist msgTwist(double x=0,double z=0){
     geometry_msgs::Twist msg;
     msg.linear.x = x;
     msg.angular.z = z;
+    return msg;
+}
+
+std_msgs::Bool msgBool(bool d=true){
+    std_msgs::Bool msg;
+    msg.data = d;
     return msg;
 }
 

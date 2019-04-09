@@ -18,24 +18,22 @@ private:
     double FILL_SIZE_MIN;
 
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-
 public:
     MapFill():map_("map", 1, &MapFill::mapCB, this),mapImage_("fill_map",1){
         ros::NodeHandle p("~");
-        p.param<double>("fill_size_max",FILL_SIZE_MAX,2000);
+        p.param<double>("fill_size_max",FILL_SIZE_MAX,1500);
         p.param<double>("fill_size_min",FILL_SIZE_MIN,10);
     };
 };
 
-
 void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
-    ROS_INFO_STREAM("map input\n");
+    ROS_INFO_STREAM("map input");
     //マップから画像に変換 //-1 -> 255 , 100 -> 100 , 0 -> 0
     cv::Mat image(msg->info.height,msg->info.width,CV_8UC1,const_cast<signed char*>(msg->data.data()));
 
     //二値化
     cv::Mat binImage;
-    cv::threshold(image,binImage,0,254,cv::THRESH_BINARY|cv::THRESH_OTSU);
+    cv::threshold(image,binImage,254,255,cv::THRESH_BINARY);
     // binImage = ~binImage;//反転
 
     //輪郭検出
@@ -66,7 +64,7 @@ void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     //未知領域部分の色を塗り替え
     std::replace(map.data.begin(),map.data.end(),127,-1);
 
-    ROS_INFO_STREAM("map_image publish\n");
+    ROS_INFO_STREAM("map_image publish");
     mapImage_.pub.publish(map);
 }
 

@@ -239,3 +239,6 @@ target_link_libraries(movebase_breaker ${catkin_LIBRARIES})
 
 add_executable(map_fill src/map_fill.cpp)
 target_link_libraries(map_fill ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+
+add_executable(exploration_manager src/exploration_manager.cpp)
+target_link_libraries(exploration_manager ${catkin_LIBRARIES})

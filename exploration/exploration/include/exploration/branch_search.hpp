@@ -67,12 +67,11 @@ BranchSearch::BranchSearch()
 	p.param<double>("length_threshold_y", LENGTH_THRESHOLD_Y, 0.75);
 	p.param<int>("log_newer_limit", LOG_NEWER_LIMIT, 30);
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
-	p.param<double>("forard_distance", FORWARD_DISTANCE, 2.0);
+	p.param<double>("forard_distance", FORWARD_DISTANCE, 3.0);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
-	pose_.q.callOne(ros::WallDuration(1));
-	scan_.q.callOne(ros::WallDuration(1));
+	if(pose_.q.callOne(ros::WallDuration(1)) || scan_.q.callOne(ros::WallDuration(1))) return false;
 
 	const int scanWidth = BRANCH_ANGLE / scan_.data.angle_increment;
     const int scanMin = (scan_.data.ranges.size()/2)-1 - scanWidth;
@@ -80,7 +79,7 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 
     for(int i = scanMin;i!=scanMax;++i){
 		if(!std::isnan(scan_.data.ranges[i]) && scan_.data.ranges[i] < CENTER_RANGE_MIN){
-			ROS_ERROR_STREAM("It may be Close to Obstacles\n");
+			ROS_ERROR_STREAM("It may be Close to Obstacles");
 			return false;
 		}
     }
@@ -95,23 +94,23 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
     }
 
 	if(scanRect.ranges.size() < 2){
-		ROS_ERROR_STREAM("scan_.data is Insufficient\n");
+		ROS_ERROR_STREAM("scan_.data is Insufficient");
 		return false;
     }
 
 	if(branchDetection(scanRect,goal,pose_.data.pose)){
 		publishGoal(goal);
-		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")\n");
+		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")");
 		return true;
     }
 	else{
-		ROS_INFO_STREAM("Branch Do Not Found\n");
+		ROS_INFO_STREAM("Branch Do Not Found");
 		return false;
 	}
 }
 
 bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose){
-	ROS_DEBUG_STREAM("Searching Branch\n");
+	ROS_DEBUG_STREAM("Searching Branch");
 
 	//分岐のy座標の差がこの値の範囲内の場合のみ分岐として検出
 	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(ss.angleMax);//1.0 * tan(0.52) = 0.57
@@ -148,7 +147,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	}
 	
 	if(localList.size()>0){
-		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size() << "\n");
+		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
 
 		double yaw = CommonLib::qToYaw(pose.orientation);
 
@@ -175,7 +174,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				}
 			}
 
-			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")\n");
+			ROS_DEBUG_STREAM("Branch Candidate : (" << goal.x << "," << goal.y << ")");
 
 			if(DUPLICATE_CHECK && duplicateDetection(goal)) excludeList.push_back(id);
 			else return true;
@@ -195,8 +194,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			}
 			//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
 			if(fs.sumFrontierAngle(pose,FORWARD_DISTANCE,frontiers) > min){
-				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")\n");
-				ROS_DEBUG_STREAM("This Branch continues to a large frontier\n");
+				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
+				ROS_DEBUG_STREAM("This Branch continues to a large frontier");
 				return true;
 			}
 		}
@@ -206,7 +205,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 }
 
 bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
-	poseLog_.q.callOne(ros::WallDuration(1));
+	if(poseLog_.q.callOne(ros::WallDuration(1))) return false;
 
 	double xPlus = goal.x + DUPLICATE_TOLERANCE;
 	double xMinus = goal.x - DUPLICATE_TOLERANCE;
@@ -217,12 +216,12 @@ bool BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
 		//過去のオドメトリが許容範囲の中に入っているか//
 		if((xPlus >= poseLog_.data.poses[i].position.x) && (xMinus <= poseLog_.data.poses[i].position.x)){
 			if((yPlus >= poseLog_.data.poses[i].position.y) && (yMinus <= poseLog_.data.poses[i].position.y)){
-				ROS_DEBUG_STREAM("This Branch is Duplicated\n");
+				ROS_DEBUG_STREAM("This Branch is Duplicated");
 				return true;
 			}
 		}
 	}
-	ROS_DEBUG_STREAM("This Branch is Not Duplicated\n");
+	ROS_DEBUG_STREAM("This Branch is Not Duplicated");
 	return false;
 }
 
@@ -232,7 +231,7 @@ void BranchSearch::publishGoal(const geometry_msgs::Point& goal){
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = MAP_FRAME_ID;
 	goal_.pub.publish(msg);
-	ROS_INFO_STREAM("Publish Goal\n");
+	ROS_INFO_STREAM("Publish Goal");
 }
 
 void BranchSearch::publishGoalArray(const std::vector<geometry_msgs::Point>& goals){
@@ -241,7 +240,7 @@ void BranchSearch::publishGoalArray(const std::vector<geometry_msgs::Point>& goa
 	msg.header.stamp = ros::Time::now();
 	msg.header.frame_id = MAP_FRAME_ID;
 	goalArray_.pub.publish(msg);
-	ROS_INFO_STREAM("Publish GoalList\n");
+	ROS_INFO_STREAM("Publish GoalList");
 }
 
 #endif //BRANCH_SEARCH_HPP

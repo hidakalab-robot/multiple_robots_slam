@@ -7,22 +7,18 @@ int main(int argc, char *argv[]){
     BranchSearch bs;
     Movement mv;
 
+    CommonLib::subStruct<std_msgs::Bool> isEnd("end",1);
+
     geometry_msgs::Point goal;
     ros::NodeHandle p("~");
     bool DEBUG;
     p.param<bool>("debug",DEBUG,false);
     
-    if(!DEBUG){
-        mv.oneRotation();
-    }
+    if(!DEBUG) mv.oneRotation();
 
     while(ros::ok()){
-        if(bs.getGoal(goal) && !DEBUG){
-            mv.moveToGoal(goal);
-        }
-        else{
-            mv.moveToForward();
-        }
+        bs.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
+        if(!isEnd.q.callOne(ros::WallDuration(1))&&isEnd.data.data) break;
     }
     
     return 0;

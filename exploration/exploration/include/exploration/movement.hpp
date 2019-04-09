@@ -172,7 +172,7 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
     
     while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
-        ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME << "\n");
+        ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME);
     }
 
     move_base_msgs::MoveBaseGoal movebaseGoal;
@@ -181,7 +181,7 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
     movebaseGoal.target_pose.pose.position.x =  goal.x;
     movebaseGoal.target_pose.pose.position.y =  goal.y;
 
-    pose_.q.callOne(ros::WallDuration(1.0));
+    if(pose_.q.callOne(ros::WallDuration(1.0))) return;
 
     //ゴールでの姿勢を計算
     Eigen::Vector2d startToGoal(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
@@ -192,24 +192,24 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
     movebaseGoal.target_pose.pose.orientation.z = q.z();
     movebaseGoal.target_pose.pose.orientation.w = q.w();
 
-    ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose << "\n");
+    ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose);
     
-    ROS_INFO_STREAM("send goal to move_base\n");
+    ROS_INFO_STREAM("send goal to move_base");
     ac.sendGoal(movebaseGoal);
 
-    ROS_INFO_STREAM("wait for result\n");
+    ROS_INFO_STREAM("wait for result");
     ac.waitForResult();
 
-    ROS_INFO_STREAM("move_base was finished\n");
+    ROS_INFO_STREAM("move_base was finished");
 
     if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) ROS_INFO_STREAM("I Reached Given Target");
     else ROS_WARN_STREAM("I do not Reached Given Target");
 }
 
 void Movement::moveToForward(void){
-    ROS_INFO_STREAM("Moving Straight\n");
+    ROS_INFO_STREAM("Moving Straight");
 
-    scan_.q.callOne(ros::WallDuration(1));
+    if(scan_.q.callOne(ros::WallDuration(1))) return;
 
     double angle;
     if(forwardWallDetection(scan_.data, angle)) vfhMovement(scan_.data,false,std::move(angle));
@@ -218,8 +218,7 @@ void Movement::moveToForward(void){
 }
 
 void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
-    bumper_.q.callOne(ros::WallDuration(1));
-    if(!bumperCollision(bumper_.data)){
+    if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){
         double resultAngle = vfhCalculation(scan,straight,angle);
         if((int)resultAngle == INT_MAX){
             if(!emergencyAvoidance(scan)) recoveryRotation();
@@ -235,7 +234,7 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     //バックの後に回転動作をさせる
     if(bumper.state){
         //バック部分
-        ROS_WARN_STREAM("Bumper Hit !!\n");
+        ROS_WARN_STREAM("Bumper Hit !!");
         geometry_msgs::Twist vel;
         vel.linear.x = BACK_VELOCITY;
         ros::Duration duration(BACK_TIME);
@@ -276,9 +275,9 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
     //要求角度と最も近くなる配列の番号を探索
     //安全な角度マージンの定義
     //要求角度に最も近くなる右側と左側の番号を探索
-    ROS_DEBUG_STREAM("VFH Calculation\n");
+    ROS_DEBUG_STREAM("VFH Calculation");
 
-    ROS_DEBUG_STREAM("Goal Angle : " << angle << " [deg]\n");
+    ROS_DEBUG_STREAM("Goal Angle : " << angle << " [deg]");
 
     approx(scan.ranges);
 
@@ -287,7 +286,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 
     if(isCenter){
         goalI = scan.ranges.size() / 2 - centerPosition;
-        centerPosition = (centerPosition == 0) ? 1 : 0;
+        centerPosition = centerPosition == 0 ? 1 : 0;
     }
     else{
         double min = DBL_MAX;
@@ -354,13 +353,12 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 	}
 
     if(plus != INT_MAX || minus != INT_MAX){
-		double pd = (plus == INT_MAX) ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
-		double md = (minus == INT_MAX) ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
-
-        return (pd<=md) ? scan.angle_min + scan.angle_increment * plus : scan.angle_min + scan.angle_increment * minus;
+		double pd = plus == INT_MAX ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
+		double md = minus == INT_MAX ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
+        return pd<=md ? scan.angle_min + scan.angle_increment * plus : scan.angle_min + scan.angle_increment * minus;
     }
     else{
-        ROS_DEBUG_STREAM("Move Angle : Not Found\n");
+        ROS_DEBUG_STREAM("Move Angle : Not Found");
         return INT_MAX;
     }
 }
@@ -392,28 +390,28 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD){//大きさが変わった時の処理
             if(aveP > aveM){
                 previousOrientation = 1.0;
-                ROS_INFO_STREAM("Avoidance to Left\n");
+                ROS_INFO_STREAM("Avoidance to Left");
             }
             else{
                 previousOrientation = -1.0;
-                ROS_INFO_STREAM("Avoidance to Right\n");
+                ROS_INFO_STREAM("Avoidance to Right");
             }
         }
         else{//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
-            if(previousOrientation > 0) ROS_INFO_STREAM("Avoidance to Left\n");
-            else ROS_INFO_STREAM("Avoidance to Right\n");
+            if(previousOrientation > 0) ROS_INFO_STREAM("Avoidance to Left");
+            else ROS_INFO_STREAM("Avoidance to Right");
         }
         velocity_.pub.publish(velocityGenerator(previousOrientation*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
         return true;
     }
     else{
-        ROS_WARN_STREAM("I can not avoid it\n");
+        ROS_WARN_STREAM("I can not avoid it");
         return false;
     }
 }
 
 void Movement::recoveryRotation(void){
-    ROS_WARN_STREAM("Recovery Rotation !\n");
+    ROS_WARN_STREAM("Recovery Rotation !");
     velocity_.pub.publish(CommonLib::msgTwist(0,previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
 }
 
@@ -438,20 +436,20 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
 
     for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
         if(std::abs(scanRect.ranges[i+1]*sin(scanRect.angles[i+1]) - scanRect.ranges[i]*sin(scanRect.angles[i])) >= ROAD_THRESHOLD){
-            ROS_DEBUG_STREAM("Road Center Found\n");
+            ROS_DEBUG_STREAM("Road Center Found");
             velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2*VELOCITY_GAIN,FORWARD_VELOCITY*VELOCITY_GAIN,ROAD_CENTER_GAIN));
             return true;
         }
     }
-    ROS_DEBUG_STREAM("Road Center Do Not Found\n");
+    ROS_DEBUG_STREAM("Road Center Do Not Found");
     return false;
 }
 
 void Movement::oneRotation(void){
     //ロボットがz軸周りに一回転する
-    ROS_DEBUG_STREAM("rotation\n");
+    ROS_DEBUG_STREAM("rotation");
 
-    pose_.q.callOne(ros::WallDuration(1));
+    if(pose_.q.callOne(ros::WallDuration(1))) return;
 
     double initYaw,yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
@@ -465,7 +463,7 @@ void Movement::oneRotation(void){
     for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
         double yawOld = yaw;
         velocity_.pub.publish(vel);
-        pose_.q.callOne(ros::WallDuration(1));
+        if(pose_.q.callOne(ros::WallDuration(1))) continue;
         yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
         if(yawOld * yaw < 0) ++count;
     }
@@ -499,12 +497,12 @@ bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& 
     //壁の割合が少ないときと、壁までの距離が遠い時は検出判定をしない
     //追加で壁に近くなりすぎると判定ができなくなるので無効とする
     if((double)count/(PLUS-MINUS) > WALL_RATE_THRESHOLD && wallDistance < WALL_DISTANCE_UPPER_THRESHOLD && wallDistance > WALL_DISTANCE_LOWER_THRESHOLD){
-        ROS_INFO_STREAM("Wall Found : " << wallDistance << " [m]\n");
+        ROS_INFO_STREAM("Wall Found : " << wallDistance << " [m]");
         angle = sideSpaceDetection(scan,PLUS, MINUS);
         return true;
     }
     else{
-        ROS_INFO_STREAM("Wall not Found or Out of Range\n");
+        ROS_INFO_STREAM("Wall not Found or Out of Range");
         return false;
     }
 }
@@ -560,15 +558,15 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
 
     //不確定 //壁までの距離が遠いときは平均距離が長いほうが良い、近いときは開いてる領域が大きい方が良い
     if(maxSpaceMinus > maxSpacePlus && aveMinus > EMERGENCY_THRESHOLD){
-        ROS_INFO_STREAM("Found Right Space\n");
+        ROS_INFO_STREAM("Found Right Space");
         return (scan.angle_min + (scan.angle_increment * (scan.ranges.size()/2+minus)/2))/2;
     }
     else if(maxSpacePlus > maxSpaceMinus && avePlus > EMERGENCY_THRESHOLD){
-        ROS_INFO_STREAM("Found Left Space\n");
+        ROS_INFO_STREAM("Found Left Space");
         return (scan.angle_min + (scan.angle_increment * (plus + scan.ranges.size()/2)/2))/2;
     }
     else{
-        ROS_INFO_STREAM("Not Found Space\n");
+        ROS_INFO_STREAM("Not Found Space");
         return 0;
     }
 }

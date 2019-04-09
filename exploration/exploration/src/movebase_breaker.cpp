@@ -11,9 +11,7 @@ ns == namespace of move_base topic
 void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Publisher& pub){
     static actionlib_msgs::GoalID lastId;
     static bool adhesion = false;
-    if(msg->status_list.empty()){
-        return;
-    }
+    if(msg->status_list.empty()) return;
     
     actionlib_msgs::GoalID newId = msg->status_list.back().goal_id;
     if(lastId.id != newId.id){
@@ -33,9 +31,7 @@ void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Pu
         lastId = newId;
         std::cout << "いいね" << std::endl;
     }
-    else if(adhesion && msg->status_list.back().status != actionlib_msgs::GoalStatus::PREEMPTED){
-        pub.publish(newId);
-    }
+    else if(adhesion && msg->status_list.back().status != actionlib_msgs::GoalStatus::PREEMPTED) pub.publish(newId);
 }
 
 int main(int argc, char *argv[]){

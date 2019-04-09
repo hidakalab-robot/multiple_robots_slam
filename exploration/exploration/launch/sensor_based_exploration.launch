@@ -31,7 +31,7 @@
             <!-- <param name="avoidance_gain" value="0.2"/> -->
             <param name="debug" value="$(arg debug)"/>
             <param name="color_cluster" value="true"/>
-            <param name="min_cluster_size" value="50"/>
+            <param name="min_cluster_size" value="30"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
