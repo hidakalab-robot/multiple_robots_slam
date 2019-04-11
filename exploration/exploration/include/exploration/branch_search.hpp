@@ -27,7 +27,6 @@ private:
 	bool DUPLICATE_CHECK;
 	double LENGTH_THRESHOLD_Y;
 	int LOG_NEWER_LIMIT;//if 30 -> ログの取得が1Hzの場合30秒前までのログで重複検出
-	double FORWARD_DISTANCE;
 	std::string MAP_FRAME_ID;
 
 	CommonLib::subStruct<geometry_msgs::PoseArray> poseLog_;
@@ -67,7 +66,6 @@ BranchSearch::BranchSearch()
 	p.param<double>("length_threshold_y", LENGTH_THRESHOLD_Y, 0.75);
 	p.param<int>("log_newer_limit", LOG_NEWER_LIMIT, 30);
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
-	p.param<double>("forard_distance", FORWARD_DISTANCE, 3.0);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -186,14 +184,14 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		if(frontiers.size()!=0){
 			double min = DBL_MAX;
 			for(int i=0,ei=globalList.size();i!=ei;++i){
-				double sum = fs.sumFrontierAngle(globalList[i],Eigen::Vector2d(globalList[i].x-pose.position.x,globalList[i].y-pose.position.y).normalized(),frontiers);
-				if(min > sum){
-					min = std::move(sum);
+				double val = fs.evoluatePointToFrontier(globalList[i],Eigen::Vector2d(globalList[i].x-pose.position.x,globalList[i].y-pose.position.y).normalized(),frontiers);
+				if(min > val){
+					min = std::move(val);
 					goal = globalList[i];
 				}
 			}
 			//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
-			if(fs.sumFrontierAngle(pose,FORWARD_DISTANCE,frontiers) > min){
+			if(fs.evoluatePointToFrontier(pose,Eigen::Vector2d(goal.x-pose.position.x,goal.y-pose.position.y).norm(),frontiers) > min){
 				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
 				ROS_DEBUG_STREAM("This Branch continues to a large frontier");
 				return true;

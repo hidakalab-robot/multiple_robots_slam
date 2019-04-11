@@ -15,7 +15,7 @@
 
     <arg name="ns" default="exploration"/>
 
-    <arg name="rosbag" default="true"/>
+    <arg name="rosbag" default="false"/>
     <arg name="debug" default="false"/>
     
     <group ns="$(arg robot_name)/$(arg ns)">
@@ -48,6 +48,10 @@
         </node>
 
         <node pkg="exploration" type="map_fill" name="map_fill">
+            <remap from="map" to="$(arg map)"/>
+        </node>
+
+        <node pkg="exploration" type="exploration_manager" name="exploration_manager">
             <remap from="map" to="$(arg map)"/>
         </node>
 

@@ -34,8 +34,7 @@ void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     //二値化
     cv::Mat binImage;
     cv::threshold(image,binImage,254,255,cv::THRESH_BINARY);
-    // binImage = ~binImage;//反転
-
+    
     //輪郭検出
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(image,contours,CV_RETR_LIST,CV_CHAIN_APPROX_NONE);

@@ -102,8 +102,8 @@ public:
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
     template<typename T> T frontierDetection(bool goalArray=true);
 
-    double sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin:=branch coordinate
-    double sumFrontierAngle(const geometry_msgs::Pose& pose,double forward,const std::vector<exploration_msgs::Frontier>& frontiers);
+    double evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin:=branch coordinate
+    double evoluatePointToFrontier(const geometry_msgs::Pose& pose,double forward,const std::vector<exploration_msgs::Frontier>& frontiers);
 
 };
 
@@ -131,15 +131,15 @@ FrontierSearch::FrontierSearch()
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
 }
 
-double FrontierSearch::sumFrontierAngle(const geometry_msgs::Pose& pose, double forward,const std::vector<exploration_msgs::Frontier>& frontiers){
+double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Pose& pose, double forward,const std::vector<exploration_msgs::Frontier>& frontiers){
     //前向きのベクトルを自動生成
     double yaw = CommonLib::qToYaw(pose.orientation);
     double cosYaw = cos(yaw);
     double sinYaw = sin(yaw);
-    return sumFrontierAngle(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),frontiers);
+    return evoluatePointToFrontier(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),frontiers);
 }
 
-double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers){
+double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers){
     //frontierの大きさで重みをつけたい
     //距離にも重みをつける
 
@@ -159,6 +159,9 @@ double FrontierSearch::sumFrontierAngle(const geometry_msgs::Point& origin,const
     //valuesを正規化しつつ評価値を計算
     double sum = 0;
     for(const auto& v : values) sum += v.x()/max.x() * v.y()/max.y()/2 / v.z()/max.z();
+
+    //重みなしの角度だけ
+    // for(const auto& frontier : frontiers) sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));
 
     ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum);
 
@@ -186,7 +189,7 @@ template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(b
 
     for(int i=0,e=cluster.index.size();i!=e;++i){
         if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgPoint(cluster.variances[i].x(),cluster.variances[i].y())));
+        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y())));
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
@@ -225,7 +228,7 @@ template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetec
 
     for(int i=0,e=cluster.index.size();i!=e;++i){
         if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgPoint(cluster.variances[i].x(),cluster.variances[i].y())));
+        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y())));
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());

@@ -16,12 +16,19 @@ int main(int argc, char *argv[]){
     bool DEBUG;
     p.param<bool>("debug",DEBUG,false);
 
+    ros::Time start = ros::Time::now();
+
     if(!DEBUG) mv.oneRotation();
 
     while(ros::ok()){
         if(fs.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
         if(!isEnd.q.callOne(ros::WallDuration(1))&&isEnd.data.data) break;
     }
+
+    ROS_INFO_STREAM("exploration finish !!");
+    ROS_INFO_STREAM("finish time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
+
+    ros::shutdown();
     
     return 0;
 }

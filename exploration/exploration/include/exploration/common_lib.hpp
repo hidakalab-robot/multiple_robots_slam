@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <ros/callback_queue.h>
 #include <geometry_msgs/Point.h>
+#include <geometry_msgs/Vector3.h>
 #include <std_msgs/Empty.h>
 #include <geometry_msgs/Twist.h>
 #include <tf/tf.h>
@@ -11,6 +12,7 @@
 #include <geometry_msgs/Pose.h>
 #include <exploration_msgs/Frontier.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float64.h>
 
 namespace CommonLib
 {
@@ -79,6 +81,14 @@ geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0){
     return msg;
 }
 
+geometry_msgs::Vector3 msgVector(double x=0,double y=0,double z=0){
+    geometry_msgs::Vector3 msg;
+    msg.x = x;
+    msg.y = y;
+    msg.z = z;
+    return msg;
+}
+
 geometry_msgs::Twist msgTwist(double x=0,double z=0){
     geometry_msgs::Twist msg;
     msg.linear.x = x;
@@ -86,8 +96,14 @@ geometry_msgs::Twist msgTwist(double x=0,double z=0){
     return msg;
 }
 
-std_msgs::Bool msgBool(bool d=true){
+std_msgs::Bool msgBool(bool b=true){
     std_msgs::Bool msg;
+    msg.data = b;
+    return msg;
+}
+
+std_msgs::Float64 msgDouble(double d){
+    std_msgs::Float64 msg;
     msg.data = d;
     return msg;
 }
@@ -111,7 +127,7 @@ pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){
     return p;
 }
 
-exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, const geometry_msgs::Point& v){
+exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, const geometry_msgs::Vector3& v){
     exploration_msgs::Frontier msg;
     msg.coordinate = c;
     msg.area = a;

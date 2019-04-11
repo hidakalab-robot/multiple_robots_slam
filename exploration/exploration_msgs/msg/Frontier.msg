@@ -1,3 +1,3 @@
 geometry_msgs/Point coordinate
 float64 area
-geometry_msgs/Point variance
+geometry_msgs/Vector3 variance
