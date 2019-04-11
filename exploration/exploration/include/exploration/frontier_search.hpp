@@ -158,8 +158,8 @@ FrontierSearch::FrontierSearch()
     p.param<bool>("use_merge_map", USE_MERGE_MAP, false);
     p.param<std::string>("merge_map_frame_id", MERGE_MAP_FRAME_ID, "merge_map");
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
-    p.param<double>("angle_weight", ANGLE_WEIGHT, 1.0);
-    p.param<double>("norm_weight", NORM_WEIGHT, 3.0);
+    p.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
+    p.param<double>("norm_weight", NORM_WEIGHT, 2.5);
     p.param<double>("variance_weight", VARIANCE_WEIGHT, 1.0);
 }
 

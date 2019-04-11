@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
 
     while(ros::ok()){
         if(fs.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
-        if(!isEnd.q.callOne(ros::WallDuration(1))&&isEnd.data.data) break;
+        if(!isEnd.q.callOne(ros::WallDuration(0.5))&&isEnd.data.data) break;
     }
 
     ROS_INFO_STREAM("exploration finish !!");
