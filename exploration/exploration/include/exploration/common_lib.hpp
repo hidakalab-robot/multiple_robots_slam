@@ -13,6 +13,7 @@
 #include <exploration_msgs/Frontier.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
+#include <Eigen/Core>
 
 namespace CommonLib
 {
@@ -114,6 +115,21 @@ geometry_msgs::Pose pointToPose(const geometry_msgs::Point& point){
     msg.position.y = point.y;
     msg.position.z = point.z;
     return msg;
+}
+
+Eigen::Vector3d pointToVector3d(const geometry_msgs::Point& point){
+    Eigen::Vector3d vec;
+    vec.x() = point.x;
+    vec.y() = point.y;
+    vec.z() = point.z;
+    return vec;
+}
+
+Eigen::Vector2d pointToVector2d(const geometry_msgs::Point& point){
+    Eigen::Vector2d vec;
+    vec.x() = point.x;
+    vec.y() = point.y;
+    return vec;
 }
 
 pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){

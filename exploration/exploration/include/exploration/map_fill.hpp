@@ -21,8 +21,8 @@ private:
 public:
     MapFill():map_("map", 1, &MapFill::mapCB, this),mapImage_("fill_map",1){
         ros::NodeHandle p("~");
-        p.param<double>("fill_size_max",FILL_SIZE_MAX,1500);
-        p.param<double>("fill_size_min",FILL_SIZE_MIN,10);
+        p.param<double>("fill_size_max",FILL_SIZE_MAX,4000);
+        p.param<double>("fill_size_min",FILL_SIZE_MIN,5);
     };
 };
 
@@ -59,7 +59,7 @@ void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     nav_msgs::OccupancyGrid map;
     map.info = msg->info;
     map.header = msg -> header;
-    map.data = result.reshape(0,1);
+    map.data = result.reshape(0,1);//画像データを一行に変換
     //未知領域部分の色を塗り替え
     std::replace(map.data.begin(),map.data.end(),127,-1);
 

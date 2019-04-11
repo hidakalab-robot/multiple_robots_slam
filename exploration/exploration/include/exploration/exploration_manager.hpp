@@ -25,13 +25,13 @@ private:
             if(m == 0) ++freeSpace;
         }
         double area = msg->info.resolution * msg->info.resolution * freeSpace;
-        area_.pub.publish(CommonLib::msgDouble(area));
         area >= END_AREA*TOLERANCE ? end_.pub.publish(CommonLib::msgBool(true)) : end_.pub.publish(CommonLib::msgBool(false));
+        area_.pub.publish(CommonLib::msgDouble(std::move(area)));
     };
 public:
     ExplorationManager():map_("map", 1,&ExplorationManager::mapCB, this),end_("end",1,true),area_("end/area",1,true){
         ros::NodeHandle p("~");
-        p.param<double>("end_area",END_AREA,46.7*14-9.5*10-((4.1+2.7+7.5)*10-2.7*5.8)-8.0*10-7.5*10);//276.46
+        p.param<double>("end_area",END_AREA,46.7*14-9.5*10-((4.1+2.7+7.5)*10-2.7*5.8)-8.0*10-7.5*10-0.9*10);//267.46
         p.param<double>("tolerance",TOLERANCE,0.9);
     };
 };

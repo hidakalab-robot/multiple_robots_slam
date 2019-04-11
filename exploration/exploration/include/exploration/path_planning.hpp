@@ -10,20 +10,20 @@ path_planning tutorial
 
 In launch file 
     <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
-    <param name="global_costmap/global_frame" value="map"/>
-    <param name="global_costmap/robot_base_frame" value="base_footprint"/>
+    <param name="global_costmap/global_frame" value="map"/> map is robot map frame. e.g. /robot1/map 
+    <param name="global_costmap/robot_base_frame" value="base_footprint"/>  base_footprint is robot base_footprint frame. e.g. /robot1/base_footprint
 
 In source file
 
     if you want to use NavfnROS
-        #include <exploration/path_planning.h>
+        #include <exploration/path_planning.hpp>
         #include <navfn/navfn_ros.h>
             
             static pathPlanning<navfn::NavfnROS> pp("global_cosmap","NavfnROS");
             pp.createPath(start,goal,path); // createPath return bool and insert Navfn-path from start to goal into path 
 
     if you want to use VoronoiPlanner
-        #include <exploration/path_planning.h>
+        #include <exploration/path_planning.hpp>
         #include <voronoi_planner/planner_core.h>
 
             pathPlanning<voronoi_planner::VoronoiPlanner> pp("global_cosmap","voronoi_planner");

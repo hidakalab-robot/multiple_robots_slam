@@ -16,21 +16,22 @@
 //障害物回避を含む
 
 /*
-Using function Example
+movement tutorial
 
-if you want move to goal with move_base
-    moveToGoal(goal,true);
+In source file
 
-if you want move to goal without move_base
-    moveToGoal(goal,false);
-        or
-    moveToGoal(goal);
+    #include <exploration/movement.hpp>
 
-if you want to move forward without goal
-    moveToForward();
+        Movement mv;
 
-if you want to one rotations
-    oneRotation();
+    if you want to move to goal with move_base
+        mv.moveToGoal(goal);//goal type = geometry_msgs::Point
+
+    if you want to move forward
+        mv.moveToForward();
+
+    if you want to one rotations
+        mv.oneRotation();
 */
 
 class Movement 

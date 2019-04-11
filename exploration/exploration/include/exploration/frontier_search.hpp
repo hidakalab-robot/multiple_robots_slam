@@ -16,6 +16,32 @@
 #include <geometry_msgs/PointStamped.h>
 #include <exploration_msgs/PointArray.h>
 
+/*
+frontier_search tutorial
+
+In source file
+
+    #include <exploration/frontier_search.hpp>
+
+        FrontierSearch fs;
+
+    if you want to get frontier cluster coordinates
+
+        fs.frontierDetection<"RETURN_TYPE">("BOOL_VALUE");
+
+        RETURN_TYPE is function return value
+            void
+            std::vector<geometry_msgs::Point>
+            std::vector<exploration_msgs::Frontier>
+
+        BOOL_VALUE
+            if  true(default value)
+                publish goal array (exploration_msgs::PointArray and geometry_msgs::PoseArray)
+
+            if false
+                do not publish goal array
+
+*/
 
 
 class FrontierSearch
@@ -74,6 +100,9 @@ private:
     bool USE_MERGE_MAP;
     std::string MERGE_MAP_FRAME_ID;
     bool COLOR_CLUSTER;
+    double ANGLE_WEIGHT;
+    double NORM_WEIGHT;
+    double VARIANCE_WEIGHT;
 
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
     CommonLib::subStruct<nav_msgs::OccupancyGrid> map_;
@@ -100,9 +129,9 @@ public:
     FrontierSearch();
 
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
-    template<typename T> T frontierDetection(bool goalArray=true);
+    template<typename T> T frontierDetection(bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
 
-    double evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin:=branch coordinate
+    double evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin=branch coordinate
     double evoluatePointToFrontier(const geometry_msgs::Pose& pose,double forward,const std::vector<exploration_msgs::Frontier>& frontiers);
 
 };
@@ -129,6 +158,9 @@ FrontierSearch::FrontierSearch()
     p.param<bool>("use_merge_map", USE_MERGE_MAP, false);
     p.param<std::string>("merge_map_frame_id", MERGE_MAP_FRAME_ID, "merge_map");
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
+    p.param<double>("angle_weight", ANGLE_WEIGHT, 1.0);
+    p.param<double>("norm_weight", NORM_WEIGHT, 3.0);
+    p.param<double>("variance_weight", VARIANCE_WEIGHT, 1.0);
 }
 
 double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Pose& pose, double forward,const std::vector<exploration_msgs::Frontier>& frontiers){
@@ -158,7 +190,7 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
 
     //valuesを正規化しつつ評価値を計算
     double sum = 0;
-    for(const auto& v : values) sum += v.x()/max.x() * v.y()/max.y()/2 / v.z()/max.z();
+    for(const auto& v : values) sum += v.x()/max.x()/ANGLE_WEIGHT * v.y()/max.y()/NORM_WEIGHT / v.z()/max.z()*VARIANCE_WEIGHT;
 
     //重みなしの角度だけ
     // for(const auto& frontier : frontiers) sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));
@@ -242,6 +274,42 @@ template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetec
     }
     
     return frontiers;
+}
+
+template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
+    if(map_.q.callOne(ros::WallDuration(1))) return;
+    
+    mapStruct map(map_.data);
+
+    horizonDetection(map);
+
+    clusterStruct cluster(clusterDetection(map));
+
+    if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
+    
+    if(cluster.index.size() == 0){
+        ROS_INFO_STREAM("Frontier Do Not Found");
+        return;
+    }
+    
+    std::vector<exploration_msgs::Frontier> frontiers;
+    frontiers.reserve(cluster.index.size());
+
+    for(int i=0,e=cluster.index.size();i!=e;++i){
+        if(cluster.index[i].z() == 0) continue;
+        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y())));
+    }
+
+    ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
+
+    if(USE_MERGE_MAP) mergeMapCoordinateToLocal(frontiers);
+
+    std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
+
+    if(visualizeGoalArray){
+        publishGoalArray(goals);
+        publishGoalArrayAsPose(goals);
+    }
 }
 
 bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
