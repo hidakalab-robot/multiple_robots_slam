@@ -1,4 +1,4 @@
-# map_merge
+<!-- # map_merge
 
 ## These packages are used to merge maps
 
@@ -8,4 +8,4 @@
 
 ```
 $ roslaunch map_merge map_merge.launch robot_name:=robot1
-```
+``` -->
