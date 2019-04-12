@@ -190,7 +190,7 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
 
     //valuesを正規化しつつ評価値を計算
     double sum = 0;
-    for(const auto& v : values) sum += v.x()/max.x()/ANGLE_WEIGHT * v.y()/max.y()/NORM_WEIGHT / v.z()/max.z()*VARIANCE_WEIGHT;
+    for(const auto& v : values) sum += v.x()/max.x()/ANGLE_WEIGHT * v.y()/max.y()/NORM_WEIGHT / v.z()/max.z()*VARIANCE_WEIGHT;//式が悪い
 
     //重みなしの角度だけ
     // for(const auto& frontier : frontiers) sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));
