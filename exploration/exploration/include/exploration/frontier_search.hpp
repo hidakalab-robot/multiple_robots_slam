@@ -70,21 +70,25 @@ private:
         std::vector<Eigen::Vector3i> index;
         std::vector<double> areas;
         std::vector<Eigen::Vector2d> variances;
+        std::vector<double> covariance;
 
         clusterStruct(int size){
             index.reserve(size);
             areas.reserve(size);
             variances.reserve(size);
+            covariance.reserve(size);
         };
-        clusterStruct(const std::vector<Eigen::Vector3i>& i,const std::vector<double>& a, const std::vector<Eigen::Vector2d>& v)
+        clusterStruct(const std::vector<Eigen::Vector3i>& i,const std::vector<double>& a, const std::vector<Eigen::Vector2d>& v, const std::vector<double>& c)
             :index(i)
             ,areas(a)
-            ,variances(v){};
+            ,variances(v)
+            ,covariance(c){};
 
         clusterStruct(const clusterStruct& cs)
             :index(cs.index)
             ,areas(cs.areas)
-            ,variances(cs.variances){};
+            ,variances(cs.variances)
+            ,covariance(cs.covariance){};
     };
 
     float FILTER_SQUARE_DIAMETER;
@@ -103,6 +107,7 @@ private:
     double ANGLE_WEIGHT;
     double NORM_WEIGHT;
     double VARIANCE_WEIGHT;
+    double COVARIANCE_WEIGHT;
 
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
     CommonLib::subStruct<nav_msgs::OccupancyGrid> map_;
@@ -161,6 +166,7 @@ FrontierSearch::FrontierSearch()
     p.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
     p.param<double>("norm_weight", NORM_WEIGHT, 2.5);
     p.param<double>("variance_weight", VARIANCE_WEIGHT, 1.0);
+    p.param<double>("covariance_weight", COVARIANCE_WEIGHT, 1.0);
 }
 
 double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Pose& pose, double forward,const std::vector<exploration_msgs::Frontier>& frontiers){
@@ -176,21 +182,25 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
     //距離にも重みをつける
 
     //各要素を正規化したいので初めに全部計算しながら最大値を求める
-    //angle:norm:variance
-    std::vector<Eigen::Vector3d> values;
+    //angle:norm:variance:covariance
+    std::vector<Eigen::Vector4d> values;
     Eigen::Vector3d max(-DBL_MAX,-DBL_MAX,-DBL_MAX);
     for(const auto& f : frontiers){
         Eigen::Vector2d toFrontier(f.coordinate.x - origin.x,f.coordinate.y - origin.y);
-        Eigen::Vector3d temp(std::abs(acos(vec.dot(toFrontier.normalized()))),toFrontier.lpNorm<1>(),f.variance.x>f.variance.y ? f.variance.x : f.variance.y);
-        if(temp.x() > max.x()) max.x() = temp.x();
-        if(temp.y() > max.y()) max.y() = temp.y();
-        if(temp.z() > max.z()) max.z() = temp.z();
+        Eigen::Vector4d temp(std::abs(acos(vec.dot(toFrontier.normalized()))),toFrontier.lpNorm<1>(),f.variance.x>f.variance.y ? f.variance.x : f.variance.y,f.covariance);
+        if(temp[0] > max.x()) max.x() = temp[0];
+        if(temp[1] > max.y()) max.y() = temp[1];
+        if(temp[2] > max.z()) max.z() = temp[2];
         values.emplace_back(temp);
     }
 
+    //半円のフロンティアは影響度下げる？？
+    //半円はxとyの分散が大きい？面積が大きい?共分散は負の相関の可能性もある？？？
+    //共分散が0に近ければ半円!?!?
     //valuesを正規化しつつ評価値を計算
     double sum = 0;
-    for(const auto& v : values) sum += ANGLE_WEIGHT*v.x()/max.x() + NORM_WEIGHT*v.y()/max.y() - VARIANCE_WEIGHT*v.z()/max.z();
+    double eps = 1e-6;
+    for(const auto& v : values) sum += (ANGLE_WEIGHT*v[0]/max.x() + NORM_WEIGHT*v[1]/max.y() - VARIANCE_WEIGHT*v[2]/max.z())/(std::abs(v[4])+eps);
 
     //重みなしの角度だけ
     // for(const auto& frontier : frontiers) sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));
@@ -431,18 +441,25 @@ FrontierSearch::clusterStruct FrontierSearch::clusterDetection(const mapStruct& 
             else if(horizonMap -> points[*pit].y < min.y()) min.y() = horizonMap -> points[*pit].y;
         }
         Eigen::Vector2d centroid(sum.x()/it->indices.size(),sum.y()/it->indices.size());
-        Eigen::Vector2d deviation(0,0);
+        Eigen::Vector2d variance(0,0);
+        double covariance = 0;
         //分散を求めたい
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-            deviation.x() += (horizonMap -> points[*pit].x - centroid.x()) * (horizonMap -> points[*pit].x - centroid.x());
-            deviation.y() += (horizonMap -> points[*pit].y - centroid.y()) * (horizonMap -> points[*pit].y - centroid.y());
+            variance.x() += (horizonMap -> points[*pit].x - centroid.x()) * (horizonMap -> points[*pit].x - centroid.x());
+            variance.y() += (horizonMap -> points[*pit].y - centroid.y()) * (horizonMap -> points[*pit].y - centroid.y());
+            covariance += (horizonMap -> points[*pit].x - centroid.x()) * (horizonMap -> points[*pit].y - centroid.y());
         }
 
-        cs.variances.emplace_back(deviation/std::distance(it->indices.begin(),it->indices.end()));
+        //xyの共分散をxの標準偏差とyの標準偏差で割ると相関係数がでる
+        //標準偏差は分散のルート
+        variance /= std::distance(it->indices.begin(),it->indices.end());
+        covariance /= std::distance(it->indices.begin(),it->indices.end());
+
+        cs.variances.emplace_back(variance);
+        cs.covariance.emplace_back(covariance/sqrt(variance.x())/sqrt(variance.y()));
         cs.index.emplace_back(coordinateToArray(std::move(centroid),map.info));
         Eigen::Vector2d diff(max-min);
         cs.areas.emplace_back(std::abs(diff.x()*diff.y()));
-
     }
 
     return cs;

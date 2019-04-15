@@ -17,11 +17,13 @@
 
     <arg name="rosbag" default="false"/>
     <arg name="debug" default="false"/>
+
+    <arg name="fill" default="true"/>
     
     <group ns="$(arg robot_name)/$(arg ns)">
         <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
-            <!-- <remap from="map" to="$(arg map)"/> -->
-            <remap from="map" to="fill_map"/>
+            <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
+            <remap if="$(arg fill)" from="map" to="fill_map"/>
             <remap from="scan" to="$(arg scan)"/>
             <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
             <remap from="pose" to="$(arg pose)"/>
@@ -32,6 +34,7 @@
             <param name="debug" value="$(arg debug)"/>
             <param name="color_cluster" value="true"/>
             <param name="min_cluster_size" value="30"/>
+            <param name="active_hibrid" value="true"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
@@ -52,7 +55,8 @@
         </node>
 
         <node pkg="exploration" type="exploration_manager" name="exploration_manager">
-            <remap from="map" to="fill_map"/>
+            <remap if="$(arg fill)" from="map" to="fill_map"/>
+            <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
