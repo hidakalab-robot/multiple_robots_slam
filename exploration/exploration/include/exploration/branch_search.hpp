@@ -29,6 +29,7 @@ private:
 	int LOG_NEWER_LIMIT;//if 30 -> ログの取得が1Hzの場合30秒前までのログで重複検出
 	std::string MAP_FRAME_ID;
 	double THROUGH_TOLERANCE;
+	bool ACTIVE_HIBRID;
 
 	CommonLib::subStruct<geometry_msgs::PoseArray> poseLog_;
 	CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
@@ -69,7 +70,7 @@ BranchSearch::BranchSearch()
 	p.param<int>("log_newer_limit", LOG_NEWER_LIMIT, 30);
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
 	p.param<double>("through_tolerance", THROUGH_TOLERANCE, 1.0);
-	
+	p.param<bool>("active_hibrid", ACTIVE_HIBRID, true);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -179,34 +180,37 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
-		std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
-		if(frontiers.size()!=0){
-			double min = DBL_MAX;
-			for(const auto& g : globalList){
-				//座標がthroughBranchに入ってたらスキップ//重複探査阻止の処理を回避するのは二回以上出来ない
-				bool through = false;
-				for(const auto& t : throughBranch){
-					if(Eigen::Vector2d(g.x-t.x,g.y-t.y).norm() < THROUGH_TOLERANCE){
-						through = true;
-						ROS_DEBUG_STREAM("through branch");
-						break;
+		if(ACTIVE_HIBRID){
+			std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
+			if(frontiers.size()!=0){
+				double min = DBL_MAX;
+				for(const auto& g : globalList){
+					//座標がthroughBranchに入ってたらスキップ//重複探査阻止の処理を回避するのは二回以上出来ない
+					bool through = false;
+					for(const auto& t : throughBranch){
+						if(Eigen::Vector2d(g.x-t.x,g.y-t.y).norm() < THROUGH_TOLERANCE){
+							through = true;
+							ROS_DEBUG_STREAM("through branch");
+							break;
+						}
+					}
+					if(through) continue;
+					double val = fs.evoluatePointToFrontier(g,Eigen::Vector2d(g.x-pose.position.x,g.y-pose.position.y).normalized(),frontiers);
+					if(min > val){
+						min = std::move(val);
+						goal = g;
 					}
 				}
-				if(through) continue;
-				double val = fs.evoluatePointToFrontier(g,Eigen::Vector2d(g.x-pose.position.x,g.y-pose.position.y).normalized(),frontiers);
-				if(min > val){
-					min = std::move(val);
-					goal = g;
+				//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
+				if(fs.evoluatePointToFrontier(pose,Eigen::Vector2d(goal.x-pose.position.x,goal.y-pose.position.y).norm(),frontiers) > min){
+					ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
+					ROS_DEBUG_STREAM("This Branch continues to a large frontier");
+					throughBranch.emplace_back(goal);
+					return true;
 				}
 			}
-			//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
-			if(fs.evoluatePointToFrontier(pose,Eigen::Vector2d(goal.x-pose.position.x,goal.y-pose.position.y).norm(),frontiers) > min){
-				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
-				ROS_DEBUG_STREAM("This Branch continues to a large frontier");
-				throughBranch.emplace_back(goal);
-				return true;
-			}
 		}
+		
     }
 
 	return false;
