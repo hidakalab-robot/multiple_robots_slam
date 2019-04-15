@@ -166,7 +166,7 @@ FrontierSearch::FrontierSearch()
     p.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
     p.param<double>("norm_weight", NORM_WEIGHT, 2.5);
     p.param<double>("variance_weight", VARIANCE_WEIGHT, 1.0);
-    p.param<double>("covariance_weight", COVARIANCE_WEIGHT, 1.0);
+    p.param<double>("covariance_weight", COVARIANCE_WEIGHT, 2.0);
 }
 
 double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Pose& pose, double forward,const std::vector<exploration_msgs::Frontier>& frontiers){
@@ -183,6 +183,7 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
 
     //各要素を正規化したいので初めに全部計算しながら最大値を求める
     //angle:norm:variance:covariance
+    //共分散が0に近い奴は弾く？
     std::vector<Eigen::Vector4d> values;
     Eigen::Vector3d max(-DBL_MAX,-DBL_MAX,-DBL_MAX);
     for(const auto& f : frontiers){
@@ -200,7 +201,7 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
     //valuesを正規化しつつ評価値を計算
     double sum = 0;
     double eps = 1e-6;
-    for(const auto& v : values) sum += (ANGLE_WEIGHT*v[0]/max.x() + NORM_WEIGHT*v[1]/max.y() - VARIANCE_WEIGHT*v[2]/max.z())/(std::abs(v[4])+eps);
+    for(const auto& v : values) sum += ANGLE_WEIGHT*v[0]/max.x() + NORM_WEIGHT*v[1]/max.y() - VARIANCE_WEIGHT*v[2]/max.z()-COVARIANCE_WEIGHT * std::abs(v[3]);
 
     //重みなしの角度だけ
     // for(const auto& frontier : frontiers) sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));

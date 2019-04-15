@@ -178,6 +178,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			else return true;
 		}
 
+		//直前に通ったばかりの分岐は強めに通っては行けない
+
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
 		if(ACTIVE_HIBRID){
