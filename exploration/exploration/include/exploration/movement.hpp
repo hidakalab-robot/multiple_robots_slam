@@ -172,9 +172,7 @@ void Movement::approx(std::vector<float>& scanRanges){
 void Movement::moveToGoal(const geometry_msgs::Point& goal){
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
     
-    while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()){
-        ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME);
-    }
+    while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()) ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME);
 
     move_base_msgs::MoveBaseGoal movebaseGoal;
     movebaseGoal.target_pose.header.frame_id = MAP_FRAME_ID;
@@ -203,8 +201,7 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
 
     ROS_INFO_STREAM("move_base was finished");
 
-    if(ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED) ROS_INFO_STREAM("I Reached Given Target");
-    else ROS_WARN_STREAM("I do not Reached Given Target");
+    ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
 }
 
 void Movement::moveToForward(void){
@@ -388,20 +385,11 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
     //まずよけれる範囲化
     if(aveP > EMERGENCY_THRESHOLD || aveM > EMERGENCY_THRESHOLD){
-        if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD){//大きさが変わった時の処理
-            if(aveP > aveM){
-                previousOrientation = 1.0;
-                ROS_INFO_STREAM("Avoidance to Left");
-            }
-            else{
-                previousOrientation = -1.0;
-                ROS_INFO_STREAM("Avoidance to Right");
-            }
-        }
-        else{//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
-            if(previousOrientation > 0) ROS_INFO_STREAM("Avoidance to Left");
-            else ROS_INFO_STREAM("Avoidance to Right");
-        }
+        //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
+        if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation = aveP > aveM ? 1.0 : -1.0;
+
+        ROS_INFO_STREAM((previousOrientation > 0 ? "Avoidance to Left" : "Avoidance to Right"));
+
         velocity_.pub.publish(velocityGenerator(previousOrientation*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
         return true;
     }

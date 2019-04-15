@@ -4,8 +4,8 @@
 /*
 how to use
 
-$ rosrun exploration movebase_breaker ns:=robot1
-ns == namespace of move_base topic
+$ rosrun exploration movebase_canceller _ns:=robot1
+ns = namespace of move_base topic
 */
 
 void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Publisher& pub){
@@ -17,8 +17,7 @@ void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Pu
     if(lastId.id != newId.id){
         adhesion = false;
         //その目標を許すかどうかの判断をする
-        std::cout << "id : " << newId.id << std::endl;
-        std::cout << "ここ行っても良い？ y/n" << std::endl;
+        std::cout << "id : " << newId.id << "\nここ行っても良い？ y/n" << std::endl;
         char judge;
         std::cin >> judge;
         if(judge == 'n'){

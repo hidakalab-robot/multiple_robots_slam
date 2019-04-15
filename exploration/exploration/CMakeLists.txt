@@ -234,8 +234,8 @@ target_link_libraries(visualization ${catkin_LIBRARIES})
 add_executable(continuity src/continuity.cpp)
 target_link_libraries(continuity ${catkin_LIBRARIES})
 
-add_executable(movebase_breaker src/movebase_breaker.cpp)
-target_link_libraries(movebase_breaker ${catkin_LIBRARIES})
+add_executable(movebase_canceller src/movebase_canceller.cpp)
+target_link_libraries(movebase_canceller ${catkin_LIBRARIES})
 
 add_executable(map_fill src/map_fill.cpp)
 target_link_libraries(map_fill ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})

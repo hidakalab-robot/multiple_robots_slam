@@ -23,8 +23,7 @@ int main(int argc, char *argv[]){
         if(!isEnd.q.callOne(ros::WallDuration(0.5))&&isEnd.data.data) break;
     }
     
-    ROS_INFO_STREAM("exploration finish !!");
-    ROS_INFO_STREAM("finish time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
+    ROS_INFO_STREAM("exploration finish !!\nfinish time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
 
     ros::shutdown();
 
