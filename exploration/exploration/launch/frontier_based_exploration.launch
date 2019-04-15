@@ -44,7 +44,7 @@
         </node>
 
         <node pkg="exploration" type="exploration_manager" name="exploration_manager">
-            <remap from="map" to="$(arg map)"/>
+            <remap from="map" to="fill_map"/>
         </node>
 
 	    <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
