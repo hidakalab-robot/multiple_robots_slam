@@ -174,6 +174,7 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Pose& pose, 
     double yaw = CommonLib::qToYaw(pose.orientation);
     double cosYaw = cos(yaw);
     double sinYaw = sin(yaw);
+    ROS_DEBUG_STREAM("forward sum");
     return evoluatePointToFrontier(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),frontiers);
 }
 
@@ -201,7 +202,10 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
     //valuesを正規化しつつ評価値を計算
     double sum = 0;
     double eps = 1e-6;
-    for(const auto& v : values) sum += ANGLE_WEIGHT*v[0]/max.x() + NORM_WEIGHT*v[1]/max.y() - VARIANCE_WEIGHT*v[2]/max.z()-COVARIANCE_WEIGHT * std::abs(v[3]);
+    // for(const auto& v : values) sum += ANGLE_WEIGHT*v[0]/max.x() + NORM_WEIGHT*v[1]/max.y() - VARIANCE_WEIGHT*v[2]/max.z()-COVARIANCE_WEIGHT * std::abs(v[3]);
+
+    for(const auto& v : values) sum += (ANGLE_WEIGHT*v[0]/max.x() + NORM_WEIGHT*v[1]/max.y()) / VARIANCE_WEIGHT*v[2]/max.z();
+
 
     //重みなしの角度だけ
     // for(const auto& frontier : frontiers) sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));
