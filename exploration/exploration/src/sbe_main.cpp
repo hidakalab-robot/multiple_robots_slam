@@ -14,8 +14,10 @@ int main(int argc, char *argv[]){
     bool DEBUG;
     p.param<bool>("debug",DEBUG,false);
 
+    usleep(2e5);//timeがsim_timeに合うのを待つ
+
     ros::Time start = ros::Time::now();
-    
+    // ROS_DEBUG_STREAM("start time : " << start);
     if(!DEBUG) mv.oneRotation();
 
     while(ros::ok()){
@@ -23,7 +25,9 @@ int main(int argc, char *argv[]){
         if(!isEnd.q.callOne(ros::WallDuration(0.5))&&isEnd.data.data) break;
     }
     
+    
     ROS_INFO_STREAM("exploration finish !! time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
+    // ROS_DEBUG_STREAM("end time : " << ros::Time::now());
 
     ros::shutdown();
 

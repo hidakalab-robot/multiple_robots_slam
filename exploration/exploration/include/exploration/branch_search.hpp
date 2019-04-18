@@ -73,8 +73,8 @@ BranchSearch::BranchSearch()
 	ros::NodeHandle p("~");
 	p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
 	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
-	p.param<double>("center_range_min", CENTER_RANGE_MIN, 1.0);
-	p.param<double>("branch_max_x", BRANCH_MAX_X, 6.0);
+	p.param<double>("center_range_min", CENTER_RANGE_MIN,2.0);
+	p.param<double>("branch_max_x", BRANCH_MAX_X, 5.5);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
 	p.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
 	p.param<bool>("duplicate_check", DUPLICATE_CHECK, true);
@@ -127,6 +127,8 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 
 bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose){
 	ROS_DEBUG_STREAM("Searching Branch");
+
+	//なんフレームか連続で発見できないとダメということにする？
 
 	//分岐のy座標の差がこの値の範囲内の場合のみ分岐として検出
 	const float BRANCH_MIN_Y = BRANCH_DIFF_X_MIN*tan(ss.angleMax);//1.0 * tan(0.52) = 0.57
@@ -211,7 +213,12 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
 		if(ACTIVE_HIBRID){
 			std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
+			
 			if(frontiers.size()!=0){
+				
+				for(const auto& f : frontiers) {
+					ROS_DEBUG_STREAM("frontier : " << f.coordinate << ", " << f.variance << ", " << f.covariance);
+				}
 				double min = DBL_MAX;
 				for(const auto& g : globalList){
 					//重複判定がNEWERだったらスキップ

@@ -28,6 +28,9 @@
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
             <param name="debug" value="$(arg debug)"/>
+            <param name="direction_weight" value="0.0"/>
+            <param name="min_cluster_size" value="35"/>
+            <param name="previous_goal_effect" value="false"/>
             <!-- <param name="merge_map_frame_id" value="/server/merge_map"/> -->
             <!-- <param name="use_merge_map" value="true"/> -->
         </node>

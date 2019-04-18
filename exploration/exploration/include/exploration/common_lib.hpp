@@ -143,11 +143,12 @@ pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){
     return p;
 }
 
-exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, const geometry_msgs::Vector3& v){
+exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, const geometry_msgs::Vector3& v, double cv){
     exploration_msgs::Frontier msg;
     msg.coordinate = c;
     msg.area = a;
     msg.variance = v;
+    msg.covariance = cv;
     return msg;
 }
 

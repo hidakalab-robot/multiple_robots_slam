@@ -16,6 +16,7 @@ int main(int argc, char *argv[]){
     bool DEBUG;
     p.param<bool>("debug",DEBUG,false);
 
+    usleep(2e5);//timeがsim_timeに合うのを待つ
     ros::Time start = ros::Time::now();
 
     if(!DEBUG) mv.oneRotation();
