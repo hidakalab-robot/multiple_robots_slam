@@ -106,8 +106,6 @@ private:
     bool COLOR_CLUSTER;
     double ANGLE_WEIGHT;
     double NORM_WEIGHT;
-    // double VARIANCE_WEIGHT;
-    // double COVARIANCE_WEIGHT;
     double COVARIANCE_THRESHOLD;
     double VARIANCE_THRESHOLD;
 
@@ -167,8 +165,6 @@ FrontierSearch::FrontierSearch()
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
     p.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
     p.param<double>("norm_weight", NORM_WEIGHT, 2.5);
-    // p.param<double>("variance_weight", VARIANCE_WEIGHT, 1.0);
-    // p.param<double>("covariance_weight", COVARIANCE_WEIGHT, 1.0);
     p.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
     p.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
     
@@ -190,7 +186,6 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
     //各要素を正規化したいので初めに全部計算しながら最大値を求める
     //正規化がこの方法で良いかは謎//全部のoriginについてまとめて計算したほうが良いかもしれない
     //angle:norm:variance:covariance
-    //共分散が0に近い奴は弾く？
     //距離の計算、パス作って計算したほうが良いかも
     std::vector<Eigen::Vector4d> values;
     values.reserve(frontiers.size());
@@ -198,24 +193,15 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
     for(const auto& f : frontiers){
         Eigen::Vector2d toFrontier(f.coordinate.x - origin.x,f.coordinate.y - origin.y);
         Eigen::Vector4d temp(std::abs(acos(vec.dot(toFrontier.normalized()))),toFrontier.lpNorm<1>(),f.variance.x>f.variance.y ? f.variance.x : f.variance.y,std::abs(f.covariance));
-        // ROS_DEBUG_STREAM("frontier : " << temp);
         for(int i=0;i<4;++i) {
             if(temp[i] > max[i]) max[i] = temp[i];
         }
-        // if(temp[1] > max[1]) max[1] = temp[1];
-        // if(temp[2] > max[2]) max[2] = temp[2];
-        // if(temp[3] > max[3]) max[3] = temp[3];
         if(temp[3] < COVARIANCE_THRESHOLD && temp[2] < VARIANCE_THRESHOLD) continue;//共分散が小さいフロンティアは考慮しない//ただし、分散が大きければ考慮しても良いかも
         values.emplace_back(temp);
     }
 
-    //半円のフロンティアは影響度下げる？？
-    //半円はxとyの分散が大きい？面積が大きい?共分散は負の相関の可能性もある？？？
-    //共分散が0に近ければ半円!?!?
     //valuesを正規化しつつ評価値を計算
     double sum = 0;
-    // double eps = 1e-6;
-    // for(const auto& v : values) sum += ANGLE_WEIGHT*v[0]/max.x() + NORM_WEIGHT*v[1]/max.y() - VARIANCE_WEIGHT*v[2]/max.z()-COVARIANCE_WEIGHT * v[3]/max[3]);
 
     ROS_DEBUG_STREAM("adopted frontier : " << values.size() << " / " << frontiers.size());
     switch (values.size()){
@@ -226,14 +212,9 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
         sum = ANGLE_WEIGHT*values[0][0] + NORM_WEIGHT*values[0][1];
         break;
     default:
-        for(const auto& v : values) sum += (ANGLE_WEIGHT*v[0]/max[0] + NORM_WEIGHT*v[1]/max[1]);// / (COVARIANCE_WEIGHT*v[3]/max[3]) ;
+        for(const auto& v : values) sum += (ANGLE_WEIGHT*v[0]/max[0] + NORM_WEIGHT*v[1]/max[1]);
         break;
     }
-    
-
-
-    //重みなしの角度だけ
-    // for(const auto& frontier : frontiers) sum += std::abs(acos(vec.dot(Eigen::Vector2d(frontier.coordinate.x - origin.x,frontier.coordinate.y - origin.y).normalized())));
 
     ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum);
 
@@ -480,16 +461,8 @@ FrontierSearch::clusterStruct FrontierSearch::clusterDetection(const mapStruct& 
             covariance += (horizonMap -> points[*pit].x - centroid.x()) * (horizonMap -> points[*pit].y - centroid.y());
         }
 
-        //xyの共分散をxの標準偏差とyの標準偏差で割ると相関係数がでる
-        //標準偏差は分散のルート
-        // variance /= std::distance(it->indices.begin(),it->indices.end());
-        // covariance /= std::distance(it->indices.begin(),it->indices.end());
         variance /= it->indices.size();
         covariance /= it->indices.size();
-
-        // ROS_DEBUG_STREAM("variance : " << variance);
-        // ROS_DEBUG_STREAM("covariance : " << covariance);
-        // ROS_DEBUG_STREAM("covariance_div : " << covariance/sqrt(variance.x())/sqrt(variance.y()));
 
         cs.variances.emplace_back(variance);
         cs.covariance.emplace_back(covariance/sqrt(variance.x())/sqrt(variance.y()));
