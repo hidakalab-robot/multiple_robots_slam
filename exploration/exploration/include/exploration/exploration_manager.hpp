@@ -32,6 +32,7 @@ public:
     ExplorationManager():map_("map", 1,&ExplorationManager::mapCB, this),end_("end",1,true),area_("end/area",1,true){
         ros::NodeHandle p("~");
         p.param<double>("end_area",END_AREA,46.7*14-9.5*10-((4.1+2.7+7.5)*10-2.7*5.8)-8.0*10-7.5*10-0.9*10);//267.46
+        END_AREA *= 1.5;
         p.param<double>("tolerance",TOLERANCE,0.9);
     };
 };
