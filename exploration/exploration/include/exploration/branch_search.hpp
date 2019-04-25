@@ -176,7 +176,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//ここで前の目標と近いやつはリストから削除
 		static geometry_msgs::Point lastBranch;
-		
+
 		std::vector<listStruct> tempList;
 		tempList.reserve(globalList.size());
 
@@ -210,6 +210,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			if(DUPLICATE_CHECK){
 				switch (duplicateDetection(goal)){
 					case NOT_DUPLECATION:
+						lastBranch = goal;
 						return true;
 					case OLDER://重複してるけど古いからフロンティアも見ておく
 						globalList[id].duplication = OLDER;
