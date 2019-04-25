@@ -530,7 +530,8 @@ geometry_msgs::Point FrontierSearch::arrayToCoordinate(int indexX,int indexY,con
 }
 
 void FrontierSearch::mergeMapCoordinateToLocal(std::vector<exploration_msgs::Frontier>& frontiers){
-    //merge_map - map のtfを取得して座標修正
+    //merge_map -> map のtfを取得して座標修正
+    //合成マップで得た座標をロボット側のマップ座標に変換する
     static bool initialized = false;
     static tf::TransformListener listener;
     if(!initialized){

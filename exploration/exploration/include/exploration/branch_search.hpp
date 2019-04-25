@@ -33,6 +33,7 @@ private:
     double CENTER_RANGE_MIN;
 	double BRANCH_MAX_X;
 	double BRANCH_DIFF_X_MIN;
+	double BRANCH_TOLERANCE;
 	double DUPLICATE_TOLERANCE;
 	bool DUPLICATE_CHECK;
 	double LENGTH_THRESHOLD_Y;
@@ -84,6 +85,8 @@ BranchSearch::BranchSearch()
 	p.param<double>("through_tolerance", THROUGH_TOLERANCE, 1.0);
 	p.param<bool>("active_hibrid", ACTIVE_HIBRID, true);
 	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+	p.param<double>("branch_tolerance", BRANCH_TOLERANCE, 1.0);
+	
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -158,6 +161,18 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			}
 		}
 	}
+
+	//ここで前の目標と近いやつはリストから削除
+	static geometry_msgs::Point lastBranch;
+
+	if(localList.size()>0){
+		std::vector<geometry_msgs::Point> tempList;
+		tempList.reserve(localList.size());
+		for(const auto& l : localList){
+			if(Eigen::Vector2d(l.x - lastBranch.x,l.y - lastBranch.y).norm()>BRANCH_TOLERANCE) tempList.emplace_back(l);
+		}
+		localList = std::move(tempList);
+	}
 	
 	if(localList.size()>0){
 		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
@@ -204,7 +219,10 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				excludeList.push_back(id);
 			}
 			// if(DUPLICATE_CHECK && duplicateDetection(goal)) excludeList.push_back(id);
-			else return true;
+			else {
+				lastBranch = goal;
+				return true;
+			}
 		}
 
 		//直前に通ったばかりの分岐は強めに通っては行けない
@@ -247,6 +265,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
 					ROS_DEBUG_STREAM("This Branch continues to a large frontier");
 					throughBranch.emplace_back(goal);
+					lastBranch = goal;
 					return true;
 				}
 			}
