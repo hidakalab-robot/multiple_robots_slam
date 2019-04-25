@@ -162,17 +162,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		}
 	}
 
-	//ここで前の目標と近いやつはリストから削除
-	static geometry_msgs::Point lastBranch;
-
-	if(localList.size()>0){
-		std::vector<geometry_msgs::Point> tempList;
-		tempList.reserve(localList.size());
-		for(const auto& l : localList){
-			if(Eigen::Vector2d(l.x - lastBranch.x,l.y - lastBranch.y).norm()>BRANCH_TOLERANCE) tempList.emplace_back(l);
-		}
-		localList = std::move(tempList);
-	}
 	
 	if(localList.size()>0){
 		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
@@ -184,6 +173,18 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		globalList.reserve(localList.size());
 		
 		for(const auto& l : localList) globalList.emplace_back(CommonLib::msgPoint(pose.position.x+(cos(yaw)*l.x)-(sin(yaw)*l.y),pose.position.y+(cos(yaw)*l.y)+(sin(yaw)*l.x)));
+
+		//ここで前の目標と近いやつはリストから削除
+		static geometry_msgs::Point lastBranch;
+			
+		std::vector<listStruct> tempList;
+		tempList.reserve(globalList.size());
+		for(const auto& g : globalList){
+			if(Eigen::Vector2d(g.point.x - lastBranch.x,g.point.y - lastBranch.y).norm()>BRANCH_TOLERANCE) tempList.emplace_back(g);
+		}
+		if(tempList.size() == 0) return false;
+		
+		globalList = std::move(tempList);
 
 		publishGoalArray(listStructToPoint(globalList));
 
