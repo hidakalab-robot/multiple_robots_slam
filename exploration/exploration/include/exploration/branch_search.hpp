@@ -176,14 +176,15 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//ここで前の目標と近いやつはリストから削除
 		static geometry_msgs::Point lastBranch;
-			
+		
 		std::vector<listStruct> tempList;
 		tempList.reserve(globalList.size());
+
 		for(const auto& g : globalList){
 			if(Eigen::Vector2d(g.point.x - lastBranch.x,g.point.y - lastBranch.y).norm()>BRANCH_TOLERANCE) tempList.emplace_back(g);
 		}
+
 		if(tempList.size() == 0) return false;
-		
 		globalList = std::move(tempList);
 
 		publishGoalArray(listStructToPoint(globalList));
@@ -243,6 +244,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					//重複判定がNEWERだったらスキップ
 					if(g.duplication == NEWER){
 						ROS_INFO_STREAM("newer duplication!!");
+						lastBranch = g.point;
 						continue;
 					}
 					//座標がthroughBranchに入ってたらスキップ//重複探査阻止の処理を回避するのは二回以上出来ない
