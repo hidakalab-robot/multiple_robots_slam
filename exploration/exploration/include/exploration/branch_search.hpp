@@ -259,6 +259,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					if(min > val){
 						min = std::move(val);
 						goal = g.point;
+						lastBranch = goal;
 					}
 				}
 				//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
@@ -266,7 +267,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
 					ROS_DEBUG_STREAM("This Branch continues to a large frontier");
 					throughBranch.emplace_back(goal);
-					lastBranch = goal;
 					return true;
 				}
 			}
