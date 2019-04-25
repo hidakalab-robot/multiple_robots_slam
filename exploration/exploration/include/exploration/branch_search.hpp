@@ -83,7 +83,7 @@ BranchSearch::BranchSearch()
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
 	p.param<double>("through_tolerance", THROUGH_TOLERANCE, 1.0);
 	p.param<bool>("active_hibrid", ACTIVE_HIBRID, true);
-	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 60);
+	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){

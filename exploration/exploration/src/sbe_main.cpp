@@ -18,7 +18,7 @@ int main(int argc, char *argv[]){
 
     ros::Time start = ros::Time::now();
     // ROS_DEBUG_STREAM("start time : " << start);
-    if(!DEBUG) mv.oneRotation();
+    //if(!DEBUG) mv.oneRotation();
 
     while(ros::ok()){
         bs.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
