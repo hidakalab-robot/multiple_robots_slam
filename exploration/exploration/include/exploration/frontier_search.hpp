@@ -71,24 +71,38 @@ private:
         std::vector<double> areas;
         std::vector<Eigen::Vector2d> variances;
         std::vector<double> covariance;
+        std::vector<pcl::PointIndices> indices;
+        pcl::PointCloud<pcl::PointXYZ>::Ptr pc;
 
-        clusterStruct(int size){
-            index.reserve(size);
-            areas.reserve(size);
-            variances.reserve(size);
-            covariance.reserve(size);
-        };
-        clusterStruct(const std::vector<Eigen::Vector3i>& i,const std::vector<double>& a, const std::vector<Eigen::Vector2d>& v, const std::vector<double>& c)
-            :index(i)
-            ,areas(a)
-            ,variances(v)
-            ,covariance(c){};
+        clusterStruct():pc(new pcl::PointCloud<pcl::PointXYZ>){};
+
+        // clusterStruct(int size){
+        //     index.reserve(size);
+        //     areas.reserve(size);
+        //     variances.reserve(size);
+        //     covariance.reserve(size);
+        // };
+        // clusterStruct(const std::vector<Eigen::Vector3i>& i,const std::vector<double>& a, const std::vector<Eigen::Vector2d>& v, const std::vector<double>& c,const std::vector<pcl::PointIndices>& ic)
+        //     :index(i)
+        //     ,areas(a)
+        //     ,variances(v)
+        //     ,covariance(c)
+        //     ,indices(ic){};
 
         clusterStruct(const clusterStruct& cs)
             :index(cs.index)
             ,areas(cs.areas)
             ,variances(cs.variances)
-            ,covariance(cs.covariance){};
+            ,covariance(cs.covariance)
+            ,indices(cs.indices)
+            ,pc(cs.pc){};
+        
+        void reserve(int size){
+            index.reserve(size);
+            areas.reserve(size);
+            variances.reserve(size);
+            covariance.reserve(size);
+        }
     };
 
     float FILTER_SQUARE_DIAMETER;
@@ -127,6 +141,7 @@ private:
     void publishGoal(const geometry_msgs::Point& goal);
 	void publishGoalArray(const std::vector<geometry_msgs::Point>& goals);
     void publishGoalArrayAsPose(const std::vector<geometry_msgs::Point>& goals);
+    void publishColorCluster(const clusterStruct& cs);
     void mergeMapCoordinateToLocal(std::vector<exploration_msgs::Frontier>& goal);
     std::vector<geometry_msgs::Point> frontiersToPoints(const std::vector<exploration_msgs::Frontier>& fa);
 
@@ -237,6 +252,9 @@ template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(b
         return std::vector<geometry_msgs::Point>();
     }
     
+    //ここでクラスタ表示したい
+    if(COLOR_CLUSTER) publishColorCluster(cluster);
+
     std::vector<exploration_msgs::Frontier> frontiers;
     frontiers.reserve(cluster.index.size());
 
@@ -275,6 +293,9 @@ template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetec
         ROS_INFO_STREAM("Frontier Do Not Found");
         return std::vector<exploration_msgs::Frontier>();
     }
+
+    //ここでクラスタ表示したい
+    if(COLOR_CLUSTER) publishColorCluster(cluster);
     
     std::vector<exploration_msgs::Frontier> frontiers;
     frontiers.reserve(cluster.index.size());
@@ -313,6 +334,9 @@ template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
         return;
     }
     
+    //ここでクラスタ表示したい
+    if(COLOR_CLUSTER) publishColorCluster(cluster);
+
     std::vector<exploration_msgs::Frontier> frontiers;
     frontiers.reserve(cluster.index.size());
 
@@ -389,76 +413,79 @@ FrontierSearch::clusterStruct FrontierSearch::clusterDetection(const mapStruct& 
         }
     }
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr horizonMap(new pcl::PointCloud<pcl::PointXYZ>);
-    horizonMap -> points.reserve(points.size());
+    clusterStruct cs;
 
-    for(const auto& p : points) horizonMap -> points.emplace_back(pcl::PointXYZ((float)p.x,(float)p.y,0.0f));
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr horizonMap(new pcl::PointCloud<pcl::PointXYZ>);
+    cs.pc -> points.reserve(points.size());
 
-    horizonMap -> width = horizonMap -> points.size();
-    horizonMap -> height = 1;
-    horizonMap -> is_dense = true;
+    for(const auto& p : points) cs.pc -> points.emplace_back(pcl::PointXYZ((float)p.x,(float)p.y,0.0f));
+
+    cs.pc -> width = cs.pc -> points.size();
+    cs.pc -> height = 1;
+    cs.pc -> is_dense = true;
 
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZ>);
-    tree->setInputCloud (horizonMap);
+    tree->setInputCloud (cs.pc);
 
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
     ec.setClusterTolerance (CLUSTER_TOLERANCE);//同じクラスタとみなす距離
   	ec.setMinClusterSize (MIN_CLUSTER_SIZE);//クラスタを構成する最小の点数
   	ec.setMaxClusterSize (MAX_CLUSTER_SIZE);//クラスタを構成する最大の点数
 	ec.setSearchMethod (tree);
-	ec.setInputCloud (horizonMap);
+	ec.setInputCloud (cs.pc);
 
-    std::vector<pcl::PointIndices> indices;//クラスタリングした結果が格納される
-	ec.extract (indices);
+    // std::vector<pcl::PointIndices> indices;//クラスタリングした結果が格納される
+	ec.extract (cs.indices);
+    cs.reserve(cs.indices.size());
 
     //debug 用　カラーリング出力 スコープ
-    if(COLOR_CLUSTER){
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorMap(new pcl::PointCloud<pcl::PointXYZRGB>);
+    // if(COLOR_CLUSTER){
+    //     pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorMap(new pcl::PointCloud<pcl::PointXYZRGB>);
 
-        float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
-        int i=0;
-        for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it,++i){
-            int c = i%12;
-            for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-                colorMap -> points.emplace_back(CommonLib::pclXYZRGB(horizonMap->points[*pit].x,horizonMap->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
-      	    }
-  	    }
-        colorMap -> width = colorMap -> points.size();
-        colorMap -> height = 1;
-        colorMap -> is_dense = true;
+    //     float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
+    //     int i=0;
+    //     for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it,++i){
+    //         int c = i%12;
+    //         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
+    //             colorMap -> points.emplace_back(CommonLib::pclXYZRGB(horizonMap->points[*pit].x,horizonMap->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
+    //   	    }
+  	//     }
+    //     colorMap -> width = colorMap -> points.size();
+    //     colorMap -> height = 1;
+    //     colorMap -> is_dense = true;
         
-        sensor_msgs::PointCloud2 colorMsg;
-        pcl::toROSMsg(*colorMap,colorMsg);
-        colorMsg.header.frame_id = MAP_FRAME_ID;
-        colorMsg.header.stamp = ros::Time::now();
-        colorCloud_.pub.publish(colorMsg);
-    }
+    //     sensor_msgs::PointCloud2 colorMsg;
+    //     pcl::toROSMsg(*colorMap,colorMsg);
+    //     colorMsg.header.frame_id = MAP_FRAME_ID;
+    //     colorMsg.header.stamp = ros::Time::now();
+    //     colorCloud_.pub.publish(colorMsg);
+    // }
 
-    clusterStruct cs(indices.size());
+    // clusterStruct cs(indices.size());
 
-    for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it){
+    for (std::vector<pcl::PointIndices>::const_iterator it = cs.indices.begin (); it != cs.indices.end (); ++it){
         Eigen::Vector2d sum(0,0);
         Eigen::Vector2d max(-DBL_MAX,-DBL_MAX);
         Eigen::Vector2d min(DBL_MAX,DBL_MAX);
 
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-            sum.x() += horizonMap -> points[*pit].x;
-            sum.y() += horizonMap -> points[*pit].y;
+            sum.x() += cs.pc -> points[*pit].x;
+            sum.y() += cs.pc -> points[*pit].y;
 
-            if(horizonMap -> points[*pit].x > max.x()) max.x() = horizonMap -> points[*pit].x;
-            else if(horizonMap -> points[*pit].x < min.x()) min.x() = horizonMap -> points[*pit].x;
+            if(cs.pc -> points[*pit].x > max.x()) max.x() = cs.pc -> points[*pit].x;
+            else if(cs.pc -> points[*pit].x < min.x()) min.x() = cs.pc -> points[*pit].x;
 
-            if(horizonMap -> points[*pit].y > max.y()) max.y() = horizonMap -> points[*pit].y;
-            else if(horizonMap -> points[*pit].y < min.y()) min.y() = horizonMap -> points[*pit].y;
+            if(cs.pc -> points[*pit].y > max.y()) max.y() = cs.pc -> points[*pit].y;
+            else if(cs.pc -> points[*pit].y < min.y()) min.y() = cs.pc -> points[*pit].y;
         }
         Eigen::Vector2d centroid(sum.x()/it->indices.size(),sum.y()/it->indices.size());
         Eigen::Vector2d variance(0,0);
         double covariance = 0;
         //分散を求めたい
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-            variance.x() += (horizonMap -> points[*pit].x - centroid.x()) * (horizonMap -> points[*pit].x - centroid.x());
-            variance.y() += (horizonMap -> points[*pit].y - centroid.y()) * (horizonMap -> points[*pit].y - centroid.y());
-            covariance += (horizonMap -> points[*pit].x - centroid.x()) * (horizonMap -> points[*pit].y - centroid.y());
+            variance.x() += (cs.pc -> points[*pit].x - centroid.x()) * (cs.pc -> points[*pit].x - centroid.x());
+            variance.y() += (cs.pc -> points[*pit].y - centroid.y()) * (cs.pc -> points[*pit].y - centroid.y());
+            covariance += (cs.pc -> points[*pit].x - centroid.x()) * (cs.pc -> points[*pit].y - centroid.y());
         }
 
         variance /= it->indices.size();
@@ -623,6 +650,31 @@ void FrontierSearch::publishGoalArrayAsPose(const std::vector<geometry_msgs::Poi
 
     goalPoseArray_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish GoalList PoseArray");
+}
+
+void FrontierSearch::publishColorCluster(const clusterStruct& cs){
+
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    colorCloud->points.reserve(cs.pc->points.size());
+    float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
+    int i=0;
+    for (std::vector<pcl::PointIndices>::const_iterator it = cs.indices.begin (); it != cs.indices.end (); ++it,++i){
+        if(cs.index[i].z()==0) continue;
+        int c = i%12;
+        for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
+            colorCloud -> points.emplace_back(CommonLib::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
+        }
+    }
+    colorCloud -> width = colorCloud -> points.size();
+    colorCloud -> height = 1;
+    colorCloud -> is_dense = true;
+    
+    sensor_msgs::PointCloud2 msg;
+    pcl::toROSMsg(*colorCloud,msg);
+    msg.header.frame_id = MAP_FRAME_ID;
+    msg.header.stamp = ros::Time::now();
+    colorCloud_.pub.publish(msg);
+	ROS_INFO_STREAM("Publish ColorCluster");
 }
 
 #endif //FRONTIER_SEARCH_HPP

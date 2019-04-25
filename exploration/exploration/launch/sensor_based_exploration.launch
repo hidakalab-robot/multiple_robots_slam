@@ -35,6 +35,7 @@
             <param name="color_cluster" value="true"/>
             <param name="min_cluster_size" value="30"/>
             <param name="active_hibrid" value="true"/>
+            <param name="filter_square_diameter" value="0.75"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
