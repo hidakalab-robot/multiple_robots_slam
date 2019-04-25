@@ -16,8 +16,8 @@ DWAPlannerROS:
   #   are non-negligible and small in place rotational velocities will be created.
 
   max_rot_vel: 0.35  # 5.0 # choose slightly less than the base's capability
-  min_rot_vel: 0.2  # this is the min angular velocity when there is negligible translational velocity
-  rot_stopped_vel: 0.4
+  min_rot_vel: 0.0  # this is the min angular velocity when there is negligible translational velocity
+  rot_stopped_vel: 0.0
   
   acc_lim_x: 1.0 # maximum is theoretically 2.0, but we 
   acc_lim_theta: 2.0
