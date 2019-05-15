@@ -15,7 +15,7 @@
     <arg name="rosbag" default="false"/>
     <arg name="debug" default="false"/>
 
-    <arg name="fill" default="true"/>
+    <arg name="fill" default="false"/>
 
     <arg name="ns" default="exploration"/>
 
