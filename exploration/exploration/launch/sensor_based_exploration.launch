@@ -36,6 +36,9 @@
             <param name="min_cluster_size" value="30"/>
             <param name="active_hibrid" value="true"/>
             <param name="filter_square_diameter" value="0.75"/>
+            <param name="rotation" value="true"/>
+            <param name="center_range_min" value="2.5"/>
+            <param name="newer_duplication_threshold" value="100"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
@@ -61,7 +64,7 @@
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
-            <arg name="dir" value="/home/ros1/rosbag_debug"/>
+            <!-- <arg name="dir" value="/home/ros1/rosbag_debug"/> -->
             <arg name="topics" value="  $(arg pose) 
                                         /$(arg robot_name)/$(arg ns)/pose_log 
                                         $(arg bumper_raw) 
