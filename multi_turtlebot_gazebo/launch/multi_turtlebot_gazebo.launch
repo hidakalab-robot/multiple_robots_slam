@@ -44,7 +44,7 @@
             <arg name="init_yaw" value="$(arg robot1_init_yaw)"/>
         </include>
 
-        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
+        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap_alpha.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
         </include>
 
