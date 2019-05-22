@@ -598,7 +598,7 @@ bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, 
 
     double max = -DBL_MAX;
     for(auto& g : goals){
-        if(PREVIOUS_GOAL_EFFECT && sqrt(pow(g.x - previousGoal.x,2)+pow(g.y - previousGoal.y,2)) <= PREVIOUS_GOAL_THRESHOLD) continue;
+        if(PREVIOUS_GOAL_EFFECT && goals.size() > 1 && sqrt(pow(g.x - previousGoal.x,2)+pow(g.y - previousGoal.y,2)) <= PREVIOUS_GOAL_THRESHOLD) continue;
         Eigen::Vector2d vec(g.x - pose.position.x,g.y - pose.position.y);
         //評価値が最大となる目標値を選択
         double value = DIRECTION_WEIGHT * vec.normalized().dot(directionVec) - DISTANCE_WEIGHT * vec.norm();
