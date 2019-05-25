@@ -107,7 +107,8 @@
     <param name="RGBD/OptimizeMaxError"        value="0.1"/>
     <param name="Grid/FromDepth" value="false"/>
     <param name="Grid/RangeMax" value="$(arg sensor_range_max_for_map)"/>
-    <param name="Rtabmap/LoopThr" value="0.11"/>
+    <param name="Rtabmap/LoopThr" value="0.5"/>
+    <param name="Mem/STMSize"      value="20"/>
 
 	  
 	  <!-- localization mode -->

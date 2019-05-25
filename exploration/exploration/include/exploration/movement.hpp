@@ -452,7 +452,7 @@ void Movement::oneRotation(void){
     for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
         double yawOld = yaw;
         velocity_.pub.publish(vel);
-        if(pose_.q.callOne(ros::WallDuration(1))) continue;
+        pose_.q.callOne(ros::WallDuration(1));
         yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
         if(yawOld * yaw < 0) ++count;
     }

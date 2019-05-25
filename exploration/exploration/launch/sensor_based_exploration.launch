@@ -35,6 +35,10 @@
             <param name="color_cluster" value="true"/>
             <param name="min_cluster_size" value="30"/>
             <param name="active_hibrid" value="true"/>
+            <param name="filter_square_diameter" value="0.75"/>
+            <param name="rotation" value="true"/>
+            <param name="center_range_min" value="2.5"/>
+            <param name="newer_duplication_threshold" value="100"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">

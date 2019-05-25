@@ -39,15 +39,12 @@
     <group ns="$(arg robot1_name)">
         <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
             <arg name="robot_name" value="$(arg robot1_name)"/>
-            <arg name="base" value="$(arg base)"/>
-            <arg name="stacks" value="$(arg stacks)"/>
-            <arg name="3d_sensor" value="$(arg 3d_sensor)"/>
             <arg name="init_x" value="$(arg robot1_init_x)"/>
             <arg name="init_y" value="$(arg robot1_init_y)"/>
             <arg name="init_yaw" value="$(arg robot1_init_yaw)"/>
         </include>
 
-        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
+        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap_alpha.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
         </include>
 
@@ -59,9 +56,6 @@
     <!-- <group ns="$(arg robot2_name)">
         <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
             <arg name="robot_name" value="$(arg robot2_name)"/>
-            <arg name="base" value="$(arg base)"/>
-            <arg name="stacks" value="$(arg stacks)"/>
-            <arg name="3d_sensor" value="$(arg 3d_sensor)"/>
             <arg name="init_x" value="$(arg robot2_init_x)"/>
             <arg name="init_y" value="$(arg robot2_init_y)"/>
             <arg name="init_yaw" value="$(arg robot2_init_yaw)"/>

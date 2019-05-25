@@ -33,6 +33,7 @@ private:
     double CENTER_RANGE_MIN;
 	double BRANCH_MAX_X;
 	double BRANCH_DIFF_X_MIN;
+	double BRANCH_TOLERANCE;
 	double DUPLICATE_TOLERANCE;
 	bool DUPLICATE_CHECK;
 	double LENGTH_THRESHOLD_Y;
@@ -83,7 +84,9 @@ BranchSearch::BranchSearch()
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
 	p.param<double>("through_tolerance", THROUGH_TOLERANCE, 1.0);
 	p.param<bool>("active_hibrid", ACTIVE_HIBRID, true);
-	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 60);
+	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+	p.param<double>("branch_tolerance", BRANCH_TOLERANCE, 1.0);
+	
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -158,6 +161,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			}
 		}
 	}
+
 	
 	if(localList.size()>0){
 		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
@@ -169,6 +173,19 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		globalList.reserve(localList.size());
 		
 		for(const auto& l : localList) globalList.emplace_back(CommonLib::msgPoint(pose.position.x+(cos(yaw)*l.x)-(sin(yaw)*l.y),pose.position.y+(cos(yaw)*l.y)+(sin(yaw)*l.x)));
+
+		//ここで前の目標と近いやつはリストから削除
+		static geometry_msgs::Point lastBranch;
+
+		std::vector<listStruct> tempList;
+		tempList.reserve(globalList.size());
+
+		for(const auto& g : globalList){
+			if(Eigen::Vector2d(g.point.x - lastBranch.x,g.point.y - lastBranch.y).norm()>BRANCH_TOLERANCE) tempList.emplace_back(g);
+		}
+
+		if(tempList.size() == 0) return false;
+		globalList = std::move(tempList);
 
 		publishGoalArray(listStructToPoint(globalList));
 
@@ -193,6 +210,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			if(DUPLICATE_CHECK){
 				switch (duplicateDetection(goal)){
 					case NOT_DUPLECATION:
+						lastBranch = goal;
 						return true;
 					case OLDER://重複してるけど古いからフロンティアも見ておく
 						globalList[id].duplication = OLDER;
@@ -204,7 +222,10 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				excludeList.push_back(id);
 			}
 			// if(DUPLICATE_CHECK && duplicateDetection(goal)) excludeList.push_back(id);
-			else return true;
+			else {
+				lastBranch = goal;
+				return true;
+			}
 		}
 
 		//直前に通ったばかりの分岐は強めに通っては行けない
@@ -224,6 +245,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					//重複判定がNEWERだったらスキップ
 					if(g.duplication == NEWER){
 						ROS_INFO_STREAM("newer duplication!!");
+						lastBranch = g.point;
 						continue;
 					}
 					//座標がthroughBranchに入ってたらスキップ//重複探査阻止の処理を回避するのは二回以上出来ない
@@ -240,6 +262,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					if(min > val){
 						min = std::move(val);
 						goal = g.point;
+						lastBranch = goal;
 					}
 				}
 				//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
