@@ -13,13 +13,14 @@ int main(int argc, char *argv[]){
     geometry_msgs::Point goal;
 
     ros::NodeHandle p("~");
-    bool DEBUG;
+    bool DEBUG,ROTATION;
     p.param<bool>("debug",DEBUG,false);
+    p.param<bool>("rotation",ROTATION,true);
 
     usleep(2e5);//timeがsim_timeに合うのを待つ
     ros::Time start = ros::Time::now();
 
-    if(!DEBUG) mv.oneRotation();
+    if(!DEBUG && ROTATION) mv.oneRotation();
 
     while(ros::ok()){
         if(fs.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
