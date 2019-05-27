@@ -89,26 +89,29 @@
   	<remap from="grid_map" to="/$(arg robot_name)/map"/>
 	
 	  <!-- RTAB-Map's parameters: do "rosrun rtabmap rtabmap (double-dash)params" to see the list of available parameters. -->
-	  <param name="RGBD/ProximityBySpace"        value="true"/>   <!-- Local loop closure detection (using estimated position) with locations in WM -->
-	  <param name="RGBD/OptimizeFromGraphEnd"    value="false"/>  <!-- Set to false to generate map correction between /map and /odom -->
-	  <param name="Kp/MaxDepth"                  value="4.0"/>
-	  <param name="Reg/Strategy"                 value="2"/>      <!-- Loop closure transformation: 0=Visual, 1=ICP, 2=Visual+ICP -->
-	  <param name="Icp/CorrespondenceRatio"      value="0.3"/>
-	  <param name="Vis/MinInliers"               value="15"/>      <!-- 3D visual words minimum inliers to accept loop closure -->
-	  <param name="Vis/InlierDistance"           value="0.1"/>    <!-- 3D visual words correspondence distance -->
-	  <param name="RGBD/AngularUpdate"           value="0.1"/>    <!-- Update map only if the robot is moving -->
-	  <param name="RGBD/LinearUpdate"            value="0.1"/>    <!-- Update map only if the robot is moving -->
-	  <param name="RGBD/ProximityPathMaxNeighbors" value="0"/> 
-	  <param name="Rtabmap/TimeThr"              value="700"/>
-	  <param name="Mem/RehearsalSimilarity"      value="0.30"/>
-	  <param name="Optimizer/Slam2D"             value="true"/>
-	  <param name="Reg/Force3DoF"                value="true"/>
-	  <param name="GridGlobal/MinSize"           value="20"/>
-    <param name="RGBD/OptimizeMaxError"        value="0.1"/>
-    <param name="Grid/FromDepth" value="false"/>
-    <param name="Grid/RangeMax" value="$(arg sensor_range_max_for_map)"/>
-    <param name="Rtabmap/LoopThr" value="0.5"/>
-    <param name="Mem/STMSize"      value="20"/>
+	  <param name="RGBD/ProximityBySpace"        type="string"  value="true"/>   <!-- Local loop closure detection (using estimated position) with locations in WM -->
+	  <param name="RGBD/OptimizeFromGraphEnd"    type="string"  value="false"/>  <!-- Set to false to generate map correction between /map and /odom -->
+	  <param name="Kp/MaxDepth"                  type="string"  value="4.0"/>
+	  <param name="Reg/Strategy"                 type="string"  value="2"/>      <!-- Loop closure transformation: 0=Visual, 1=ICP, 2=Visual+ICP -->
+	  <param name="Icp/CorrespondenceRatio"      type="string"  value="0.3"/>
+	  <param name="Vis/MinInliers"               type="string"  value="15"/>      <!-- 3D visual words minimum inliers to accept loop closure -->
+	  <param name="Vis/InlierDistance"           type="string"  value="0.1"/>    <!-- 3D visual words correspondence distance -->
+	  <param name="RGBD/AngularUpdate"           type="string"  value="0.1"/>    <!-- Update map only if the robot is moving -->
+	  <param name="RGBD/LinearUpdate"            type="string"  value="0.1"/>    <!-- Update map only if the robot is moving -->
+	  <param name="RGBD/ProximityPathMaxNeighbors" type="string"  value="0"/> 
+	  <param name="Rtabmap/TimeThr"              type="string"  value="700"/>
+	  <param name="Mem/RehearsalSimilarity"      type="string"  value="0.30"/>
+	  <param name="Optimizer/Slam2D"             type="string"  value="true"/>
+	  <param name="Reg/Force3DoF"                type="string"  value="true"/>
+	  <param name="GridGlobal/MinSize"           type="string"  value="20"/>
+    <param name="RGBD/OptimizeMaxError"        type="string"  value="0.05"/>
+    <param name="Grid/FromDepth" type="string"  value="false"/>
+    <param name="Grid/RangeMax" type="string" value="$(arg sensor_range_max_for_map)"/>
+
+    <param name="Rtabmap/LoopThr"              type="string"  value="0.65"/>
+    <param name="Mem/STMSize"                  type="string"  value="25"/>
+    <param name="Optimizer/Strategy"           type="string"  value="1"/>
+    <param name="Optimizer/Robust"             type="string"  value="true"/>
 
 	  
 	  <!-- localization mode -->

@@ -167,8 +167,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
 
 		double yaw = CommonLib::qToYaw(pose.orientation);
-
-		// std::vector<geometry_msgs::Point> globalList;
 		std::vector<listStruct> globalList;
 		globalList.reserve(localList.size());
 		
@@ -221,7 +219,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				}
 				excludeList.push_back(id);
 			}
-			// if(DUPLICATE_CHECK && duplicateDetection(goal)) excludeList.push_back(id);
 			else {
 				lastBranch = goal;
 				return true;
@@ -234,7 +231,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
 		if(ACTIVE_HIBRID){
 			std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
-			
 			if(frontiers.size()!=0){
 				
 				for(const auto& f : frontiers) {
@@ -274,7 +270,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				}
 			}
 		}
-		
     }
 
 	return false;
@@ -295,7 +290,6 @@ BranchSearch::Duplication BranchSearch::duplicateDetection(const geometry_msgs::
 	}
 
 	for(int i=ARRAY_MAX;i!=0;--i){
-	// for(int i=0,e=poseLog_.data.poses.size();i!=e;++i){
 		//過去のオドメトリが重複判定の範囲内に入っているか//
 		if(Eigen::Vector2d(goal.x-poseLog_.data.poses[i].pose.position.x,goal.y-poseLog_.data.poses[i].pose.position.y).norm() < DUPLICATE_TOLERANCE){
 			ROS_DEBUG_STREAM("This Branch is Duplicated");

@@ -25,7 +25,7 @@ In source file
         Movement mv;
 
     if you want to move to goal with move_base
-        mv.moveToGoal(goal);//goal type = geometry_msgs::Point
+        mv.moveToGoal(goal);//goal type == geometry_msgs::Point
 
     if you want to move forward
         mv.moveToForward();
@@ -383,7 +383,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
     //ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM << "\n");
 
-    //まずよけれる範囲化
+    //まずよけれる範囲か見る
     if(aveP > EMERGENCY_THRESHOLD || aveM > EMERGENCY_THRESHOLD){
         //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
         if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation = aveP > aveM ? 1.0 : -1.0;
