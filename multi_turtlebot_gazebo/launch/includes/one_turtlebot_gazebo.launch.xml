@@ -1,9 +1,6 @@
 <launch>
 
     <arg name="robot_name"/>
-    <!-- <arg name="base"/> -->
-    <!-- <arg name="stacks"/> -->
-    <!-- <arg name="3d_sensor"/> -->
     <arg name="init_x"/>
     <arg name="init_y"/>
     <arg name="init_yaw"/>

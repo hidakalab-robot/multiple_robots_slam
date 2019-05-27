@@ -2,13 +2,9 @@
     <env name="GAZEBO_MODEL_PATH" value="$(find multi_turtlebot_gazebo)/world/models:$(optenv GAZEBO_MODEL_PATH)" /> 
     <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/tdu_1-13_corridor_marker.world"/>
 
-    <arg name="base"      value="$(optenv TURTLEBOT_BASE kobuki)"/> <!-- create, roomba -->
     <arg name="gui" default="true"/>
-    <arg name="stacks"    value="$(optenv TURTLEBOT_STACKS hexagons)"/>  <!-- circles, hexagons --> 
-    <arg name="3d_sensor" value="$(optenv TURTLEBOT_3D_SENSOR kinect)"/>  <!-- kinect, asus_xtion_pro -->
 
     <arg name="mapping" default="true"/>
-
     <arg name="rtabmap" default="true"/>
     <arg name="gmapping" default="false"/>
 
@@ -44,7 +40,7 @@
             <arg name="init_yaw" value="$(arg robot1_init_yaw)"/>
         </include>
 
-        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap_alpha.launch.xml">
+        <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
         </include>
 

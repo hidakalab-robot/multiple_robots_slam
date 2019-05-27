@@ -1,8 +1,7 @@
 <launch>
     <arg name="name" default="rosbag"/>
-    <arg name="dir" default="/home/rosdesk/rosbag/$(arg name)"/>
-    
-    <arg name="topics" default="/tf /tf_static"/>
+    <arg name="dir" default="$(env HOME)/rosbag/$(arg name)"/>
+    <arg name="topics"/>
     
     <node pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-o $(arg dir) $(arg topics)"/>
 </launch>

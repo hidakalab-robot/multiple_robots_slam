@@ -64,7 +64,6 @@
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
-            <!-- <arg name="dir" value="/home/ros1/rosbag_debug"/> -->
             <arg name="topics" value="  $(arg pose) 
                                         /$(arg robot_name)/$(arg ns)/pose_log 
                                         $(arg bumper_raw) 

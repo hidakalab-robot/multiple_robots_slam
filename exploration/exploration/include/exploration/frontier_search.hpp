@@ -43,7 +43,6 @@ In source file
 
 */
 
-
 class FrontierSearch
 {
 private:
@@ -75,19 +74,6 @@ private:
         pcl::PointCloud<pcl::PointXYZ>::Ptr pc;
 
         clusterStruct():pc(new pcl::PointCloud<pcl::PointXYZ>){};
-
-        // clusterStruct(int size){
-        //     index.reserve(size);
-        //     areas.reserve(size);
-        //     variances.reserve(size);
-        //     covariance.reserve(size);
-        // };
-        // clusterStruct(const std::vector<Eigen::Vector3i>& i,const std::vector<double>& a, const std::vector<Eigen::Vector2d>& v, const std::vector<double>& c,const std::vector<pcl::PointIndices>& ic)
-        //     :index(i)
-        //     ,areas(a)
-        //     ,variances(v)
-        //     ,covariance(c)
-        //     ,indices(ic){};
 
         clusterStruct(const clusterStruct& cs)
             :index(cs.index)
@@ -414,8 +400,6 @@ FrontierSearch::clusterStruct FrontierSearch::clusterDetection(const mapStruct& 
     }
 
     clusterStruct cs;
-
-    // pcl::PointCloud<pcl::PointXYZ>::Ptr horizonMap(new pcl::PointCloud<pcl::PointXYZ>);
     cs.pc -> points.reserve(points.size());
 
     for(const auto& p : points) cs.pc -> points.emplace_back(pcl::PointXYZ((float)p.x,(float)p.y,0.0f));
@@ -434,34 +418,8 @@ FrontierSearch::clusterStruct FrontierSearch::clusterDetection(const mapStruct& 
 	ec.setSearchMethod (tree);
 	ec.setInputCloud (cs.pc);
 
-    // std::vector<pcl::PointIndices> indices;//クラスタリングした結果が格納される
 	ec.extract (cs.indices);
     cs.reserve(cs.indices.size());
-
-    //debug 用　カラーリング出力 スコープ
-    // if(COLOR_CLUSTER){
-    //     pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorMap(new pcl::PointCloud<pcl::PointXYZRGB>);
-
-    //     float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
-    //     int i=0;
-    //     for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it,++i){
-    //         int c = i%12;
-    //         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-    //             colorMap -> points.emplace_back(CommonLib::pclXYZRGB(horizonMap->points[*pit].x,horizonMap->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
-    //   	    }
-  	//     }
-    //     colorMap -> width = colorMap -> points.size();
-    //     colorMap -> height = 1;
-    //     colorMap -> is_dense = true;
-        
-    //     sensor_msgs::PointCloud2 colorMsg;
-    //     pcl::toROSMsg(*colorMap,colorMsg);
-    //     colorMsg.header.frame_id = MAP_FRAME_ID;
-    //     colorMsg.header.stamp = ros::Time::now();
-    //     colorCloud_.pub.publish(colorMsg);
-    // }
-
-    // clusterStruct cs(indices.size());
 
     for (std::vector<pcl::PointIndices>::const_iterator it = cs.indices.begin (); it != cs.indices.end (); ++it){
         Eigen::Vector2d sum(0,0);
@@ -520,7 +478,6 @@ void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<E
     }
 
     int FILTER_HALF_CELL = (FILTER_SQUARE_DIAMETER / map.info.resolution) / 2.0;
-    //FILTER_HALF_CELL += FILTER_HALF_CELL % 2;//奇数ではダメな理由が不明
 
     if(FILTER_HALF_CELL < 1){
         ROS_ERROR_STREAM("FILTER_SQUARE_DIAMETER is Bad");

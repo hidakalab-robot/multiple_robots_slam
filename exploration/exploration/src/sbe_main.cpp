@@ -34,7 +34,6 @@ int main(int argc, char *argv[]){
     if(!DEBUG && ROTATION) mv.oneRotation();
 
     while(ros::ok()){
-        // ros::Duration(ros::Time::now()-getGoalTime).toSec()>BRANCH_WAIT_TIME && bs.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
         branchTimer() && bs.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
         if(AUTO_FINISH && !isEnd.q.callOne(ros::WallDuration(0.5))&&isEnd.data.data) break;
     }
