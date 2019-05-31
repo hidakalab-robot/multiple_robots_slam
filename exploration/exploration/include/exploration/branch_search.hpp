@@ -40,7 +40,7 @@ private:
 	double LOG_NEWER_LIMIT;//if 30 -> 30秒前までのログで重複検出
 	std::string MAP_FRAME_ID;
 	double THROUGH_TOLERANCE;
-	bool ACTIVE_HIBRID;
+	bool ACTIVE_HYBRID;
 	double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
 
 	CommonLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
@@ -83,7 +83,7 @@ BranchSearch::BranchSearch()
 	p.param<double>("log_newer_limit", LOG_NEWER_LIMIT, 10);
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
 	p.param<double>("through_tolerance", THROUGH_TOLERANCE, 1.0);
-	p.param<bool>("active_hibrid", ACTIVE_HIBRID, true);
+	p.param<bool>("active_hybrid", ACTIVE_HYBRID, true);
 	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
 	p.param<double>("branch_tolerance", BRANCH_TOLERANCE, 1.0);
 	
@@ -163,7 +163,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	}
 
 	
-	if(localList.size()>0){
+	if(localList.size()!=0){
 		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
 
 		double yaw = CommonLib::qToYaw(pose.orientation);
@@ -174,10 +174,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//ここで前の目標と近いやつはリストから削除
 		static geometry_msgs::Point lastBranch;
-
 		std::vector<listStruct> tempList;
 		tempList.reserve(globalList.size());
-
 		for(const auto& g : globalList){
 			if(Eigen::Vector2d(g.point.x - lastBranch.x,g.point.y - lastBranch.y).norm()>BRANCH_TOLERANCE) tempList.emplace_back(g);
 		}
@@ -229,7 +227,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
-		if(ACTIVE_HIBRID){
+		if(ACTIVE_HYBRID){
 			std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
 			if(frontiers.size()!=0){
 				

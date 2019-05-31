@@ -185,12 +185,11 @@ double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origi
     //距離にも重みをつける
 
     //各要素を正規化したいので初めに全部計算しながら最大値を求める
-    //正規化がこの方法で良いかは謎//全部のoriginについてまとめて計算したほうが良いかもしれない
-    //angle:norm:variance:covariance
+    //正規化がこの方法で良いかは謎//全部のoriginについてまとめて計算したほうが良いかもしれない//どっかでinitialize関数を作ってそっちで正規化用の最大値を計算する?
     //距離の計算、パス作って計算したほうが良いかも
     std::vector<Eigen::Vector4d> values;
     values.reserve(frontiers.size());
-    Eigen::Vector4d max(-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX);
+    Eigen::Vector4d max(-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX);//angle:norm:variance:covariance
     for(const auto& f : frontiers){
         Eigen::Vector2d toFrontier(f.coordinate.x - origin.x,f.coordinate.y - origin.y);
         Eigen::Vector4d temp(std::abs(acos(vec.dot(toFrontier.normalized()))),toFrontier.lpNorm<1>(),f.variance.x>f.variance.y ? f.variance.x : f.variance.y,std::abs(f.covariance));
