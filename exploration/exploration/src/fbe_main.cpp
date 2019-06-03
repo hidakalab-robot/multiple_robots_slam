@@ -13,11 +13,12 @@ int main(int argc, char *argv[]){
     geometry_msgs::Point goal;
 
     ros::NodeHandle p("~");
-    bool DEBUG,ROTATION;
+    bool DEBUG,ROTATION,AUTO_FINISH;
+    int END_CONDITION;
     p.param<bool>("debug",DEBUG,false);
     p.param<bool>("rotation",ROTATION,true);
-    int END_CONDITION;
-    p.param<int>("end_condition",END_CONDITION,0);//0:面積, 1:未知領域
+    p.param<bool>("auto_finish",AUTO_FINISH,true);
+    p.param<int>("end_condition",END_CONDITION,0);// 0:面積, 1:未知領域
 
     auto getGoal = [&]{
         switch (fs.getGoal(goal)){
@@ -38,8 +39,10 @@ int main(int argc, char *argv[]){
     if(!DEBUG && ROTATION) mv.oneRotation();
 
     while(ros::ok()){
-        if(!getGoal()) break;
-        else if(END_CONDITION == 0 && !isEnd.q.callOne(ros::WallDuration(0.5)) && isEnd.data.data) break;
+        if(AUTO_FINISH){//自動的に探査終了するか
+            if(!getGoal()) break;
+            if(END_CONDITION == 0 && !isEnd.q.callOne(ros::WallDuration(0.5))) break;
+        }
     }
 
     ROS_INFO_STREAM("exploration finish !! time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
