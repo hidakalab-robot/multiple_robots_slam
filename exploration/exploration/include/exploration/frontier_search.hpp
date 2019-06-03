@@ -46,6 +46,7 @@ In source file
 class FrontierSearch
 {
 private:
+
     struct mapStruct{
         nav_msgs::MapMetaData info;
         std::vector<std::vector<int8_t>> source;
@@ -132,9 +133,16 @@ private:
     std::vector<geometry_msgs::Point> frontiersToPoints(const std::vector<exploration_msgs::Frontier>& fa);
 
 public:
+    enum class goalStatus{
+        FOUND,
+        NOTHING,
+        OTHER
+    };
+
     FrontierSearch();
 
-    bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
+    // bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
+    goalStatus getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
     template<typename T> T frontierDetection(bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
 
     double evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin=branch coordinate
@@ -342,19 +350,45 @@ template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
     }
 }
 
-bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
+// bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
+//     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
+
+//     if(goals.size()==0){
+//         ROS_INFO_STREAM("Frontier is Not Found !!");
+//         return false;
+//     };
+
+//     if(pose_.q.callOne(ros::WallDuration(1))) return false;
+
+//     if(selectGoal(goals,pose_.data.pose,goal)){
+//         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
+//         publishGoal(goal);
+//         return true;
+//     }
+//     else{
+// 		ROS_INFO_STREAM("Found Frontier is Too Close");
+//         return false;
+//     }
+// }
+
+FrontierSearch::goalStatus FrontierSearch::getGoal(geometry_msgs::Point& goal){
     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
 
-    if(goals.size()==0 || pose_.q.callOne(ros::WallDuration(1))) return false;
+    if(goals.size()==0){
+        ROS_INFO_STREAM("Frontier is Not Found !!");
+        return goalStatus::NOTHING;
+    };
+
+    if(pose_.q.callOne(ros::WallDuration(1))) return goalStatus::OTHER;
 
     if(selectGoal(goals,pose_.data.pose,goal)){
         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
         publishGoal(goal);
-        return true;
+        return goalStatus::FOUND;
     }
     else{
 		ROS_INFO_STREAM("Found Frontier is Too Close");
-        return false;
+        return goalStatus::OTHER;
     }
 }
 
