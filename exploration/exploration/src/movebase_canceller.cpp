@@ -10,27 +10,30 @@ ns = namespace of move_base topic
 
 void callback(const actionlib_msgs::GoalStatusArray::ConstPtr& msg,const ros::Publisher& pub){
     static actionlib_msgs::GoalID lastId;
-    static bool adhesion = false;
+    static bool repeat = false;
     if(msg->status_list.empty()) return;
     
     actionlib_msgs::GoalID newId = msg->status_list.back().goal_id;
     if(lastId.id != newId.id){
-        adhesion = false;
+        repeat = false;
         //その目標を許すかどうかの判断をする
-        std::cout << "id : " << newId.id << "\nここ行っても良い？ y/n" << std::endl;
-        char judge;
-        std::cin >> judge;
-        if(judge == 'n'){
+        ROS_INFO_STREAM("id : " << newId.id);
+        ROS_INFO_STREAM("Move to this target ? [y/n] : ");
+
+        std::string input;
+        std::getline(std::cin,input);
+
+        if(input == "n"){
             pub.publish(newId);
             lastId = newId;
-            adhesion = true;
-            std::cout << "ダメです" << std::endl;
+            repeat = true;
+            ROS_INFO_STREAM("Rejected");
             return;
         }
         lastId = newId;
-        std::cout << "いいね" << std::endl;
+        ROS_INFO_STREAM("Accepted");
     }
-    else if(adhesion && msg->status_list.back().status != actionlib_msgs::GoalStatus::PREEMPTED) pub.publish(newId);
+    else if(repeat && msg->status_list.back().status != actionlib_msgs::GoalStatus::PREEMPTED) pub.publish(newId);
 }
 
 int main(int argc, char *argv[]){
@@ -39,6 +42,7 @@ int main(int argc, char *argv[]){
     ros::NodeHandle p("~");
     std::string ns;
     p.getParam("ns",ns);
+
     ros::Publisher pub = nh.advertise<actionlib_msgs::GoalID>(ros::names::append(ns,"move_base/cancel"),1,true);
     ros::Subscriber sub = nh.subscribe<actionlib_msgs::GoalStatusArray>(ros::names::append(ns,"move_base/status"),1,boost::bind(callback,_1,pub));
 
