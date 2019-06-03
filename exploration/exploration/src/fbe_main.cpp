@@ -25,9 +25,8 @@ int main(int argc, char *argv[]){
             case FrontierSearch::goalStatus::FOUND://ゴールがあった時
                 if(!DEBUG) mv.moveToGoal(goal);
                 return true;
-            case FrontierSearch::goalStatus::NOTHING://ゴールがなかったとき
-                if(END_CONDITION == 1) return false;//終了条件が未知領域のとき
-                else return true;//終了条件が面積のとき
+            case FrontierSearch::goalStatus::NOTHING://ゴールがなかったとき終了するかどうか
+                return END_CONDITION == 1 ? false : true;
             default:
                 return true;
         }
@@ -39,10 +38,8 @@ int main(int argc, char *argv[]){
     if(!DEBUG && ROTATION) mv.oneRotation();
 
     while(ros::ok()){
-        if(AUTO_FINISH){//自動的に探査終了するか
-            if(!getGoal()) break;
-            if(END_CONDITION == 0 && !isEnd.q.callOne(ros::WallDuration(0.5))) break;
-        }
+        if(!getGoal() && AUTO_FINISH) break;
+        if(AUTO_FINISH && END_CONDITION == 0 && !isEnd.q.callOne(ros::WallDuration(0.5)) && isEnd.data.data) break;
     }
 
     ROS_INFO_STREAM("exploration finish !! time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
