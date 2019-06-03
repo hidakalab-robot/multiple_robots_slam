@@ -13,10 +13,12 @@ int main(int argc, char *argv[]){
     ros::NodeHandle p("~");
     bool DEBUG,ROTATION,AUTO_FINISH;
     double BRANCH_WAIT_TIME;
+    int END_CONDITION;
     p.param<bool>("debug",DEBUG,false);
     p.param<bool>("rotation",ROTATION,true);
     p.param<bool>("auto_finish",AUTO_FINISH,true);
     p.param<double>("branch_wait_time",BRANCH_WAIT_TIME,1.0);
+    p.param<int>("end_condition",END_CONDITION,0);// 0:面積, 1:未知領域
 
     usleep(2e5);//timeがsim_timeに合うのを待つ
 
@@ -35,7 +37,10 @@ int main(int argc, char *argv[]){
 
     while(ros::ok()){
         branchTimer() && bs.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
-        if(AUTO_FINISH && !isEnd.q.callOne(ros::WallDuration(0.5))&&isEnd.data.data) break;
+        if(AUTO_FINISH){
+            if(END_CONDITION == 1 && bs.fs.frontierDetection<int>() == 0) break;
+            if(END_CONDITION == 0 && !isEnd.q.callOne(ros::WallDuration(0.5))&&isEnd.data.data) break;
+        }
     }
 
     ROS_INFO_STREAM("exploration finish !! time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");

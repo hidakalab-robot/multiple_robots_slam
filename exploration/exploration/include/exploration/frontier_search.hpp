@@ -350,6 +350,31 @@ template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
     }
 }
 
+template<> int FrontierSearch::frontierDetection(bool visualizeGoalArray){
+    if(map_.q.callOne(ros::WallDuration(1))) return -1;
+    
+    mapStruct map(map_.data);
+
+    horizonDetection(map);
+
+    clusterStruct cluster(clusterDetection(map));
+
+    if(cluster.index.size() == 0) return 0;
+
+    if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
+
+    std::vector<exploration_msgs::Frontier> frontiers;
+    frontiers.reserve(cluster.index.size());
+
+    for(int i=0,e=cluster.index.size();i!=e;++i){
+        if(cluster.index[i].z() == 0) continue;
+        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
+    }
+    
+    return frontiers.size();
+
+}
+
 // bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
 //     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
 
