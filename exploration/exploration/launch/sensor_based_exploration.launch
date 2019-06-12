@@ -34,7 +34,7 @@
             <param name="debug" value="$(arg debug)"/>
             <param name="color_cluster" value="true"/>
             <param name="min_cluster_size" value="30"/>
-            <param name="active_hybrid" value="true"/>
+            <param name="active_hybrid" value="false"/>
             <param name="filter_square_diameter" value="0.75"/>
             <param name="rotation" value="true"/>
             <param name="center_range_min" value="2.5"/>
@@ -61,6 +61,8 @@
         <node pkg="exploration" type="exploration_manager" name="exploration_manager">
             <remap if="$(arg fill)" from="map" to="fill_map"/>
             <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
+            <param name="end_condition" value="1"/> <!-- 0: area, 1: frontier -->
+            <param name="min_cluster_size" value="30"/>
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">

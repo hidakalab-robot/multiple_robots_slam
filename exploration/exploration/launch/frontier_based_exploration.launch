@@ -55,6 +55,8 @@
         <node pkg="exploration" type="exploration_manager" name="exploration_manager">
             <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
             <remap if="$(arg fill)" from="map" to="fill_map"/>
+            <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier -->
+            <param name="min_cluster_size" value="30"/>
         </node>
 
 	    <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">

@@ -13,6 +13,7 @@
 #include <exploration_msgs/Frontier.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
+#include <std_msgs/Int32.h>
 #include <Eigen/Core>
 
 namespace CommonLib
@@ -106,6 +107,12 @@ std_msgs::Bool msgBool(bool b=true){
 std_msgs::Float64 msgDouble(double d){
     std_msgs::Float64 msg;
     msg.data = d;
+    return msg;
+}
+
+std_msgs::Int32 msgInt(int i){
+    std_msgs::Int32 msg;
+    msg.data = i;
     return msg;
 }
 

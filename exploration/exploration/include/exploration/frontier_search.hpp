@@ -133,17 +133,18 @@ private:
     std::vector<geometry_msgs::Point> frontiersToPoints(const std::vector<exploration_msgs::Frontier>& fa);
 
 public:
-    enum class goalStatus{
-        FOUND,
-        NOTHING,
-        OTHER
-    };
+    // enum class goalStatus{
+    //     FOUND,
+    //     NOTHING,
+    //     OTHER
+    // };
 
     FrontierSearch();
 
-    // bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
-    goalStatus getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
+    bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
+    // goalStatus getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
     template<typename T> T frontierDetection(bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
+    template<typename T> T frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
 
     double evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin=branch coordinate
     double evoluatePointToFrontier(const geometry_msgs::Pose& pose,double forward,const std::vector<exploration_msgs::Frontier>& frontiers);
@@ -370,52 +371,71 @@ template<> int FrontierSearch::frontierDetection(bool visualizeGoalArray){
         if(cluster.index[i].z() == 0) continue;
         frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
     }
-    
     return frontiers.size();
-
 }
 
-// bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
-//     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
+template<> int FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray){    
+    mapStruct map(mapMsg);
 
-//     if(goals.size()==0){
-//         ROS_INFO_STREAM("Frontier is Not Found !!");
-//         return false;
-//     };
+    horizonDetection(map);
 
-//     if(pose_.q.callOne(ros::WallDuration(1))) return false;
+    clusterStruct cluster(clusterDetection(map));
 
-//     if(selectGoal(goals,pose_.data.pose,goal)){
-//         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
-//         publishGoal(goal);
-//         return true;
-//     }
-//     else{
-// 		ROS_INFO_STREAM("Found Frontier is Too Close");
-//         return false;
-//     }
-// }
+    if(cluster.index.size() == 0) return 0;
 
-FrontierSearch::goalStatus FrontierSearch::getGoal(geometry_msgs::Point& goal){
+    if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
+
+    std::vector<exploration_msgs::Frontier> frontiers;
+    frontiers.reserve(cluster.index.size());
+
+    for(int i=0,e=cluster.index.size();i!=e;++i){
+        if(cluster.index[i].z() == 0) continue;
+        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
+    }
+    return frontiers.size();
+}
+
+bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
 
     if(goals.size()==0){
         ROS_INFO_STREAM("Frontier is Not Found !!");
-        return goalStatus::NOTHING;
+        return false;
     };
 
-    if(pose_.q.callOne(ros::WallDuration(1))) return goalStatus::OTHER;
+    if(pose_.q.callOne(ros::WallDuration(1))) return false;
 
     if(selectGoal(goals,pose_.data.pose,goal)){
         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
         publishGoal(goal);
-        return goalStatus::FOUND;
+        return true;
     }
     else{
 		ROS_INFO_STREAM("Found Frontier is Too Close");
-        return goalStatus::OTHER;
+        return false;
     }
 }
+
+// FrontierSearch::goalStatus FrontierSearch::getGoal(geometry_msgs::Point& goal){
+//     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
+
+//     if(goals.size()==0){
+//         ROS_INFO_STREAM("Frontier is Not Found !!");
+//         return goalStatus::NOTHING;
+//     };
+
+//     if(pose_.q.callOne(ros::WallDuration(1))) return goalStatus::OTHER;
+
+//     if(selectGoal(goals,pose_.data.pose,goal)){
+//         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
+//         publishGoal(goal);
+//         return goalStatus::FOUND;
+//     }
+//     else{
+// 		ROS_INFO_STREAM("Found Frontier is Too Close");
+//         return goalStatus::OTHER;
+//     }
+// }
 
 std::vector<geometry_msgs::Point> FrontierSearch::frontiersToPoints(const std::vector<exploration_msgs::Frontier>& frontiers){
     std::vector<geometry_msgs::Point> p;
