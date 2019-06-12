@@ -8,10 +8,15 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <exploration/common_lib.hpp>
+#include <thread>
 
 class Visualization
 {
 private:
+    double POSE_PUBLISH_RATE;
+    double GOAL_PUBLISH_RATE;
+    double GOALARRAY_PUBLISH_RATE;
+
     //pose
     CommonLib::subStructSimple pose_;
     CommonLib::pubStruct<visualization_msgs::Marker> poseMarker_;    
@@ -25,14 +30,19 @@ private:
     //goalList
     CommonLib::subStructSimple goalArray_;
     CommonLib::pubStruct<visualization_msgs::Marker> goalArrayMarker_;
-    visualization_msgs::Marker glm;
+    visualization_msgs::Marker gam;
     
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
     void goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg);
 
+    void poseMarkerPublisher(void);
+    void goalMarkerPublisher(void);
+    void goalArrayMarkerPublisher(void);
+
 public:
     Visualization();
+    void multiThreadMain(void);
 };
 
 Visualization::Visualization()
@@ -44,6 +54,9 @@ Visualization::Visualization()
     ,goalArrayMarker_("visualization", 1){
 
     ros::NodeHandle p("~");
+    p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 30.0);
+    p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 30.0);
+    p.param<double>("goalarray_publish_rate", GOALARRAY_PUBLISH_RATE, 30.0);
     std::string MAP_FRAME_ID;
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     //poseMarker
@@ -78,37 +91,74 @@ Visualization::Visualization()
     //goalArrayMarker
     double goalArrayScale;
     p.param<double>("goal_array_scale", goalArrayScale, 0.3);
-    glm.header.frame_id = MAP_FRAME_ID;
-    glm.pose.orientation.w = 1.0;
-    glm.scale.x = glm.scale.y = glm.scale.z = goalArrayScale;
-    glm.type = visualization_msgs::Marker::CUBE_LIST;
-    glm.action = visualization_msgs::Marker::ADD;
-    glm.lifetime = ros::Duration(0);
-    glm.ns = "goalArray";
-    glm.id = 0;
-    glm.color.r = 1.0f;
-    glm.color.g = 1.0f;
-    glm.color.b = 0.0f;
-    glm.color.a = 1.0f;
+    gam.header.frame_id = MAP_FRAME_ID;
+    gam.pose.orientation.w = 1.0;
+    gam.scale.x = gam.scale.y = gam.scale.z = goalArrayScale;
+    gam.type = visualization_msgs::Marker::CUBE_LIST;
+    gam.action = visualization_msgs::Marker::ADD;
+    gam.lifetime = ros::Duration(0);
+    gam.ns = "goalArray";
+    gam.id = 0;
+    gam.color.r = 1.0f;
+    gam.color.g = 1.0f;
+    gam.color.b = 0.0f;
+    gam.color.a = 1.0f;
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
     pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
     pm.header.stamp = ros::Time::now();
-    poseMarker_.pub.publish(pm);
+    // poseMarker_.pub.publish(pm);
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
     gm.pose.position.x = msg -> point.x;
     gm.pose.position.y = msg -> point.y;
     gm.header.stamp = ros::Time::now();
-    goalMarker_.pub.publish(gm);
+    // goalMarker_.pub.publish(gm);
 }
 
 void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg){
-    glm.points = msg -> points;
-    glm.header.stamp = ros::Time::now();
-    goalArrayMarker_.pub.publish(glm);
+    gam.points = msg -> points;
+    gam.header.stamp = ros::Time::now();
+    // goalArrayMarker_.pub.publish(glm);
+}
+
+void Visualization::poseMarkerPublisher(void){
+    ros::Rate rate(POSE_PUBLISH_RATE);
+    while(ros::ok()){
+        poseMarker_.pub.publish(pm);
+        rate.sleep();
+    }
+}
+
+void Visualization::goalMarkerPublisher(void){
+    ros::Rate rate(GOAL_PUBLISH_RATE);
+    while(ros::ok()){
+        goalMarker_.pub.publish(gm);
+        rate.sleep();
+    }
+}
+
+void Visualization::goalArrayMarkerPublisher(void){
+    ros::Rate rate(GOALARRAY_PUBLISH_RATE);
+    while(ros::ok()){
+        goalArrayMarker_.pub.publish(gam);
+        rate.sleep();
+    }
+}
+
+void Visualization::multiThreadMain(void){
+    ROS_INFO_STREAM("start threads\n");
+    ros::spinOnce();
+    std::thread pmThread([this]() { poseMarkerPublisher(); });
+    std::thread gmThread([this]() { goalMarkerPublisher(); });
+    std::thread gamThread([this]() { goalArrayMarkerPublisher(); });
+    ros::spin();
+    pmThread.join();//スレッドの終了を待つ??
+    gmThread.join();
+    gamThread.join();
+    ROS_INFO_STREAM("end main loop\n");
 }
 
 #endif //VISUALIZATION_HPP
