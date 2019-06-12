@@ -17,14 +17,14 @@
 class BranchSearch
 {
 private:
-	enum class Duplication{
+	enum class DuplicationStatus{
 		NOT_DUPLECATION,
 		OLDER,
 		NEWER
 	};
 	struct listStruct{
 		geometry_msgs::Point point;
-		BranchSearch::Duplication duplication;
+		BranchSearch::DuplicationStatus duplication;
 		listStruct(const geometry_msgs::Point& p):point(p){};
 	};
 	//パラメータ
@@ -52,7 +52,7 @@ private:
 	std::vector<geometry_msgs::Point> throughBranch;//一度重複探査を無視して行った座標（二回目は行けない）
 
 	bool branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose);
-    Duplication duplicateDetection(const geometry_msgs::Point& goal);
+    DuplicationStatus duplicateDetection(const geometry_msgs::Point& goal);
 	void publishGoal(const geometry_msgs::Point& goal);
 	void publishGoalArray(const std::vector<geometry_msgs::Point>& goals);
 	std::vector<geometry_msgs::Point> listStructToPoint(const std::vector<listStruct>& list);
@@ -204,14 +204,14 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 			if(DUPLICATE_CHECK){
 				switch (duplicateDetection(goal)){
-					case Duplication::NOT_DUPLECATION:
+					case DuplicationStatus::NOT_DUPLECATION:
 						lastBranch = goal;
 						return true;
-					case Duplication::OLDER://重複してるけど古いからフロンティアも見ておく
-						globalList[id].duplication = Duplication::OLDER;
+					case DuplicationStatus::OLDER://重複してるけど古いからフロンティアも見ておく
+						globalList[id].duplication = DuplicationStatus::OLDER;
 						break;
-					case Duplication::NEWER://重複かつ最近通ったところなのでフロンティアも見ない
-						globalList[id].duplication = Duplication::NEWER;
+					case DuplicationStatus::NEWER://重複かつ最近通ったところなのでフロンティアも見ない
+						globalList[id].duplication = DuplicationStatus::NEWER;
 						break;
 				}
 				excludeList.push_back(id);
@@ -236,7 +236,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				double min = DBL_MAX;
 				for(const auto& g : globalList){
 					//重複判定がNEWERだったらスキップ
-					if(g.duplication == Duplication::NEWER){
+					if(g.duplication == DuplicationStatus::NEWER){
 						ROS_INFO_STREAM("newer duplication!!");
 						lastBranch = g.point;
 						continue;
@@ -272,8 +272,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	return false;
 }
 
-BranchSearch::Duplication BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
-	if(poseLog_.q.callOne(ros::WallDuration(1))) return Duplication::NOT_DUPLECATION;
+BranchSearch::DuplicationStatus BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
+	if(poseLog_.q.callOne(ros::WallDuration(1))) return DuplicationStatus::NOT_DUPLECATION;
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
 	
@@ -290,11 +290,11 @@ BranchSearch::Duplication BranchSearch::duplicateDetection(const geometry_msgs::
 		//過去のオドメトリが重複判定の範囲内に入っているか//
 		if(Eigen::Vector2d(goal.x-poseLog_.data.poses[i].pose.position.x,goal.y-poseLog_.data.poses[i].pose.position.y).norm() < DUPLICATE_TOLERANCE){
 			ROS_DEBUG_STREAM("This Branch is Duplicated");
-			return ros::Duration(poseLog_.data.header.stamp - poseLog_.data.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? Duplication::OLDER : Duplication::NEWER;
+			return ros::Duration(poseLog_.data.header.stamp - poseLog_.data.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? DuplicationStatus::OLDER : DuplicationStatus::NEWER;
 		}
 	}
 	ROS_DEBUG_STREAM("This Branch is Not Duplicated");
-	return Duplication::NOT_DUPLECATION;
+	return DuplicationStatus::NOT_DUPLECATION;
 }
 
 std::vector<geometry_msgs::Point> BranchSearch::listStructToPoint(const std::vector<listStruct>& list){
