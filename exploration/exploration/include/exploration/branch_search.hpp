@@ -12,6 +12,7 @@
 #include <exploration/common_lib.hpp>
 #include <exploration/frontier_search.hpp>
 #include <exploration_msgs/Frontier.h>
+#include <exploration/evaluation.hpp>
 
 //分岐領域を検出
 class BranchSearch
@@ -43,13 +44,15 @@ private:
 	bool ACTIVE_HYBRID;
 	double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
 
+	double COVARIANCE_THRESHOLD;
+    double VARIANCE_THRESHOLD;
+
 	CommonLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 	CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
 	CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
 
 	CommonLib::pubStruct<geometry_msgs::PointStamped> goal_;
 	CommonLib::pubStruct<exploration_msgs::PointArray> goalArray_;
-	std::vector<geometry_msgs::Point> throughBranch;//一度重複探査を無視して行った座標（二回目は行けない）
 
 	bool branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose);
     DuplicationStatus duplicateDetection(const geometry_msgs::Point& goal);
@@ -86,6 +89,8 @@ BranchSearch::BranchSearch()
 	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
 	p.param<double>("branch_tolerance", BRANCH_TOLERANCE, 1.0);
 	
+	p.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
+    p.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -228,44 +233,86 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
 		if(ACTIVE_HYBRID){
 			std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
-			if(frontiers.size()!=0){
+
+			//分散と共分散の値でフィルタリング
+			auto erased = std::remove_if(frontiers.begin(), frontiers.end(),[this](exploration_msgs::Frontier f){
+				double v = f.variance.x>f.variance.y ? f.variance.x : f.variance.y;
+				return v < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD; 
+			});
+			frontiers.erase(erased,frontiers.end());
+
+			if(frontiers.size()==0) return false;
 				
-				for(const auto& f : frontiers) {
-					ROS_DEBUG_STREAM("frontier : " << f.coordinate << ", " << f.variance << ", " << f.covariance);
+			//ここでリ評価用にリストを作りなおす (NEWERとスルーを考慮)
+
+			static std::vector<geometry_msgs::Point> throughBranch;//一度重複探査を無視して行った座標（二回目は行けない）
+
+			std::vector<geometry_msgs::Point> filteredList;
+			filteredList.reserve(globalList.size());
+
+			for(const auto& g : globalList){
+				//duplication filter
+				if(g.duplication == DuplicationStatus::NEWER){
+					// ROS_INFO_STREAM("newer duplication!!");
+					lastBranch = g.point;
+					continue;
 				}
-				double min = DBL_MAX;
-				for(const auto& g : globalList){
-					//重複判定がNEWERだったらスキップ
-					if(g.duplication == DuplicationStatus::NEWER){
-						ROS_INFO_STREAM("newer duplication!!");
-						lastBranch = g.point;
-						continue;
+				//throught filter
+				auto through = [&]{
+					for(const auto& t : throughBranch) {
+						if(Eigen::Vector2d(g.point.x-t.x,g.point.y-t.y).norm() < THROUGH_TOLERANCE) return true;
 					}
-					//座標がthroughBranchに入ってたらスキップ//重複探査阻止の処理を回避するのは二回以上出来ない
-					bool through = false;
-					for(const auto& t : throughBranch){
-						if(Eigen::Vector2d(g.point.x-t.x,g.point.y-t.y).norm() < THROUGH_TOLERANCE){
-							through = true;
-							ROS_DEBUG_STREAM("through branch");
-							break;
-						}
-					}
-					if(through) continue;
-					double val = fs.evoluatePointToFrontier(g.point,Eigen::Vector2d(g.point.x-pose.position.x,g.point.y-pose.position.y).normalized(),frontiers);
-					if(min > val){
-						min = std::move(val);
-						goal = g.point;
-						lastBranch = goal;
-					}
-				}
-				//最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
-				if(fs.evoluatePointToFrontier(pose,Eigen::Vector2d(goal.x-pose.position.x,goal.y-pose.position.y).norm(),frontiers) > min){
-					ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
-					ROS_DEBUG_STREAM("This Branch continues to a large frontier");
-					throughBranch.emplace_back(goal);
-					return true;
-				}
+					return false;
+				};
+				if(through()) continue;
+				filteredList.emplace_back(g.point);
 			}
+			
+			//filteredListとfrontiers
+			if(filteredList.size()==0) return false;
+
+			Evaluation ev(frontiers, filteredList, pose);
+			ev.initialize();
+			if(ev.result(goal)){
+				lastBranch = goal;
+				throughBranch.emplace_back(goal);
+				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
+				ROS_DEBUG_STREAM("This Branch continues to a large frontier");
+				return true;
+			}
+			
+				// double min = DBL_MAX;
+				// for(const auto& g : globalList){
+				// 	//重複判定がNEWERだったらスキップ
+				// 	if(g.duplication == DuplicationStatus::NEWER){
+				// 		ROS_INFO_STREAM("newer duplication!!");
+				// 		lastBranch = g.point;
+				// 		continue;
+				// 	}
+				// 	//座標がthroughBranchに入ってたらスキップ//重複探査阻止の処理を回避するのは二回以上出来ない
+				// 	bool through = false;
+				// 	for(const auto& t : throughBranch){
+				// 		if(Eigen::Vector2d(g.point.x-t.x,g.point.y-t.y).norm() < THROUGH_TOLERANCE){
+				// 			through = true;
+				// 			ROS_DEBUG_STREAM("through branch");
+				// 			break;
+				// 		}
+				// 	}
+				// 	if(through) continue;
+				// 	double val = fs.evoluatePointToFrontier(g.point,Eigen::Vector2d(g.point.x-pose.position.x,g.point.y-pose.position.y).normalized(),frontiers);
+				// 	if(min > val){
+				// 		min = std::move(val);
+				// 		goal = g.point;
+				// 		lastBranch = goal;
+				// 	}
+				// }
+				// //最後に直進方向のフロンティア面積と比較する //逆方向に行った時の奴も比較したほうが良いかも
+				// if(fs.evoluatePointToFrontier(pose,Eigen::Vector2d(goal.x-pose.position.x,goal.y-pose.position.y).norm(),frontiers) > min){
+				// 	ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
+				// 	ROS_DEBUG_STREAM("This Branch continues to a large frontier");
+				// 	throughBranch.emplace_back(goal);
+				// 	return true;
+				// }
 		}
     }
 
