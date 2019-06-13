@@ -75,6 +75,7 @@ void Evaluation::initialize(void){
     // Eigen::Vector2d(g.point.x-pose.position.x,g.point.y-pose.position.y).normalized()
 
     auto calc = [this](const geometry_msgs::Point& p, const Eigen::Vector2d& v1){
+        ROS_DEBUG_STREAM("calc p : (" << p.x << "," << p.y << ")");
         sumValue s{0,0,p};
         for(const auto& f : frontiers){
             Eigen::Vector2d v2 = Eigen::Vector2d(f.coordinate.x - p.x, f.coordinate.y - p.y);
@@ -122,20 +123,11 @@ void Evaluation::initialize(void){
     forward /= branches.size();
 
     //直進時の計算
-    //     double yaw = CommonLib::qToYaw(pose.orientation);
-    //     double cosYaw = cos(yaw);
-    //     double sinYaw = sin(yaw);
-    //     ROS_DEBUG_STREAM("forward sum");
-    //     return evoluatePointToFrontier(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),frontiers);
-
     double yaw = CommonLib::qToYaw(pose.orientation);
     double cosYaw = cos(yaw);
     double sinYaw = sin(yaw);
 
     sVal.emplace_back(calc(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw)));
-
-
-
 }
 
 bool Evaluation::result(geometry_msgs::Point& goal){
@@ -144,13 +136,15 @@ bool Evaluation::result(geometry_msgs::Point& goal){
     //frontierの数は0にならない
     //分岐領域の数は0ではない
     
+    ROS_DEBUG_STREAM("sVal size : " << sVal.size());
+
     double minE = DBL_MAX;
 
     for(int i=0,ie=sVal.size();i!=ie;++i){
         double e = NORM_WEIGHT * sVal[i].sumDistnance / mVal.distance + ANGLE_WEIGHT * sVal[i].sumAngle / mVal.angle;
         ROS_DEBUG_STREAM("position : (" << sVal[i].coordinate.x << "," << sVal[i].coordinate.y << "), sum : " << e);
         if(e < minE){
-            if(i = ie) return false;
+            if(i == ie) return false;
             minE = std::move(e);
             goal = sVal[i].coordinate;
         }

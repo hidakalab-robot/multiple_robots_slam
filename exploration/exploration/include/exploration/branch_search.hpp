@@ -235,11 +235,13 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
 
 			//分散と共分散の値でフィルタリング
-			auto erased = std::remove_if(frontiers.begin(), frontiers.end(),[this](exploration_msgs::Frontier f){
+			auto erased = std::remove_if(frontiers.begin(), frontiers.end(),[this](exploration_msgs::Frontier& f){
 				double v = f.variance.x>f.variance.y ? f.variance.x : f.variance.y;
 				return v < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD; 
 			});
 			frontiers.erase(erased,frontiers.end());
+
+			ROS_INFO_STREAM("filtered frontiers size : " << frontiers.size());
 
 			if(frontiers.size()==0) return false;
 				
@@ -253,7 +255,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			for(const auto& g : globalList){
 				//duplication filter
 				if(g.duplication == DuplicationStatus::NEWER){
-					// ROS_INFO_STREAM("newer duplication!!");
+					ROS_INFO_STREAM("newer duplication!!");
 					lastBranch = g.point;
 					continue;
 				}
@@ -264,11 +266,15 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 					}
 					return false;
 				};
-				if(through()) continue;
+				if(through()){
+					ROS_INFO_STREAM("throught branch!!");
+					continue;
+				}
 				filteredList.emplace_back(g.point);
 			}
 			
 			//filteredListとfrontiers
+			ROS_INFO_STREAM("filtered branches size : " << filteredList.size());
 			if(filteredList.size()==0) return false;
 
 			Evaluation ev(frontiers, filteredList, pose);
