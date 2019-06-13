@@ -148,6 +148,7 @@ bool Evaluation::result(geometry_msgs::Point& goal){
 
     for(int i=0,ie=sVal.size();i!=ie;++i){
         double e = NORM_WEIGHT * sVal[i].sumDistnance / mVal.distance + ANGLE_WEIGHT * sVal[i].sumAngle / mVal.angle;
+        ROS_DEBUG_STREAM("position : (" << sVal[i].coordinate.x << "," << sVal[i].coordinate.y << "), sum : " << e);
         if(e < minE){
             if(i = ie) return false;
             minE = std::move(e);
