@@ -58,7 +58,6 @@ private:
 	std::vector<geometry_msgs::Point> listStructToPoint(const std::vector<listStruct>& list);
 
 public:
-	FrontierSearch fs;
     BranchSearch();
 	bool getGoal(geometry_msgs::Point& goal);
 };
@@ -227,12 +226,14 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
 		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
 		if(ACTIVE_HYBRID){
+			static FrontierSearch fs;
 			std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
 			if(frontiers.size()!=0){
+				//ここで正規化用の関数呼び出し
 				
-				for(const auto& f : frontiers) {
-					ROS_DEBUG_STREAM("frontier : " << f.coordinate << ", " << f.variance << ", " << f.covariance);
-				}
+				// for(const auto& f : frontiers) {
+				// 	ROS_DEBUG_STREAM("frontier : " << f.coordinate << ", " << f.variance << ", " << f.covariance);
+				// }
 				double min = DBL_MAX;
 				for(const auto& g : globalList){
 					//重複判定がNEWERだったらスキップ
