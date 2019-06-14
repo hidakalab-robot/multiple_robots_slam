@@ -105,10 +105,6 @@ private:
     bool USE_MERGE_MAP;
     std::string MERGE_MAP_FRAME_ID;
     bool COLOR_CLUSTER;
-    double ANGLE_WEIGHT;
-    double NORM_WEIGHT;
-    double COVARIANCE_THRESHOLD;
-    double VARIANCE_THRESHOLD;
 
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
     CommonLib::subStruct<nav_msgs::OccupancyGrid> map_;
@@ -133,22 +129,11 @@ private:
     std::vector<geometry_msgs::Point> frontiersToPoints(const std::vector<exploration_msgs::Frontier>& fa);
 
 public:
-    // enum class goalStatus{
-    //     FOUND,
-    //     NOTHING,
-    //     OTHER
-    // };
-
     FrontierSearch();
 
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
-    // goalStatus getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
     template<typename T> T frontierDetection(bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
     template<typename T> T frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
-
-    double evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers);//origin=branch coordinate
-    double evoluatePointToFrontier(const geometry_msgs::Pose& pose,double forward,const std::vector<exploration_msgs::Frontier>& frontiers);
-
 };
 
 FrontierSearch::FrontierSearch()
@@ -173,61 +158,6 @@ FrontierSearch::FrontierSearch()
     p.param<bool>("use_merge_map", USE_MERGE_MAP, false);
     p.param<std::string>("merge_map_frame_id", MERGE_MAP_FRAME_ID, "merge_map");
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
-    p.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
-    p.param<double>("norm_weight", NORM_WEIGHT, 2.5);
-    p.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
-    p.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
-    
-}
-
-double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Pose& pose, double forward,const std::vector<exploration_msgs::Frontier>& frontiers){
-    //前向きのベクトルを自動生成
-    double yaw = CommonLib::qToYaw(pose.orientation);
-    double cosYaw = cos(yaw);
-    double sinYaw = sin(yaw);
-    ROS_DEBUG_STREAM("forward sum");
-    return evoluatePointToFrontier(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),frontiers);
-}
-
-double FrontierSearch::evoluatePointToFrontier(const geometry_msgs::Point& origin,const Eigen::Vector2d& vec,const std::vector<exploration_msgs::Frontier>& frontiers){
-    //frontierの大きさで重みをつけたい
-    //距離にも重みをつける
-
-    //各要素を正規化したいので初めに全部計算しながら最大値を求める
-    //正規化がこの方法で良いかは謎//全部のoriginについてまとめて計算したほうが良いかもしれない//どっかでinitialize関数を作ってそっちで正規化用の最大値を計算する?
-    //距離の計算、パス作って計算したほうが良いかも
-    std::vector<Eigen::Vector4d> values;
-    values.reserve(frontiers.size());
-    Eigen::Vector4d max(-DBL_MAX,-DBL_MAX,-DBL_MAX,-DBL_MAX);//angle:norm:variance:covariance
-    for(const auto& f : frontiers){
-        Eigen::Vector2d toFrontier(f.coordinate.x - origin.x,f.coordinate.y - origin.y);
-        Eigen::Vector4d temp(std::abs(acos(vec.dot(toFrontier.normalized()))),toFrontier.lpNorm<1>(),f.variance.x>f.variance.y ? f.variance.x : f.variance.y,std::abs(f.covariance));
-        for(int i=0;i<4;++i) {
-            if(temp[i] > max[i]) max[i] = temp[i];
-        }
-        if(temp[3] < COVARIANCE_THRESHOLD && temp[2] < VARIANCE_THRESHOLD) continue;//共分散が小さいフロンティアは考慮しない//ただし、分散が大きければ考慮しても良いかも
-        values.emplace_back(temp);
-    }
-
-    //valuesを正規化しつつ評価値を計算
-    double sum = 0;
-
-    ROS_DEBUG_STREAM("adopted frontier : " << values.size() << " / " << frontiers.size());
-    switch (values.size()){
-    case 0:
-        sum = DBL_MAX;
-        break;
-    case 1:
-        sum = ANGLE_WEIGHT*values[0][0] + NORM_WEIGHT*values[0][1];
-        break;
-    default:
-        for(const auto& v : values) sum += (ANGLE_WEIGHT*v[0]/max[0] + NORM_WEIGHT*v[1]/max[1]);
-        break;
-    }
-
-    ROS_DEBUG_STREAM("position : (" << origin.x << "," << origin.y << "), sum : " << sum);
-
-    return sum;
 }
 
 template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visualizeGoalArray){
@@ -415,27 +345,6 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
         return false;
     }
 }
-
-// FrontierSearch::goalStatus FrontierSearch::getGoal(geometry_msgs::Point& goal){
-//     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
-
-//     if(goals.size()==0){
-//         ROS_INFO_STREAM("Frontier is Not Found !!");
-//         return goalStatus::NOTHING;
-//     };
-
-//     if(pose_.q.callOne(ros::WallDuration(1))) return goalStatus::OTHER;
-
-//     if(selectGoal(goals,pose_.data.pose,goal)){
-//         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
-//         publishGoal(goal);
-//         return goalStatus::FOUND;
-//     }
-//     else{
-// 		ROS_INFO_STREAM("Found Frontier is Too Close");
-//         return goalStatus::OTHER;
-//     }
-// }
 
 std::vector<geometry_msgs::Point> FrontierSearch::frontiersToPoints(const std::vector<exploration_msgs::Frontier>& frontiers){
     std::vector<geometry_msgs::Point> p;
