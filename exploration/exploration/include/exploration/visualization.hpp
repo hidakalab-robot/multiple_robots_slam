@@ -108,20 +108,17 @@ Visualization::Visualization()
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
     pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
     pm.header.stamp = ros::Time::now();
-    // poseMarker_.pub.publish(pm);
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
     gm.pose.position.x = msg -> point.x;
     gm.pose.position.y = msg -> point.y;
     gm.header.stamp = ros::Time::now();
-    // goalMarker_.pub.publish(gm);
 }
 
 void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg){
     gam.points = msg -> points;
     gam.header.stamp = ros::Time::now();
-    // goalArrayMarker_.pub.publish(glm);
 }
 
 void Visualization::poseMarkerPublisher(void){
