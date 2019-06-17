@@ -64,6 +64,19 @@ struct scanStruct{
     };
 };
 
+enum class DuplicationStatus{
+	NOT_DUPLECATION,
+	OLDER,
+	NEWER
+};
+
+struct listStruct{
+    geometry_msgs::Point point;
+    CommonLib::DuplicationStatus duplication;
+    listStruct(){};
+    listStruct(const geometry_msgs::Point& p):point(p){};
+};
+
 double qToYaw(const tf::Quaternion& q){
     double roll, pitch, yaw;
     tf::Matrix3x3(q).getRPY(roll,pitch,yaw);

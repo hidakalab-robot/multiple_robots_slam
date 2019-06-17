@@ -34,11 +34,14 @@
             <param name="debug" value="$(arg debug)"/>
             <param name="color_cluster" value="true"/>
             <param name="min_cluster_size" value="30"/>
-            <param name="seamless_hybrid" value="false"/>
+            <param name="seamless_hybrid" value="true"/>
             <param name="filter_square_diameter" value="0.75"/>
             <param name="rotation" value="true"/>
             <param name="center_range_min" value="2.5"/>
             <param name="newer_duplication_threshold" value="100"/>
+            <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
+            <param name="global_costmap/global_frame" value="$(arg map)"/>
+            <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
