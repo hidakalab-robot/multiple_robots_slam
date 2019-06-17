@@ -73,7 +73,7 @@ public:
                 // double l = Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
                 // ROS_INFO_STREAM("Path diff " << i << " : " << l);
                 // pathLength += l;
-                pathLength += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm()
+                pathLength += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
             }
             return pathLength;
         }

@@ -5,6 +5,8 @@
 #include <exploration_msgs/Frontier.h>
 #include <geometry_msgs/Point.h>
 #include <exploration/common_lib.hpp>
+#include <exploration/path_planning.hpp>
+#include <navfn/navfn_ros.h>
 
 class Evaluation
 {
@@ -23,6 +25,7 @@ private:
 
     double ANGLE_WEIGHT;
     double NORM_WEIGHT;
+    std::string MAP_FRAME_ID;
 
     std::vector<exploration_msgs::Frontier> frontiers;
     std::vector<geometry_msgs::Point> branches;
@@ -47,12 +50,16 @@ Evaluation::Evaluation(const std::vector<exploration_msgs::Frontier>& f, const s
     ros::NodeHandle ph("~");
     ph.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
     ph.param<double>("norm_weight", NORM_WEIGHT, 2.5); 
+    ph.param<std::string>("map_frame_id", MAP_FRAME_ID, "map"); 
 
     sVal.reserve(branches.size()+1);
 };
 
 void Evaluation::initialize(void){
 
+    static PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
+// ///stampのフレームid
+//     for(const auto& g : goals) ROS_INFO_STREAM("path length : " << pp.getPathLength(pose_.data,CommonLib::pointToPoseStamped(g,MAP_FRAME_ID)));
     auto calc = [this](const geometry_msgs::Point& p, const Eigen::Vector2d& v1){
         ROS_DEBUG_STREAM("calc p : (" << p.x << "," << p.y << ")");
         sumValue s{0,0,p};
@@ -60,7 +67,10 @@ void Evaluation::initialize(void){
             Eigen::Vector2d v2 = Eigen::Vector2d(f.coordinate.x - p.x, f.coordinate.y - p.y);
 
             double angle = std::abs(acos(v1.normalized().dot(v2.normalized())));
-            double distance = v2.lpNorm<1>();
+            // double distance = v2.lpNorm<1>();
+            double distance = pp.getPathLength(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f.coordinate,MAP_FRAME_ID));
+
+            ROS_INFO_STREAM("legacy distance : " << v2.lpNorm<1>() << ", new distance : " << distance);
 
             s.sumAngle += angle;
             s.sumDistnance += distance;

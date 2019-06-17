@@ -338,9 +338,9 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
 
     if(pose_.q.callOne(ros::WallDuration(1))) return false;
 
-    static PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
-///stampのフレームid
-    for(const auto& g : goals) ROS_INFO_STREAM("path length : " << pp.getPathLength(pose_.data,CommonLib::pointToPoseStamped(g,MAP_FRAME_ID)));
+//     static PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
+// ///stampのフレームid
+//     for(const auto& g : goals) ROS_INFO_STREAM("path length : " << pp.getPathLength(pose_.data,CommonLib::pointToPoseStamped(g,MAP_FRAME_ID)));
 
     if(selectGoal(goals,pose_.data.pose,goal)){
         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
