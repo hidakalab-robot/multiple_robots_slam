@@ -26,6 +26,7 @@ private:
 	struct listStruct{
 		geometry_msgs::Point point;
 		BranchSearch::DuplicationStatus duplication;
+		listStruct(){};
 		listStruct(const geometry_msgs::Point& p):point(p){};
 	};
 	//パラメータ

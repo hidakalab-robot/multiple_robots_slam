@@ -10,6 +10,7 @@
 #include <tf/tf.h>
 #include <pcl_ros/point_cloud.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <exploration_msgs/Frontier.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
@@ -157,6 +158,13 @@ exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, 
     msg.variance = v;
     msg.covariance = cv;
     return msg;
+}
+
+geometry_msgs::PoseStamped pointToPoseStamped(const geometry_msgs::Point& p, const std::string& f){
+    geometry_msgs::PoseStamped ps;
+    ps.pose = pointToPose(p);
+    ps.header.frame_id = f;
+    return ps;
 }
 
 }

@@ -34,6 +34,9 @@
             <param name="previous_goal_threshold" value="0.5"/>
             <!-- <param name="merge_map_frame_id" value="/server/merge_map"/> -->
             <!-- <param name="use_merge_map" value="true"/> -->
+            <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
+            <param name="global_costmap/global_frame" value="$(arg map)"/>
+            <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
