@@ -1,10 +1,10 @@
 #include <ros/ros.h>
 #include <exploration_msgs/Frontier.h>
+#include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Point.h>
 #include <exploration/common_lib.hpp>
 #include <exploration/path_planning.hpp>
 #include <navfn/navfn_ros.h>
-#include <exploration/frontier_search.hpp>
 
 class SeamlessHybrid
 {
@@ -28,32 +28,30 @@ private:
     double ANGLE_WEIGHT;
     double NORM_WEIGHT;
 
-
+    std::vector<CommonLib::listStruct> inputBranches;
     std::vector<exploration_msgs::Frontier> frontiers;
-    std::vector<geometry_msgs::Point> branches;
     geometry_msgs::Pose pose;
+
+    std::vector<geometry_msgs::Point> branches;
 
     std::vector<sumValue> sVal;
     maxValue mVal;
-    std::vector<CommonLib::listStruct> inputBranches;
-
-    static std::vector<geometry_msgs::Point> throughBranch; //一度重複探査を無視して行った座標（二回目は行けない）
     
-    static FrontierSearch fs;
+    static std::vector<geometry_msgs::Point> throughBranches; //一度重複探査を無視して行った座標（二回目は行けない）
 
 public:
-    SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const geometry_msgs::Pose& p);
+    SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p);
     bool initialize(void);
     bool dataFilter(void);
     void evaluationInitialize(void);
     bool result(geometry_msgs::Point& goal);
 };
 
-std::vector<geometry_msgs::Point> SeamlessHybrid::throughBranch;
-FrontierSearch SeamlessHybrid::fs;
+std::vector<geometry_msgs::Point> SeamlessHybrid::throughBranches;
 
-SeamlessHybrid::SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const geometry_msgs::Pose& p)
+SeamlessHybrid::SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p)
     :inputBranches(b)
+    ,frontiers(f)
     ,pose(p)
     ,mVal(-DBL_MAX,-DBL_MAX){
 
@@ -76,19 +74,21 @@ bool SeamlessHybrid::initialize(void){
 }
 
 bool SeamlessHybrid::dataFilter(void){
-    //データのフィルタリング
-    frontiers = fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false);
 
-    //分散と共分散の値でフィルタリング
+    ROS_INFO_STREAM("before frontiers size : " << frontiers.size());
     auto eraseIndex = std::remove_if(frontiers.begin(), frontiers.end(),[this](exploration_msgs::Frontier& f){
         double v = f.variance.x>f.variance.y ? f.variance.x : f.variance.y;
         return v < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD;
     });
     frontiers.erase(eraseIndex,frontiers.end());
 
-    ROS_INFO_STREAM("filtered frontiers size : " << frontiers.size());
+    ROS_INFO_STREAM("after frontiers size : " << frontiers.size());
 
     if(frontiers.size()==0) return false;
+
+    ROS_INFO_STREAM("through branch size : " << throughBranches.size());
+
+    ROS_INFO_STREAM("before branches size : " << inputBranches.size());
 
     branches.reserve(inputBranches.size());
 
@@ -100,7 +100,7 @@ bool SeamlessHybrid::dataFilter(void){
         }
         //throught filter
         auto through = [&,this]{
-            for(const auto& t : throughBranch) {
+            for(const auto& t : throughBranches) {
                 if(Eigen::Vector2d(i.point.x-t.x,i.point.y-t.y).norm() < THROUGH_TOLERANCE) return true;
             }
             return false;
@@ -111,16 +111,16 @@ bool SeamlessHybrid::dataFilter(void){
         }
         branches.emplace_back(i.point);
     }
-    
     //filteredListとfrontiers
-    ROS_INFO_STREAM("filtered branches size : " << branches.size());
-    if(branches.size()==0) return false;
+    ROS_INFO_STREAM("after branches size : " << branches.size());
+
+    return branches.size()==0 ? false : true;
 }
 
 void SeamlessHybrid::evaluationInitialize(void){
-    static PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
+    PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
 
-    auto calc = [this](const geometry_msgs::Point& p, const Eigen::Vector2d& v1){
+    auto calc = [this,&pp](const geometry_msgs::Point& p, const Eigen::Vector2d& v1){
         ROS_DEBUG_STREAM("calc p : (" << p.x << "," << p.y << ")");
         sumValue s{0,0,p};
         for(const auto& f : frontiers){
@@ -173,61 +173,6 @@ bool SeamlessHybrid::result(geometry_msgs::Point& goal){
             goal = sVal[i].coordinate;
         }
     }
-    throughBranch.emplace_back(goal);
+    throughBranches.emplace_back(goal);
     return true;
 }
-// static FrontierSearch fs;
-// std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
-
-// //分散と共分散の値でフィルタリング
-// auto erased = std::remove_if(frontiers.begin(), frontiers.end(),[this](exploration_msgs::Frontier& f){
-//     double v = f.variance.x>f.variance.y ? f.variance.x : f.variance.y;
-//     return v < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD; 
-// });
-// frontiers.erase(erased,frontiers.end());
-
-// ROS_INFO_STREAM("filtered frontiers size : " << frontiers.size());
-
-// if(frontiers.size()==0) return false;
-
-// static std::vector<geometry_msgs::Point> throughBranch;//一度重複探査を無視して行った座標（二回目は行けない）
-
-// //ここでリ評価用にリストを作りなおす (NEWERとスルーを考慮)
-
-// std::vector<geometry_msgs::Point> filteredList;
-// filteredList.reserve(globalList.size());
-
-// for(const auto& g : globalList){
-//     //duplication filter
-//     if(g.duplication == DuplicationStatus::NEWER){
-//         ROS_INFO_STREAM("newer duplication!!");
-//         lastBranch = g.point;
-//         continue;
-//     }
-//     //throught filter
-//     auto through = [&]{
-//         for(const auto& t : throughBranch) {
-//             if(Eigen::Vector2d(g.point.x-t.x,g.point.y-t.y).norm() < THROUGH_TOLERANCE) return true;
-//         }
-//         return false;
-//     };
-//     if(through()){
-//         ROS_INFO_STREAM("throught branch!!");
-//         continue;
-//     }
-//     filteredList.emplace_back(g.point);
-// }
-
-// //filteredListとfrontiers
-// ROS_INFO_STREAM("filtered branches size : " << filteredList.size());
-// if(filteredList.size()==0) return false;
-
-// Evaluation ev(frontiers, filteredList, pose);
-// ev.initialize();
-// if(ev.result(goal)){
-//     lastBranch = goal;
-//     throughBranch.emplace_back(goal);
-//     ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
-//     ROS_DEBUG_STREAM("This Branch continues to a large frontier");
-//     return true;
-// }

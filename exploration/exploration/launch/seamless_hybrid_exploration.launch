@@ -36,7 +36,7 @@
             <param name="min_cluster_size" value="30"/>
             <param name="seamless_hybrid" value="true"/>
             <param name="filter_square_diameter" value="0.75"/>
-            <param name="rotation" value="true"/>
+            <param name="rotation" value="false"/>
             <param name="center_range_min" value="2.5"/>
             <param name="newer_duplication_threshold" value="100"/>
             <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
@@ -50,6 +50,7 @@
 
         <node unless="$(arg debug)" pkg="exploration" type="log" name="log">
             <remap from="pose" to="$(arg pose)"/>
+            <param name="pose_log_rate" value="1.0"/>
         </node>
 
         <node pkg="exploration" type="continuity" name="continuity">

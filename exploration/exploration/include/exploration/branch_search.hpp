@@ -12,7 +12,6 @@
 #include <exploration/common_lib.hpp>
 #include <exploration/frontier_search.hpp>
 #include <exploration_msgs/Frontier.h>
-#include <exploration/evaluation.hpp>
 #include <exploration/seamless_hybrid.hpp>
 
 //分岐領域を検出
@@ -31,12 +30,8 @@ private:
 	double LENGTH_THRESHOLD_Y;
 	double LOG_NEWER_LIMIT;//if 30 -> 30秒前までのログで重複検出
 	std::string MAP_FRAME_ID;
-	double THROUGH_TOLERANCE;
 	bool SEAMLESS_HYBRID;
 	double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
-
-	double COVARIANCE_THRESHOLD;
-    double VARIANCE_THRESHOLD;
 
 	CommonLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 	CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
@@ -74,13 +69,9 @@ BranchSearch::BranchSearch()
 	p.param<double>("length_threshold_y", LENGTH_THRESHOLD_Y, 0.75);
 	p.param<double>("log_newer_limit", LOG_NEWER_LIMIT, 10);
 	p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
-	p.param<double>("through_tolerance", THROUGH_TOLERANCE, 1.0);
 	p.param<bool>("seamless_hybrid", SEAMLESS_HYBRID, true);
 	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
 	p.param<double>("branch_tolerance", BRANCH_TOLERANCE, 1.0);
-	
-	p.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
-    p.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
 }
 
 bool BranchSearch::getGoal(geometry_msgs::Point& goal){
@@ -155,7 +146,6 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 			}
 		}
 	}
-
 	
 	if(localList.size()!=0){
 		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
@@ -221,70 +211,15 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 		//直前に通ったばかりの分岐は強めに通っては行けない
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
-		//残っているフロンティアに対してアクセスしやすい方向に進みたいので、角度の総和が小さい方が良い <- これ決定
 		if(SEAMLESS_HYBRID){
-			// static FrontierSearch fs;
-			// std::vector<exploration_msgs::Frontier> frontiers(fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false));
-
-			// //分散と共分散の値でフィルタリング
-			// auto erased = std::remove_if(frontiers.begin(), frontiers.end(),[this](exploration_msgs::Frontier& f){
-			// 	double v = f.variance.x>f.variance.y ? f.variance.x : f.variance.y;
-			// 	return v < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD;
-			// });
-			// frontiers.erase(erased,frontiers.end());
-
-			// ROS_INFO_STREAM("filtered frontiers size : " << frontiers.size());
-
-			// if(frontiers.size()==0) return false;
-
-			// static std::vector<geometry_msgs::Point> throughBranch;//一度重複探査を無視して行った座標（二回目は行けない）
-
-			// //ここでリ評価用にリストを作りなおす (NEWERとスルーを考慮)
-
-			// std::vector<geometry_msgs::Point> filteredList;
-			// filteredList.reserve(globalList.size());
-
-			// for(const auto& g : globalList){
-			// 	//duplication filter
-			// 	if(g.duplication == CommonLib::DuplicationStatus::NEWER){
-			// 		ROS_INFO_STREAM("newer duplication!!");
-			// 		lastBranch = g.point;
-			// 		continue;
-			// 	}
-			// 	//throught filter
-			// 	auto through = [&]{
-			// 		for(const auto& t : throughBranch) {
-			// 			if(Eigen::Vector2d(g.point.x-t.x,g.point.y-t.y).norm() < THROUGH_TOLERANCE) return true;
-			// 		}
-			// 		return false;
-			// 	};
-			// 	if(through()){
-			// 		ROS_INFO_STREAM("throught branch!!");
-			// 		continue;
-			// 	}
-			// 	filteredList.emplace_back(g.point);
-			// }
-			
-			// //filteredListとfrontiers
-			// ROS_INFO_STREAM("filtered branches size : " << filteredList.size());
-			// if(filteredList.size()==0) return false;
-
-			// Evaluation ev(frontiers, filteredList, pose);
-			SeamlessHybrid sh(globalList,pose);
+			static FrontierSearch fs;
+			SeamlessHybrid sh(globalList,fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false),pose);
 			if(sh.initialize() && sh.result(goal)){
 				lastBranch = goal;
 				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
 				ROS_DEBUG_STREAM("This Branch continues to a large frontier");
 				return true;
 			}
-			// ev.initialize();
-			// if(ev.result(goal)){
-			// 	lastBranch = goal;
-			// 	throughBranch.emplace_back(goal);
-			// 	ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
-			// 	ROS_DEBUG_STREAM("This Branch continues to a large frontier");
-			// 	return true;
-			// }
 		}
     }
 

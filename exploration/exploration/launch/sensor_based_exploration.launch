@@ -36,7 +36,7 @@
             <param name="min_cluster_size" value="30"/>
             <param name="seamless_hybrid" value="false"/>
             <param name="filter_square_diameter" value="0.75"/>
-            <param name="rotation" value="true"/>
+            <param name="rotation" value="false"/>
             <param name="center_range_min" value="2.5"/>
             <param name="newer_duplication_threshold" value="100"/>
         </node>

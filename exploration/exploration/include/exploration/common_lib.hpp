@@ -19,6 +19,12 @@
 
 namespace CommonLib
 {
+enum class DuplicationStatus{
+	NOT_DUPLECATION,
+	OLDER,
+	NEWER
+};
+
 template <typename T>
 struct subStruct{
     ros::NodeHandle n;
@@ -62,12 +68,6 @@ struct scanStruct{
         ranges.reserve(size);
         angles.reserve(size);
     };
-};
-
-enum class DuplicationStatus{
-	NOT_DUPLECATION,
-	OLDER,
-	NEWER
 };
 
 struct listStruct{
