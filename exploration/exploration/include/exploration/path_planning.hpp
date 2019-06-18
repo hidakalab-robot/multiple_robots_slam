@@ -35,8 +35,6 @@ In source file
             pp.createPath(start,goal,path,map); // In addition to the above, insert voronoi-grid into map
 */
 
-//常にこのスレッドはコストマップを更新し続けて(ros::spin())
-
 template<typename T>
 class PathPlanning
 {
@@ -87,17 +85,17 @@ public:
         
         if(planner.makePlan(start,goal,plan)){
             // plan に path が入ってるので長さを計算する
-            int ie = plan.size();
-            double distance = 0;
-            for(int i=1;i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
+            distance = 0;
+            for(int i=1,ie=plan.size();i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
             //最後の80%ぐらいを使うか?
-            int b = ie -1;
+            int b = plan.size() - 1;
             int a = b * 0.8;
             //a-b間のベクトル
             vec = Eigen::Vector2d(plan[b].pose.position.x - plan[a].pose.position.x, plan[b].pose.position.y - plan[a].pose.position.y).normalized();
-
+            ROS_INFO_STREAM("path function return: true");
             return true;
         }
+        ROS_INFO_STREAM("path function return: false");
         return false;
     }
 };
