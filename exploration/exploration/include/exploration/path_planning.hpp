@@ -35,6 +35,7 @@ In source file
             pp.createPath(start,goal,path,map); // In addition to the above, insert voronoi-grid into map
 */
 
+//常にこのスレッドはコストマップを更新し続けて(ros::spin())
 
 template<typename T>
 class PathPlanning
@@ -47,10 +48,12 @@ private:
 public:
     PathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
         planner.initialize("path_planner",&gcr);
+        ros::spinOnce();
     };
     
     PathPlanning(const std::string& costmapName, const std::string& plannerName):tfl(ros::Duration(10)),gcr(costmapName, tfl){
         planner.initialize(plannerName,&gcr);
+        ros::spinOnce();
     };
 
     bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
@@ -64,17 +67,14 @@ public:
     };
 
     double getPathLength(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal){
+        ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
-        if(createPath(start,goal,plan)){
+        
+        // if(createPath(start,goal,plan)){
+        if(planner.makePlan(start,goal,plan)){
             // plan に path が入ってるので長さを計算する
             double pathLength = 0;
-
-            for(int i=1,ie=plan.size();i!=ie;++i){
-                // double l = Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
-                // ROS_INFO_STREAM("Path diff " << i << " : " << l);
-                // pathLength += l;
-                pathLength += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
-            }
+            for(int i=1,ie=plan.size();i!=ie;++i) pathLength += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
             return pathLength;
         }
         return -DBL_MAX;

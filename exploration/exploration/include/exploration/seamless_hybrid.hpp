@@ -36,11 +36,13 @@ private:
 
     std::vector<sumValue> sVal;
     maxValue mVal;
+
+    PathPlanning<navfn::NavfnROS>* pp_;
     
     static std::vector<geometry_msgs::Point> throughBranches; //一度重複探査を無視して行った座標（二回目は行けない）
 
 public:
-    SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p);
+    SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp);
     bool initialize(void);
     bool dataFilter(void);
     void evaluationInitialize(void);
@@ -49,12 +51,13 @@ public:
 
 std::vector<geometry_msgs::Point> SeamlessHybrid::throughBranches;
 
-SeamlessHybrid::SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p)
+SeamlessHybrid::SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp)
     :inputBranches(b)
     ,frontiers(f)
     ,pose(p)
     ,mVal(-DBL_MAX,-DBL_MAX){
 
+    pp_ = &pp;
     ros::NodeHandle ph("~");
 	ph.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     ph.param<double>("through_tolerance", THROUGH_TOLERANCE, 1.0);
@@ -118,9 +121,9 @@ bool SeamlessHybrid::dataFilter(void){
 }
 
 void SeamlessHybrid::evaluationInitialize(void){
-    PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
+    // PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
 
-    auto calc = [this,&pp](const geometry_msgs::Point& p, const Eigen::Vector2d& v1){
+    auto calc = [this](const geometry_msgs::Point& p, const Eigen::Vector2d& v1){
         ROS_DEBUG_STREAM("calc p : (" << p.x << "," << p.y << ")");
         sumValue s{0,0,p};
         for(const auto& f : frontiers){
@@ -128,7 +131,7 @@ void SeamlessHybrid::evaluationInitialize(void){
 
             double angle = std::abs(acos(v1.normalized().dot(v2.normalized())));
             // double distance = v2.lpNorm<1>();
-            double distance = pp.getPathLength(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f.coordinate,MAP_FRAME_ID));
+            double distance = pp_->getPathLength(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f.coordinate,MAP_FRAME_ID));
 
             ROS_INFO_STREAM("legacy distance : " << v2.lpNorm<1>() << ", new distance : " << distance);
 

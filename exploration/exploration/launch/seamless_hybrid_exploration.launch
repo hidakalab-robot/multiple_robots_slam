@@ -21,7 +21,7 @@
     <arg name="fill" default="true"/>
     
     <group ns="$(arg robot_name)/$(arg ns)">
-        <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
+        <node pkg="exploration" type="sensor_based_exploration" name="seamless_hybrid_exploration" output="screen">
             <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
             <remap if="$(arg fill)" from="map" to="fill_map"/>
             <remap from="scan" to="$(arg scan)"/>
