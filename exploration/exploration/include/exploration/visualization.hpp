@@ -152,7 +152,7 @@ void Visualization::multiThreadMain(void){
     std::thread gmThread([this]() { goalMarkerPublisher(); });
     std::thread gamThread([this]() { goalArrayMarkerPublisher(); });
     ros::spin();
-    pmThread.join();//スレッドの終了を待つ??
+    pmThread.join();//スレッドの終了を待つ
     gmThread.join();
     gamThread.join();
     ROS_INFO_STREAM("end main loop\n");
