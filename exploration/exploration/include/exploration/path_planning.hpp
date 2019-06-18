@@ -66,7 +66,7 @@ public:
         return planner.makePlan(start,goal,plan,map);
     };
 
-    double getPathLength(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal){
+    double getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal){
         ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
         
@@ -78,6 +78,27 @@ public:
             return pathLength;
         }
         return -DBL_MAX;
+    }
+
+    bool getDistanceAndVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, Eigen::Vector2d& vec){
+        // no debug
+        ros::spinOnce();
+        std::vector<geometry_msgs::PoseStamped> plan;
+        
+        if(planner.makePlan(start,goal,plan)){
+            // plan に path が入ってるので長さを計算する
+            int ie = plan.size();
+            double distance = 0;
+            for(int i=1;i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
+            //最後の80%ぐらいを使うか?
+            int b = ie -1;
+            int a = b * 0.8;
+            //a-b間のベクトル
+            vec = Eigen::Vector2d(plan[b].pose.position.x - plan[a].pose.position.x, plan[b].pose.position.y - plan[a].pose.position.y).normalized();
+
+            return true;
+        }
+        return false;
     }
 };
 

@@ -127,13 +127,22 @@ void SeamlessHybrid::evaluationInitialize(void){
         ROS_DEBUG_STREAM("calc p : (" << p.x << "," << p.y << ")");
         sumValue s{0,0,p};
         for(const auto& f : frontiers){
-            Eigen::Vector2d v2 = Eigen::Vector2d(f.coordinate.x - p.x, f.coordinate.y - p.y);
+            // Eigen::Vector2d v2 = Eigen::Vector2d(f.coordinate.x - p.x, f.coordinate.y - p.y);
 
-            double angle = std::abs(acos(v1.normalized().dot(v2.normalized())));
-            // double distance = v2.lpNorm<1>();
-            double distance = pp_->getPathLength(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f.coordinate,MAP_FRAME_ID));
+            // double angle = std::abs(acos(v1.dot(v2.normalized())));
+            // double distance = pp_->getDistance(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f.coordinate,MAP_FRAME_ID));
 
-            ROS_INFO_STREAM("legacy distance : " << v2.lpNorm<1>() << ", new distance : " << distance);
+
+            // 目標地点での向きをpathの最後の方の移動で決めたい
+            Eigen::Vector2d v2;
+            double distance;
+            if(pp_->getDistanceAndVec(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f.coordinate,MAP_FRAME_ID),distance,v2));
+            double angle = std::abs(acos(v1.dot(v2)));
+
+            // ROS_INFO_STREAM("legacy distance : " << v2.lpNorm<1>() << ", new distance : " << distance);
+
+            ROS_INFO_STREAM("distance to frontier[m]: " << distance);
+            ROS_INFO_STREAM("angle to frontier[deg]: " << (angle*360)/M_PI);
 
             s.sumAngle += angle;
             s.sumDistnance += distance;
@@ -148,16 +157,29 @@ void SeamlessHybrid::evaluationInitialize(void){
 
     double forward = 0;
     for(const auto& b : branches){
-        Eigen::Vector2d v1 = Eigen::Vector2d(b.x - pose.position.x, b.y - pose.position.y);
+        double distance;
+        Eigen::Vector2d v1;
+        if(pp_->getDistanceAndVec(CommonLib::pointToPoseStamped(pose.position,MAP_FRAME_ID),CommonLib::pointToPoseStamped(b,MAP_FRAME_ID),distance,v1));
+
+        // Eigen::Vector2d v1 = Eigen::Vector2d(b.x - pose.position.x, b.y - pose.position.y);
+
+        // sVal.emplace_back(calc(b,v1.normalized()));
         sVal.emplace_back(calc(b,v1));
-        forward += v1.norm();
+        // forward += v1.norm();
+        // forward += v1.lpNorm<1>();
+        ROS_INFO_STREAM("distance to branch[m]: " << distance);
+        forward += distance;
     }
     forward /= branches.size();
+
+    ROS_INFO_STREAM("forward: " << forward);
 
     //直進時の計算
     double yaw = CommonLib::qToYaw(pose.orientation);
     double cosYaw = cos(yaw);
     double sinYaw = sin(yaw);
+
+    ROS_INFO_STREAM("yaw: " << yaw << ", cos: " << cosYaw << ", sin:" << sinYaw);
 
     sVal.emplace_back(calc(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw)));
 }
