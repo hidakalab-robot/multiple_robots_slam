@@ -153,6 +153,13 @@ Eigen::Vector2d pointToVector2d(const geometry_msgs::Point& point){
     return vec;
 }
 
+Eigen::Vector2d msgVectorToVector2d(const geometry_msgs::Vector3& vector){
+    Eigen::Vector2d vec;
+    vec.x() = vector.x;
+    vec.y() = vector.y;
+    return vec;
+}
+
 pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){
     pcl::PointXYZRGB p;
     p.x = x;
