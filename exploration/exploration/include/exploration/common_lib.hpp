@@ -16,6 +16,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
 #include <Eigen/Core>
+#include <exploration_msgs/RobotInfo.h>
 
 namespace CommonLib
 {
@@ -185,6 +186,14 @@ geometry_msgs::PoseStamped pointToPoseStamped(const geometry_msgs::Point& p, con
     ps.pose = pointToPose(p);
     ps.header.frame_id = f;
     return ps;
+}
+
+exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Point& p, const geometry_msgs::Vector3& v){
+    exploration_msgs::RobotInfo ri;
+    ri.name = n;
+    ri.coordinate = p;
+    ri.vector = v;
+    return ri;
 }
 
 }

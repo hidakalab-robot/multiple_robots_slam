@@ -53,6 +53,8 @@ find_package(catkin REQUIRED COMPONENTS
    PointArray.msg
    Frontier.msg
    PoseStampedArray.msg
+   RobotInfo.msg
+   RobotInfoArray.msg
  )
 
 ## Generate services in the 'srv' folder

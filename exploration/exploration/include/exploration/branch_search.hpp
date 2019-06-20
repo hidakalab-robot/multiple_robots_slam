@@ -15,6 +15,7 @@
 #include <exploration/seamless_hybrid.hpp>
 #include <exploration/path_planning.hpp>
 #include <navfn/navfn_ros.h>
+#include <exploration_msgs/RobotInfoArray.h>
 
 //分岐領域を検出
 class BranchSearch
@@ -38,6 +39,7 @@ private:
 	CommonLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 	CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
 	CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
+	CommonLib::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
 
 	CommonLib::pubStruct<geometry_msgs::PointStamped> goal_;
 	CommonLib::pubStruct<exploration_msgs::PointArray> goalArray_;
@@ -62,6 +64,7 @@ BranchSearch::BranchSearch()
 	,pose_("pose",1)
 	,goal_("goal", 1, true)
 	,goalArray_("goal_array", 1, true)
+	,robotArray_("robotArray",1)
 	,pp("global_costmap","NavfnROS"){
 
 	ros::NodeHandle p("~");
@@ -218,7 +221,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//グローバルリストとフロンティア領域を比較して重複してても曲がるべきかを判断
 		if(SEAMLESS_HYBRID){
-			SeamlessHybrid sh(globalList,fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false),pose,pp);
+			SeamlessHybrid sh(globalList,fs.frontierDetection<std::vector<exploration_msgs::Frontier>>(false),pose,pp,robotArray_);
 			if(sh.initialize() && sh.result(goal)){
 				lastBranch = goal;
 				ROS_DEBUG_STREAM("Branch : (" << goal.x << "," << goal.y << ")");
