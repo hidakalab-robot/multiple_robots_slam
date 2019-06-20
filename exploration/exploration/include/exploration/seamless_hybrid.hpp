@@ -141,7 +141,7 @@ void SeamlessHybrid::evaluationInitialize(void){
             double angle = std::abs(acos(v1.dot(v2)));
 
             ROS_INFO_STREAM("distance to frontier[m]: " << distance);
-            ROS_INFO_STREAM("angle to frontier[deg]: " << (angle*360)/M_PI);
+            ROS_INFO_STREAM("angle to frontier[deg]: " << (angle*180)/M_PI);
 
             s.sumAngle += angle;
             s.sumDistnance += distance;

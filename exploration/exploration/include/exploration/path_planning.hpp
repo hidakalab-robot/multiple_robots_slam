@@ -71,19 +71,19 @@ public:
         // if(createPath(start,goal,plan)){
         if(planner.makePlan(start,goal,plan)){
             // plan に path が入ってるので長さを計算する
-            double pathLength = 0;
-            for(int i=1,ie=plan.size();i!=ie;++i) pathLength += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
-            return pathLength;
+            double distance = 0;
+            for(int i=1,ie=plan.size();i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
+            return distance;
         }
         return -DBL_MAX;
     }
 
     bool getDistanceAndVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, Eigen::Vector2d& vec){
-        // no debug
         ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
         
         if(planner.makePlan(start,goal,plan)){
+        // if(createPath(start,goal,plan)){
             // plan に path が入ってるので長さを計算する
             distance = 0;
             for(int i=1,ie=plan.size();i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
