@@ -7,7 +7,9 @@ int main(int argc, char* argv[]){
     dynamic_reconfigure::Server<exploration::multi_exploration_simulatorConfig> server;
     dynamic_reconfigure::Server<exploration::multi_exploration_simulatorConfig>::CallbackType cbt;
 
-    cbt = boost::bind(&MultiExplorationSimulator::callback,&mes, _1, _2);
+    auto fn = [](std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f)->void{};
+
+    cbt = boost::bind(&MultiExplorationSimulator::callback,&mes, _1, _2, fn);
     server.setCallback(cbt);
 
     ros::spin();

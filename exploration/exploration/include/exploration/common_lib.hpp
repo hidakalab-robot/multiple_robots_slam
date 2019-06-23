@@ -202,6 +202,13 @@ geometry_msgs::PoseStamped pointToPoseStamped(const geometry_msgs::Point& p, con
     return msg;
 }
 
+geometry_msgs::PoseStamped poseToPoseStamped(const geometry_msgs::Pose& p, const std::string& f){
+    geometry_msgs::PoseStamped msg;
+    msg.pose = p;
+    msg.header.frame_id = f;
+    return msg;
+}
+
 exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Point& p, const geometry_msgs::Vector3& v){
     exploration_msgs::RobotInfo msg;
     msg.name = n;

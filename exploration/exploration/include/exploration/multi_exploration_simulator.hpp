@@ -44,7 +44,7 @@ private:
     int OLD_BRANCH_NUMBER;
     int OLD_FRONTIER_NUMBER;
     
-    std::string GLOBAL_FRAME;
+    std::string MAP_FRAME_ID;
 
     geometry_msgs::PoseArray robotPoses;
     visualization_msgs::Marker branchCoordinates;
@@ -54,9 +54,14 @@ private:
     CommonLib::pubStruct<visualization_msgs::Marker> branches_;
     CommonLib::pubStruct<visualization_msgs::Marker> frontiers_;
 
+    // 関数の引数の必要条件
+    // std::vector<geometry_msgs::Pose>, std::vector<geometry_msgs::Point>, std::vector<geometry_msgs::Point>
+    // 
+
 public:
     MultiExplorationSimulator();
-    void callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level);
+    void callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level, std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
+
     // void initialize(void);
 };
 
@@ -66,8 +71,8 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     ,branches_("branch_array",1,true)
     ,frontiers_("frontier_array",1,true){
 
-    nh.param<std::string>("global_frame",GLOBAL_FRAME,"map");
-    robotPoses.header.frame_id = branchCoordinates.header.frame_id = frontierCoordinates.header.frame_id = GLOBAL_FRAME;
+    nh.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
+    robotPoses.header.frame_id = branchCoordinates.header.frame_id = frontierCoordinates.header.frame_id = MAP_FRAME_ID;
 
     double BRANCH_SCALE,FRONTIER_SCALE;
     nh.param<double>("branch_scale", BRANCH_SCALE, 0.5);
@@ -97,7 +102,8 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     branchCoordinates.id = frontierCoordinates.id =  0;
 }
 
-void MultiExplorationSimulator::callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level) {
+void MultiExplorationSimulator::callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level, std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn) {
+// void MultiExplorationSimulator::callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level, int a){
     // resize array
     // int ROBOT_NUMBER = cfg.robot_number;
     // int BRANCH_NUMBER = cfg.branch_number;
@@ -144,6 +150,7 @@ void MultiExplorationSimulator::callback(exploration::multi_exploration_simulato
     OLD_BRANCH_NUMBER = cfg.branch_number;
     OLD_FRONTIER_NUMBER = cfg.frontier_number;
 
+    fn(robotPoses.poses,branchCoordinates.points,frontierCoordinates.points);
 }
 
 // void MultiExplorationSimulator::initialize(void){
