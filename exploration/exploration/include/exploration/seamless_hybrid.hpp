@@ -220,7 +220,7 @@ bool SeamlessHybrid::dataFilter(void){
     // if(MULTI_EXPLORATION_MODE && !robotArray_.q.callOne(ros::WallDuration(1))){
     if(!robotArray_->q.callOne(ros::WallDuration(1))){
         ROS_INFO_STREAM("before robotList size : " << robotArray_->data.list.size());
-        auto eraseRobotIndex = std::remove_if(robotArray_->data.list.begin(), robotArray_->data.list.end(),[this](exploration_msgs::RobotInfo& r){return r.name == ROBOT_NAME;});
+        auto eraseRobotIndex = std::remove_if(robotArray_->data.list.begin(), robotArray_->data.list.end(),[this](exploration_msgs::RobotInfo& r){return r.name == "/" + ROBOT_NAME;});
         robotArray_->data.list.erase(eraseRobotIndex,robotArray_->data.list.end());
         ROS_INFO_STREAM("after robotList size : " << robotArray_->data.list.size());
     }    

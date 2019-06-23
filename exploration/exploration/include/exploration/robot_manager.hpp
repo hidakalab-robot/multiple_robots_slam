@@ -6,6 +6,7 @@
 #include <forward_list>
 #include <iterator>
 #include <exploration_msgs/PoseStampedArray.h>
+#include <thread>
 
 //複数台のロボットの情報を管理する
 //
@@ -27,8 +28,11 @@ private:
     std::string ROBOT_TOPIC;
     double RAGISTRATION_RATE;
     double CONVERT_RATE;
+    double POSE_LOG_INTERVAL;
 
     CommonLib::pubStruct<exploration_msgs::RobotInfoArray> robotArray_;
+    CommonLib::pubStruct<exploration_msgs::PoseStampedArray> poseArray_; 
+
     void robotRegistration(void);//ロボットの情報を登録
     void update(const geometry_msgs::PoseStamped::ConstPtr& msg, RobotManager::robotStruct& robot); // データの更新
     bool isRobotTopic(const ros::master::TopicInfo& topic);
@@ -40,11 +44,15 @@ public:
     void multiThreadMain(void);
 };
 
-RobotManager::RobotManager():robotArray_("robotArray",1,true){
+RobotManager::RobotManager():robotArray_("robotArray",1,true),poseArray_("pose_log",1,true){
     ros::NodeHandle p("~");
     p.param<std::string>("robot_topic",ROBOT_TOPIC,"robot_pose/global");//globalのポーズを撮ってこないと厳しい
     p.param<double>("ragistration_rate", RAGISTRATION_RATE, 0.5);
     p.param<double>("convert_rate", CONVERT_RATE, 1.0);
+
+    double POSE_LOG_RATE;
+    p.param<double>("pose_log_rate",POSE_LOG_RATE,10.0);
+    POSE_LOG_INTERVAL = 1/POSE_LOG_RATE;
 }
 
 void RobotManager::robotRegistration(void){
@@ -95,12 +103,19 @@ void RobotManager::update(const geometry_msgs::PoseStamped::ConstPtr& msg, Robot
     std::lock_guard<std::mutex> lock(robot.mutex);
     if(msg -> header.stamp < robot.pose.header.stamp) return;
     robot.pose = *msg;
-    robot.poseLog.poses.emplace_back(*msg);
+
+    if(ros::Duration(robot.pose.header.stamp - robot.poseLog.header.stamp).toSec() >= POSE_LOG_INTERVAL){
+        robot.poseLog.poses.emplace_back(*msg);
+        robot.poseLog.header = msg -> header;
+        robot.poseLog.header.stamp = ros::Time::now();
+    }
+    
+    poseArray_.pub.publish(robot.poseLog);
 }
 
 void RobotManager::convertPoseToRobotInfo(void){
     exploration_msgs::RobotInfoArray ria;
-    ria.list.reserve = std::distance(robotList.begin(),robotList.end());
+    ria.list.reserve(std::distance(robotList.begin(),robotList.end()));
     {
         std::lock_guard<boost::shared_mutex> bLock(robotListMutex);
         for(auto&& robot : robotList){
@@ -129,7 +144,7 @@ void RobotManager::convertLoop(void){
     }
 }
 
-void CloudMapMerRobotManager::multiThreadMainLoop(void){
+void RobotManager::multiThreadMain(void){
     ROS_INFO_STREAM("start threads\n");
     ros::spinOnce();
     std::thread registrationThread([this]{registrationLoop();});

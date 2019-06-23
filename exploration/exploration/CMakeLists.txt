@@ -25,6 +25,7 @@ find_package(catkin REQUIRED COMPONENTS
   actionlib
   pcl_ros
   actionlib_msgs
+  dynamic_reconfigure
 )
 
 find_package(OpenCV REQUIRED)
@@ -107,10 +108,9 @@ find_package(OpenCV REQUIRED)
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/DynReconf1.cfg
-#   cfg/DynReconf2.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/multi_exploration_simulator.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -242,3 +242,10 @@ target_link_libraries(map_fill ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 add_executable(exploration_manager src/exploration_manager.cpp)
 target_link_libraries(exploration_manager ${catkin_LIBRARIES})
+
+add_executable(robot_manager src/robot_manager.cpp)
+target_link_libraries(robot_manager ${catkin_LIBRARIES})
+
+add_executable(multi_exploration_simulator src/multi_exploration_simulator.cpp)
+add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
+target_link_libraries(multi_exploration_simulator ${catkin_LIBRARIES})
