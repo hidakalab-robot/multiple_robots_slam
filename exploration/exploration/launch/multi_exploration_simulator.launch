@@ -9,7 +9,7 @@
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)"/>
     <!-- simurator main -->
     <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator" output="screen">
-        <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
-        <rosparam file="$(find exploration)/param/simulator_path_planner_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/simulator_calc_path_planner_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/simulator_goal_path_planner_params.yaml" command="load"/>
     </node>
 </launch>

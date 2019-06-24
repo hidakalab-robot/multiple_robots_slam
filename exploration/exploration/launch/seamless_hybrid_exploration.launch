@@ -43,6 +43,7 @@
             <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
             <param name="global_costmap/global_frame" value="$(arg map)"/>
             <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+            <param name="robot_name" value="$(arg robot_name)"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">

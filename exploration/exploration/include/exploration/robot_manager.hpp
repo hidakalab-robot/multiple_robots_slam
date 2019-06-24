@@ -109,7 +109,6 @@ bool RobotManager::isRobotTopic(const ros::master::TopicInfo& topic){
     bool isPose = topic.datatype == "geometry_msgs/PoseStamped";
     ROS_DEBUG_STREAM("isRobot : " << isRobot << " : " << topic.name);
     ROS_DEBUG_STREAM("isPose : " << isPose << " : " << topic.datatype);
-    // ROS_DEBUG_STREAM("topic name : " << topic.name << " : " << isRobot && isPose ? "true" : "false");
     return isRobot && isPose;
 }
 
