@@ -156,9 +156,10 @@
     <param name="is_stamped" value="true"/>
   </node>
 
-  <node if="$(arg multi_exploration)" pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
+  <node  pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
     <remap from="robot_pose" to="robot_pose/global"/>
-    <param name="map_frame" value="$(arg merge_map_frame)"/>
+    <param if="$(arg multi_exploration)" name="map_frame" value="$(arg merge_map_frame)"/>
+    <param unless="$(arg multi_exploration)" name="map_frame" value="$(arg robot_name)/map"/>
     <param name="base_frame" value="$(arg robot_name)/base_link"/>
     <param name="is_stamped" value="true"/>
   </node>

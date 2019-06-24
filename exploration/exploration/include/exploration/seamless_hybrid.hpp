@@ -340,8 +340,13 @@ void SeamlessHybrid::evaluationInitialize(void){
             if(!pp_->getDistanceAndVec(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f,MAP_FRAME_ID),distance,v2)){
                 // v2 = Eigen::Vector2d(f.coordinate.x - p.x, f.coordinate.y - p.y).normalized();
                 v2 = Eigen::Vector2d(f.x - p.x, f.y - p.y).normalized();
+                if(!pp_->getDistance(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f,MAP_FRAME_ID),distance)){
+                    //最終手段で直線距離を計算
+                    distance = Eigen::Vector2d(f.x - p.x, f.y - p.y).norm();
+                }
+                
                 // distance = pp_->getDistance(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f.coordinate,MAP_FRAME_ID));
-                distance = pp_->getDistance(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f,MAP_FRAME_ID));
+                
             }
 
             ROS_DEBUG_STREAM("v2 : (" << v2[0] << "," << v2[1] << ")");
@@ -443,6 +448,8 @@ bool SeamlessHybrid::result(geometry_msgs::Point& goal){
 
     // mainRobotInfoとsubRobotInfoが必要
 
+    ROS_DEBUG_STREAM("result");
+
     auto evaluation = [this](const double d, const double a){return PATH_WEIGHT * d / mVal.distance + ANGLE_WEIGHT * a / mVal.angle;};
 
     double minE = DBL_MAX;
@@ -452,14 +459,15 @@ bool SeamlessHybrid::result(geometry_msgs::Point& goal){
         for(int i=0,ie=mainRobotInfo[m].values.size();i!=ie;++i){
             double subE = 0;
             if(subRobotsInfo.size()==0) subE = DBL_MAX;
-            else {
-                for(const auto& s : subRobotsInfo) subE += evaluation(s.values[i].distance, s.values[i].angle);
-            }
+            else for(const auto& s : subRobotsInfo) subE += evaluation(s.values[i].distance, s.values[i].angle);
             e *= evaluation(mainRobotInfo[m].values[i].distance, mainRobotInfo[m].values[i].angle) + (ROBOT_WEIGHT/subE);
         }
+        ROS_DEBUG_STREAM("position : (" << mainRobotInfo[m].robot.coordinate.x << "," << mainRobotInfo[m].robot.coordinate.y << "), sum : " << e);
         if(e < minE){
+            // ROS_INFO_STREAM("in if");
             minE = std::move(e);
             goal = mainRobotInfo[m].robot.coordinate;
+            // ROS_INFO_STREAM("in if goal : " << goal);
             if(m == me -1) return false;
         }
     }
@@ -485,10 +493,25 @@ void SeamlessHybrid::simulatorFunction(std::vector<geometry_msgs::Pose>& r, std:
         double yaw = CommonLib::qToYaw(r[i].orientation);
         robotList[i-1] = CommonLib::msgRobotInfo("/robot"+std::to_string(i),r[i].position,CommonLib::msgVector(cos(yaw),sin(yaw)));
     }
-
     evaluationInitialize();
+    // geometry_msgs::Pose goal;
     geometry_msgs::Point goal;
+    
     result(goal);
 
-    pSim.getDistance(CommonLib::poseToPoseStamped(r[0],MAP_FRAME_ID),CommonLib::pointToPoseStamped(goal,MAP_FRAME_ID));
+    // Eigen::Vector2d startToGoal(goal.position.x-r[0].position.x,goal.position.y-r[0].position.y);
+    // startToGoal.normalize();
+    // Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
+    // goal.orientation.x = q.x();
+    // goal.orientation.y = q.y();
+    // goal.orientation.z = q.z();
+    // goal.orientation.w = q.w();
+    // ROS_INFO_STREAM("start : " << r[0]);
+    // ROS_INFO_STREAM("goal : " << goal);
+    double d;
+
+    // if(pSim.getDistance(CommonLib::poseToPoseStamped(r[0],MAP_FRAME_ID),CommonLib::pointToPoseStamped(goal.position,MAP_FRAME_ID),d)){
+    if(pSim.getDistance(CommonLib::poseToPoseStamped(r[0],MAP_FRAME_ID),CommonLib::pointToPoseStamped(goal,MAP_FRAME_ID),d)) ROS_INFO_STREAM("path true");
+    else ROS_INFO_STREAM("path false");
+    
 }

@@ -150,6 +150,7 @@ geometry_msgs::Pose pointToPose(const geometry_msgs::Point& point){
     msg.position.x = point.x;
     msg.position.y = point.y;
     msg.position.z = point.z;
+    msg.orientation.w = 1.0;
     return msg;
 }
 

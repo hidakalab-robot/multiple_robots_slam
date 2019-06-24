@@ -60,16 +60,27 @@ void RobotManager::robotRegistration(void){
     ros::master::getTopics(topicList);
 
     for(const auto& topic : topicList){
-        if(!isRobotTopic(topic)) continue;
-        std::string robotName = ros::names::parentNamespace(topic.name);
+        // ROS_DEBUG_STREAM("topic name : " << topic.name);
+        if(!isRobotTopic(topic)){
+            ROS_DEBUG_STREAM("return false");
+            continue;
+        }
+        ROS_DEBUG_STREAM("return true");
+        ROS_DEBUG_STREAM("topic name : " << topic.name);
+        ROS_DEBUG_STREAM("topic name ok");
+        std::string robotName = ros::names::parentNamespace(ros::names::parentNamespace(topic.name));
         //すでに登録されていないかロボットの名前を確認
         {
+            ROS_DEBUG_STREAM("test1");
             bool isRegisterd = false;
             {
+                ROS_DEBUG_STREAM("test2");
                 boost::shared_lock<boost::shared_mutex> bLock(robotListMutex);
                 for(auto&& robot : robotList){
+                    ROS_DEBUG_STREAM("test3");
                     std::lock_guard<std::mutex> lock(robot.mutex);
                     if(robotName == robot.name){
+                        ROS_DEBUG_STREAM("test4");
                         isRegisterd = true;
                         break;
                     }
@@ -94,8 +105,11 @@ void RobotManager::robotRegistration(void){
 }
 
 bool RobotManager::isRobotTopic(const ros::master::TopicInfo& topic){
-    bool isRobot = topic.name == ros::names::append(ros::names::parentNamespace(topic.name),ROBOT_TOPIC);
-    bool isPose = topic.datatype == "geometry_msgs::PoseStamped";
+    bool isRobot = topic.name == ros::names::append(ros::names::parentNamespace(ros::names::parentNamespace(topic.name)),ROBOT_TOPIC);
+    bool isPose = topic.datatype == "geometry_msgs/PoseStamped";
+    ROS_DEBUG_STREAM("isRobot : " << isRobot << " : " << topic.name);
+    ROS_DEBUG_STREAM("isPose : " << isPose << " : " << topic.datatype);
+    // ROS_DEBUG_STREAM("topic name : " << topic.name << " : " << isRobot && isPose ? "true" : "false");
     return isRobot && isPose;
 }
 

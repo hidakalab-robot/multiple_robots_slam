@@ -56,6 +56,7 @@ public:
 
     bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
         ros::spinOnce();
+
         return planner.makePlan(start,goal,plan);
     };
 
@@ -64,24 +65,23 @@ public:
         return planner.makePlan(start,goal,plan,map);
     };
 
-    double getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal){
+    bool getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance){
         ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
-        
-        // if(createPath(start,goal,plan)){
+        ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");        // if(createPath(start,goal,plan)){
         if(planner.makePlan(start,goal,plan)){
             // plan に path が入ってるので長さを計算する
-            double distance = 0;
+            distance = 0;
             for(int i=1,ie=plan.size();i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
-            return distance;
+            return true;
         }
-        return -DBL_MAX;
+        return false;
     }
 
     bool getDistanceAndVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, Eigen::Vector2d& vec){
         ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
-        
+        ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");
         if(planner.makePlan(start,goal,plan)){
         // if(createPath(start,goal,plan)){
             // plan に path が入ってるので長さを計算する
