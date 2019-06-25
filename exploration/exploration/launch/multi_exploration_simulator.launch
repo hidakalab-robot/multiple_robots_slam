@@ -1,6 +1,11 @@
 <launch>
     <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
     <arg name="map_path" default="$(find exploration)/fig/edit_map.yaml"/>
+    <arg name="parameter_file_path" default="$(find exploration)/param/simulator_last_parameters.yaml"/>
+
+    <arg name="input_last_parameters" default="true"/>
+    <arg name="output_last_parameters" default="true"/>
+
     <!-- create tf -->
     <node pkg="tf" type="static_transform_publisher" name="odom_to_map_tf_broadcaster" args="0 0 0 0 0 0 map odom 100"/>
     <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_odom_tf_broadcaster" args="0 0 0 0 0 0 odom base_footprint 100"/>
@@ -9,6 +14,9 @@
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)"/>
     <!-- simurator main -->
     <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator" output="screen">
+        <param name="parameter_file_path" value="$(arg parameter_file_path)"/>
+        <param name="output_parameters" value="$(arg output_last_parameters)"/>
+        <rosparam if="$(arg input_last_parameters)" file="$(arg parameter_file_path)" command="load"/>
         <rosparam file="$(find exploration)/param/simulator_calc_path_planner_params.yaml" command="load"/>
         <rosparam file="$(find exploration)/param/simulator_goal_path_planner_params.yaml" command="load"/>
     </node>

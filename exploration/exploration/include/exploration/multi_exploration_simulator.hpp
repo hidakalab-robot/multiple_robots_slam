@@ -9,15 +9,22 @@
 #include <visualization_msgs/Marker.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration/multi_exploration_simulatorConfig.h>
+#include <fstream>
+
+// 終了時にパラメータの設定を保存したい
+// 毎回設定値を保存しておいて終了のときにそれを書き出す
+// 起動時に前回のパラメータがあればそれを読み込む
 
 class MultiExplorationSimulator
 {
 private:
     ros::NodeHandle nh;
+    std::string PARAMETER_FILE_PATH;
+    bool OUTPUT_PARAMETERS;
 
     int ROBOT_NUMBER;
     int BRANCH_NUMBER;
-    int FRONTIER_NUMBER;
+    int FRONTIER_NUMBER;    
     
     geometry_msgs::PoseArray robotPoses;
     visualization_msgs::Marker branchCoordinates;
@@ -31,6 +38,8 @@ public:
     MultiExplorationSimulator();
     void callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level);
     void updateParameters(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
+    void readParameters(void);
+    void writeParameters(void);
 };
 
 MultiExplorationSimulator::MultiExplorationSimulator()
@@ -38,6 +47,9 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     ,poses_("pose_array",1,true)
     ,branches_("branch_array",1,true)
     ,frontiers_("frontier_array",1,true){
+
+    nh.param<std::string>("parameter_file_path",PARAMETER_FILE_PATH,"simulator_last_parameters.yaml");
+    nh.param<bool>("output_parameters",OUTPUT_PARAMETERS,true);
 
     std::string MAP_FRAME_ID;
     nh.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
@@ -115,6 +127,37 @@ void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<
 
     // call planning function
     fn(robotPoses.poses,branchCoordinates.points,frontierCoordinates.points);
+}
+
+void MultiExplorationSimulator::readParameters(void){
+    //パラメータファイルから読み込む //launchから読み込むので不要かも
+}
+
+void MultiExplorationSimulator::writeParameters(void){
+    //保存している最新のパラメータをyamlに書き出す
+    if(!OUTPUT_PARAMETERS) return;
+
+    std::cout << "writing last parameters ... ..." << std::endl;
+    std::ofstream ofs(PARAMETER_FILE_PATH);
+    std::cout << (ofs ? "file open succeeded" : "file open failed") << std::endl;
+
+    ofs << "robot_number: " << robotPoses.poses.size() << std::endl;
+    ofs << "branch_number: " << branchCoordinates.points.size() << std::endl;
+    ofs << "frontier_number: " << frontierCoordinates.points.size() << std::endl;
+
+    for(int i=0,ie=robotPoses.poses.size();i!=ie;++i){
+        ofs << "robot" << i+1 << "_x: " << robotPoses.poses[i].position.x << std::endl;
+        ofs << "robot" << i+1 << "_y: " << robotPoses.poses[i].position.y << std::endl;
+        ofs << "robot" << i+1 << "_yaw: " << CommonLib::qToYaw(robotPoses.poses[i].orientation)*180/M_PI << std::endl;
+    }
+    for(int i=0,ie=branchCoordinates.points.size();i!=ie;++i){
+        ofs << "branch" << i+1 << "_x: " << branchCoordinates.points[i].x << std::endl;
+        ofs << "branch" << i+1 << "_y: " << branchCoordinates.points[i].y << std::endl;
+    }
+    for(int i=0,ie=frontierCoordinates.points.size();i!=ie;++i){
+        ofs << "frontier" << i+1 << "_x: " << frontierCoordinates.points[i].x << std::endl;
+        ofs << "frontier" << i+1 << "_y: " << frontierCoordinates.points[i].y << std::endl;
+    }
 }
 
 #endif // MULTI_EXPLORATION

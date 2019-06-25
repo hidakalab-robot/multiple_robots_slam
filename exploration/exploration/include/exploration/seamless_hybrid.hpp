@@ -235,7 +235,10 @@ void SeamlessHybrid::evaluationInitialize(void){
     mainRobotInfo.emplace_back(calc(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),ROBOT_NAME));
 
     //他のロボットに関する計算
-    for(const auto& r : robotList) subRobotsInfo.emplace_back(calc(CommonLib::msgPoint(r.coordinate.x+forward*r.vector.x,r.coordinate.y+forward*r.vector.y),CommonLib::msgVectorToVector2d(r.vector),r.name));
+    // forward する版
+    // for(const auto& r : robotList) subRobotsInfo.emplace_back(calc(CommonLib::msgPoint(r.coordinate.x+forward*r.vector.x,r.coordinate.y+forward*r.vector.y),CommonLib::msgVectorToVector2d(r.vector),r.name));
+    // forward しない番
+    for(const auto& r : robotList) subRobotsInfo.emplace_back(calc(CommonLib::msgPoint(r.coordinate.x,r.coordinate.y),CommonLib::msgVectorToVector2d(r.vector),r.name));
 }
 
 bool SeamlessHybrid::result(geometry_msgs::Point& goal){
