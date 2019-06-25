@@ -110,6 +110,7 @@ find_package(OpenCV REQUIRED)
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
 generate_dynamic_reconfigure_options(
   cfg/multi_exploration_simulator.cfg
+  cfg/my_evaluation.cfg
 )
 
 ###################################
@@ -249,3 +250,7 @@ target_link_libraries(robot_manager ${catkin_LIBRARIES})
 add_executable(multi_exploration_simulator src/multi_exploration_simulator.cpp)
 add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
 target_link_libraries(multi_exploration_simulator ${catkin_LIBRARIES})
+
+add_executable(my_evaluation_reconfigure src/my_evaluation_reconfigure.cpp)
+add_dependencies(my_evaluation_reconfigure ${PROJECT_NAME}_gencfg)
+target_link_libraries(my_evaluation_reconfigure ${catkin_LIBRARIES})

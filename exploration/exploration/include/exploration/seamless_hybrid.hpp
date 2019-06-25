@@ -43,6 +43,8 @@ private:
     double PATH_WEIGHT;
     double ROBOT_WEIGHT;
 
+    int SIMULATE_ROBOT_INDEX;
+
     CommonLib::subStruct<exploration_msgs::RobotInfoArray> *robotArray_;
 
     std::vector<CommonLib::listStruct> inputBranches;
@@ -84,6 +86,7 @@ SeamlessHybrid::SeamlessHybrid(PathPlanning<navfn::NavfnROS>& pp){
     ph.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
     ph.param<double>("path_weight", PATH_WEIGHT, 2.5);
     ph.param<double>("robot_weight", ROBOT_WEIGHT, 1.0); 
+    ph.param<int>("simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
 }
 
 SeamlessHybrid::SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp, CommonLib::subStruct<exploration_msgs::RobotInfoArray>& ria)
@@ -176,8 +179,8 @@ bool SeamlessHybrid::dataFilter(void){
 void SeamlessHybrid::evaluationInitialize(void){
 
     auto calc = [this](const geometry_msgs::Point& p, const Eigen::Vector2d& v1, const std::string& name){
-        ROS_DEBUG_STREAM("calc p : (" << p.x << "," << p.y << ")");
-        ROS_DEBUG_STREAM("v1 : (" << v1[0] << "," << v1[1] << ")");
+        // ROS_DEBUG_STREAM("calc p : (" << p.x << "," << p.y << ")");
+        // ROS_DEBUG_STREAM("v1 : (" << v1[0] << "," << v1[1] << ")");
         SeamlessHybrid::areaInfo ai(name,p,v1);
         ai.values.reserve(frontiers.size());
         for(const auto& f : frontiers){
@@ -192,12 +195,12 @@ void SeamlessHybrid::evaluationInitialize(void){
                 }                
             }
 
-            ROS_DEBUG_STREAM("v2 : (" << v2[0] << "," << v2[1] << ")");
+            // ROS_DEBUG_STREAM("v2 : (" << v2[0] << "," << v2[1] << ")");
 
             double angle = std::abs(acos(v1.dot(v2)));
 
-            ROS_INFO_STREAM("distance to frontier[m]: " << distance);
-            ROS_INFO_STREAM("angle to frontier[deg]: " << (angle*180)/M_PI);
+            // ROS_INFO_STREAM("distance to frontier[m]: " << distance);
+            // ROS_INFO_STREAM("angle to frontier[deg]: " << (angle*180)/M_PI);
 
             ai.values.emplace_back(eachValue(distance,angle));
 
@@ -219,19 +222,19 @@ void SeamlessHybrid::evaluationInitialize(void){
             distance = v1.lpNorm<1>();
             v1.normalize();
         }
-        ROS_INFO_STREAM("distance to branch[m]: " << distance);
+        // ROS_INFO_STREAM("distance to branch[m]: " << distance);
         mainRobotInfo.emplace_back(calc(b,v1,ROBOT_NAME));
         forward += distance;
     }
     forward /= branches.size();
 
-    ROS_INFO_STREAM("forward: " << forward);
+    // ROS_INFO_STREAM("forward: " << forward);
 
     //直進時の計算
     double yaw = CommonLib::qToYaw(pose.orientation);
     double cosYaw = cos(yaw);
     double sinYaw = sin(yaw);
-    ROS_INFO_STREAM("yaw: " << yaw << ", cos: " << cosYaw << ", sin:" << sinYaw);
+    // ROS_INFO_STREAM("yaw: " << yaw << ", cos: " << cosYaw << ", sin:" << sinYaw);
     mainRobotInfo.emplace_back(calc(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),ROBOT_NAME));
 
     //他のロボットに関する計算
@@ -273,28 +276,37 @@ void SeamlessHybrid::simulatorFunction(std::vector<geometry_msgs::Pose>& r, std:
     // ロボットの姿勢、分岐領域の座標、フロンティアの座標が入力されたときに分岐領域にどちらに行くかの判定を行う
     static PathPlanning<navfn::NavfnROS> pSim("simulator_goal_costmap","simulator_goal_path");
 
+    //ここで評価の重みをリロード
+    ros::NodeHandle p("~");
+    p.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
+    p.param<double>("path_weight", PATH_WEIGHT, 2.5);
+    p.param<double>("robot_weight", ROBOT_WEIGHT, 1.0); 
+    p.param<int>("simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
+
+    if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
+
     // vector reset
     mainRobotInfo = std::vector<areaInfo>();
     subRobotsInfo = std::vector<areaInfo>();
 
     mVal.angle = mVal.distance = -DBL_MAX;
-    pose = r[0]; // ロボット1が分岐領域を見つけた設定
+    pose = r[SIMULATE_ROBOT_INDEX-1]; // ロボット1が分岐領域を見つけた設定
+    ROBOT_NAME = "/robot"+std::to_string(SIMULATE_ROBOT_INDEX);
     branches = b;
     frontiers = f;
     // robotList用にデータを整形する r の2番めから最後までを整形して代入
     robotList.resize(r.size()-1);
-    for(int i=1,ie=r.size();i!=ie;++i){
+    
+    for(int i=0,ie=r.size(),index=0;i!=ie;++i){
+        if(i+1 == SIMULATE_ROBOT_INDEX) continue;
         double yaw = CommonLib::qToYaw(r[i].orientation);
-        robotList[i-1] = CommonLib::msgRobotInfo("/robot"+std::to_string(i),r[i].position,CommonLib::msgVector(cos(yaw),sin(yaw)));
+        robotList[index++] = CommonLib::msgRobotInfo("/robot"+std::to_string(i+1),r[i].position,CommonLib::msgVector(cos(yaw),sin(yaw)));
     }
     evaluationInitialize();
     geometry_msgs::Point goal;
     
     result(goal);
 
-    double d;
-
-    if(pSim.getDistance(CommonLib::poseToPoseStamped(r[0],MAP_FRAME_ID),CommonLib::pointToPoseStamped(goal,MAP_FRAME_ID),d)) ROS_INFO_STREAM("path true");
-    else ROS_INFO_STREAM("path false");
+    pSim.createPath(CommonLib::poseToPoseStamped(pose,MAP_FRAME_ID),CommonLib::pointToPoseStamped(goal,MAP_FRAME_ID));
     
 }

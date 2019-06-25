@@ -14,10 +14,16 @@
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)"/>
     <!-- simurator main -->
     <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator" output="screen">
+        <param name="simulate_robot_index" value="2"/>
         <param name="parameter_file_path" value="$(arg parameter_file_path)"/>
         <param name="output_parameters" value="$(arg output_last_parameters)"/>
+        <param name="robot_weight" value="3.0"/>
+        <param name="angle_weight" value="1.5"/>
+        <param name="path_weight" value="1.5"/>
         <rosparam if="$(arg input_last_parameters)" file="$(arg parameter_file_path)" command="load"/>
         <rosparam file="$(find exploration)/param/simulator_calc_path_planner_params.yaml" command="load"/>
         <rosparam file="$(find exploration)/param/simulator_goal_path_planner_params.yaml" command="load"/>
     </node>
+
+    <node pkg="exploration" type="my_evaluation_reconfigure" name="my_evaluation_reconfigure"/>
 </launch>

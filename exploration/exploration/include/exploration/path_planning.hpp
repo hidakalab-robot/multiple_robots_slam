@@ -54,6 +54,12 @@ public:
         ros::spinOnce();
     };
 
+    bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal){
+        ros::spinOnce();
+        std::vector<geometry_msgs::PoseStamped> plan;
+        return planner.makePlan(start,goal,plan);
+    };
+
     bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
         ros::spinOnce();
 
