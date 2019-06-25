@@ -43,7 +43,9 @@ private:
     double PATH_WEIGHT;
     double ROBOT_WEIGHT;
 
+    // for simulator
     int SIMULATE_ROBOT_INDEX;
+    std::string EXTRA_PARAMETER_NAMESPACE;
 
     CommonLib::subStruct<exploration_msgs::RobotInfoArray> *robotArray_;
 
@@ -87,6 +89,7 @@ SeamlessHybrid::SeamlessHybrid(PathPlanning<navfn::NavfnROS>& pp){
     ph.param<double>("path_weight", PATH_WEIGHT, 2.5);
     ph.param<double>("robot_weight", ROBOT_WEIGHT, 1.0); 
     ph.param<int>("simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
+    ph.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "my_evaluation_reconfigure");
 }
 
 SeamlessHybrid::SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp, CommonLib::subStruct<exploration_msgs::RobotInfoArray>& ria)
@@ -278,10 +281,10 @@ void SeamlessHybrid::simulatorFunction(std::vector<geometry_msgs::Pose>& r, std:
 
     //ここで評価の重みをリロード
     ros::NodeHandle p("~");
-    p.param<double>("angle_weight", ANGLE_WEIGHT, 1.5);
-    p.param<double>("path_weight", PATH_WEIGHT, 2.5);
-    p.param<double>("robot_weight", ROBOT_WEIGHT, 1.0); 
-    p.param<int>("simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
+    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/angle_weight", ANGLE_WEIGHT, 1.5);
+    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/path_weight", PATH_WEIGHT, 2.5);
+    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/robot_weight", ROBOT_WEIGHT, 1.0); 
+    p.param<int>("/"+EXTRA_PARAMETER_NAMESPACE+"/simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
 
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
 
@@ -294,7 +297,7 @@ void SeamlessHybrid::simulatorFunction(std::vector<geometry_msgs::Pose>& r, std:
     ROBOT_NAME = "/robot"+std::to_string(SIMULATE_ROBOT_INDEX);
     branches = b;
     frontiers = f;
-    // robotList用にデータを整形する r の2番めから最後までを整形して代入
+    // robotList用にデータを整形する
     robotList.resize(r.size()-1);
     
     for(int i=0,ie=r.size(),index=0;i!=ie;++i){

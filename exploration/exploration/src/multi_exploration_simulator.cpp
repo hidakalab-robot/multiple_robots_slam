@@ -36,11 +36,9 @@ int main(int argc, char* argv[]){
     // 渡す関数のオブジェクトを作成
     fnType fn = std::bind(&SeamlessHybrid::simulatorFunction,&sh,std::placeholders::_1,std::placeholders::_2,std::placeholders::_3);
 
-    // ros::Rate rate(1);
     while(ros::ok()){
         ros::spinOnce(); // 必須
         mes.updateParameters(fn); // 必須 <- 引数に上で作った渡したい関数のオブジェクトを入れる
-        // rate.sleep();
     }
     mes.writeParameters();
     return 0;

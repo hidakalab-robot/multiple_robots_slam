@@ -38,7 +38,6 @@ public:
     MultiExplorationSimulator();
     void callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level);
     void updateParameters(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
-    void readParameters(void);
     void writeParameters(void);
 };
 
@@ -127,10 +126,6 @@ void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<
 
     // call planning function
     fn(robotPoses.poses,branchCoordinates.points,frontierCoordinates.points);
-}
-
-void MultiExplorationSimulator::readParameters(void){
-    //パラメータファイルから読み込む //launchから読み込むので不要かも
 }
 
 void MultiExplorationSimulator::writeParameters(void){
