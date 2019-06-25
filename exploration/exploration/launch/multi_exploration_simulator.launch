@@ -1,6 +1,6 @@
 <launch>
     <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
-    <arg name="map_path" default="$(find exploration)/fig/fill_map.yaml"/>
+    <arg name="map_path" default="$(find exploration)/fig/edit_map.yaml"/>
     <!-- create tf -->
     <node pkg="tf" type="static_transform_publisher" name="odom_to_map_tf_broadcaster" args="0 0 0 0 0 0 map odom 100"/>
     <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_odom_tf_broadcaster" args="0 0 0 0 0 0 odom base_footprint 100"/>

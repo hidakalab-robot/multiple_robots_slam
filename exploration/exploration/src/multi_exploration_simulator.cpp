@@ -24,7 +24,7 @@ int main(int argc, char* argv[]){
      * 
      * 渡せる関数のルール
      * 戻り値:void
-     * 引数 3つ : std::vector<geometry_msgs::Pose>& p, std::vector<geometry_msgs::Pose>& b, std::vector<geometry_msgs::Pose>& f
+     * 引数 3つ : std::vector<geometry_msgs::Pose>& p, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f
      * p : 全ロボットのポーズ, b : 全分岐領域の座標, f : 全フロンティア領域の座標 <- 受け取れるようになっていれば使わなくてもok
      */
 

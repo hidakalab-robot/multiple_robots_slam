@@ -289,15 +289,6 @@ void SeamlessHybrid::simulatorFunction(std::vector<geometry_msgs::Pose>& r, std:
     
     result(goal);
 
-    // Eigen::Vector2d startToGoal(goal.position.x-r[0].position.x,goal.position.y-r[0].position.y);
-    // startToGoal.normalize();
-    // Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
-    // goal.orientation.x = q.x();
-    // goal.orientation.y = q.y();
-    // goal.orientation.z = q.z();
-    // goal.orientation.w = q.w();
-    // ROS_INFO_STREAM("start : " << r[0]);
-    // ROS_INFO_STREAM("goal : " << goal);
     double d;
 
     if(pSim.getDistance(CommonLib::poseToPoseStamped(r[0],MAP_FRAME_ID),CommonLib::pointToPoseStamped(goal,MAP_FRAME_ID),d)) ROS_INFO_STREAM("path true");
