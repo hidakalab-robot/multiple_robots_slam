@@ -1,19 +1,22 @@
 <launch>
-    
+    <arg name="robot_name" default="robot1"/>
     <arg name="merge_laser_frame" default="merge_laser_link"/>
+    <arg name="merge_cloud_topic" default="merge_laser/cloud"/>
+    <arg name="merge_scan_topic" default="merge_laser/scan"/>
+    <arg name="kinect_scan_topic" default="kinect_scan"/>
+    <arg name="urg_scan_topic" default="urg_scan"/>
 
-    <group ns="robot1">
+    <group ns="$(arg robot_name)">
        <node pkg="laser_merge" type="laser_merge" name="laser_merge" output="screen">
-        <remap from="cloud_out" to="/robot1/merge_laser/cloud"/>
-        <param name="scan_topic_one" value="/robot1/kinect_scan"/>
-        <param name="scan_topic_two" value="/robot1/urg_scan"/>
-        <param name="merge_laser_frame" value="robot1/$(arg merge_laser_frame)"/>
+        <remap from="cloud_out" to="$(arg merge_cloud_topic)"/>
+        <param name="scan_topic_one" value="/$(arg robot_name)/$(arg kinect_scan_topic)"/>
+        <param name="scan_topic_two" value="/$(arg robot_name)/$(arg urg_scan_topic)"/>
+        <param name="merge_laser_frame" value="/$(arg robot_name)/$(arg merge_laser_frame)"/>
     </node>
 
     <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan_node">
-        <remap from="cloud_in" to="/robot1/merge_laser/cloud"/>
-        <remap from="scan" to="merge_laser/scan"/>
-        <!-- <param name="target_frame" value="$(arg merge_laser_frame)"/> -->
+        <remap from="cloud_in" to="$(arg merge_cloud_topic)"/>
+        <remap from="scan" to="$(arg merge_scan_topic)"/>
         <param name="transform_tolerance" value="0.01"/>
         <param name="min_height" value="-1.0"/>
         <param name="max_height" value="1.0"/>

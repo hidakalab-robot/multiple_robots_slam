@@ -18,14 +18,11 @@ int main(int argc, char** argv){
 
     message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), scan1Sub, scan2Sub);
 
-    // message_filters::TimeSynchronizer<sensor_msgs::LaserScan, sensor_msgs::LaserScan> sync(scan1Sub,scan2Sub,10);
-
     ROS_INFO_STREAM("main");
 
     LaserMerge lm;
 
     sync.registerCallback(boost::bind(&LaserMerge::callback,&lm,_1,_2));
-
     
     ros::spin();
     return 0;

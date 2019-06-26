@@ -10,12 +10,10 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <Eigen/Geometry>
 
-//docker build し直し pointcloud-to-laserscan
-
 class LaserMerge{
 private:
     struct listenerStruct{
-        tf::TransformListener listener;
+        tf::TransformListener* listener;
         bool initialized;
         listenerStruct():initialized(false){};
     };
@@ -32,24 +30,21 @@ private:
 
     CommonLib::pubStruct<sensor_msgs::PointCloud2> pc2_;
 
-    
-
 public:
     LaserMerge();
     void callback(const sensor_msgs::LaserScanConstPtr& scan1,const sensor_msgs::LaserScanConstPtr& scan2);
 };
 
-LaserMerge::LaserMerge():pc2_("cloud_out",1){// 引数がパラムのやつなので無理
+LaserMerge::LaserMerge():pc2_("cloud_out",1){
     ros::NodeHandle p("~");
     
     p.param<int>("laser_number",LASER_NUBER,2);
-    p.param<std::string>("merge_laser_frame",MERGE_LASER_FRAME,"merge_laser");
+    p.param<std::string>("merge_laser_frame",MERGE_LASER_FRAME,"merge_laser_link");
 
     ls.resize(LASER_NUBER);
 }
 
 void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sensor_msgs::LaserScanConstPtr& scan2){
-    // 全部2つずつやるなら配列のほうがいいかも
 
     ROS_INFO_STREAM("callback");
 
@@ -62,11 +57,11 @@ void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sens
     
     for(int i=0,ie=ls.size();i!=ie;++i){
         if(!ls[i].initialized){
-            ls[i].listener.waitForTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(), ros::Duration(1.0));
+            ls[i].listener->waitForTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(), ros::Duration(1.0));
             ls[i].initialized = true;
         }
         tf::StampedTransform transform;
-        ls[i].listener.lookupTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(0), transform);
+        ls[i].listener->lookupTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(0), transform);
         lp.projectLaser(scan[i],cloud[i]);
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr tempCloud(new pcl::PointCloud<pcl::PointXYZ>);
