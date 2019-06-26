@@ -16,7 +16,8 @@ class LaserMerge{
 private:
     struct listenerStruct{
         tf::TransformListener listener;
-        bool initialized = false;
+        bool initialized;
+        listenerStruct():initialized(false){};
     };
     std::string MERGE_LASER_FRAME;
     int LASER_NUBER;
