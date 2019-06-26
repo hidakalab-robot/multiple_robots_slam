@@ -3,7 +3,7 @@
 
     <arg name="robot_name" default="robot1"/>
 
-    <arg name="pose" default="/$(arg robot_name)/robot_pose"/>
+    <arg name="pose" default="/$(arg robot_name)/robot_pose/local"/>
     <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
     <arg name="scan" default="/$(arg robot_name)/scan"/>
     <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
@@ -19,7 +19,7 @@
     <arg name="debug" default="false"/>
 
     <arg name="fill" default="true"/>
-    
+
     <group ns="$(arg robot_name)/$(arg ns)">
         <node pkg="exploration" type="sensor_based_exploration" name="seamless_hybrid_exploration" output="screen">
             <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
@@ -27,6 +27,7 @@
             <remap from="scan" to="$(arg scan)"/>
             <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
             <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="pose_log/local"/>
             <remap from="bumper" to="$(arg bumper_continuity)"/>
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
@@ -42,6 +43,7 @@
             <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
             <param name="global_costmap/global_frame" value="$(arg map)"/>
             <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+            <param name="robot_name" value="$(arg robot_name)"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
@@ -50,6 +52,12 @@
 
         <node unless="$(arg debug)" pkg="exploration" type="log" name="log">
             <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="pose_log/local"/>
+            <param name="pose_log_rate" value="1.0"/>
+        </node>
+
+        <node unless="$(arg debug)" pkg="exploration" type="robot_manager" name="robot_manager">
+            <remap from="pose_log" to="pose_log/global"/>
             <param name="pose_log_rate" value="1.0"/>
         </node>
 

@@ -1,0 +1,3 @@
+string name
+geometry_msgs/Point coordinate
+geometry_msgs/Vector3 vector

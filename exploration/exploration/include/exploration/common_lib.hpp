@@ -16,6 +16,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
 #include <Eigen/Core>
+#include <exploration_msgs/RobotInfo.h>
 
 namespace CommonLib
 {
@@ -89,11 +90,25 @@ double qToYaw(const geometry_msgs::Quaternion& q){
     return qToYaw(tf::Quaternion(q.x, q.y, q.z, q.w));
 }
 
+geometry_msgs::Quaternion yawToQ(double yaw){
+    geometry_msgs::Quaternion msg;
+    // tf::Quaternion quat=tf::createQuaternionFromRPY(0,0,yaw);  
+    tf::quaternionTFToMsg(tf::createQuaternionFromRPY(0,0,yaw), msg);
+    return msg;
+}
+
 geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0){
     geometry_msgs::Point msg;
     msg.x = x;
     msg.y = y;
     msg.z = z;
+    return msg;
+}
+
+geometry_msgs::Pose msgPose(const geometry_msgs::Point& p, const geometry_msgs::Quaternion& q){
+    geometry_msgs::Pose msg;
+    msg.position = p;
+    msg.orientation = q;
     return msg;
 }
 
@@ -135,6 +150,7 @@ geometry_msgs::Pose pointToPose(const geometry_msgs::Point& point){
     msg.position.x = point.x;
     msg.position.y = point.y;
     msg.position.z = point.z;
+    msg.orientation.w = 1.0;
     return msg;
 }
 
@@ -150,6 +166,13 @@ Eigen::Vector2d pointToVector2d(const geometry_msgs::Point& point){
     Eigen::Vector2d vec;
     vec.x() = point.x;
     vec.y() = point.y;
+    return vec;
+}
+
+Eigen::Vector2d msgVectorToVector2d(const geometry_msgs::Vector3& vector){
+    Eigen::Vector2d vec;
+    vec.x() = vector.x;
+    vec.y() = vector.y;
     return vec;
 }
 
@@ -174,10 +197,25 @@ exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, 
 }
 
 geometry_msgs::PoseStamped pointToPoseStamped(const geometry_msgs::Point& p, const std::string& f){
-    geometry_msgs::PoseStamped ps;
-    ps.pose = pointToPose(p);
-    ps.header.frame_id = f;
-    return ps;
+    geometry_msgs::PoseStamped msg;
+    msg.pose = pointToPose(p);
+    msg.header.frame_id = f;
+    return msg;
+}
+
+geometry_msgs::PoseStamped poseToPoseStamped(const geometry_msgs::Pose& p, const std::string& f){
+    geometry_msgs::PoseStamped msg;
+    msg.pose = p;
+    msg.header.frame_id = f;
+    return msg;
+}
+
+exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Point& p, const geometry_msgs::Vector3& v){
+    exploration_msgs::RobotInfo msg;
+    msg.name = n;
+    msg.coordinate = p;
+    msg.vector = v;
+    return msg;
 }
 
 }

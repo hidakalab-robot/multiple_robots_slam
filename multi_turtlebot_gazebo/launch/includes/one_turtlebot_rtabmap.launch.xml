@@ -3,6 +3,9 @@
   
     <arg name="robot_name"/>
 
+    <arg name="multi_exploration" default="false"/>
+    <arg name="merge_map_frame" default="/server/merge_map"/>
+
     <!-- sensor range for using depth and laserscan -->
     <arg name="database_path"     default="$(arg robot_name)_rtabmap.db"/>
     <arg name="rgbd_odometry"     default="false"/>
@@ -39,7 +42,7 @@
             <param name="odom_frame_id" type="string" value="/$(arg robot_name)/odom"/>
             <param name="map_frame_id" type="string" value="/$(arg robot_name)/map"/>
             <!-- <param name="grid_size" type="double" value="200"/> -->
-
+            
             <!-- inputs -->
             <remap from="scan"            to="/$(arg robot_name)/scan"/>
             <remap from="rgb/image"       to="$(arg rgb_topic)"/>
@@ -109,9 +112,17 @@
     </group>
 
     <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="robot_pose_publisher">
+        <remap from="robot_pose" to="robot_pose/local"/>
         <param name="map_frame" value="$(arg robot_name)/map"/>
         <param name="base_frame" value="$(arg robot_name)/base_link"/>
         <param name="is_stamped" value="true"/>
     </node>
 
+    <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
+        <remap from="robot_pose" to="robot_pose/global"/>
+        <param if="$(arg multi_exploration)" name="map_frame" value="$(arg merge_map_frame)"/>
+        <param unless="$(arg multi_exploration)" name="map_frame" value="$(arg robot_name)/map"/>
+        <param name="base_frame" value="$(arg robot_name)/base_link"/>
+        <param name="is_stamped" value="true"/>
+  </node>
 </launch>
