@@ -1,11 +1,18 @@
 <launch>
     <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
     <arg name="map_path" default="$(find exploration)/fig/edit_map.yaml"/>
-    <arg name="parameter_file_path" default="$(find exploration)/param/simulator_last_parameters.yaml"/>
 
+    <!-- main parameter -->
+    <arg name="parameter_file_path" default="$(find exploration)/param/simulator_last_parameters.yaml"/>
     <arg name="input_last_parameters" default="true"/>
     <arg name="output_last_parameters" default="true"/>
+
+    <!-- extra parameter -->
     <arg name="extra_parameter_namespace" default="extra_parameter"/>
+    <arg name="extra_parameter_file_path" default="$(find exploration)/param/simulator_last_extra_parameters.yaml"/>
+    <arg name="input_last_extra_parameters" default="true"/>
+    <arg name="output_last_extra_parameters" default="true"/>
+
 
     <!-- create tf -->
     <node pkg="tf" type="static_transform_publisher" name="odom_to_map_tf_broadcaster" args="0 0 0 0 0 0 map odom 100"/>
@@ -15,7 +22,6 @@
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)"/>
     <!-- simurator main -->
     <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator" output="screen">
-        <param name="simulate_robot_index" value="2"/>
         <param name="parameter_file_path" value="$(arg parameter_file_path)"/>
         <param name="output_parameters" value="$(arg output_last_parameters)"/>
         <param name="extra_parameter_namespace" value="$(arg extra_parameter_namespace)"/>
@@ -25,10 +31,9 @@
     </node>
 
     <!-- extra parameter node -->
-    <node pkg="exploration" type="my_evaluation_reconfigure" name="$(arg extra_parameter_namespace)">
-        <param name="robot_weight" value="1.0"/>
-        <param name="angle_weight" value="1.5"/>
-        <param name="path_weight" value="2.5"/>
-        <param name="simulate_robot_index" value="1"/>
+    <node pkg="exploration" type="extra_parameter_reconfigure" name="$(arg extra_parameter_namespace)">
+        <param name="extra_parameter_file_path" value="$(arg extra_parameter_file_path)"/>
+        <param name="output_extra_parameters" value="$(arg output_last_extra_parameters)"/>
+        <rosparam if="$(arg input_last_extra_parameters)" file="$(arg extra_parameter_file_path)" command="load"/>
     </node>
 </launch>

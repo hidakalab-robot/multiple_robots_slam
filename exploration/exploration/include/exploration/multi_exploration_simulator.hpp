@@ -134,7 +134,12 @@ void MultiExplorationSimulator::writeParameters(void){
 
     std::cout << "writing last parameters ... ..." << std::endl;
     std::ofstream ofs(PARAMETER_FILE_PATH);
-    std::cout << (ofs ? "file open succeeded" : "file open failed") << std::endl;
+    
+    if(ofs) std::cout << "file open succeeded" << std::endl;
+    else {
+        std::cout << "file open failed" << std::endl;
+        return;
+    }
 
     ofs << "robot_number: " << robotPoses.poses.size() << std::endl;
     ofs << "branch_number: " << branchCoordinates.points.size() << std::endl;
