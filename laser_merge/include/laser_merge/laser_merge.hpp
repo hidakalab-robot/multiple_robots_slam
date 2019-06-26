@@ -10,6 +10,8 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <Eigen/Geometry>
 
+//docker build し直し pointcloud-to-laserscan
+
 class LaserMerge{
 private:
     // std::string SCAN_TOPIC_ONE;
@@ -43,33 +45,30 @@ LaserMerge::LaserMerge():pc2_("cloud_out",1){// 引数がパラムのやつな�
 }
 
 void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sensor_msgs::LaserScanConstPtr& scan2){
+    // 全部2つずつやるなら配列のほうがいいかも
+
     //ここで合成の処理をする
     static bool scan1TfInitialized = false;
     static bool scan2TfInitialized = false;
 
     if(!scan1TfInitialized){
-        scan1Listener.waitForTransform(scan1->header.frame_id, MERGE_LASER_FRAME, ros::Time(), ros::Duration(1.0));
+        scan1Listener.waitForTransform(MERGE_LASER_FRAME, scan1->header.frame_id, ros::Time(), ros::Duration(1.0));
         scan1TfInitialized = true;
     }
-
     if(!scan2TfInitialized){
-        scan2Listener.waitForTransform(scan2->header.frame_id, MERGE_LASER_FRAME, ros::Time(), ros::Duration(1.0));
+        scan2Listener.waitForTransform(MERGE_LASER_FRAME, scan2->header.frame_id, ros::Time(), ros::Duration(1.0));
         scan2TfInitialized = true;
     }
     
-    tf::StampedTransform scan1Transform;
-    scan1Listener.lookupTransform(scan1->header.frame_id, MERGE_LASER_FRAME, ros::Time(0), scan1Transform);
-
-    tf::StampedTransform scan2Transform;
-    scan2Listener.lookupTransform(scan2->header.frame_id, MERGE_LASER_FRAME, ros::Time(0), scan2Transform);
+    tf::StampedTransform scan1Transform, scan2Transform;
+    scan1Listener.lookupTransform(MERGE_LASER_FRAME, scan1->header.frame_id, ros::Time(0), scan1Transform);
+    scan2Listener.lookupTransform(MERGE_LASER_FRAME, scan2->header.frame_id, ros::Time(0), scan2Transform);
 
     ROS_INFO_STREAM("callback");
 
     //scan2 urg
 
-    sensor_msgs::PointCloud2 cloud1;
-    sensor_msgs::PointCloud2 cloud2;
-    sensor_msgs::PointCloud2 mergeCloud;
+    sensor_msgs::PointCloud2 cloud1, cloud2, mergeCloud;
 
     lp.projectLaser(*scan1,cloud1);
     lp.projectLaser(*scan2,cloud2);
@@ -81,37 +80,52 @@ void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sens
     pcl::fromROSMsg(cloud2,*tempCloud2);
 
     // 両方高さを0
+    double trans1Yaw = CommonLib::qToYaw(scan1Transform.getRotation());
+    double trans1X = scan1Transform.getOrigin().getX();
+    double trans1Y = scan1Transform.getOrigin().getY();
+
+    double trans2Yaw = CommonLib::qToYaw(scan2Transform.getRotation());
+    double trans2X = scan2Transform.getOrigin().getX();
+    double trans2Y = scan2Transform.getOrigin().getY();
+
+    Eigen::Matrix2d rotation1;
+    rotation1 << cos(trans1Yaw) , -sin(trans1Yaw) , sin(trans1Yaw) , cos(trans1Yaw);
+
+    Eigen::Matrix2d rotation2;
+    rotation2 << cos(trans2Yaw) , -sin(trans2Yaw) , sin(trans2Yaw) , cos(trans2Yaw);
+
     for(auto&& p : tempCloud1->points) {
+        Eigen::Vector2d tempPoint(rotation1 * Eigen::Vector2d(p.x - trans1X, p.y - trans1Y));
+        p.x = tempPoint.x();
+        p.y = tempPoint.y();
         p.z = 0;
     }
     //urdfでkinectの高さもしくはレーザーの高さ調節
     //マージしたスキャンデータをslamにいれてみる
     //mapping launch を分ける, urdf も分ける
 
-    
-
-    Eigen::Matrix2d rotation;
-    rotation << cos(M_PI) , -sin(M_PI) , sin(M_PI) , cos(M_PI);
+    // Eigen::Matrix2d rotation;
+    // rotation << cos(M_PI) , -sin(M_PI) , sin(M_PI) , cos(M_PI);
 
     for(auto&& p : tempCloud2->points) {
-        Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(p.x,p.y));
+        Eigen::Vector2d tempPoint(rotation2 * Eigen::Vector2d(p.x - trans2X, p.y - trans2Y));
         p.x = tempPoint.x();
         p.y = tempPoint.y();
         p.z = 0;
     }
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr pclMergeCloud(new pcl::PointCloud<pcl::PointXYZ>);
+    // pcl::PointCloud<pcl::PointXYZ>::Ptr pclMergeCloud(new pcl::PointCloud<pcl::PointXYZ>);
 
-    *pclMergeCloud = *tempCloud1 + *tempCloud2;
+    // *pclMergeCloud = *tempCloud1 + *tempCloud2;
 
-    // pcl::toROSMsg(*tempCloud1,cloud1);
-    // pcl::toROSMsg(*tempCloud2,cloud2);
+    pcl::toROSMsg(*tempCloud1,cloud1);
+    pcl::toROSMsg(*tempCloud2,cloud2);
 
-    pcl::toROSMsg(*pclMergeCloud,mergeCloud);
+    // pcl::toROSMsg(*pclMergeCloud,mergeCloud);
 
 
     // 合成はこっちの方がいい感じにしてくれる気がする
-    // pcl::concatenatePointCloud(cloud1,cloud2,mergeCloud);
+    pcl::concatenatePointCloud(cloud1,cloud2,mergeCloud);
 
     // for(auto&& p : tempCloud2->points) {
     //     Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(p.x,p.y));
