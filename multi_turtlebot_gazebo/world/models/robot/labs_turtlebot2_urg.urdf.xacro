@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!--
+    - Base      : kobuki
+    - Stacks    : hexagons
+    - 3d Sensor : kinect
+-->    
+<robot name="turtlebot" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/turtlebot_common_library.urdf.xacro" />
+  <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/kobuki_urg.urdf.xacro" />
+  <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/hexagons.urdf.xacro"/>
+  <xacro:include filename="$(find turtlebot_description)/urdf/sensors/kinect.urdf.xacro"/>
+  <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/urg.urdf.xacro"/>
+  
+  <kobuki/>
+  <stack_hexagons parent="base_link"/>
+  <sensor_kinect  parent="merge_laser_link"/>
+  <sensor_urg  parent="merge_laser_link"/>
+</robot>

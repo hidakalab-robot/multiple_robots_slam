@@ -22,10 +22,21 @@
      Note: REP needs to be updated with the information below 
      (currently in development and awaiting feedback)
    -->
-  <xacro:property name="cam_px" value="-0.035" />
+  <!-- <xacro:property name="cam_px" value="-0.035" /> -->
+  <xacro:property name="cam_px" value="0.05" />
 <!--	<xacro:property name="cam_py" value="-0.0125" /> Y varies for different configurations. get sets in sensors_urdf -->
-  <xacro:property name="cam_pz" value="0.390" />
+  <!-- <xacro:property name="cam_pz" value="0.390" /> -->
+  <xacro:property name="cam_pz" value="0.0" />
 	<xacro:property name="cam_or" value="0" />
 	<xacro:property name="cam_op" value="0" />
 	<xacro:property name="cam_oy" value="0" />
+
+  <xacro:property name="urg_px" value="0.05" />
+<!--	<xacro:property name="urg_py" value="-0.0125" /> Y varies for different configurations. get sets in sensors_urdf -->
+  <xacro:property name="urg_pz" value="0.0" />
+	<xacro:property name="urg_or" value="0" />
+	<xacro:property name="urg_op" value="0" />
+	<xacro:property name="urg_oy" value="3.1416" />
+
+
 </robot>

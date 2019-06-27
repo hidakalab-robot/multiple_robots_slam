@@ -1,0 +1,20 @@
+<launch>
+    <arg name="robot_name" default="robot1"/>
+    <arg name="merge_laser_frame" default="$(arg robot_name)/merge_laser_link"/>
+    <arg name="scan_topic_one" default="/$(arg robot_name)/kinect_scan"/>
+    <arg name="scan_topic_two" default="/$(arg robot_name)/urg_scan"/>
+
+    <group ns="$(arg robot_name)">
+    
+    <!-- <node pkg="tf" type="static_transform_publisher" name="merge_laser_tf_broadcaster" args="-0.10 0 0.38 0 0 0 $(arg robot_name)/base_link $(arg merge_laser_frame) 100"/> -->
+    <node pkg="tf" type="static_transform_publisher" name="urg_tf_broadcaster" args="-0.05 0 0 3.14 0 0 $(arg merge_laser_frame) $(arg robot_name)/urg_laser 100"/>
+    <!-- <node pkg="tf" type="static_transform_publisher" name="kinect_tf_broadcaster" args="0.05 0 0 0 0 0 $(arg merge_laser_frame) $(arg robot_name)/camera_rgb_frame 100"/> -->
+
+    <node pkg="ira_laser_tools" type="laserscan_multi_merger" name="laser_merger" output="screen">
+        <param name="destination_frame" value="$(arg merge_laser_frame)"/>
+        <param name="cloud_destination_topic" value="merge_laser_cloud"/>
+        <param name="scan_destination_topic" value="merge_scan"/>
+        <param name="laserscan_topics" value="$(arg scan_topic_one) $(arg scan_topic_two)"/>
+    </node>
+    </group>
+</launch>

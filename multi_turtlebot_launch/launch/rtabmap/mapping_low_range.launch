@@ -61,6 +61,15 @@
   <include unless="$(arg simulation)" file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/3dsensor_low_range.launch.xml">
 	  <arg name="robot_name" value="$(arg robot_name)"/>
     <arg name="sensor_range_max_for_laser" value="$(arg sensor_range_max_for_laser)"/>
+    <arg name="scan_topic" value="kinect_scan"/>
+  </include>
+<!-- 
+  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/laser_merger.launch.xml">
+    <arg name="robot_name" value="$(arg robot_name)"/>
+  </include> -->
+
+  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/urg_laser.launch.xml">
+    <arg name="robot_name" value="$(arg robot_name)"/>
   </include>
 
   <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/move_base.launch.xml">
@@ -82,7 +91,7 @@
 	  <!-- <param name="grid_size" type="double" value="200"/> -->
 
 	  <!-- inputs -->
-	  <remap from="scan"            to="/$(arg robot_name)/scan"/>
+	  <remap from="scan"            to="/$(arg robot_name)/kinect_scan"/>
 	  <remap from="rgb/image"       to="$(arg rgb_topic)"/>
   	<remap from="depth/image"     to="$(arg depth_topic)"/>
   	<remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
@@ -145,7 +154,7 @@
       <remap from="rgb/image"       to="$(arg rgb_topic)"/>
       <remap from="depth/image"     to="$(arg depth_topic)"/>
       <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
-      <remap from="scan"            to="/$(arg robot_name)/scan"/>
+      <remap from="scan"            to="/$(arg robot_name)/kinect_scan"/>
     </node>
   </group>
 
