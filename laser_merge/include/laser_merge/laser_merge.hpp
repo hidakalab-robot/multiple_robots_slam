@@ -30,9 +30,6 @@ LaserMerge::LaserMerge():pc2_("cloud_out",1){
 }
 
 void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sensor_msgs::LaserScanConstPtr& scan2){
-
-    ROS_INFO_STREAM("callback");
-
     std::vector<sensor_msgs::LaserScan> scan(LASER_NUBER);
     // ここだけ直接代入になってる
     scan[0] = *scan1;

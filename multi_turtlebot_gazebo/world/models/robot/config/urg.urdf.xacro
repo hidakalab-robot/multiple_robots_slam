@@ -5,7 +5,7 @@
   
   <xacro:macro name="sensor_urg" params="parent">
     <joint name="urg_joint" type="fixed">
-      <origin xyz="${urg_px} ${urg_py} ${urg_pz}" rpy="${urg_ox} ${urg_oy} ${urg_oz}" />
+      <origin xyz="${urg_px} ${urg_py} ${urg_pz}" rpy="${urg_or} ${urg_op} ${urg_oy}" />
       <parent link="${parent}" />
       <child link="urg_frame" />
     </joint>
