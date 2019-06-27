@@ -55,21 +55,29 @@
       can be increase from 5 to 10 Hz to avoid some TF warnings.
   -->
 
+  <arg name="kinect_scan_topic" default="kinect_scan"/>
+  <arg name="urg_scan_topic" default="urg_scan"/>
+
+
   <group ns="$(arg robot_name)">
 
   <!-- Navigation stuff (move_base) -->
   <include unless="$(arg simulation)" file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/3dsensor_low_range.launch.xml">
 	  <arg name="robot_name" value="$(arg robot_name)"/>
     <arg name="sensor_range_max_for_laser" value="$(arg sensor_range_max_for_laser)"/>
-    <arg name="scan_topic" value="kinect_scan"/>
+    <arg name="scan_topic" value="$(arg kinect_scan_topic)"/>
   </include>
-<!-- 
-  <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/laser_merger.launch.xml">
-    <arg name="robot_name" value="$(arg robot_name)"/>
-  </include> -->
 
   <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/urg_laser.launch.xml">
     <arg name="robot_name" value="$(arg robot_name)"/>
+    <arg name="scan_topic" value="$(arg urg_scan_topic)"/>
+  </include>
+  
+  <include file="$(find laser_merge)/launch/laser_merge.launch">
+    <arg name="robot_name" value="$(arg robot_name)"/>
+    <arg name="merge_scan_topic" value="scan"/>
+    <arg name="kinect_scan_topic" value="$(arg kinect_scan_topic)"/>
+    <arg name="urg_scan_topic" value="$(arg urg_scan_topic)"/>
   </include>
 
   <include file="$(find multi_turtlebot_launch)/launch/rtabmap/includes/move_base.launch.xml">
@@ -91,7 +99,7 @@
 	  <!-- <param name="grid_size" type="double" value="200"/> -->
 
 	  <!-- inputs -->
-	  <remap from="scan"            to="/$(arg robot_name)/kinect_scan"/>
+	  <remap from="scan"            to="/$(arg robot_name)/scan"/>
 	  <remap from="rgb/image"       to="$(arg rgb_topic)"/>
   	<remap from="depth/image"     to="$(arg depth_topic)"/>
   	<remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
@@ -154,7 +162,7 @@
       <remap from="rgb/image"       to="$(arg rgb_topic)"/>
       <remap from="depth/image"     to="$(arg depth_topic)"/>
       <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
-      <remap from="scan"            to="/$(arg robot_name)/kinect_scan"/>
+      <remap from="scan"            to="/$(arg robot_name)/scan"/>
     </node>
   </group>
 

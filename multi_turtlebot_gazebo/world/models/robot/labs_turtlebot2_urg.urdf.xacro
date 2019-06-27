@@ -9,7 +9,7 @@
   <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/turtlebot_common_library.urdf.xacro" />
   <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/kobuki_urg.urdf.xacro" />
   <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/hexagons.urdf.xacro"/>
-  <xacro:include filename="$(find turtlebot_description)/urdf/sensors/kinect.urdf.xacro"/>
+  <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/kinect.urdf.xacro"/>
   <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/urg.urdf.xacro"/>
   
   <kobuki/>

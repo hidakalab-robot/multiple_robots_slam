@@ -6,8 +6,7 @@
     <arg name="kinect_scan_topic" default="kinect_scan"/>
     <arg name="urg_scan_topic" default="urg_scan"/>
 
-    <group ns="$(arg robot_name)">
-       <node pkg="laser_merge" type="laser_merge" name="laser_merge" output="screen">
+    <node pkg="laser_merge" type="laser_merge" name="laser_merge" output="screen">
         <remap from="cloud_out" to="$(arg merge_cloud_topic)"/>
         <param name="scan_topic_one" value="/$(arg robot_name)/$(arg kinect_scan_topic)"/>
         <param name="scan_topic_two" value="/$(arg robot_name)/$(arg urg_scan_topic)"/>
@@ -24,9 +23,7 @@
         <param name="angle_max" value="3.1416"/>
         <param name="range_min" value="0.0"/>
         <param name="range_max" value="10.0"/>
-        
     </node> 
-    </group>
 
     
 </launch>

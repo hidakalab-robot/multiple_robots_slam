@@ -1,13 +1,10 @@
 <launch>
-    <!-- <node pkg="multi_turtlebot_launch" type="urg_permission.sh" name="urg_permission"/> -->
     <arg name="robot_name" default="robot1"/>
-    <arg name="urg_frame" default="$(arg robot_name)/urg_laser"/>
-    <arg name="merge_laser_frame" default="$(arg robot_name)/merge_laser"/>
-
-    <!-- <node pkg="tf" type="static_transform_publisher" name="urg_tf_broadcaster" args="-0.15 0 0.38 3.14 0 0 $(arg robot_name)/base_link $(arg urg_frame) 100"/> -->
+    <arg name="urg_frame" default="$(arg robot_name)/urg_frame"/>
+    <arg name="scan_topic" default="urg_scan"/>
 
     <node pkg="urg_node" type="urg_node" name="urg_node">
-        <remap from="scan" to="urg_scan"/>
+        <remap from="scan" to="$(arg scan_topic)"/>
         <param name="frame_id" value="$(arg urg_frame)"/>
     </node>
 </launch>

@@ -1,7 +1,6 @@
 <?xml version="1.0"?>
 <robot name="sensor_urg" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:include filename="$(find turtlebot_description)/urdf/turtlebot_gazebo.urdf.xacro"/>
   <xacro:include filename="$(find multi_turtlebot_gazebo)/world/models/robot/config/turtlebot_properties.urdf.xacro"/>
   
   <xacro:macro name="sensor_urg" params="parent">
