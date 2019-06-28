@@ -6,7 +6,7 @@
     <arg name="pose" default="/$(arg robot_name)/robot_pose/local"/>
     <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
     <arg name="scan" default="/$(arg robot_name)/scan"/>
-    <arg name="kinect_scan" default="/$(arg robot_name)/kinect_scan"/>
+    <arg name="kinect_scan" default="/$(arg robot_name)/scan"/>
     <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
     <arg name="bumper_continuity" default="bumper_continuity"/>
     <arg name="map_frame_id" default="$(arg robot_name)/map"/>

@@ -128,7 +128,7 @@
     <param name="Grid/FromDepth" type="string"  value="false"/>
     <param name="Grid/RangeMax" type="string" value="$(arg sensor_range_max_for_map)"/>
 
-    <param name="Rtabmap/LoopThr"              type="string"  value="0.65"/>
+    <param name="Rtabmap/LoopThr"              type="string"  value="0.20"/>
     <param name="Mem/STMSize"                  type="string"  value="25"/>
     <param name="Optimizer/Strategy"           type="string"  value="1"/>
     <param name="Optimizer/Robust"             type="string"  value="true"/>
