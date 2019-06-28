@@ -182,10 +182,26 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
 
     if(pose_.q.callOne(ros::WallDuration(1.0))) return;
 
+    //もしくはここで仮のパスを作成して、それのベクトル
+    
+
     //ゴールでの姿勢を計算
     Eigen::Vector2d startToGoal(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
     startToGoal.normalize();
+
+    // 回転行列作成//もしくはゴールまでのベクトルに少し回転行列を掛ける xyで第なん証言かを計算い
+    Eigen::Matrix2d rotation;
+    double rotateTheta = 10.0 * M_PI/180;
+    if(startToGoal.x()*startToGoal.y()>0) rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
+    else if(startToGoal.x()*startToGoal.y()<0) rotation << cos(-rotateTheta), -sin(-rotateTheta), sin(-rotateTheta), cos(-rotateTheta);
+    else rotation << cos(0), -sin(0), sin(0), cos(0);
+    
+    startToGoal = rotation * startToGoal;
+
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
+
+    //このときの姿勢のい絶対値が90[deg]を超えていたら小さくなるように、超えていなければ大きくなる方に少し傾ける
+
     movebaseGoal.target_pose.pose.orientation.x = q.x();
     movebaseGoal.target_pose.pose.orientation.y = q.y();
     movebaseGoal.target_pose.pose.orientation.z = q.z();
