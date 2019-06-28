@@ -14,11 +14,9 @@ int main(int argc, char** argv){
     message_filters::Subscriber<sensor_msgs::LaserScan> scan1Sub(nh,SCAN_TOPIC_ONE,1);
     message_filters::Subscriber<sensor_msgs::LaserScan> scan2Sub(nh,SCAN_TOPIC_TWO,1);
 
-    typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::LaserScan, sensor_msgs::LaserScan> MySyncPolicy;
+    using MySyncPolicy = message_filters::sync_policies::ApproximateTime<sensor_msgs::LaserScan, sensor_msgs::LaserScan>;
 
     message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), scan1Sub, scan2Sub);
-
-    ROS_INFO_STREAM("main");
 
     LaserMerge lm;
 

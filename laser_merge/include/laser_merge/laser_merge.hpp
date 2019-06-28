@@ -13,7 +13,6 @@ class LaserMerge{
 private:
     std::string MERGE_LASER_FRAME;
     int LASER_NUMBER;
-    std::vector<std::string> SCAN_FRAME_ID;
 
     laser_geometry::LaserProjection lp;
     CommonLib::pubStruct<sensor_msgs::PointCloud2> pc2_;
@@ -27,9 +26,6 @@ LaserMerge::LaserMerge():pc2_("cloud_out",1){
     ros::NodeHandle p("~");
     p.param<int>("laser_number",LASER_NUMBER,2);
     p.param<std::string>("merge_laser_frame",MERGE_LASER_FRAME,"merge_laser_link");
-    SCAN_FRAME_ID.resize(LASER_NUMBER);
-    p.param<std::string>("scan_frame_one",SCAN_FRAME_ID[0],"scan");
-    p.param<std::string>("scan_frame_two",SCAN_FRAME_ID[1],"scan");
 }
 
 void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sensor_msgs::LaserScanConstPtr& scan2){
@@ -44,13 +40,11 @@ void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sens
     
     for(int i=0,ie=scan.size();i!=ie;++i){
         if(!initialized[i]){
-            // listener[i].waitForTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(), ros::Duration(1.0));
-            listener[i].waitForTransform(MERGE_LASER_FRAME, SCAN_FRAME_ID[i], ros::Time(), ros::Duration(1.0));
+            listener[i].waitForTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(), ros::Duration(1.0));
             initialized[i] = true;
         }
         tf::StampedTransform transform;
-        // listener[i].lookupTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(0), transform);
-        listener[i].lookupTransform(MERGE_LASER_FRAME, SCAN_FRAME_ID[i], ros::Time(0), transform);
+        listener[i].lookupTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(0), transform);
         lp.projectLaser(scan[i],cloud[i]);
 
         pcl::PointCloud<pcl::PointXYZ>::Ptr tempCloud(new pcl::PointCloud<pcl::PointXYZ>);
@@ -59,6 +53,8 @@ void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sens
         double transX = transform.getOrigin().getX();
         double transY = transform.getOrigin().getY();
         double transYaw = CommonLib::qToYaw(transform.getRotation());
+
+        ROS_INFO_STREAM("frame: " << scan[i].header.frame_id << ", transX: " << transX << ", transY: " << transY);
 
         Eigen::Matrix2d rotation;
         rotation << cos(transYaw) , -sin(transYaw) , sin(transYaw) , cos(transYaw);

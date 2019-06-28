@@ -6,7 +6,6 @@
     <arg name="pose" default="/$(arg robot_name)/robot_pose/local"/>
     <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
     <arg name="scan" default="/$(arg robot_name)/scan"/>
-    <arg name="kinect_scan" default="/$(arg robot_name)/scan"/>
     <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
     <arg name="bumper_continuity" default="bumper_continuity"/>
     <arg name="map_frame_id" default="$(arg robot_name)/map"/>
@@ -25,7 +24,7 @@
         <node pkg="exploration" type="sensor_based_exploration" name="seamless_hybrid_exploration" output="screen">
             <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
             <remap if="$(arg fill)" from="map" to="fill_map"/>
-            <remap from="scan" to="$(arg kinect_scan)"/>
+            <remap from="scan" to="$(arg scan)"/>
             <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
             <remap from="pose" to="$(arg pose)"/>
             <remap from="pose_log" to="pose_log/local"/>
@@ -45,6 +44,9 @@
             <param name="global_costmap/global_frame" value="$(arg map)"/>
             <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
             <param name="robot_name" value="$(arg robot_name)"/>
+            <param name="safe_distance" value="0.75"/>
+            <param name="safe_space" value="0.6"/>
+            <param name="scan_threshold" value="1.0"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
