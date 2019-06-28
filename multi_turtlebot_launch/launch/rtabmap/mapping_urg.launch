@@ -87,7 +87,7 @@
   <!-- Mapping -->
   <group ns="rtabmap">
 
-    <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="$(arg args)">
+    <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="log" args="$(arg args)">
 	  <param name="database_path"       type="string" value="$(arg database_path)"/>
 	  <param name="frame_id"            type="string" value="/$(arg robot_name)/base_footprint"/>
 	  <param name="wait_for_transform_duration"  type="double"   value="$(arg wait_for_transform)"/>

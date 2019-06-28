@@ -46,7 +46,7 @@
             <param name="robot_name" value="$(arg robot_name)"/>
             <param name="safe_distance" value="0.75"/>
             <param name="safe_space" value="0.6"/>
-            <param name="scan_threshold" value="1.0"/>
+            <param name="scan_threshold" value="1.5"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
