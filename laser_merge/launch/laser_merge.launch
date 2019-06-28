@@ -5,11 +5,15 @@
     <arg name="merge_scan_topic" default="merge_laser/scan"/>
     <arg name="kinect_scan_topic" default="kinect_scan"/>
     <arg name="urg_scan_topic" default="urg_scan"/>
+    <arg name="kinect_scan_frame" default="camera_rgb_frame"/>
+    <arg name="urg_scan_frame" default="urg_frame"/>
 
     <node pkg="laser_merge" type="laser_merge" name="laser_merge" output="screen">
         <remap from="cloud_out" to="$(arg merge_cloud_topic)"/>
         <param name="scan_topic_one" value="/$(arg robot_name)/$(arg kinect_scan_topic)"/>
+        <param name="scan_frame_one" value="$(arg robot_name)/$(arg kinect_scan_frame)"/>
         <param name="scan_topic_two" value="/$(arg robot_name)/$(arg urg_scan_topic)"/>
+        <param name="scan_frame_two" value="$(arg robot_name)/$(arg urg_scan_frame)"/>
         <param name="merge_laser_frame" value="/$(arg robot_name)/$(arg merge_laser_frame)"/>
     </node>
 
