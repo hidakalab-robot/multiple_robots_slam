@@ -167,14 +167,10 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 		//ここで前の目標と近いやつはリストから削除
 		static geometry_msgs::Point lastBranch;
-		std::vector<CommonLib::listStruct> tempList;
-		tempList.reserve(globalList.size());
-		for(const auto& g : globalList){
-			if(Eigen::Vector2d(g.point.x - lastBranch.x,g.point.y - lastBranch.y).norm()>BRANCH_TOLERANCE) tempList.emplace_back(g);
-		}
 
-		if(tempList.size() == 0) return false;
-		globalList = std::move(tempList);
+		auto removeResult = std::remove_if(globalList.begin(),globalList.end(),[this](CommonLib::listStruct& g){return Eigen::Vector2d(g.point.x - lastBranch.x, g.point.y - lastBranch.y).norm()<BRANCH_TOLERANCE;});
+		globalList.erase(std::move(removeResult),globalList.end());
+		if(globalList.size() == 0) return false;
 
 		publishGoalArray(listStructToPoint(globalList));
 
