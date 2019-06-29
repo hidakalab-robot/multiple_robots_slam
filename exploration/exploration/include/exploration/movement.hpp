@@ -62,6 +62,7 @@ private:
     double WALL_DISTANCE_UPPER_THRESHOLD;
     double WALL_DISTANCE_LOWER_THRESHOLD;
     double EMERGENCY_DIFF_THRESHOLD;
+    double ANGLE_BIAS;
 
     CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -123,6 +124,7 @@ Movement::Movement()
     p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
     p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 3.0);
     p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.3);
+    p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
 }
 
 void Movement::approx(std::vector<float>& scanRanges){
@@ -180,27 +182,22 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
     movebaseGoal.target_pose.pose.position.x =  goal.x;
     movebaseGoal.target_pose.pose.position.y =  goal.y;
 
-    if(pose_.q.callOne(ros::WallDuration(1.0))) return;
-
-    //もしくはここで仮のパスを作成して、それのベクトル
-    
+    if(pose_.q.callOne(ros::WallDuration(1.0))) return;    
 
     //ゴールでの姿勢を計算
     Eigen::Vector2d startToGoal(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
     startToGoal.normalize();
 
-    // 回転行列作成//もしくはゴールまでのベクトルに少し回転行列を掛ける xyで第なん証言かを計算い
-    Eigen::Matrix2d rotation;
-    double rotateTheta = 10.0 * M_PI/180;
-    if(startToGoal.x()*startToGoal.y()>0) rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
-    else if(startToGoal.x()*startToGoal.y()<0) rotation << cos(-rotateTheta), -sin(-rotateTheta), sin(-rotateTheta), cos(-rotateTheta);
-    else rotation << cos(0), -sin(0), sin(0), cos(0);
+    // 回転行列作成//もしくはゴールまでのベクトルに少し回転行列を掛ける
+    double temp = startToGoal.x()*startToGoal.y();
+    double rotateTheta = ANGLE_BIAS * M_PI/180 * (temp > 0 ? 1.0 : temp < 0 ? -1.0 : 0);
     
+    Eigen::Matrix2d rotation;
+    rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
+
     startToGoal = rotation * startToGoal;
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
-
-    //このときの姿勢のい絶対値が90[deg]を超えていたら小さくなるように、超えていなければ大きくなる方に少し傾ける
 
     movebaseGoal.target_pose.pose.orientation.x = q.x();
     movebaseGoal.target_pose.pose.orientation.y = q.y();
