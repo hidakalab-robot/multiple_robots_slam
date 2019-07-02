@@ -184,18 +184,17 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
 
     if(pose_.q.callOne(ros::WallDuration(1.0))) return;    
 
-    //ゴールでの姿勢を計算
-    Eigen::Vector2d startToGoal(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
-    startToGoal.normalize();
-
-    // 回転行列作成//もしくはゴールまでのベクトルに少し回転行列を掛ける
-    double temp = startToGoal.x()*startToGoal.y();
-    double rotateTheta = ANGLE_BIAS * M_PI/180 * (temp > 0 ? 1.0 : temp < 0 ? -1.0 : 0);
-    
+    // 回転角度の補正値
+    double yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
+    Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y,0.0).normalized());
+    double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
     Eigen::Matrix2d rotation;
     rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
 
-    startToGoal = rotation * startToGoal;
+    // 目標での姿勢
+    Eigen::Vector2d startToGoal = rotation * Eigen::Vector2d(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
+
+    ROS_INFO_STREAM("after_vector_x : " << startToGoal.x() << ", after_vector_y : " << startToGoal.y());
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
 
