@@ -61,7 +61,7 @@
         </node>
 
         <node unless="$(arg debug)" pkg="exploration" type="robot_manager" name="robot_manager">
-            <remap from="pose_log" to="pose_log/global"/>
+            <remap from="pose_log/all_robots" to="pose_log/global/all"/>
             <param name="pose_log_rate" value="1.0"/>
         </node>
 
