@@ -141,10 +141,10 @@ bool SeamlessHybrid::dataFilter(void){
             }
             return false;
         };
-        if(through()){
-            ROS_INFO_STREAM("throught branch!!");
-            continue;
-        }
+        // if(through()){
+        //     ROS_INFO_STREAM("throught branch!!");
+        //     continue;
+        // }
         branches.emplace_back(i.point);
     }
     

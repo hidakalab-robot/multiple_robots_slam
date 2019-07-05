@@ -79,6 +79,7 @@
             <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
             <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier -->
             <param name="min_cluster_size" value="30"/>
+	    <param name="area_rate" value="10.0"/>
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
