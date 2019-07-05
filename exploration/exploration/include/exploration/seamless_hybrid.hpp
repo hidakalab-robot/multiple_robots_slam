@@ -31,7 +31,7 @@ private:
         exploration_msgs::RobotInfo robot;
         std::vector<eachValue> values; //各未探査領域に対する情報 //values.size() == frontiers.size()
         areaInfo(){};
-        areaInfo(const std::string& n,const geometry_msgs::Point& p,const Eigen::Vector2d& v):robot(CommonLib::msgRobotInfo(n,p,CommonLib::msgVector(v[0],v[1]))){};
+        areaInfo(const std::string& n,const geometry_msgs::Point& pt,const Eigen::Vector2d& v):robot(CommonLib::msgRobotInfo(n,pt,CommonLib::msgVector(v[0],v[1]))){};
     };
 
     std::string ROBOT_NAME;
