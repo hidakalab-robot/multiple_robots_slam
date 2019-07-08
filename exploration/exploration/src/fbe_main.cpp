@@ -18,18 +18,6 @@ int main(int argc, char *argv[]){
     p.param<bool>("rotation",ROTATION,true);
     p.param<bool>("auto_finish",AUTO_FINISH,true);
 
-    // auto getGoal = [&]{
-    //     switch (fs.getGoal(goal)){
-    //         case FrontierSearch::goalStatus::FOUND://ゴールがあった時
-    //             if(!DEBUG) mv.moveToGoal(goal);
-    //             return true;
-    //         case FrontierSearch::goalStatus::NOTHING://ゴールがなかったとき終了するかどうか
-    //             return END_CONDITION == 1 ? false : true;
-    //         default:
-    //             return true;
-    //     }
-    // };
-
     usleep(2e5);//timeがsim_timeに合うのを待つ
     ros::Time start = ros::Time::now();
 
@@ -40,7 +28,7 @@ int main(int argc, char *argv[]){
         if(AUTO_FINISH && !isEnd.q.callOne(ros::WallDuration(0.5)) && isEnd.data.data) break;
     }
 
-    ROS_INFO_STREAM("exploration finish !! time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
+    ROS_INFO_STREAM("exploration finish !! -> time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
 
     ros::shutdown();
     

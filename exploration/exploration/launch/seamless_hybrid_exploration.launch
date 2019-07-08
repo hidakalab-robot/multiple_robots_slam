@@ -77,9 +77,10 @@
         <node pkg="exploration" type="exploration_manager" name="exploration_manager">
             <remap if="$(arg fill)" from="map" to="fill_map"/>
             <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
-            <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier -->
+            <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier 2:timer -->
             <param name="min_cluster_size" value="30"/>
-	    <param name="area_rate" value="10.0"/>
+	        <param name="area_rate" value="10.0"/>
+            <param name="end_time" value="1200"/>
         </node>
 
         <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
