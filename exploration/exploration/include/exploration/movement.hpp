@@ -63,6 +63,9 @@ private:
     double WALL_DISTANCE_LOWER_THRESHOLD;
     double EMERGENCY_DIFF_THRESHOLD;
     double ANGLE_BIAS;
+    bool MULTI;
+    std::string LOCAL_FRAME_ID;
+    
 
     CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -87,7 +90,7 @@ private:
 public:
     Movement();
 
-    void moveToGoal(const geometry_msgs::Point& goal);
+    void moveToGoal(geometry_msgs::Point goal);
     void moveToForward(void);
     void oneRotation(void);
 };
@@ -125,6 +128,8 @@ Movement::Movement()
     p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 3.0);
     p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.3);
     p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
+    p.param<bool>("multi", MULTI, false);
+    p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
 }
 
 void Movement::approx(std::vector<float>& scanRanges){
@@ -171,7 +176,35 @@ void Movement::approx(std::vector<float>& scanRanges){
     }
 }
 
-void Movement::moveToGoal(const geometry_msgs::Point& goal){
+void Movement::moveToGoal(geometry_msgs::Point goal){
+    // ここに座標変換(multiの場合)
+    // if(MULTI){
+    //     static bool initialized = false;
+    //     static tf::TransformListener listener;
+    //     if(!initialized){
+    //         listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
+    //         initialized = true;
+    //     }
+        
+    //     tf::StampedTransform transform;
+    //     listener.lookupTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(0), transform);
+
+    //     double transYaw = CommonLib::qToYaw(transform.getRotation());
+    //     double transX = transform.getOrigin().getX();
+    //     double transY = transform.getOrigin().getY();
+        
+    //     // ROS_DEBUG_STREAM(MAP_FRAME_ID << " -> " <<  MAP_FRAME_ID << ": ( " << transX << "," << transY << "," << transYaw << " )");
+
+    //     Eigen::Matrix2d rotation;
+    //     rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+
+    //     Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(goal.x - transX, goal.y - transY));
+
+    //     goal.x = tempPoint.x();
+    //     goal.y = tempPoint.y();
+    // }
+
+
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
     
     while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()) ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME);
@@ -179,8 +212,8 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
     move_base_msgs::MoveBaseGoal movebaseGoal;
     movebaseGoal.target_pose.header.frame_id = MAP_FRAME_ID;
     movebaseGoal.target_pose.header.stamp = ros::Time::now();
-    movebaseGoal.target_pose.pose.position.x =  goal.x;
-    movebaseGoal.target_pose.pose.position.y =  goal.y;
+    // movebaseGoal.target_pose.pose.position.x =  goal.x;
+    // movebaseGoal.target_pose.pose.position.y =  goal.y;
 
     if(pose_.q.callOne(ros::WallDuration(1.0))) return;    
 
@@ -202,6 +235,37 @@ void Movement::moveToGoal(const geometry_msgs::Point& goal){
     movebaseGoal.target_pose.pose.orientation.y = q.y();
     movebaseGoal.target_pose.pose.orientation.z = q.z();
     movebaseGoal.target_pose.pose.orientation.w = q.w();
+
+    //robot2の回転が反転してる
+
+    if(MULTI){
+        static bool initialized = false;
+        static tf::TransformListener listener;
+        if(!initialized){
+            listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
+            initialized = true;
+        }
+        
+        tf::StampedTransform transform;
+        listener.lookupTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(0), transform);
+
+        double transYaw = CommonLib::qToYaw(transform.getRotation());
+        double transX = transform.getOrigin().getX();
+        double transY = transform.getOrigin().getY();
+        
+        // ROS_DEBUG_STREAM(MAP_FRAME_ID << " -> " <<  MAP_FRAME_ID << ": ( " << transX << "," << transY << "," << transYaw << " )");
+
+        Eigen::Matrix2d rotation;
+        rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+
+        Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(goal.x - transX, goal.y - transY));
+
+        goal.x = tempPoint.x();
+        goal.y = tempPoint.y();
+    }
+
+    movebaseGoal.target_pose.pose.position.x =  goal.x;
+    movebaseGoal.target_pose.pose.position.y =  goal.y;
 
     ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose);
     

@@ -2,16 +2,20 @@
     <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
 
     <arg name="robot_name" default="robot1"/>
+    <arg name="multi" default="false"/>
 
     <arg name="pose" default="/$(arg robot_name)/robot_pose/local"/>
     <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
     <arg name="scan" default="/$(arg robot_name)/scan"/>
     <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
     <arg name="bumper_continuity" default="bumper_continuity"/>
-    <arg name="map_frame_id" default="$(arg robot_name)/map"/>
 
-    <arg name="map" default="/$(arg robot_name)/map"/>
-    <!-- <arg name="map" default="/server/grid_map_merge/merge_map"/> -->
+    <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
+    <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
+    <arg unless="$(arg multi)" name="map" default="/$(arg robot_name)/map"/>
+    <arg if="$(arg multi)" name="map" default="/server/grid_map_merge/merge_map"/>
+
+    <arg name="local_frame_id" default="$(arg robot_name)/map"/>
 
     <arg name="ns" default="exploration"/>
 
@@ -41,13 +45,15 @@
             <param name="center_range_min" value="2.5"/>
             <param name="newer_duplication_threshold" value="100"/>
             <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
-            <param name="global_costmap/global_frame" value="$(arg map)"/>
+            <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
             <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
             <param name="robot_name" value="$(arg robot_name)"/>
             <param name="safe_distance" value="0.75"/>
             <param name="safe_space" value="0.6"/>
             <param name="scan_threshold" value="1.5"/>
             <param name="angle_bias" value="60"/>
+            <param name="multi" value="$(arg multi)"/>
+            <param name="local_frame_id" value="$(arg local_frame_id)"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">

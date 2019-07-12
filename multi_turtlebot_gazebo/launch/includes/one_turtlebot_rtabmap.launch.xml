@@ -3,7 +3,7 @@
   
     <arg name="robot_name"/>
 
-    <arg name="multi_exploration" default="false"/>
+    <arg name="multi" default="false"/>
     <arg name="merge_map_frame" default="/server/merge_map"/>
 
     <!-- sensor range for using depth and laserscan -->
@@ -120,8 +120,8 @@
 
     <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
         <remap from="robot_pose" to="robot_pose/global"/>
-        <param if="$(arg multi_exploration)" name="map_frame" value="$(arg merge_map_frame)"/>
-        <param unless="$(arg multi_exploration)" name="map_frame" value="$(arg robot_name)/map"/>
+        <param if="$(arg multi)" name="map_frame" value="$(arg merge_map_frame)"/>
+        <param unless="$(arg multi)" name="map_frame" value="$(arg robot_name)/map"/>
         <param name="base_frame" value="$(arg robot_name)/base_link"/>
         <param name="is_stamped" value="true"/>
   </node>
