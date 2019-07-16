@@ -56,8 +56,10 @@
             <param name="local_frame_id" value="$(arg local_frame_id)"/>
         </node>
 
-        <node pkg="exploration" type="visualization" name="visualization">
+        <node pkg="exploration" type="visualization" name="visualization" output="screen">
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
+            <param name="local_frame_id" value="$(arg local_frame_id)"/>
+            <param name="multi" value="$(arg multi)"/>
         </node>
 
         <node unless="$(arg debug)" pkg="exploration" type="log" name="log">

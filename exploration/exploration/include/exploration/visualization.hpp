@@ -9,6 +9,7 @@
 #include <visualization_msgs/Marker.h>
 #include <exploration/common_lib.hpp>
 #include <thread>
+#include <tf/transform_listener.h>
 
 class Visualization
 {
@@ -16,6 +17,9 @@ private:
     double POSE_PUBLISH_RATE;
     double GOAL_PUBLISH_RATE;
     double GOALARRAY_PUBLISH_RATE;
+    std::string MAP_FRAME_ID;
+    std::string LOCAL_FRAME_ID;
+    bool MULTI;
 
     //pose
     CommonLib::subStructSimple pose_;
@@ -31,6 +35,8 @@ private:
     CommonLib::subStructSimple goalArray_;
     CommonLib::pubStruct<visualization_msgs::Marker> goalArrayMarker_;
     visualization_msgs::Marker gam;
+
+    tf::TransformListener listener;
     
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
@@ -39,6 +45,9 @@ private:
     void poseMarkerPublisher(void);
     void goalMarkerPublisher(void);
     void goalArrayMarkerPublisher(void);
+
+    geometry_msgs::Point coordinateConverter(const geometry_msgs::Point& point);
+    std::vector<geometry_msgs::Point> coordinateConverter(const std::vector<geometry_msgs::Point>& points);
 
 public:
     Visualization();
@@ -57,7 +66,7 @@ Visualization::Visualization()
     p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 30.0);
     p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 30.0);
     p.param<double>("goalarray_publish_rate", GOALARRAY_PUBLISH_RATE, 30.0);
-    std::string MAP_FRAME_ID;
+    // std::string MAP_FRAME_ID;
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     //poseMarker
     p.param<double>("line_width", pm.scale.x, 0.1);
@@ -103,22 +112,61 @@ Visualization::Visualization()
     gam.color.g = 1.0f;
     gam.color.b = 0.0f;
     gam.color.a = 1.0f;
+
+    //coordinate convert
+    p.param<bool>("multi", MULTI, false);
+    p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
+
+    listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
+    ROS_DEBUG_STREAM("poseCB");
+    // pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
+    pm.points.push_back(MULTI ? coordinateConverter(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z)) : CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
     pm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
-    gm.pose.position.x = msg -> point.x;
-    gm.pose.position.y = msg -> point.y;
+    ROS_DEBUG_STREAM("goalCB");
+    // gm.pose.position.x = msg -> point.x;
+    // gm.pose.position.y = msg -> point.y;
+
+    gm.pose.position = MULTI ? coordinateConverter(msg -> point) : msg -> point;
     gm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg){
-    gam.points = msg -> points;
+    ROS_DEBUG_STREAM("goalArrayCB");
+    gam.points = MULTI ? coordinateConverter(msg -> points) : msg -> points;
+    // gam.points = msg -> points;
     gam.header.stamp = ros::Time::now();
+}
+
+geometry_msgs::Point Visualization::coordinateConverter(const geometry_msgs::Point& point){
+    ROS_DEBUG_STREAM("before listener");
+    tf::StampedTransform transform;
+    ROS_DEBUG_STREAM("frame A : " << MAP_FRAME_ID << ", frame B : " << LOCAL_FRAME_ID);
+    listener.lookupTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(0), transform);
+    ROS_DEBUG_STREAM("after listener");
+
+    double transYaw = CommonLib::qToYaw(transform.getRotation());
+    double transX = transform.getOrigin().getX();
+    double transY = transform.getOrigin().getY();
+
+    Eigen::Matrix2d rotation;
+    rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+
+    Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(point.x - transX, point.y - transY));
+
+    return CommonLib::msgPoint(tempPoint.x(),tempPoint.y());
+}
+
+std::vector<geometry_msgs::Point> Visualization::coordinateConverter(const std::vector<geometry_msgs::Point>& points){
+    std::vector<geometry_msgs::Point> ps;
+    ps.reserve(points.size());
+    for(const auto& p : points) ps.emplace_back(coordinateConverter(p));
+    return ps;
 }
 
 void Visualization::poseMarkerPublisher(void){

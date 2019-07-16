@@ -90,6 +90,12 @@ double qToYaw(const geometry_msgs::Quaternion& q){
     return qToYaw(tf::Quaternion(q.x, q.y, q.z, q.w));
 }
 
+double qToYaw(const Eigen::Quaterniond& q){
+    // tf::Quaternion tq(q.x, q.y, q.z, q.w);
+    // return qToYaw(tq);
+    return qToYaw(tf::Quaternion(q.x(), q.y(), q.z(), q.w()));
+}
+
 geometry_msgs::Quaternion yawToQ(double yaw){
     geometry_msgs::Quaternion msg;
     // tf::Quaternion quat=tf::createQuaternionFromRPY(0,0,yaw);  
