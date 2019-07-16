@@ -120,57 +120,23 @@ Visualization::Visualization()
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    ROS_DEBUG_STREAM("poseCB");
-    // pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
-    // pm.points.push_back(MULTI ? coordinateConverter(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z)) : CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
     geometry_msgs::Point temp = CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z);
     pm.points.push_back(MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp);
     pm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
-    ROS_DEBUG_STREAM("goalCB");
-    // gm.pose.position.x = msg -> point.x;
-    // gm.pose.position.y = msg -> point.y;
-
-    // gm.pose.position = MULTI ? coordinateConverter(msg -> point) : msg -> point;
     geometry_msgs::Point temp = msg->point;
     gm.pose.position = MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp;
     gm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg){
-    ROS_DEBUG_STREAM("goalArrayCB");
     std::vector<geometry_msgs::Point> ps = msg->points;
-    // gam.points = MULTI ? coordinateConverter(msg -> points) : msg -> points;
     if(MULTI) for(auto&& p : ps) CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, p);
     gam.points = ps;
-    // gam.points = msg -> points;
     gam.header.stamp = ros::Time::now();
 }
-
-// geometry_msgs::Point Visualization::coordinateConverter(const geometry_msgs::Point& point){
-//     ROS_DEBUG_STREAM("before listener");
-//     tf::StampedTransform transform;
-//     ROS_DEBUG_STREAM("frame A : " << MAP_FRAME_ID << ", frame B : " << LOCAL_FRAME_ID);
-//     listener.lookupTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(0), transform);
-//     ROS_DEBUG_STREAM("after listener");
-
-//     double transYaw = CommonLib::qToYaw(transform.getRotation());
-//     double transX = transform.getOrigin().getX();
-//     double transY = transform.getOrigin().getY();
-
-//     Eigen::Matrix2d rotation;
-//     rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
-
-//     Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(point.x - transX, point.y - transY));
-
-//     return CommonLib::msgPoint(tempPoint.x(),tempPoint.y());
-// }
-
-// void Visualization::coordinateConverter(std::vector<geometry_msgs::Point>& points){
-//     for(auto&& p : points) CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, p);
-// }
 
 void Visualization::poseMarkerPublisher(void){
     ros::Rate rate(POSE_PUBLISH_RATE);

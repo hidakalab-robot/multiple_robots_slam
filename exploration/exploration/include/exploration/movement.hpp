@@ -187,10 +187,6 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
 
     if(pose_.q.callOne(ros::WallDuration(1.0))) return;    
 
-    // ROS_DEBUG_STREAM("pose : " << pose_.data.pose);
-
-    // ROS_DEBUG_STREAM("start pose yaw : " << CommonLib::qToYaw(pose_.data.pose.orientation)*180/M_PI);
-
     // 回転角度の補正値
     double yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
     Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y,0.0).normalized());
@@ -205,16 +201,12 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
 
-    // ROS_DEBUG_STREAM("second pose yaw : " << CommonLib::qToYaw(q)*180/M_PI);
-
-    //robot2の回転が反転してる//回転してなかっただけだったのでtfの回転をかけた
     movebaseGoal.target_pose.pose.position.x =  goal.x;
     movebaseGoal.target_pose.pose.position.y =  goal.y;
     movebaseGoal.target_pose.pose.orientation.x = q.x();
     movebaseGoal.target_pose.pose.orientation.y = q.y();
     movebaseGoal.target_pose.pose.orientation.z = q.z();
     movebaseGoal.target_pose.pose.orientation.w = q.w();
-
 
     // マルチ探査用の座標変換
     if(MULTI){
@@ -224,41 +216,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
             listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
             initialized = true;
         }
-
         CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, movebaseGoal.target_pose.pose.position, movebaseGoal.target_pose.pose.orientation);
-        
-        // tf::StampedTransform transform;
-        // listener.lookupTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(0), transform);
-
-        // tf::Quaternion transQ = transform.getRotation();
-        // double transYaw = CommonLib::qToYaw(transQ);
-        // double transX = transform.getOrigin().getX();
-        // double transY = transform.getOrigin().getY();
-
-        // // tf::Quaternion temptempQ(q.x(),q.y(),q.z(),q.w());
-
-        // // ROS_DEBUG_STREAM("plus pose yaw : " << CommonLib::qToYaw(temptempQ+=transQ)*180/M_PI);
-        // // ROS_DEBUG_STREAM("minus pose yaw : " << CommonLib::qToYaw(temptempQ-=transQ)*180/M_PI);
-        // // ROS_DEBUG_STREAM("multiply pose yaw : " << CommonLib::qToYaw(temptempQ*=transQ)*180/M_PI);
-        
-        // // ROS_DEBUG_STREAM(MAP_FRAME_ID << " -> " <<  MAP_FRAME_ID << ": ( " << transX << "," << transY << "," << transYaw << " )");
-
-        // Eigen::Matrix2d rotation;
-        // rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
-
-        // Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(goal.x - transX, goal.y - transY));
-
-        // goal.x = tempPoint.x();
-        // goal.y = tempPoint.y();
-
-        // tf::Quaternion tempQ = tf::Quaternion(q.x(),q.y(),q.z(),q.w())*=transQ;
-
-        // q.x() = tempQ.getX();
-        // q.y() = tempQ.getY();
-        // q.z() = tempQ.getZ();
-        // q.w() = tempQ.getW();
-
-        // ROS_DEBUG_STREAM("third pose yaw : " << CommonLib::qToYaw(movebaseGoal.target_pose.pose.orientation)*180/M_PI);
     }
 
     ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose);
