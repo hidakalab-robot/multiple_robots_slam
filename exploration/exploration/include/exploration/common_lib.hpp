@@ -17,6 +17,7 @@
 #include <std_msgs/Int32.h>
 #include <Eigen/Core>
 #include <exploration_msgs/RobotInfo.h>
+#include <tf/transform_listener.h>
 
 namespace CommonLib
 {
@@ -233,6 +234,76 @@ exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_ms
     msg.coordinate = pt;
     msg.vector = v;
     return msg;
+}
+
+geometry_msgs::Quaternion msgGeoQuaternion(double x, double y, double z, double w){
+    geometry_msgs::Quaternion q;
+    q.x = x;
+    q.y = y;
+    q.z = z;
+    q.w = w;
+    return q;
+}
+
+geometry_msgs::Quaternion tfQuaToGeoQua(const tf::Quaternion& tq){
+    geometry_msgs::Quaternion q;
+    q.x = tq.getX();
+    q.y = tq.getY();
+    q.z = tq.getZ();
+    q.w = tq.getW();
+    return q;
+}
+
+// destFrame から見た origFrame の座標を取得する // origFrame の座標を destFrame での座標に変換する
+template <typename T> T coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p, geometry_msgs::Quaternion& q);
+
+template<> void coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p, geometry_msgs::Quaternion& q){
+    tf::StampedTransform transform;
+    l.lookupTransform(destFrame, origFrame, ros::Time(0), transform);
+
+    tf::Quaternion transQ = transform.getRotation();
+    double transYaw = CommonLib::qToYaw(transQ);
+    double transX = transform.getOrigin().getX();
+    double transY = transform.getOrigin().getY();
+
+    Eigen::Matrix2d rotation;
+    rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+
+    Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(p.x - transX, p.y - transY));
+    p = msgPoint(tempPoint.x(),tempPoint.y());
+    q = tfQuaToGeoQua(tf::Quaternion(q.x,q.y,q.z,q.w)*=transQ);
+}
+
+template<> geometry_msgs::Pose coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p, geometry_msgs::Quaternion& q){
+    tf::StampedTransform transform;
+    l.lookupTransform(destFrame, origFrame, ros::Time(0), transform);
+
+    tf::Quaternion transQ = transform.getRotation();
+    double transYaw = CommonLib::qToYaw(transQ);
+    double transX = transform.getOrigin().getX();
+    double transY = transform.getOrigin().getY();
+
+    Eigen::Matrix2d rotation;
+    rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+
+    Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(p.x - transX, p.y - transY));
+    p = msgPoint(tempPoint.x(),tempPoint.y());
+    q = tfQuaToGeoQua(tf::Quaternion(q.x,q.y,q.z,q.w)*=transQ);
+
+    return msgPose(p,q);
+}
+
+template <typename T> T coordinateConverter(const tf::TransformListener& l, const std::string& target, const std::string& source, geometry_msgs::Point& p);
+
+template<> void coordinateConverter(const tf::TransformListener& l, const std::string& target, const std::string& source, geometry_msgs::Point& p){
+    geometry_msgs::Quaternion q;
+    coordinateConverter<void>(l,target,source,p,q);
+}
+
+template<> geometry_msgs::Point coordinateConverter(const tf::TransformListener& l, const std::string& target, const std::string& source, geometry_msgs::Point& p){
+    geometry_msgs::Quaternion q;
+    coordinateConverter<void>(l,target,source,p,q);
+    return p;
 }
 
 }

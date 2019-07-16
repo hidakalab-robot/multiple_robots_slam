@@ -208,6 +208,12 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
     // ROS_DEBUG_STREAM("second pose yaw : " << CommonLib::qToYaw(q)*180/M_PI);
 
     //robot2の回転が反転してる//回転してなかっただけだったのでtfの回転をかけた
+    movebaseGoal.target_pose.pose.position.x =  goal.x;
+    movebaseGoal.target_pose.pose.position.y =  goal.y;
+    movebaseGoal.target_pose.pose.orientation.x = q.x();
+    movebaseGoal.target_pose.pose.orientation.y = q.y();
+    movebaseGoal.target_pose.pose.orientation.z = q.z();
+    movebaseGoal.target_pose.pose.orientation.w = q.w();
 
 
     // マルチ探査用の座標変換
@@ -218,47 +224,42 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
             listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
             initialized = true;
         }
+
+        CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, movebaseGoal.target_pose.pose.position, movebaseGoal.target_pose.pose.orientation);
         
-        tf::StampedTransform transform;
-        listener.lookupTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(0), transform);
+        // tf::StampedTransform transform;
+        // listener.lookupTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(0), transform);
 
-        tf::Quaternion transQ = transform.getRotation();
-        double transYaw = CommonLib::qToYaw(transQ);
-        double transX = transform.getOrigin().getX();
-        double transY = transform.getOrigin().getY();
+        // tf::Quaternion transQ = transform.getRotation();
+        // double transYaw = CommonLib::qToYaw(transQ);
+        // double transX = transform.getOrigin().getX();
+        // double transY = transform.getOrigin().getY();
 
-        // tf::Quaternion temptempQ(q.x(),q.y(),q.z(),q.w());
+        // // tf::Quaternion temptempQ(q.x(),q.y(),q.z(),q.w());
 
-        // ROS_DEBUG_STREAM("plus pose yaw : " << CommonLib::qToYaw(temptempQ+=transQ)*180/M_PI);
-        // ROS_DEBUG_STREAM("minus pose yaw : " << CommonLib::qToYaw(temptempQ-=transQ)*180/M_PI);
-        // ROS_DEBUG_STREAM("multiply pose yaw : " << CommonLib::qToYaw(temptempQ*=transQ)*180/M_PI);
+        // // ROS_DEBUG_STREAM("plus pose yaw : " << CommonLib::qToYaw(temptempQ+=transQ)*180/M_PI);
+        // // ROS_DEBUG_STREAM("minus pose yaw : " << CommonLib::qToYaw(temptempQ-=transQ)*180/M_PI);
+        // // ROS_DEBUG_STREAM("multiply pose yaw : " << CommonLib::qToYaw(temptempQ*=transQ)*180/M_PI);
         
-        // ROS_DEBUG_STREAM(MAP_FRAME_ID << " -> " <<  MAP_FRAME_ID << ": ( " << transX << "," << transY << "," << transYaw << " )");
+        // // ROS_DEBUG_STREAM(MAP_FRAME_ID << " -> " <<  MAP_FRAME_ID << ": ( " << transX << "," << transY << "," << transYaw << " )");
 
-        Eigen::Matrix2d rotation;
-        rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+        // Eigen::Matrix2d rotation;
+        // rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
 
-        Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(goal.x - transX, goal.y - transY));
+        // Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(goal.x - transX, goal.y - transY));
 
-        goal.x = tempPoint.x();
-        goal.y = tempPoint.y();
+        // goal.x = tempPoint.x();
+        // goal.y = tempPoint.y();
 
-        tf::Quaternion tempQ = tf::Quaternion(q.x(),q.y(),q.z(),q.w())*=transQ;
+        // tf::Quaternion tempQ = tf::Quaternion(q.x(),q.y(),q.z(),q.w())*=transQ;
 
-        q.x() = tempQ.getX();
-        q.y() = tempQ.getY();
-        q.z() = tempQ.getZ();
-        q.w() = tempQ.getW();
+        // q.x() = tempQ.getX();
+        // q.y() = tempQ.getY();
+        // q.z() = tempQ.getZ();
+        // q.w() = tempQ.getW();
 
         // ROS_DEBUG_STREAM("third pose yaw : " << CommonLib::qToYaw(movebaseGoal.target_pose.pose.orientation)*180/M_PI);
     }
-
-    movebaseGoal.target_pose.pose.position.x =  goal.x;
-    movebaseGoal.target_pose.pose.position.y =  goal.y;
-    movebaseGoal.target_pose.pose.orientation.x = q.x();
-    movebaseGoal.target_pose.pose.orientation.y = q.y();
-    movebaseGoal.target_pose.pose.orientation.z = q.z();
-    movebaseGoal.target_pose.pose.orientation.w = q.w();
 
     ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose);
     
