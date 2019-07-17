@@ -48,9 +48,6 @@
             <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
             <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
             <param name="robot_name" value="$(arg robot_name)"/>
-            <param name="safe_distance" value="0.75"/>
-            <param name="safe_space" value="0.6"/>
-            <param name="scan_threshold" value="1.5"/>
             <param name="angle_bias" value="60"/>
             <param name="multi" value="$(arg multi)"/>
             <param name="local_frame_id" value="$(arg local_frame_id)"/>
