@@ -216,7 +216,7 @@ void Movement::moveToGoal(geometry_msgs::Point goal){
             listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
             initialized = true;
         }
-        CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, movebaseGoal.target_pose.pose.position, movebaseGoal.target_pose.pose.orientation);
+        CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, movebaseGoal.target_pose.pose);
     }
 
     ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose);

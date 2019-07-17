@@ -12,21 +12,21 @@
 
     <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
     <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
-    <arg unless="$(arg multi)" name="map" default="/$(arg robot_name)/map"/>
-    <arg if="$(arg multi)" name="map" default="/server/grid_map_merge/merge_map"/>
+    <arg unless="$(arg multi)" name="map_topic" default="/$(arg robot_name)/map"/>
+    <arg if="$(arg multi)" name="map_topic" default="/server/grid_map_merge/merge_map"/>
 
     <arg name="local_frame_id" default="$(arg robot_name)/map"/>
-
-    <arg name="ns" default="exploration"/>
 
     <arg name="rosbag" default="false"/>
     <arg name="debug" default="false"/>
 
     <arg name="fill" default="true"/>
 
+    <arg name="ns" default="exploration"/>
+
     <group ns="$(arg robot_name)/$(arg ns)">
         <node pkg="exploration" type="sensor_based_exploration" name="seamless_hybrid_exploration" output="screen">
-            <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
+            <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
             <remap if="$(arg fill)" from="map" to="fill_map"/>
             <remap from="scan" to="$(arg scan)"/>
             <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
@@ -79,12 +79,12 @@
         </node>
 
         <node pkg="exploration" type="map_fill" name="map_fill">
-            <remap from="map" to="$(arg map)"/>
+            <remap from="map" to="$(arg map_topic)"/>
         </node>
 
         <node pkg="exploration" type="exploration_manager" name="exploration_manager">
             <remap if="$(arg fill)" from="map" to="fill_map"/>
-            <remap unless="$(arg fill)" from="map" to="$(arg map)"/>
+            <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
             <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier 2:timer -->
             <param name="min_cluster_size" value="30"/>
 	        <param name="area_rate" value="10.0"/>
