@@ -22,6 +22,8 @@
 
     <arg name="fill" default="false"/>
 
+    <arg name="rotation" default="true"/>
+
     <arg name="ns" default="exploration"/>
 
     <group ns="$(arg robot_name)/$(arg ns)">
@@ -34,7 +36,7 @@
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
             <param name="debug" value="$(arg debug)"/>
             <param name="direction_weight" value="0.0"/>
-            <param name="min_cluster_size" value="25"/>
+            <param name="min_cluster_size" value="30"/>
             <param name="previous_goal_effect" value="true"/>
             <param name="previous_goal_threshold" value="0.5"/>
             <!-- <param name="merge_map_frame_id" value="/server/merge_map"/> -->
@@ -46,6 +48,7 @@
             <param name="angle_bias" value="60"/>
             <param name="multi" value="$(arg multi)"/>
             <param name="local_frame_id" value="$(arg local_frame_id)"/>
+            <param name="rotation" value="$(arg rotation)"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">

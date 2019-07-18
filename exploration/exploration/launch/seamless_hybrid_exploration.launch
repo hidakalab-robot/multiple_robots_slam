@@ -22,6 +22,8 @@
 
     <arg name="fill" default="true"/>
 
+    <arg name="rotation" default="false"/>
+
     <arg name="ns" default="exploration"/>
 
     <group ns="$(arg robot_name)/$(arg ns)">
@@ -41,7 +43,7 @@
             <param name="min_cluster_size" value="30"/>
             <param name="seamless_hybrid" value="true"/>
             <param name="filter_square_diameter" value="0.75"/>
-            <param name="rotation" value="false"/>
+            <param name="rotation" value="$(arg rotation)"/>
             <param name="center_range_min" value="2.5"/>
             <param name="newer_duplication_threshold" value="100"/>
             <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
@@ -84,7 +86,7 @@
             <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
             <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier 2:timer -->
             <param name="min_cluster_size" value="30"/>
-	        <param name="area_rate" value="10.0"/>
+	        <param name="area_rate" value="1.0"/>
             <param name="end_time" value="1200"/>
         </node>
 
