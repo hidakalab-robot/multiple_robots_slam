@@ -138,6 +138,8 @@ public:
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
     template<typename T> T frontierDetection(bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
     template<typename T> T frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
+    template<typename T> T frontierDetection(std::vector<exploration_msgs::Frontier>& frontiers);
+    template<typename T> T frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, std::vector<exploration_msgs::Frontier>& frontiers;
 };
 
 FrontierSearch::FrontierSearch()
@@ -164,26 +166,19 @@ FrontierSearch::FrontierSearch()
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
 }
 
-template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visualizeGoalArray){
-    if(map_.q.callOne(ros::WallDuration(1))) return std::vector<geometry_msgs::Point>();
-    
-    mapStruct map(map_.data);
-
+template<> void FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, std::vector<exploration_msgs::Frontier>& frontiers){    
+    mapStruct map(mapMsg);
     horizonDetection(map);
-
     clusterStruct cluster(clusterDetection(map));
 
     if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
-    
+
     if(cluster.index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found");
-        return std::vector<geometry_msgs::Point>();
+        return;
     }
-    
     //ここでクラスタ表示したい
     if(COLOR_CLUSTER) publishColorCluster(cluster);
-
-    std::vector<exploration_msgs::Frontier> frontiers;
     frontiers.reserve(cluster.index.size());
 
     for(int i=0,e=cluster.index.size();i!=e;++i){
@@ -192,93 +187,41 @@ template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(b
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
-
     if(MULTI) mergeMapCoordinateToLocal(frontiers);
+}
 
+template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visualizeGoalArray){
+    if(map_.q.callOne(ros::WallDuration(1))) return std::vector<geometry_msgs::Point>();
+    std::vector<exploration_msgs::Frontier> frontiers;
+
+    frontierDetection<void>(map_.data, frontiers));
     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
-
     if(visualizeGoalArray){
         publishGoalArray(goals);
         publishGoalArrayAsPose(goals);
     }
-    
     return goals;
 }
 
-template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetection(bool visualizeGoalArray){
+template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetection(bool visualizeGoalArray){    
     if(map_.q.callOne(ros::WallDuration(1))) return std::vector<exploration_msgs::Frontier>();
-    mapStruct map(map_.data);
-
-    ROS_DEBUG_STREAM("map size : " << map.info.height << " X " << map.info.width);
-
-    horizonDetection(map);
-
-    clusterStruct cluster(clusterDetection(map));
-
-    if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
-    
-    if(cluster.index.size() == 0){
-        ROS_INFO_STREAM("Frontier Do Not Found");
-        return std::vector<exploration_msgs::Frontier>();
-    }
-
-    //ここでクラスタ表示したい
-    if(COLOR_CLUSTER) publishColorCluster(cluster);
-    
     std::vector<exploration_msgs::Frontier> frontiers;
-    frontiers.reserve(cluster.index.size());
 
-    for(int i=0,e=cluster.index.size();i!=e;++i){
-        if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
-    }
-
-    ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
-
-    if(MULTI) mergeMapCoordinateToLocal(frontiers);
-
+    frontierDetection<void>(map_.data, frontiers));
+    std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
     if(visualizeGoalArray){
-        std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
         publishGoalArray(goals);
         publishGoalArrayAsPose(goals);
     }
-    
     return frontiers;
 }
 
 template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
     if(map_.q.callOne(ros::WallDuration(1))) return;
-    
-    mapStruct map(map_.data);
-
-    horizonDetection(map);
-
-    clusterStruct cluster(clusterDetection(map));
-
-    if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
-    
-    if(cluster.index.size() == 0){
-        ROS_INFO_STREAM("Frontier Do Not Found");
-        return;
-    }
-    
-    //ここでクラスタ表示したい
-    if(COLOR_CLUSTER) publishColorCluster(cluster);
-
     std::vector<exploration_msgs::Frontier> frontiers;
-    frontiers.reserve(cluster.index.size());
 
-    for(int i=0,e=cluster.index.size();i!=e;++i){
-        if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
-    }
-
-    ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
-
-    if(MULTI) mergeMapCoordinateToLocal(frontiers);
-
+    frontierDetection<void>(map_.data, frontiers);
     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
-
     if(visualizeGoalArray){
         publishGoalArray(goals);
         publishGoalArrayAsPose(goals);
@@ -287,44 +230,16 @@ template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
 
 template<> int FrontierSearch::frontierDetection(bool visualizeGoalArray){
     if(map_.q.callOne(ros::WallDuration(1))) return -1;
-    
-    mapStruct map(map_.data);
-
-    horizonDetection(map);
-
-    clusterStruct cluster(clusterDetection(map));
-
-    if(cluster.index.size() == 0) return 0;
-
-    if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
-
-    std::vector<exploration_msgs::Frontier> frontiers;
-    frontiers.reserve(cluster.index.size());
-
-    for(int i=0,e=cluster.index.size();i!=e;++i){
-        if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
-    }
-    return frontiers.size();
+    return frontierDetection<int>(map_.data,visualizeGoalArray);
 }
 
 template<> int FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray){    
-    mapStruct map(mapMsg);
-
-    horizonDetection(map);
-
-    clusterStruct cluster(clusterDetection(map));
-
-    if(cluster.index.size() == 0) return 0;
-
-    if(OBSTACLE_FILTER) obstacleFilter(map,cluster.index);
-
     std::vector<exploration_msgs::Frontier> frontiers;
-    frontiers.reserve(cluster.index.size());
-
-    for(int i=0,e=cluster.index.size();i!=e;++i){
-        if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
+    frontierDetection<void>(mapMsg,frontiers);
+    std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
+    if(visualizeGoalArray){
+        publishGoalArray(goals);
+        publishGoalArrayAsPose(goals);
     }
     return frontiers.size();
 }
