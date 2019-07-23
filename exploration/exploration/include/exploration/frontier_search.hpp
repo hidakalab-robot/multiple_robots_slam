@@ -106,7 +106,6 @@ private:
     int MAX_CLUSTER_SIZE;
     bool PREVIOUS_GOAL_EFFECT;
     bool USE_MERGE_MAP;
-    std::string LOCAL_FRAME_ID;
     bool COLOR_CLUSTER;
 
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -128,7 +127,6 @@ private:
 	void publishGoalArray(const std::vector<geometry_msgs::Point>& goals);
     void publishGoalArrayAsPose(const std::vector<geometry_msgs::Point>& goals);
     void publishColorCluster(const clusterStruct& cs);
-    void mergeMapCoordinateToLocal(std::vector<exploration_msgs::Frontier>& goal);
     std::vector<geometry_msgs::Point> frontiersToPoints(const std::vector<exploration_msgs::Frontier>& fa);
     void frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, std::vector<exploration_msgs::Frontier>& frontiers);
     template<typename T> T frontierDetection(const std::vector<exploration_msgs::Frontier>& frontiers, const std::vector<geometry_msgs::Point>& goals);
@@ -160,7 +158,6 @@ FrontierSearch::FrontierSearch()
     p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
     p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 50);
     p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
-    p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
 }
 
@@ -400,20 +397,6 @@ void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<E
 
 geometry_msgs::Point FrontierSearch::arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
     return CommonLib::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
-}
-
-void FrontierSearch::mergeMapCoordinateToLocal(std::vector<exploration_msgs::Frontier>& frontiers){
-    //merge_map -> map のtfを取得して座標修正
-    //合成マップで得た座標をロボット側のマップ座標に変換する
-
-    static bool initialized = false;
-    static tf::TransformListener listener;
-    if(!initialized){
-        listener.waitForTransform(LOCAL_FRAME_ID, MAP_FRAME_ID, ros::Time(), ros::Duration(1.0));
-        initialized = true;
-    }
-
-    for(auto& f : frontiers) CommonLib::coordinateConverter<void>(listener, LOCAL_FRAME_ID, MAP_FRAME_ID, f.coordinate);
 }
 
 bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, const geometry_msgs::Pose& pose,geometry_msgs::Point& goal){

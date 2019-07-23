@@ -63,9 +63,7 @@ private:
     double WALL_DISTANCE_UPPER_THRESHOLD;
     double WALL_DISTANCE_LOWER_THRESHOLD;
     double EMERGENCY_DIFF_THRESHOLD;
-    double ANGLE_BIAS;
-    std::string LOCAL_FRAME_ID;
-    
+    double ANGLE_BIAS;    
 
     CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -128,7 +126,6 @@ Movement::Movement()
     p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 3.0);
     p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.3);
     p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
-    p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
 }
 
 void Movement::approx(std::vector<float>& scanRanges){
