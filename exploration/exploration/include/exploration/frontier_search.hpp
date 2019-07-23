@@ -131,6 +131,7 @@ private:
     void publishColorCluster(const clusterStruct& cs);
     void mergeMapCoordinateToLocal(std::vector<exploration_msgs::Frontier>& goal);
     std::vector<geometry_msgs::Point> frontiersToPoints(const std::vector<exploration_msgs::Frontier>& fa);
+    void frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, std::vector<exploration_msgs::Frontier>& frontiers);
 
 public:
     FrontierSearch();
@@ -138,8 +139,7 @@ public:
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
     template<typename T> T frontierDetection(bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
     template<typename T> T frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
-    template<typename T> T frontierDetection(std::vector<exploration_msgs::Frontier>& frontiers);
-    template<typename T> T frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, std::vector<exploration_msgs::Frontier>& frontiers;
+    template<typename T> T frontierDetection(const std::vector<exploration_msgs::Frontier>& frontiers, const std::vector<geometry_msgs::Point>& goals);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
 };
 
 FrontierSearch::FrontierSearch()
@@ -166,7 +166,7 @@ FrontierSearch::FrontierSearch()
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
 }
 
-template<> void FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, std::vector<exploration_msgs::Frontier>& frontiers){    
+void FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, std::vector<exploration_msgs::Frontier>& frontiers){    
     mapStruct map(mapMsg);
     horizonDetection(map);
     clusterStruct cluster(clusterDetection(map));
@@ -190,42 +190,39 @@ template<> void FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid&
     if(MULTI) mergeMapCoordinateToLocal(frontiers);
 }
 
-template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visualizeGoalArray){
-    if(map_.q.callOne(ros::WallDuration(1))) return std::vector<geometry_msgs::Point>();
-    std::vector<exploration_msgs::Frontier> frontiers;
 
-    frontierDetection<void>(map_.data, frontiers));
-    std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
-    if(visualizeGoalArray){
-        publishGoalArray(goals);
-        publishGoalArrayAsPose(goals);
-    }
+template<> int FrontierSearch::frontierDetection(const std::vector<exploration_msgs::Frontier>& frontiers, const std::vector<geometry_msgs::Point>& goals){
+    return frontiers.size();
+}
+
+template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(const std::vector<exploration_msgs::Frontier>& frontiers, const std::vector<geometry_msgs::Point>& goals){
     return goals;
 }
 
-template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetection(bool visualizeGoalArray){    
-    if(map_.q.callOne(ros::WallDuration(1))) return std::vector<exploration_msgs::Frontier>();
-    std::vector<exploration_msgs::Frontier> frontiers;
-
-    frontierDetection<void>(map_.data, frontiers));
-    std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
-    if(visualizeGoalArray){
-        publishGoalArray(goals);
-        publishGoalArrayAsPose(goals);
-    }
+template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetection(const std::vector<exploration_msgs::Frontier>& frontiers, const std::vector<geometry_msgs::Point>& goals){
     return frontiers;
 }
 
-template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
-    if(map_.q.callOne(ros::WallDuration(1))) return;
-    std::vector<exploration_msgs::Frontier> frontiers;
+template<> void FrontierSearch::frontierDetection(const std::vector<exploration_msgs::Frontier>& frontiers, const std::vector<geometry_msgs::Point>& goals){
+    return;
+}
 
-    frontierDetection<void>(map_.data, frontiers);
+template<typename T>
+T FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray){
+    std::vector<exploration_msgs::Frontier> frontiers;
+    frontierDetection(mapMsg,frontiers);
     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
     if(visualizeGoalArray){
         publishGoalArray(goals);
         publishGoalArrayAsPose(goals);
     }
+    return frontierDetection<T>(frontiers, goals);
+}
+
+template<typename T>
+T FrontierSearch::frontierDetection(bool visualizeGoalArray){
+    if(map_.q.callOne(ros::WallDuration(1))) return T();
+    return frontierDetection<T>(map_.data,visualizeGoalArray);
 }
 
 template<> int FrontierSearch::frontierDetection(bool visualizeGoalArray){
@@ -233,16 +230,62 @@ template<> int FrontierSearch::frontierDetection(bool visualizeGoalArray){
     return frontierDetection<int>(map_.data,visualizeGoalArray);
 }
 
-template<> int FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray){    
-    std::vector<exploration_msgs::Frontier> frontiers;
-    frontierDetection<void>(mapMsg,frontiers);
-    std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
-    if(visualizeGoalArray){
-        publishGoalArray(goals);
-        publishGoalArrayAsPose(goals);
-    }
-    return frontiers.size();
-}
+
+// template<> int FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray){    
+//     std::vector<exploration_msgs::Frontier> frontiers;
+//     frontierDetection(mapMsg,frontiers);
+//     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
+//     if(visualizeGoalArray){
+//         publishGoalArray(goals);
+//         publishGoalArrayAsPose(goals);
+//     }
+//     return frontiers.size();
+// }
+
+// template<> std::vector<geometry_msgs::Point> FrontierSearch::frontierDetection(bool visualizeGoalArray){
+//     if(map_.q.callOne(ros::WallDuration(1))) return std::vector<geometry_msgs::Point>();
+//     std::vector<exploration_msgs::Frontier> frontiers;
+
+//     frontierDetection(map_.data, frontiers);
+//     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
+//     if(visualizeGoalArray){
+//         publishGoalArray(goals);
+//         publishGoalArrayAsPose(goals);
+//     }
+//     return goals;
+// }
+
+// template<> std::vector<exploration_msgs::Frontier> FrontierSearch::frontierDetection(bool visualizeGoalArray){    
+//     if(map_.q.callOne(ros::WallDuration(1))) return std::vector<exploration_msgs::Frontier>();
+//     std::vector<exploration_msgs::Frontier> frontiers;
+
+//     frontierDetection(map_.data, frontiers);
+//     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
+//     if(visualizeGoalArray){
+//         publishGoalArray(goals);
+//         publishGoalArrayAsPose(goals);
+//     }
+//     return frontiers;
+// }
+
+// template<> void FrontierSearch::frontierDetection(bool visualizeGoalArray){
+//     if(map_.q.callOne(ros::WallDuration(1))) return;
+//     std::vector<exploration_msgs::Frontier> frontiers;
+
+//     frontierDetection(map_.data, frontiers);
+//     std::vector<geometry_msgs::Point> goals(frontiersToPoints(frontiers));
+//     if(visualizeGoalArray){
+//         publishGoalArray(goals);
+//         publishGoalArrayAsPose(goals);
+//     }
+// }
+
+// template<> int FrontierSearch::frontierDetection(bool visualizeGoalArray){
+//     if(map_.q.callOne(ros::WallDuration(1))) return -1;
+//     return frontierDetection<int>(map_.data,visualizeGoalArray);
+// }
+
+
 
 bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
