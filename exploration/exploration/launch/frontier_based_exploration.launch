@@ -4,7 +4,7 @@
     <arg name="robot_name" default="robot1"/>
     <arg name="multi" default="false"/>
 
-    <arg name="pose" default="/$(arg robot_name)/robot_pose/local"/>
+    <arg name="pose" default="/$(arg robot_name)/robot_pose/global"/>
     <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
     <arg name="scan" default="/$(arg robot_name)/scan"/>
     <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
@@ -45,8 +45,8 @@
             <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
             <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
             <param name="robot_name" value="$(arg robot_name)"/>
-            <param name="angle_bias" value="60"/>
-            <param name="multi" value="$(arg multi)"/>
+            <param name="angle_bias" value="10"/>
+            <!-- <param name="multi" value="$(arg multi)"/> -->
             <param name="local_frame_id" value="$(arg local_frame_id)"/>
             <param name="rotation" value="$(arg rotation)"/>
         </node>
@@ -54,7 +54,7 @@
         <node pkg="exploration" type="visualization" name="visualization">
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="local_frame_id" value="$(arg local_frame_id)"/>
-            <param name="multi" value="$(arg multi)"/>
+            <!-- <param name="multi" value="$(arg multi)"/> -->
         </node>
 
         <node unless="$(arg debug)" pkg="exploration" type="log" name="log">

@@ -9,7 +9,7 @@ int main(int argc, char *argv[]){
 
     CommonLib::subStruct<std_msgs::Bool> isEnd("end",1);
 
-    geometry_msgs::Point goal;
+    geometry_msgs::PointStamped goal;
     ros::NodeHandle p("~");
     bool DEBUG,ROTATION,AUTO_FINISH;
     double BRANCH_WAIT_TIME;

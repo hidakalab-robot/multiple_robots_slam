@@ -108,7 +108,7 @@ private:
     bool USE_MERGE_MAP;
     std::string LOCAL_FRAME_ID;
     bool COLOR_CLUSTER;
-    bool MULTI;
+    // bool MULTI;
 
     CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
     CommonLib::subStruct<nav_msgs::OccupancyGrid> map_;
@@ -138,6 +138,7 @@ public:
     FrontierSearch();
 
     bool getGoal(geometry_msgs::Point& goal);//publish goalList and select goal
+    bool getGoal(geometry_msgs::PointStamped& goal);//publish goalList and select goal
     template<typename T> T frontierDetection(bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
     template<typename T> T frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, bool visualizeGoalArray=true);//return void or std::vector<geometry_msgs::Point> or std::vector<exploration_msgs::Frontier>
 };
@@ -161,7 +162,7 @@ FrontierSearch::FrontierSearch()
     p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
     p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 50);
     p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
-    p.param<bool>("multi", MULTI, false);
+    // p.param<bool>("multi", MULTI, false);
     p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
     p.param<bool>("color_cluster", COLOR_CLUSTER, true);
 }
@@ -187,7 +188,7 @@ void FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, st
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
-    if(MULTI) mergeMapCoordinateToLocal(frontiers);
+    // if(MULTI) mergeMapCoordinateToLocal(frontiers);
 }
 
 template<> int FrontierSearch::frontierDetection(const std::vector<exploration_msgs::Frontier>& frontiers, const std::vector<geometry_msgs::Point>& goals){
@@ -246,6 +247,32 @@ bool FrontierSearch::getGoal(geometry_msgs::Point& goal){
     if(selectGoal(goals,pose_.data.pose,goal)){
         ROS_INFO_STREAM("Selected Frontier : (" << goal.x << "," << goal.y << ")");
         publishGoal(goal);
+        return true;
+    }
+    else{
+		ROS_INFO_STREAM("Found Frontier is Too Close");
+        return false;
+    }
+}
+
+bool FrontierSearch::getGoal(geometry_msgs::PointStamped& goal){
+    std::vector<geometry_msgs::Point> goals(frontierDetection<std::vector<geometry_msgs::Point>>());
+
+    if(goals.size()==0){
+        ROS_INFO_STREAM("Frontier is Not Found !!");
+        return false;
+    };
+
+    if(pose_.q.callOne(ros::WallDuration(1))) return false;
+
+//     static PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS");
+// ///stampのフレームid
+//     for(const auto& g : goals) ROS_INFO_STREAM("path length : " << pp.getPathLength(pose_.data,CommonLib::pointToPoseStamped(g,MAP_FRAME_ID)));
+
+    if(selectGoal(goals,pose_.data.pose,goal.point)){
+        ROS_INFO_STREAM("Selected Frontier : (" << goal.point.x << "," << goal.point.y << ")");
+        publishGoal(goal.point);
+        goal.header.frame_id = MAP_FRAME_ID;
         return true;
     }
     else{

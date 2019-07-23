@@ -254,6 +254,15 @@ geometry_msgs::Quaternion tfQuaToGeoQua(const tf::Quaternion& tq){
     return q;
 }
 
+geometry_msgs::Quaternion eigenQuaToGeoQua(const Eigen::Quaterniond& eq){
+    geometry_msgs::Quaternion q;
+    q.x = eq.x();
+    q.y = eq.y();
+    q.z = eq.z();
+    q.w = eq.w();
+    return q;
+}
+
 // destFrame から見た origFrame の座標を取得する // origFrame の座標を destFrame での座標に変換する
 template <typename T> T coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p);
 

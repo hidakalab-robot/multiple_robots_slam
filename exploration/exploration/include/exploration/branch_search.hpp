@@ -32,7 +32,7 @@ private:
 	bool DUPLICATE_CHECK;
 	double LENGTH_THRESHOLD_Y;
 	double LOG_NEWER_LIMIT;//if 30 -> 30秒前までのログで重複検出
-	std::string MAP_FRAME_ID;
+	std::string BRANCH_FRAME_ID;
 	bool SEAMLESS_HYBRID;
 	double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
 
@@ -56,6 +56,7 @@ private:
 public:
     BranchSearch();
 	bool getGoal(geometry_msgs::Point& goal);
+	bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
 BranchSearch::BranchSearch()
@@ -68,7 +69,7 @@ BranchSearch::BranchSearch()
 	,pp("global_costmap","NavfnROS"){
 
 	ros::NodeHandle p("~");
-	p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
+	p.param<std::string>("branch_frame_id", BRANCH_FRAME_ID, "map");
 	p.param<double>("branch_angle", BRANCH_ANGLE, 0.04);
 	p.param<double>("center_range_min", CENTER_RANGE_MIN,2.0);
 	p.param<double>("branch_max_x", BRANCH_MAX_X, 5.5);
@@ -114,6 +115,46 @@ bool BranchSearch::getGoal(geometry_msgs::Point& goal){
 	if(branchDetection(scanRect,goal,pose_.data.pose)){
 		publishGoal(goal);
 		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")");
+		return true;
+    }
+	else{
+		ROS_INFO_STREAM("Branch Do Not Found");
+		return false;
+	}
+}
+
+bool BranchSearch::getGoal(geometry_msgs::PointStamped& goal){
+	if(pose_.q.callOne(ros::WallDuration(1)) || scan_.q.callOne(ros::WallDuration(1))) return false;
+
+	const int scanWidth = BRANCH_ANGLE / scan_.data.angle_increment;
+    const int scanMin = (scan_.data.ranges.size()/2)-1 - scanWidth;
+    const int scanMax = (scan_.data.ranges.size()/2) + scanWidth;
+
+    for(int i = scanMin;i!=scanMax;++i){
+		if(!std::isnan(scan_.data.ranges[i]) && scan_.data.ranges[i] < CENTER_RANGE_MIN){
+			ROS_ERROR_STREAM("It may be Close to Obstacles");
+			return false;
+		}
+    }
+
+	CommonLib::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
+
+	for(int i=0,e=scan_.data.ranges.size();i!=e;++i){
+		if(!std::isnan(scan_.data.ranges[i])){
+			scanRect.ranges.push_back(scan_.data.ranges[i]);
+			scanRect.angles.push_back(scan_.data.angle_min+(scan_.data.angle_increment*i));
+		}
+    }
+
+	if(scanRect.ranges.size() < 2){
+		ROS_ERROR_STREAM("scan_.data is Insufficient");
+		return false;
+    }
+
+	if(branchDetection(scanRect,goal.point,pose_.data.pose)){
+		publishGoal(goal.point);
+		ROS_INFO_STREAM("Branch Found : (" << goal.point.x << "," << goal.point.y << ")");
+		goal.header.frame_id = BRANCH_FRAME_ID;
 		return true;
     }
 	else{
@@ -266,7 +307,7 @@ void BranchSearch::publishGoal(const geometry_msgs::Point& goal){
 	geometry_msgs::PointStamped msg;
 	msg.point = goal;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = MAP_FRAME_ID;
+	msg.header.frame_id = BRANCH_FRAME_ID;
 	goal_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish Goal");
 }
@@ -275,7 +316,7 @@ void BranchSearch::publishGoalArray(const std::vector<geometry_msgs::Point>& goa
 	exploration_msgs::PointArray msg;
 	msg.points = goals;
 	msg.header.stamp = ros::Time::now();
-	msg.header.frame_id = MAP_FRAME_ID;
+	msg.header.frame_id = BRANCH_FRAME_ID;
 	goalArray_.pub.publish(msg);
 	ROS_INFO_STREAM("Publish GoalList");
 }

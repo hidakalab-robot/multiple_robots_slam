@@ -19,7 +19,7 @@ private:
     double GOALARRAY_PUBLISH_RATE;
     std::string MAP_FRAME_ID;
     std::string LOCAL_FRAME_ID;
-    bool MULTI;
+    // bool MULTI;
 
     //pose
     CommonLib::subStructSimple pose_;
@@ -65,7 +65,7 @@ Visualization::Visualization()
     p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 30.0);
     p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 30.0);
     p.param<double>("goalarray_publish_rate", GOALARRAY_PUBLISH_RATE, 30.0);
-    // std::string MAP_FRAME_ID;
+    std::string MAP_FRAME_ID;
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     //poseMarker
     p.param<double>("line_width", pm.scale.x, 0.1);
@@ -113,28 +113,33 @@ Visualization::Visualization()
     gam.color.a = 1.0f;
 
     //coordinate convert
-    p.param<bool>("multi", MULTI, false);
+    // p.param<bool>("multi", MULTI, false);
     p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
 
     listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    geometry_msgs::Point temp = CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z);
-    pm.points.push_back(MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp);
+    // geometry_msgs::Point temp = CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z);
+    // pm.points.push_back(MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp);
+    pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
+    pm.header.frame_id = msg->header.frame_id;
     pm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
-    geometry_msgs::Point temp = msg->point;
-    gm.pose.position = MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp;
+    // geometry_msgs::Point temp = msg->point;
+    // gm.pose.position = MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp;
+    gm.pose.position = msg->point;
+    gm.header.frame_id = msg->header.frame_id;
     gm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg){
-    std::vector<geometry_msgs::Point> ps = msg->points;
-    if(MULTI) for(auto&& p : ps) CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, p);
-    gam.points = ps;
+    // std::vector<geometry_msgs::Point> ps = msg->points;
+    // if(MULTI) for(auto&& p : ps) CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, p);
+    gam.points = msg->points;
+    gam.header.frame_id = msg->header.frame_id;
     gam.header.stamp = ros::Time::now();
 }
 
