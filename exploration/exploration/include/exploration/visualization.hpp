@@ -18,8 +18,6 @@ private:
     double GOAL_PUBLISH_RATE;
     double GOALARRAY_PUBLISH_RATE;
     std::string MAP_FRAME_ID;
-    std::string LOCAL_FRAME_ID;
-    // bool MULTI;
 
     //pose
     CommonLib::subStructSimple pose_;
@@ -45,8 +43,6 @@ private:
     void poseMarkerPublisher(void);
     void goalMarkerPublisher(void);
     void goalArrayMarkerPublisher(void);
-
-    //  std::vector<geometry_msgs::Point>  coordinateConverter(std::vector<geometry_msgs::Point>& points);
 
 public:
     Visualization();
@@ -111,33 +107,21 @@ Visualization::Visualization()
     gam.color.g = 1.0f;
     gam.color.b = 0.0f;
     gam.color.a = 1.0f;
-
-    //coordinate convert
-    // p.param<bool>("multi", MULTI, false);
-    p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
-
-    listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    // geometry_msgs::Point temp = CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z);
-    // pm.points.push_back(MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp);
     pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
     pm.header.frame_id = msg->header.frame_id;
     pm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
-    // geometry_msgs::Point temp = msg->point;
-    // gm.pose.position = MULTI ? CommonLib::coordinateConverter<geometry_msgs::Point>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, temp) : temp;
     gm.pose.position = msg->point;
     gm.header.frame_id = msg->header.frame_id;
     gm.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg){
-    // std::vector<geometry_msgs::Point> ps = msg->points;
-    // if(MULTI) for(auto&& p : ps) CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, p);
     gam.points = msg->points;
     gam.header.frame_id = msg->header.frame_id;
     gam.header.stamp = ros::Time::now();

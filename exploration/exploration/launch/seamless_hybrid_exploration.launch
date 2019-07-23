@@ -38,7 +38,6 @@
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="branch_frame_id" value="$(arg local_frame_id)"/>
             <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-            <!-- <param name="avoidance_gain" value="0.2"/> -->
             <param name="debug" value="$(arg debug)"/>
             <param name="color_cluster" value="true"/>
             <param name="min_cluster_size" value="30"/>
@@ -52,14 +51,12 @@
             <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
             <param name="robot_name" value="$(arg robot_name)"/>
             <param name="angle_bias" value="60"/>
-            <!-- <param name="multi" value="$(arg multi)"/> -->
             <param name="local_frame_id" value="$(arg local_frame_id)"/>
         </node>
 
         <node pkg="exploration" type="visualization" name="visualization">
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
             <param name="local_frame_id" value="$(arg local_frame_id)"/>
-            <!-- <param name="multi" value="$(arg multi)"/> -->
         </node>
 
         <node unless="$(arg debug)" pkg="exploration" type="log" name="log">

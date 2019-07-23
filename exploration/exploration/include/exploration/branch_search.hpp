@@ -55,7 +55,6 @@ private:
 
 public:
     BranchSearch();
-	bool getGoal(geometry_msgs::Point& goal);
 	bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
@@ -82,45 +81,6 @@ BranchSearch::BranchSearch()
 	p.param<bool>("seamless_hybrid", SEAMLESS_HYBRID, true);
 	p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
 	p.param<double>("branch_tolerance", BRANCH_TOLERANCE, 1.0);
-}
-
-bool BranchSearch::getGoal(geometry_msgs::Point& goal){
-	if(pose_.q.callOne(ros::WallDuration(1)) || scan_.q.callOne(ros::WallDuration(1))) return false;
-
-	const int scanWidth = BRANCH_ANGLE / scan_.data.angle_increment;
-    const int scanMin = (scan_.data.ranges.size()/2)-1 - scanWidth;
-    const int scanMax = (scan_.data.ranges.size()/2) + scanWidth;
-
-    for(int i = scanMin;i!=scanMax;++i){
-		if(!std::isnan(scan_.data.ranges[i]) && scan_.data.ranges[i] < CENTER_RANGE_MIN){
-			ROS_ERROR_STREAM("It may be Close to Obstacles");
-			return false;
-		}
-    }
-
-	CommonLib::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
-
-	for(int i=0,e=scan_.data.ranges.size();i!=e;++i){
-		if(!std::isnan(scan_.data.ranges[i])){
-			scanRect.ranges.push_back(scan_.data.ranges[i]);
-			scanRect.angles.push_back(scan_.data.angle_min+(scan_.data.angle_increment*i));
-		}
-    }
-
-	if(scanRect.ranges.size() < 2){
-		ROS_ERROR_STREAM("scan_.data is Insufficient");
-		return false;
-    }
-
-	if(branchDetection(scanRect,goal,pose_.data.pose)){
-		publishGoal(goal);
-		ROS_INFO_STREAM("Branch Found : (" << goal.x << "," << goal.y << ")");
-		return true;
-    }
-	else{
-		ROS_INFO_STREAM("Branch Do Not Found");
-		return false;
-	}
 }
 
 bool BranchSearch::getGoal(geometry_msgs::PointStamped& goal){

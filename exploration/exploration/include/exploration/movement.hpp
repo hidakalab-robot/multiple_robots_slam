@@ -64,7 +64,6 @@ private:
     double WALL_DISTANCE_LOWER_THRESHOLD;
     double EMERGENCY_DIFF_THRESHOLD;
     double ANGLE_BIAS;
-    // bool MULTI;
     std::string LOCAL_FRAME_ID;
     
 
@@ -91,7 +90,6 @@ private:
 public:
     Movement();
 
-    // void moveToGoal(geometry_msgs::Point goal);
     void moveToGoal(geometry_msgs::PointStamped goal);
     void moveToForward(void);
     void oneRotation(void);
@@ -130,7 +128,6 @@ Movement::Movement()
     p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 3.0);
     p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.3);
     p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
-    // p.param<bool>("multi", MULTI, false);
     p.param<std::string>("local_frame_id", LOCAL_FRAME_ID, "map");
 }
 
@@ -178,62 +175,6 @@ void Movement::approx(std::vector<float>& scanRanges){
     }
 }
 
-// void Movement::moveToGoal(geometry_msgs::Point goal){
-//     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
-    
-//     while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()) ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME);
-
-//     move_base_msgs::MoveBaseGoal movebaseGoal;
-//     movebaseGoal.target_pose.header.frame_id = MAP_FRAME_ID;
-//     movebaseGoal.target_pose.header.stamp = ros::Time::now();
-
-//     if(pose_.q.callOne(ros::WallDuration(1.0))) return;    
-
-//     // 回転角度の補正値
-//     double yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
-//     Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y,0.0).normalized());
-//     double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
-//     Eigen::Matrix2d rotation;
-//     rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
-
-//     // 目標での姿勢
-//     Eigen::Vector2d startToGoal = rotation * Eigen::Vector2d(goal.x-pose_.data.pose.position.x,goal.y-pose_.data.pose.position.y);
-
-//     ROS_INFO_STREAM("after_vector_x : " << startToGoal.x() << ", after_vector_y : " << startToGoal.y());
-
-//     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
-
-//     movebaseGoal.target_pose.pose.position.x =  goal.x;
-//     movebaseGoal.target_pose.pose.position.y =  goal.y;
-//     movebaseGoal.target_pose.pose.orientation.x = q.x();
-//     movebaseGoal.target_pose.pose.orientation.y = q.y();
-//     movebaseGoal.target_pose.pose.orientation.z = q.z();
-//     movebaseGoal.target_pose.pose.orientation.w = q.w();
-
-//     // マルチ探査用の座標変換
-//     if(MULTI){
-//         static bool initialized = false;
-//         static tf::TransformListener listener;
-//         if(!initialized){
-//             listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
-//             initialized = true;
-//         }
-//         CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, movebaseGoal.target_pose.pose);
-//     }
-
-//     ROS_DEBUG_STREAM("goal pose : " << movebaseGoal.target_pose.pose);
-    
-//     ROS_INFO_STREAM("send goal to move_base");
-//     ac.sendGoal(movebaseGoal);
-
-//     ROS_INFO_STREAM("wait for result");
-//     ac.waitForResult();
-
-//     ROS_INFO_STREAM("move_base was finished");
-
-//     ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
-// }
-
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
     
@@ -274,35 +215,13 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
 
     to.target_pose.pose = CommonLib::msgPose(goal.point,CommonLib::eigenQuaToGeoQua(q));
-    // ここcommonlibでなんとか綺麗に出来ない?
-    // movebaseGoal.target_pose.pose.position.x =  goal.x;
-    // movebaseGoal.target_pose.pose.position.y =  goal.y;
-    // movebaseGoal.target_pose.pose.orientation.x = q.x();
-    // movebaseGoal.target_pose.pose.orientation.y = q.y();
-    // movebaseGoal.target_pose.pose.orientation.z = q.z();
-    // movebaseGoal.target_pose.pose.orientation.w = q.w();
-
-    // マルチ探査用の座標変換
-    // if(MULTI){
-    //     static bool initialized = false;
-    //     static tf::TransformListener listener;
-    //     if(!initialized){
-    //         listener.waitForTransform(MAP_FRAME_ID, LOCAL_FRAME_ID, ros::Time(), ros::Duration(1.0));
-    //         initialized = true;
-    //     }
-    //     CommonLib::coordinateConverter<void>(listener, MAP_FRAME_ID, LOCAL_FRAME_ID, movebaseGoal.target_pose.pose);
-    // }
 
     ROS_DEBUG_STREAM("goal pose : " << to.target_pose.pose);
-    
     ROS_INFO_STREAM("send goal to move_base");
     ac.sendGoal(to);
-
     ROS_INFO_STREAM("wait for result");
     ac.waitForResult();
-
     ROS_INFO_STREAM("move_base was finished");
-
     ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
 }
 
