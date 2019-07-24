@@ -34,7 +34,7 @@
 
 
     <group ns="$(arg robot1_name)">
-        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
             <arg name="robot_name" value="$(arg robot1_name)"/>
             <arg name="init_x" value="$(arg robot1_init_x)"/>
             <arg name="init_y" value="$(arg robot1_init_y)"/>
@@ -52,7 +52,7 @@
     </group>
 
     <group ns="$(arg robot2_name)">
-        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
             <arg name="robot_name" value="$(arg robot2_name)"/>
             <arg name="init_x" value="$(arg robot2_init_x)"/>
             <arg name="init_y" value="$(arg robot2_init_y)"/>
