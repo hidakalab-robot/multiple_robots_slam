@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>multi_turtlebot_gazebo</name>
+  <name>exploration_libraly</name>
   <version>0.0.0</version>
-  <description>The multi_turtlebot_gazebo package</description>
+  <description>The exploration_libraly package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -19,7 +19,7 @@
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
   <!-- Optional attribute type can be: website, bugtracker, or repository -->
   <!-- Example: -->
-  <!-- <url type="website">http://wiki.ros.org/multi_turtlebot_gazebo</url> -->
+  <!-- <url type="website">http://wiki.ros.org/exploration_libraly</url> -->
 
 
   <!-- Author tags are optional, multiple are allowed, one per tag -->
@@ -49,16 +49,28 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <exec_depend>gazebo_ros</exec_depend>
-  <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>nodelet</exec_depend>
-  <exec_depend>depthimage_to_laserscan</exec_depend>
-  <exec_depend>turtlebot_description</exec_depend>
-  <exec_depend>turtlebot_bringup</exec_depend>
-  <exec_depend>yocs_cmd_vel_mux</exec_depend>
-  <exec_depend>rtabmap_ros</exec_depend>
-  <exec_depend>robot_pose_publisher</exec_depend>
-  <exec_depend>lab_turtlebot_description</exec_depend>
+  <build_depend>exploration_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+  <build_depend>pcl_ros</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>tf</build_depend>
+  <build_depend>costmap_2d</build_depend>
+  <build_export_depend>exploration_msgs</build_export_depend>
+  <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>pcl_ros</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+  <build_export_depend>std_msgs</build_export_depend>
+  <build_export_depend>tf</build_export_depend>
+  <build_export_depend>costmap_2d</build_export_depend>
+  <exec_depend>exploration_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>pcl_ros</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>tf</exec_depend>
+  <exec_depend>costmap_2d</exec_depend>
+
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

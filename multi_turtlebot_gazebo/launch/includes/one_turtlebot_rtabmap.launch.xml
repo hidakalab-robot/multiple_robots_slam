@@ -3,8 +3,6 @@
   
     <arg name="robot_name"/>
 
-    <arg name="multi" default="false"/>
-
     <!-- sensor range for using depth and laserscan -->
     <arg name="database_path"     default="$(arg robot_name)_rtabmap.db"/>
     <arg name="rgbd_odometry"     default="false"/>
@@ -20,14 +18,15 @@
     
     <arg name="wait_for_transform"  default="0.2"/>
 
-    <arg unless="$(arg multi)" name="global_frame_id" default="$(arg robot_name)/map"/>
-    <arg if="$(arg multi)" name="global_frame_id" default="/server/merge_map"/>
+    <arg name="multi" default="false"/>
+    <arg name="merge_map_frame" default="/server/merge_map"/>
+    <arg name="merge_map_topic" default="/server/grid_map_merge/merge_map"/>
 
     <!-- Navigation stuff (move_base) -->
     <include file="$(find multi_turtlebot_gazebo)/launch/includes/move_base.launch.xml">
         <arg name="robot_name" value="$(arg robot_name)"/>
-        <arg name="global_frame_id" value="$(arg global_frame_id)"/>
-        <arg if="$(arg multi)" name="map_topic" default="/server/grid_map_merge/merge_map"/>
+        <arg if="$(arg multi)" name="global_frame_id" value="$(arg merge_map_frame)"/>
+        <arg if="$(arg multi)" name="map_topic" default="$(arg merge_map_topic)"/>
     </include>
   
     <!-- Mapping -->
@@ -121,9 +120,8 @@
 
     <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
         <remap from="robot_pose" to="robot_pose/global"/>
-        <!-- <param if="$(arg multi)" name="map_frame" value="$(arg merge_map_frame)"/>
-        <param unless="$(arg multi)" name="map_frame" value="$(arg robot_name)/map"/> -->
-        <param name="map_frame" value="$(arg global_frame_id)"/>
+        <param if="$(arg multi)" name="map_frame" value="$(arg merge_map_frame)"/>
+        <param unless="$(arg multi)" name="map_frame" value="$(arg robot_name)/map"/>
         <param name="base_frame" value="$(arg robot_name)/base_link"/>
         <param name="is_stamped" value="true"/>
   </node>

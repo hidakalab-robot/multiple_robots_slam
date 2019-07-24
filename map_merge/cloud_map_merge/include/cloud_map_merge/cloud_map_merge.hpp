@@ -7,7 +7,7 @@
 #include <boost/thread.hpp>
 #include <forward_list>
 #include <iterator>
-#include <exploration/common_lib.hpp>
+#include <exploration_libraly/common_lib.hpp>
 
 class CloudMapMerge
 {

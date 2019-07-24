@@ -6,7 +6,7 @@
     <arg name="init_yaw"/>
 
 
-    <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find multi_turtlebot_gazebo)/world/models/robot/labs_turtlebot2.urdf.xacro'" />
+    <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find lab_turtlebot_description)/urdf/lab_turtlebot.urdf.xacro'" />
     <param name="robot_description" command="$(arg urdf_file)" />
   
     <!-- Gazebo model spawner -->

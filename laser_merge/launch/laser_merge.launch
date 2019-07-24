@@ -10,7 +10,7 @@
         <remap from="cloud_out" to="$(arg merge_cloud_topic)"/>
         <param name="scan_topic_one" value="/$(arg robot_name)/$(arg kinect_scan_topic)"/>
         <param name="scan_topic_two" value="/$(arg robot_name)/$(arg urg_scan_topic)"/>
-        <param name="merge_laser_frame" value="/$(arg robot_name)/$(arg merge_laser_frame)"/>
+        <param name="merge_laser_frame" value="$(arg robot_name)/$(arg merge_laser_frame)"/>
     </node>
 
     <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan_node">

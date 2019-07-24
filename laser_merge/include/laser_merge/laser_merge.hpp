@@ -5,7 +5,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <tf/transform_listener.h>
 #include <pcl_ros/point_cloud.h>
-#include <exploration/common_lib.hpp>
+#include <exploration_libraly/common_lib.hpp>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <Eigen/Geometry>
 
