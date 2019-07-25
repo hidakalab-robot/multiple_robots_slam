@@ -1,0 +1,8 @@
+<launch>
+    map_merge
+map_fill
+exploration_manager
+robot_manager
+
+rosbag(別枠かも)
+</launch>

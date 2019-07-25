@@ -1,0 +1,19 @@
+<launch>
+    <arg name="robot_name" default="robot1"/>
+    <arg name="mapping" default="false"/>
+    <arg name="continuity" default="false"/>
+    <arg name="visualization" default="true"/>
+    <arg name="exploration" default="true"/>
+    <arg name="log" default="false"/>
+
+    <group ns="$(arg robot_name)">
+        <include file="$(find multiple_robots_slam)/launch/includes/additional_process.launch.xml">
+            <arg name="mapping" value="$(arg mapping)"/>
+            <arg name="continuity" value="$(arg continuity)"/>
+            <arg name="visualization" value="$(arg visualization)"/>
+            <arg name="exploration" value="$(arg exploration)"/>
+            <arg name="log" value="$(arg log)"/>
+        </include>
+    </group>
+
+</launch>
