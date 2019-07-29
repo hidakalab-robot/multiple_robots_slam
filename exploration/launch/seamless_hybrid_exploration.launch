@@ -13,7 +13,7 @@
     <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
     <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
     <arg unless="$(arg multi)" name="map_topic" default="/$(arg robot_name)/map"/>
-    <arg if="$(arg multi)" name="map_topic" default="/server/grid_map_merge/merge_map"/>
+    <arg if="$(arg multi)" name="map_topic" default="/server/merge_map/grid"/>
 
     <arg name="branch_frame_id" default="$(arg robot_name)/map"/>
 
