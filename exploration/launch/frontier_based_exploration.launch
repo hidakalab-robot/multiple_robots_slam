@@ -45,28 +45,28 @@
             <param name="rotation" value="$(arg rotation)"/>
         </node>
 
-        <node pkg="exploration" type="visualization" name="visualization">
+        <node pkg="exploration_support" type="visualization" name="visualization">
             <param name="map_frame_id" value="$(arg map_frame_id)"/>
         </node>
 
-        <node unless="$(arg debug)" pkg="exploration" type="log" name="log">
+        <node unless="$(arg debug)" pkg="exploration_support" type="log" name="log">
             <remap from="pose" to="$(arg pose)"/>
             <remap from="pose_log" to="pose_log/local"/>
             <param name="pose_log_rate" value="1.0"/>
         </node>
 
-        <node pkg="exploration" type="map_fill" name="map_fill">
+        <node pkg="exploration_support" type="map_fill" name="map_fill">
             <remap from="map" to="$(arg map_topic)"/>
         </node>
 
-        <node pkg="exploration" type="exploration_manager" name="exploration_manager">
+        <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
             <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
             <remap if="$(arg fill)" from="map" to="fill_map"/>
             <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier -->
             <param name="min_cluster_size" value="30"/>
         </node>
 
-	    <include if="$(arg rosbag)" file="$(find exploration)/launch/includes/rosbag_record.launch.xml">
+	    <include if="$(arg rosbag)" file="$(find exploration_support)/launch/includes/rosbag_record.launch.xml">
             <arg name="topics" value="  $(arg pose) 
                                         /$(arg robot_name)/$(arg ns)/pose_log 
                                         $(arg bumper_raw) 
