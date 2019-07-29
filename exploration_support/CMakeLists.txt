@@ -240,3 +240,6 @@ target_link_libraries(multi_exploration_simulator ${catkin_LIBRARIES})
 add_executable(extra_parameter_reconfigure src/extra_parameter_reconfigure.cpp)
 add_dependencies(extra_parameter_reconfigure ${PROJECT_NAME}_gencfg)
 target_link_libraries(extra_parameter_reconfigure ${catkin_LIBRARIES})
+
+add_executable(simulator_input_support src/simulator_input_support.cpp)
+target_link_libraries(simulator_input_support ${catkin_LIBRARIES})
