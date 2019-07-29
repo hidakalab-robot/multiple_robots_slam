@@ -1,0 +1,42 @@
+<launch>
+    <arg name="merge_map_frame"/>
+  
+    <arg name="robot1_map_frame"/>
+    <arg name="robot1_init_pose_x"/>
+    <arg name="robot1_init_pose_y"/>
+    <arg name="robot1_init_pose_yaw"/>
+    
+    <arg name="robot2_map_frame"/>
+    <arg name="robot2_init_pose_x"/>
+    <arg name="robot2_init_pose_y"/>
+    <arg name="robot2_init_pose_yaw"/>
+
+    <arg name="grid_map_topic" default="merge_map/grid"/>
+    <arg name="cloud_map_topic" default="merge_map/cloud"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="robot1_maptf_broadcaster" args="$(arg robot1_init_pose_x) $(arg robot1_init_pose_y) 0 $(arg robot1_init_pose_yaw) 0 0 $(arg merge_map_frame) $(arg robot1_map_frame) 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="robot2_maptf_broadcaster" args="$(arg robot2_init_pose_x) $(arg robot2_init_pose_y) 0 $(arg robot2_init_pose_yaw) 0 0 $(arg merge_map_frame) $(arg robot2_map_frame) 100"/>
+
+    <node pkg="grid_map_merge" type="grid_map_merge" name="grid_map_merge" output="screen">
+        <param name="robot_map_topic" value="map"/>
+        <param name="robot_namespace" value=""/>
+        <param name="merged_map_topic" value="$(arg grid_map_topic)"/>
+        <param name="world_frame" value="$(arg merge_map_frame)"/>
+        <param name="known_init_poses" value="true"/>
+        <param name="merging_rate" value="2.0"/>
+        <param name="discovery_rate" value="0.5"/>
+        <param name="estimation_rate" value="0.5"/>
+        <param name="estimation_confidence" value="1.0"/>
+        <param name="map_num" value="1"/>
+    </node>
+
+    <node pkg="cloud_map_merge" type="cloud_map_merge" name="cloud_map_merge">
+        <param name="map_topic" value="/rtabmap/cloud_obstacles"/>
+        <param name="merge_map_frame" value="$(arg merge_map_frame)"/>
+        <param name="merging_rate" value="1.0"/>
+        <param name="registration_rate" value="0.5"/>
+        <param name="floor_height" value="-0.05"/>
+        <param name="ceiling_height" value="2.4"/>
+        <remap from="merge_map" to="$(arg cloud_map_topic)"/>
+    </node>
+</launch>

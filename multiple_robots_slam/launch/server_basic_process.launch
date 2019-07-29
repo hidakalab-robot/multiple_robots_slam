@@ -1,8 +1,79 @@
 <launch>
-    map_merge
-map_fill
-exploration_manager
-robot_manager
+    <arg name="server_name" default="server"/>
 
-rosbag(別枠かも)
+    <!-- merge_map -->
+    <!-- ロボットを追加するときは初期設定、パラメータ、tfをコピペ -->
+    <!-- 各ロボットの初期設定 -->
+    <arg name="robot1_name" default="robot1"/>
+    <arg name="robot1_map_frame" default="/$(arg robot1_name)/map"/>
+    <arg name="robot1_init_pose_x" default="0.0"/>
+    <arg name="robot1_init_pose_y" default="0.0"/>
+    <arg name="robot1_init_pose_yaw" default="0.0"/> <!-- yawの設定値は -1.57 <= yaw <= 1.57 -->
+    
+    <arg name="robot2_name" default="robto2"/>
+    <arg name="robot2_map_frame" default="/$(arg robot2_name)/map"/>
+    <arg name="robot2_init_pose_x" default="39.3"/>
+    <arg name="robot2_init_pose_y" default="12.0"/>
+    <arg name="robot2_init_pose_yaw" default="3.14"/>
+
+    <!-- ノードに渡すパラメータ用 -->
+    <group ns="/$(arg robot1_name)/map_merge">
+        <param name="init_pose_x" value="$(arg robot1_init_pose_x)"/>
+        <param name="init_pose_y" value="$(arg robot1_init_pose_y)"/>
+        <param name="init_pose_z" value="0.0"/>
+        <param name="init_pose_yaw" value="$(arg robot1_init_pose_yaw)"/>
+    </group>
+
+    <group ns="/$(arg robot2_name)/map_merge">
+        <param name="init_pose_x" value="$(arg robot2_init_pose_x)"/>
+        <param name="init_pose_y" value="$(arg robot2_init_pose_y)"/>
+        <param name="init_pose_z" value="0.0"/>
+        <param name="init_pose_yaw" value="$(arg robot2_init_pose_yaw)"/>
+    </group>
+
+    <arg name="merge_map_frame" default="/$(arg server_name)/merge_map"/>
+    <arg name="grid_map_topic" default="merge_map/grid"/>
+    <arg name="cloud_map_topic" default="merge_map/cloud"/>
+
+    <!-- map_fill -->
+    <arg name="fill" default="true"/>
+    
+
+    <group ns="$(arg server_name)">
+        <!-- map_merge -->
+        <include file="$(find map_merge)/launch/includes/map_merge.launch.xml">
+            <arg name="merge_map_frame" value="$(arg merge_map_frame)"/>
+            <arg name="robot1_map_frame" value="$(arg robot1_map_frame)"/>
+            <arg name="robot1_init_pose_x" value="$(arg robot1_init_pose_x)"/>
+            <arg name="robot1_init_pose_y" value="$(arg robot1_init_pose_y)"/>
+            <arg name="robot1_init_pose_yaw" value="$(arg robot1_init_pose_yaw)"/>
+            <arg name="robot2_map_frame" value="$(arg robot2_map_frame)"/>
+            <arg name="robot2_init_pose_x" value="$(arg robot2_init_pose_x)"/>
+            <arg name="robot2_init_pose_y" value="$(arg robot2_init_pose_y)"/>
+            <arg name="robot2_init_pose_yaw" value="$(arg robot2_init_pose_yaw)"/>
+            <arg name="grid_map_topic" value="$(arg grid_map_topic)"/>
+            <arg name="cloud_map_topic" value="$(arg cloud_map_topic)"/>
+        </include>
+
+        <!-- map_fill -->
+        <node pkg="exploration_support" type="map_fill" name="map_fill">
+            <remap from="map" to="$(arg grid_map_topic)"/>
+        </node>
+
+        <!-- exploration_manager -->
+        <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
+            <remap if="$(arg fill)" from="map" to="fill_map"/>
+            <remap unless="$(arg fill)" from="map" to="$(arg grid_map_topic)"/>
+            <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier 2:timer -->
+            <param name="min_cluster_size" value="30"/>
+	        <param name="area_rate" value="1.0"/>
+            <param name="end_time" value="1200"/>
+        </node>
+
+        <!-- robot_manager --> <!-- ローカルlogとかについてちゃんと -->
+        <node pkg="exploration_support" type="robot_manager" name="robot_manager">
+            <remap from="pose_log/all_robots" to="pose_log/global/all"/>
+            <param name="pose_log_rate" value="1.0"/>
+        </node>
+    </group>
 </launch>

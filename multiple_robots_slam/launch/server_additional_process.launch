@@ -1,19 +1,19 @@
 <launch>
     <arg name="robot_name" default="robot1"/>
-    <arg name="mapping" default="false"/>
+    <arg name="mapping" default="true"/>
     <arg name="continuity" default="false"/>
-    <arg name="visualization" default="true"/>
-    <arg name="exploratino" default="true"/>
-    <arg name="log" default="false"/>
+    <arg name="visualization" default="false"/>
+    <arg name="exploration" default="false"/>
+    <arg name="exploration_method" default="0"/> <!-- 0: seamless, 1:frontier, 2:sensor -->
 
-    <!-- mapping namespaceの問題 -->
     <group ns="$(arg robot_name)">
         <include file="$(find multiple_robots_slam)/launch/includes/additional_process.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="mapping" value="$(arg mapping)"/>
             <arg name="continuity" value="$(arg continuity)"/>
             <arg name="visualization" value="$(arg visualization)"/>
             <arg name="exploration" value="$(arg exploration)"/>
-            <arg name="log" value="$(arg log)"/>
+            <arg name="exploration_method" value="$(arg exploration_method)"/>
         </include>
     </group>
     

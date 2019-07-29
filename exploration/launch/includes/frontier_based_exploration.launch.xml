@@ -1,0 +1,29 @@
+<launch>
+    <arg name="robot_name"/>
+    <arg name="pose"/>
+    <arg name="velocity"/>
+    <arg name="map_frame_id"/>
+    <arg name="map_topic"/>
+    <arg name="fill"/>
+    <arg name="rotation"/>
+
+    <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
+        <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
+        <remap if="$(arg fill)" from="map" to="fill_map"/>
+        <remap from="pose" to="$(arg pose)"/>
+        <remap from="velocity" to="$(arg velocity)"/>
+        <param name="map_frame_id" value="$(arg map_frame_id)"/>
+        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
+        <param name="direction_weight" value="0.0"/>
+        <param name="min_cluster_size" value="30"/>
+        <param name="previous_goal_effect" value="true"/>
+        <param name="previous_goal_threshold" value="0.5"/>
+        <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
+        <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
+        <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+        <param name="robot_name" value="$(arg robot_name)"/>
+        <param name="angle_bias" value="10"/>
+        <param name="rotation" value="$(arg rotation)"/>
+    </node>
+
+</launch>

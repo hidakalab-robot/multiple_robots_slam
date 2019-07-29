@@ -27,28 +27,16 @@
   -->
   
   <arg name="robot_name" default="robot1"/>
-
-  <!-- sensor range for using depth and laserscan -->
   <arg name="scan_range_max_for_map" default="6.0"/>
-
   <arg name="multi" default="false"/>
   <arg name="merge_map_frame" default="/server/merge_map"/>
   <arg name="merge_map_topic" default="/server/grid_map_merge/merge_map"/>
-
-
   <arg name="database_path"     default="rtabmap.db"/>
   <arg name="rgbd_odometry"     default="false"/>
-  <arg name="localization"      default="false"/>
-  <arg name="simulation"        default="false"/>
-  <arg     if="$(arg localization)" name="args"  default=""/>
-  <arg unless="$(arg localization)" name="args"  default="--delete_db_on_start"/>
-
-  <arg     if="$(arg simulation)" name="rgb_topic"   default="/$(arg robot_name)/camera/rgb/image_raw"/>
-  <arg unless="$(arg simulation)" name="rgb_topic"   default="/$(arg robot_name)/camera/rgb/image_rect_color"/>
-  <arg     if="$(arg simulation)" name="depth_topic" default="/$(arg robot_name)/camera/depth/image_raw"/>
-  <arg unless="$(arg simulation)" name="depth_topic" default="/$(arg robot_name)/camera/depth_registered/image_raw"/>
+  <arg name="args"  default="--delete_db_on_start"/>
+  <arg name="rgb_topic"   default="/$(arg robot_name)/camera/rgb/image_rect_color"/>
+  <arg name="depth_topic" default="/$(arg robot_name)/camera/depth_registered/image_raw"/>
   <arg name="camera_info_topic" default="/$(arg robot_name)/camera/rgb/camera_info"/>
-  
   <arg name="wait_for_transform"  default="0.2"/>
   <!-- 
       robot_state_publisher's publishing frequency in "turtlebot_bringup/launch/includes/robot.launch.xml" 
@@ -56,96 +44,20 @@
   -->
 
   <group ns="$(arg robot_name)">
-
-    <include file="$(find multi_turtlebot_mapping)/launch/includes/move_base.launch.xml">
+    <include file="$(find multi_turtlebot_mapping)/launch/includes/rtabmap.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
-      <arg if="multi" name="global_frame_id" default="$(arg merge_map_frame)"/>
-      <arg if="$(arg multi)" name="map_topic" default="$(arg merge_map_topic)"/>
+      <arg name="scan_range_max_for_map" value="$(arg scan_range_max_for_map)"/>
+      <arg name="multi" value="$(arg multi)"/>
+      <arg name="merge_map_frame" value="$(arg merge_map_frame)"/>
+      <arg name="merge_map_topic" value="$(arg merge_map_topic)"/>
+      <arg name="database_path" value="$(arg database_path)"/>
+      <arg name="rgbd_odometry" value="$(arg rgbd_odometry)"/>
+      <arg name="args" value="$(arg args)"/>
+      <arg name="rgb_topic" value="$(arg rgb_topic)"/>
+      <arg name="depth_topic" value="$(arg depth_topic)"/>
+      <arg name="camera_info_topic" value="$(arg camera_info_topic)"/>
+      <arg name="wait_for_transform" value="$(arg wait_for_transform)"/>
     </include>
-  
-  <!-- Mapping -->
-    <group ns="rtabmap">
-
-      <node name="rtabmap" pkg="rtabmap_ros" type="rtabmap" output="screen" args="$(arg args)">
-        <param name="database_path"       type="string" value="$(arg database_path)"/>
-        <param name="frame_id"            type="string" value="$(arg robot_name)/base_footprint"/>
-        <param name="wait_for_transform_duration"  type="double"   value="$(arg wait_for_transform)"/>
-        <param name="subscribe_depth"     type="bool"   value="true"/>
-        <param name="subscribe_scan"      type="bool"   value="true"/>
-        <param name="map_negative_poses_ignored" type="bool" value="true"/>
-        <param name="odom_frame_id" type="string" value="$(arg robot_name)/odom"/>
-        <param name="map_frame_id" type="string" value="$(arg robot_name)/map"/>
-        <!-- <param name="grid_size" type="double" value="200"/> -->
-
-        <!-- inputs -->
-        <remap from="scan"            to="/$(arg robot_name)/scan"/>
-        <remap from="rgb/image"       to="$(arg rgb_topic)"/>
-        <remap from="depth/image"     to="$(arg depth_topic)"/>
-        <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
-        <remap unless="$(arg rgbd_odometry)" from="odom" to="/$(arg robot_name)/odom"/>
-          
-        <!-- output -->
-        <remap from="grid_map" to="/$(arg robot_name)/map"/>
-      
-        <!-- RTAB-Map's parameters: do "rosrun rtabmap rtabmap (double-dash)params" to see the list of available parameters. -->
-        <param name="RGBD/ProximityBySpace"        type="string"  value="true"/>   <!-- Local loop closure detection (using estimated position) with locations in WM -->
-        <param name="RGBD/OptimizeFromGraphEnd"    type="string"  value="false"/>  <!-- Set to false to generate map correction between /map and /odom -->
-        <param name="Kp/MaxDepth"                  type="string"  value="4.0"/>
-        <param name="Reg/Strategy"                 type="string"  value="0"/>      <!-- Loop closure transformation: 0=Visual, 1=ICP, 2=Visual+ICP -->
-        <param name="Icp/CorrespondenceRatio"      type="string"  value="0.3"/>
-        <param name="Vis/MinInliers"               type="string"  value="10"/>      <!-- 3D visual words minimum inliers to accept loop closure -->
-        <param name="Vis/InlierDistance"           type="string"  value="0.1"/>    <!-- 3D visual words correspondence distance -->
-        <param name="RGBD/AngularUpdate"           type="string"  value="0.1"/>    <!-- Update map only if the robot is moving -->
-        <param name="RGBD/LinearUpdate"            type="string"  value="0.1"/>    <!-- Update map only if the robot is moving -->
-        <param name="RGBD/ProximityPathMaxNeighbors" type="string"  value="0"/> 
-        <param name="Rtabmap/TimeThr"              type="string"  value="0"/>
-        <param name="Mem/RehearsalSimilarity"      type="string"  value="0.30"/>
-        <param name="Optimizer/Slam2D"             type="string"  value="true"/>
-        <param name="Reg/Force3DoF"                type="string"  value="true"/>
-        <param name="GridGlobal/MinSize"           type="string"  value="20"/>
-        <param name="RGBD/OptimizeMaxError"        type="string"  value="20.0"/>
-        <param name="Grid/FromDepth" type="string"  value="false"/>
-        <param name="Grid/RangeMax" type="string" value="$(arg scan_range_max_for_map)"/>
-
-        <param name="Rtabmap/LoopThr"              type="string"  value="0.11"/>
-        <param name="Mem/STMSize"                  type="string"  value="30"/>
-        <param name="Optimizer/Strategy"           type="string"  value="1"/>
-        <param name="Optimizer/Robust"             type="string"  value="true"/>
-
-        
-        <!-- localization mode -->
-        <param     if="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="false"/>
-        <param unless="$(arg localization)" name="Mem/IncrementalMemory" type="string" value="true"/>
-        <param name="Mem/InitWMWithAllNodes" type="string" value="$(arg localization)"/> 
-      </node>
-    
-      <!-- Odometry : ONLY for testing without the actual robot! /odom TF should not be already published. -->
-      <node if="$(arg rgbd_odometry)" pkg="rtabmap_ros" type="rgbd_odometry" name="rgbd_odometry" output="screen">
-        <param name="frame_id"                    type="string" value="/$(arg robot_name)/base_footprint"/>
-        <param name="wait_for_transform_duration" type="double" value="$(arg wait_for_transform)"/>
-        <param name="Reg/Force3DoF"               type="string" value="true"/>
-        <param name="Vis/InlierDistance"          type="string" value="0.05"/>
-        <param name="odom_frame_id" type="string" value="$(arg robot_name)/odom"/>
-        <remap from="rgb/image"       to="$(arg rgb_topic)"/>
-        <remap from="depth/image"     to="$(arg depth_topic)"/>
-        <remap from="rgb/camera_info" to="$(arg camera_info_topic)"/>
-      </node>
-    </group>
-
-    <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="local_robot_pose_publisher">
-      <remap from="robot_pose" to="robot_pose/local"/>
-      <param name="map_frame" value="$(arg robot_name)/map"/>
-      <param name="base_frame" value="$(arg robot_name)/base_link"/>
-      <param name="is_stamped" value="true"/>
-    </node>
-
-    <node  pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
-      <remap from="robot_pose" to="robot_pose/global"/>
-      <param if="$(arg multi)" name="map_frame" value="$(arg merge_map_frame)"/>
-      <param unless="$(arg multi)" name="map_frame" value="$(arg robot_name)/map"/>
-      <param name="base_frame" value="$(arg robot_name)/base_link"/>
-      <param name="is_stamped" value="true"/>
-    </node>
   </group>
 
 </launch>

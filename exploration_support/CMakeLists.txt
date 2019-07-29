@@ -218,8 +218,8 @@ target_link_libraries(log ${catkin_LIBRARIES})
 add_executable(visualization src/visualization.cpp)
 target_link_libraries(visualization ${catkin_LIBRARIES})
 
-add_executable(continuity src/continuity.cpp)
-target_link_libraries(continuity ${catkin_LIBRARIES})
+add_executable(bumper_continuity src/bumper_continuity.cpp)
+target_link_libraries(bumper_continuity ${catkin_LIBRARIES})
 
 add_executable(movebase_canceller src/movebase_canceller.cpp)
 target_link_libraries(movebase_canceller ${catkin_LIBRARIES})
