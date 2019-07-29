@@ -20,7 +20,7 @@
 
     <arg name="multi" default="false"/>
     <arg name="merge_map_frame" default="/server/merge_map"/>
-    <arg name="merge_map_topic" default="/server/grid_map_merge/merge_map"/>
+    <arg name="merge_map_topic" default="/server/merge_map/grid"/>
 
     <!-- Navigation stuff (move_base) -->
     <include file="$(find multi_turtlebot_gazebo)/launch/includes/move_base.launch.xml">
