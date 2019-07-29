@@ -3,10 +3,12 @@
   <arg name="base"              default="$(env TURTLEBOT_BASE)"         doc="mobile base type [create, roomba]"/>
   <arg name="serialport"        default="$(env TURTLEBOT_SERIAL_PORT)"  doc="used by create to configure the port it is connected on [/dev/ttyUSB0, /dev/ttyS0]"/>
   <arg name="robot_name"        default="robot1"/>
+  <arg name="urg" default="false"/>
 
   <group ns="$(arg robot_name)">
     <include file="$(find multi_turtlebot_bringup)/launch/includes/robot.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
+      <arg name="urg" value="$(arg urg)"/>
     </include>
 
     <include file="$(find multi_turtlebot_bringup)/launch/includes/mobile_base.launch.xml">

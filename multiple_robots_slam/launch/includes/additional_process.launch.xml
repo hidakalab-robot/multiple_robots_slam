@@ -29,79 +29,94 @@
     <arg name="scan" default="/$(arg robot_name)/scan"/>
     <arg name="branch_frame_id" default="$(arg robot_name)/map"/>
     <arg name="fill" default="true"/>
+    <arg name="fill_map_topic" default="/server/fill_map"/>
+    <arg name="robot_array" default="/server/robot_array"/>
+    <arg name="end" default="/server/end"/>
 
     <!-- continuity -->
     <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
     <arg name="bumper_continuity" default="bumper_continuity"/>
 
-    <group ns="$(arg robot_name)">
         <!-- mapping -->
-        <include if="$(arg mapping)" file="$(find multi_turtlebot_mapping)/launch/includes/rtabmap.launch.xml">
-            <arg name="robot_name" value="$(arg robot_name)"/>
-            <arg name="scan_range_max_for_map" value="$(arg scan_range_max_for_map)"/>
-            <arg name="multi" value="true"/>
-            <arg name="merge_map_frame" value="$(arg merge_map_frame)"/>
-            <arg name="merge_map_topic" value="$(arg merge_map_topic)"/>
-            <arg name="database_path" value="$(arg database_path)"/>
-            <arg name="rgbd_odometry" value="$(arg rgbd_odometry)"/>
-            <arg name="args" value="$(arg args)"/>
-            <arg name="rgb_topic" value="$(arg rgb_topic)"/>
-            <arg name="depth_topic" value="$(arg depth_topic)"/>
-            <arg name="camera_info_topic" value="$(arg camera_info_topic)"/>
-            <arg name="wait_for_transform" value="$(arg wait_for_transform)"/>
+    <include if="$(arg mapping)" file="$(find multi_turtlebot_mapping)/launch/includes/rtabmap.launch.xml">
+        <arg name="robot_name" value="$(arg robot_name)"/>
+        <arg name="scan_range_max_for_map" value="$(arg scan_range_max_for_map)"/>
+        <arg name="multi" value="true"/>
+        <arg name="merge_map_frame" value="$(arg merge_map_frame)"/>
+        <arg name="merge_map_topic" value="$(arg merge_map_topic)"/>
+        <arg name="database_path" value="$(arg database_path)"/>
+        <arg name="rgbd_odometry" value="$(arg rgbd_odometry)"/>
+        <arg name="args" value="$(arg args)"/>
+        <arg name="rgb_topic" value="$(arg rgb_topic)"/>
+        <arg name="depth_topic" value="$(arg depth_topic)"/>
+        <arg name="camera_info_topic" value="$(arg camera_info_topic)"/>
+        <arg name="wait_for_transform" value="$(arg wait_for_transform)"/>
+    </include>
+
+    <group ns="$(arg exploration_namespace)">
+        <!-- exploration (seamless) -->
+        <include if="$(eval arg('exploration') and arg('exploration_method')==0)" file="$(find exploration)/launch/includes/seamless_hybrid_exploration.launch.xml">
+            <arg name="robot_name" default="$(arg robot_name)"/>
+            <arg name="pose" value="$(arg pose)"/>
+            <arg name="velocity" value="$(arg velocity)"/>
+            <arg name="scan" value="$(arg scan)"/>
+            <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
+            <arg name="map_frame_id" value="$(arg merge_map_frame)"/>
+            <arg unless="$(arg fill)" name="map_topic" value="$(arg merge_map_topic)"/>
+            <arg if="$(arg fill)" name="map_topic" value="$(arg fill_map_topic)"/>
+            <arg name="branch_frame_id" value="$(arg branch_frame_id)"/>
+            <arg name="rotation" value="false"/>
+            <arg name="robot_array" value="$(arg robot_array)"/>
+            <arg name="end" value="$(arg end)"/>
         </include>
 
-        <group ns="$(exploration_namespace)">
-            <!-- exploration (seamless) -->
-            <include if="$(eval arg('exploration') and arg('exploration_method')==0)" file="$(find exploration)/launch/includes/seamless_hybrid_exploration.launch.xml">
-                <arg name="pose" value="$(arg pose)"/>
-                <arg name="velocity" value="$(arg velocity)"/>
-                <arg name="scan" value="$(arg scan)"/>
-                <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
-                <arg name="map_frame_id" value="$(arg mege_map_frame)"/>
-                <arg name="map_topic" value="$(arg merge_map_topic)"/>
-                <arg name="branch_frame_id" value="$(arg branch_frame_id)"/>
-                <arg name="fill" value="$(arg fill)"/>
-                <arg name="rotation" value="false"/>
-            </include>
+        <!-- exploration (frontier) -->
+        <include if="$(eval arg('exploration') and arg('exploration_method')==1)" file="$(find exploration)/launch/includes/frontier_based_exploration.launch.xml">
+            <arg name="robot_name" default="$(arg robot_name)"/>
+            <arg name="pose" value="$(arg pose)"/>
+            <arg name="velocity" value="$(arg velocity)"/>
+            <arg name="map_frame_id" value="$(arg merge_map_frame)"/>
+            <arg unless="$(arg fill)" name="map_topic" value="$(arg merge_map_topic)"/>
+            <arg if="$(arg fill)" name="map_topic" value="$(arg fill_map_topic)"/>
+            <arg name="rotation" value="true"/>
+            <arg name="end" value="$(arg end)"/>
+            <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
+        </include>
 
-            <!-- exploration (frontier) -->
-            <include if="$(eval arg('exploration') and arg('exploration_method')==1)" file="$(find exploration)/launch/includes/frontier_based_exploration.launch.xml">
-                <arg name="robot_name" default="$(arg robot_name)"/>
-                <arg name="pose" value="$(arg pose)"/>
-                <arg name="velocity" value="$(arg velocity)"/>
-                <arg name="map_frame_id" value="$(arg mege_map_frame)"/>
-                <arg name="map_topic" value="$(arg merge_map_topic)"/>
-                <arg name="fill" value="$(arg fill)"/>
-                <arg name="rotation" value="true"/>
-            </include>
+        <!-- exploration (sensor) -->
+        <include if="$(eval arg('exploration') and arg('exploration_method')==2)" file="$(find exploration)/launch/includes/sensor_based_exploration.launch.xml">
+            <arg name="robot_name" default="$(arg robot_name)"/>
+            <arg name="pose" value="$(arg pose)"/>
+            <arg name="velocity" value="$(arg velocity)"/>
+            <arg name="scan" value="$(arg scan)"/>
+            <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
+            <arg name="map_frame_id" value="$(arg merge_map_frame)"/>
+            <arg unless="$(arg fill)" name="map_topic" value="$(arg merge_map_topic)"/>
+            <arg if="$(arg fill)" name="map_topic" value="$(arg fill_map_topic)"/>
+            <arg name="branch_frame_id" value="$(arg branch_frame_id)"/>
+            <arg name="rotation" value="false"/>
+            <arg name="end" value="$(arg end)"/>
+            <arg name="robot_array" value="$(arg robot_array)"/>
+        </include>
 
-            <!-- exploration (sensor) -->
-            <include if="$(eval arg('exploration') and arg('exploration_method')==2)" file="$(find exploration)/launch/includes/sensor_based_exploration.launch.xml">
-                <arg name="robot_name" default="$(arg robot_name)"/>
-                <arg name="pose" value="$(arg pose)"/>
-                <arg name="velocity" value="$(arg velocity)"/>
-                <arg name="scan" value="$(arg scan)"/>
-                <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
-                <arg name="map_frame_id" value="$(arg mege_map_frame)"/>
-                <arg name="map_topic" value="$(arg merge_map_topic)"/>
-                <arg name="branch_frame_id" value="$(arg branch_frame_id)"/>
-                <arg name="fill" value="$(arg fill)"/>
-                <arg name="rotation" value="false"/>
-            </include>
+        <!-- continuity -->
+        <node if="$(arg continuity)" pkg="exploration_support" type="bumper_continuity" name="bumper_continuity">
+            <remap from="sub_topic" to="$(arg bumper_raw)"/>
+            <remap from="pub_topic" to="$(arg bumper_continuity)"/>
+        </node>
 
-            <!-- continuity -->
-            <node if="$(arg continuity)" pkg="exploration_support" type="bumper_continuity" name="bumper_continuity">
-                <remap from="sub_topic" to="$(arg bumper_raw)"/>
-                <remap from="pub_topic" to="$(arg bumper_continuity)"/>
-            </node>
+        <!-- visualization -->
+        <node if="$(arg visualization)" pkg="exploration_support" type="visualization" name="visualization">
+            <param name="map_frame_id" value="$(arg merge_map_frame)"/>
+            <remap from="pose" to="$(arg pose)"/>
+        </node>
 
-            <!-- visualization -->
-            <node if="$(arg visualization)" pkg="exploration_support" type="visualization" name="visualization">
-                <param name="map_frame_id" value="$(arg merge_map_frame)"/>
-            </node>
-        </group>
-
+        <!-- log -->
+        <node if="$(arg log)" pkg="exploration_support" type="log" name="log">
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="pose_log/local"/>
+            <param name="pose_log_rate" value="1.0"/>
+        </node>
     </group>
 
 </launch>

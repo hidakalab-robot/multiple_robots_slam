@@ -64,7 +64,7 @@ BranchSearch::BranchSearch()
 	,pose_("pose",1)
 	,goal_("goal", 1, true)
 	,goalArray_("goal_array", 1, true)
-	,robotArray_("robotArray",1)
+	,robotArray_("robot_array",1)
 	,pp("global_costmap","NavfnROS"){
 
 	ros::NodeHandle p("~");

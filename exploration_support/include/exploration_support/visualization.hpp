@@ -54,7 +54,7 @@ Visualization::Visualization()
     ,poseMarker_("visualization", 1)
     ,goal_("goal",1,&Visualization::goalCB, this)
     ,goalMarker_("visualization", 1)
-    ,goalArray_("goal_Array",1,&Visualization::goalArrayCB, this)
+    ,goalArray_("goal_array",1,&Visualization::goalArrayCB, this)
     ,goalArrayMarker_("visualization", 1){
 
     ros::NodeHandle p("~");

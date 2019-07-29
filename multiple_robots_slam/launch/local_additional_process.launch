@@ -14,6 +14,7 @@
             <arg name="visualization" value="$(arg visualization)"/>
             <arg name="exploration" value="$(arg exploration)"/>
             <arg name="exploration_method" value="$(arg exploration_method)"/>
+            <arg name="log" value="true"/>
         </include>
     </group>
 

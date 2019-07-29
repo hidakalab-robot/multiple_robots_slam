@@ -51,7 +51,7 @@ public:
     void multiThreadMain(void);
 };
 
-RobotManager::RobotManager():robotArray_("robotArray",1,true),poseArray_("pose_log/all_robots",1,true){
+RobotManager::RobotManager():robotArray_("robot_array",1,true),poseArray_("pose_log/all_robots",1,true){
     ros::NodeHandle p("~");
     p.param<std::string>("robot_topic",ROBOT_TOPIC,"robot_pose/global");//globalのポーズを撮ってこないと厳しい
     p.param<double>("ragistration_rate", RAGISTRATION_RATE, 0.5);
