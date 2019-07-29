@@ -1,0 +1,29 @@
+<launch>
+    <arg name="robot_name" default="robot1"/>
+    <arg name="merge_laser_frame" default="merge_laser_link"/>
+    <arg name="merge_cloud_topic" default="merge_laser/cloud"/>
+    <arg name="merge_scan_topic" default="merge_laser/scan"/>
+    <arg name="kinect_scan_topic" default="kinect_scan"/>
+    <arg name="urg_scan_topic" default="urg_scan"/>
+
+    <node pkg="laser_merge" type="laser_merge" name="laser_merge" output="screen">
+        <remap from="cloud_out" to="$(arg merge_cloud_topic)"/>
+        <param name="scan_topic_one" value="/$(arg robot_name)/$(arg kinect_scan_topic)"/>
+        <param name="scan_topic_two" value="/$(arg robot_name)/$(arg urg_scan_topic)"/>
+        <param name="merge_laser_frame" value="$(arg robot_name)/$(arg merge_laser_frame)"/>
+    </node>
+
+    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="pointcloud_to_laserscan_node">
+        <remap from="cloud_in" to="$(arg merge_cloud_topic)"/>
+        <remap from="scan" to="$(arg merge_scan_topic)"/>
+        <param name="transform_tolerance" value="0.01"/>
+        <param name="min_height" value="-1.0"/>
+        <param name="max_height" value="1.0"/>
+        <param name="angle_min" value="-3.1416"/>
+        <param name="angle_max" value="3.1416"/>
+        <param name="range_min" value="0.0"/>
+        <param name="range_max" value="10.0"/>
+    </node> 
+
+    
+</launch>

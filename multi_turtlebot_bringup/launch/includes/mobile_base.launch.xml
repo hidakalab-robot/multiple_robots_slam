@@ -1,0 +1,41 @@
+<!--
+  The mobile platform base.
+  
+  Selector for the base.
+ -->
+<launch>
+
+  <arg name="robot_name"/>
+  <arg name="serialport"/>
+
+  <!-- mobile base nodelet manager -->
+  <node pkg="nodelet" type="nodelet" name="mobile_base_nodelet_manager" args="manager"/>
+  
+  <!-- mobile base -->
+
+  <node pkg="nodelet" type="nodelet" name="mobile_base" args="load kobuki_node/KobukiNodelet mobile_base_nodelet_manager">
+    <rosparam file="$(find kobuki_node)/param/base.yaml" command="load"/>
+    <param name="device_port" value="$(arg serialport)" />
+
+    <remap from="mobile_base/odom" to="odom"/>
+    <!-- Don't do this - force applications to use a velocity mux for redirection  
+      <remap from="mobile_base/commands/velocity" to="cmd_vel"/> 
+    -->
+    <remap from="mobile_base/enable" to="enable"/>
+    <remap from="mobile_base/disable" to="disable"/>
+    <remap from="mobile_base/joint_states" to="joint_states"/>
+
+    <param name="base_frame" value="$(arg robot_name)/base_footprint"/>
+    <param name="odom_frame" value="$(arg robot_name)/odom"/>
+  </node>
+  
+  <!-- bumper/cliff to pointcloud -->
+  <include file="$(find multi_turtlebot_bringup)/launch/includes/bumper2pc.launch.xml"/>
+  
+  <!-- velocity commands multiplexer -->
+  <node pkg="nodelet" type="nodelet" name="cmd_vel_mux" args="load yocs_cmd_vel_mux/CmdVelMuxNodelet mobile_base_nodelet_manager">
+    <param name="yaml_cfg_file" value="$(find turtlebot_bringup)/param/mux.yaml"/>
+    <remap from="cmd_vel_mux/output" to="mobile_base/commands/velocity"/>
+  </node>
+
+</launch>

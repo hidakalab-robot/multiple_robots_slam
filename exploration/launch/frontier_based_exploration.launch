@@ -1,0 +1,84 @@
+<launch>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+
+    <arg name="robot_name" default="robot1"/>
+    <arg name="multi" default="false"/>
+
+    <arg name="pose" default="/$(arg robot_name)/robot_pose/global"/>
+    <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
+    <arg name="scan" default="/$(arg robot_name)/scan"/>
+    <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
+    <arg name="bumper_continuity" default="bumper_continuity"/>
+
+    <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
+    <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
+    <arg unless="$(arg multi)" name="map_topic" default="/$(arg robot_name)/map"/>
+    <arg if="$(arg multi)" name="map_topic" default="/server/merge_map/grid"/>
+
+    <arg name="rosbag" default="false"/>
+    <arg name="debug" default="false"/>
+
+    <arg name="fill" default="false"/>
+
+    <arg name="rotation" default="true"/>
+
+    <arg name="ns" default="exploration"/>
+
+    <group ns="$(arg robot_name)/$(arg ns)">
+        <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
+            <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
+            <remap if="$(arg fill)" from="map" to="fill_map"/>
+            <remap from="pose" to="$(arg pose)"/>
+            <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
+            <param name="map_frame_id" value="$(arg map_frame_id)"/>
+            <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
+            <param name="debug" value="$(arg debug)"/>
+            <param name="direction_weight" value="0.0"/>
+            <param name="min_cluster_size" value="30"/>
+            <param name="previous_goal_effect" value="true"/>
+            <param name="previous_goal_threshold" value="0.5"/>
+            <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
+            <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
+            <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+            <param name="robot_name" value="$(arg robot_name)"/>
+            <param name="angle_bias" value="10"/>
+            <param name="rotation" value="$(arg rotation)"/>
+        </node>
+
+        <node pkg="exploration_support" type="visualization" name="visualization">
+            <param name="map_frame_id" value="$(arg map_frame_id)"/>
+        </node>
+
+        <node unless="$(arg debug)" pkg="exploration_support" type="log" name="log">
+            <remap from="pose" to="$(arg pose)"/>
+            <remap from="pose_log" to="pose_log/local"/>
+            <param name="pose_log_rate" value="1.0"/>
+        </node>
+
+        <node pkg="exploration_support" type="map_fill" name="map_fill">
+            <remap from="map" to="$(arg map_topic)"/>
+        </node>
+
+        <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
+            <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
+            <remap if="$(arg fill)" from="map" to="fill_map"/>
+            <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier -->
+            <param name="min_cluster_size" value="30"/>
+        </node>
+
+	    <include if="$(arg rosbag)" file="$(find exploration_support)/launch/includes/rosbag_record.launch.xml">
+            <arg name="topics" value="  $(arg pose) 
+                                        /$(arg robot_name)/$(arg ns)/pose_log 
+                                        $(arg bumper_raw) 
+                                        $(arg scan) 
+                                        $(arg velocity) 
+                                        /$(arg robot_name)/$(arg ns)/visualization 
+                                        /tf 
+                                        /tf_static 
+                                        /$(arg robot_name)/map 
+                                        /$(arg robot_name)/move_base/global_costmap/costmap 
+                                        /$(arg robot_name)/NavfnROS/plan"/>
+        </include>
+
+    </group>
+</launch>

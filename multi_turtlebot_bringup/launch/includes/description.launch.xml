@@ -1,0 +1,11 @@
+<!--
+  Robot description only (used in private and paired master).
+ -->
+<launch>
+  <arg name="urg"/>
+
+  <arg unless="$(arg urg)" name="urdf_file" default="$(find xacro)/xacro.py '$(find lab_turtlebot_description)/urdf/lab_turtlebot.urdf.xacro'" />
+  <arg if="$(arg urg)" name="urdf_file" default="$(find xacro)/xacro.py '$(find lab_turtlebot_description)/urdf/lab_turtlebot_urg.urdf.xacro'" />
+
+  <param name="robot_description" command="$(arg urdf_file)" />
+</launch>

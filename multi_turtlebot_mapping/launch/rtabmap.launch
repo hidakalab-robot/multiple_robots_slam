@@ -1,0 +1,63 @@
+
+<launch>
+  <!-- 
+       Bringup Turtlebot:
+       $ roslaunch turtlebot_bringup minimal.launch
+       
+       Mapping:
+       $ roslaunch rtabmap_ros demo_turtlebot_mapping.launch
+       
+       Visualization:
+       $ roslaunch rtabmap_ros demo_turtlebot_rviz.launch
+       
+       This launch file is a one to one replacement of the gmapping_demo.launch in the 
+       "SLAM Map Building with TurtleBot" tutorial:
+       http://wiki.ros.org/turtlebot_navigation/Tutorials/indigo/Build%20a%20map%20with%20SLAM
+       
+       For localization-only after a mapping session, add argument "localization:=true" to
+       demo_turtlebot_mapping.launch line above. Move the robot around until it can relocalize in 
+       the previous map, then the 2D map should re-appear again. You can then follow the same steps 
+       from 3.3.2 of the "Autonomous Navigation of a Known Map with TurtleBot" tutorial:
+       http://wiki.ros.org/turtlebot_navigation/Tutorials/Autonomously%20navigate%20in%20a%20known%20map
+ 
+       For turtlebot in simulation (Gazebo):
+         $ roslaunch turtlebot_gazebo turtlebot_world.launch
+         $ roslaunch rtabmap_ros demo_turtlebot_mapping.launch simulation:=true
+         $ roslaunch rtabmap_ros demo_turtlebot_rviz.launch
+  -->
+  
+  <arg name="robot_name" default="robot1"/>
+  <arg name="scan_range_max_for_map" default="6.0"/>
+  <arg name="multi" default="false"/>
+  <arg name="merge_map_frame" default="/server/merge_map"/>
+  <arg name="merge_map_topic" default="/server/grid_map_merge/merge_map"/>
+  <arg name="database_path"     default="rtabmap.db"/>
+  <arg name="rgbd_odometry"     default="false"/>
+  <arg name="args"  default="--delete_db_on_start"/>
+  <arg name="rgb_topic"   default="/$(arg robot_name)/camera/rgb/image_rect_color"/>
+  <arg name="depth_topic" default="/$(arg robot_name)/camera/depth_registered/image_raw"/>
+  <arg name="camera_info_topic" default="/$(arg robot_name)/camera/rgb/camera_info"/>
+  <arg name="wait_for_transform"  default="0.2"/>
+  <!-- 
+      robot_state_publisher's publishing frequency in "turtlebot_bringup/launch/includes/robot.launch.xml" 
+      can be increase from 5 to 10 Hz to avoid some TF warnings.
+  -->
+
+  <group ns="$(arg robot_name)">
+    <include file="$(find multi_turtlebot_mapping)/launch/includes/rtabmap.launch.xml">
+      <arg name="robot_name" value="$(arg robot_name)"/>
+      <arg name="scan_range_max_for_map" value="$(arg scan_range_max_for_map)"/>
+      <arg name="multi" value="$(arg multi)"/>
+      <arg name="merge_map_frame" value="$(arg merge_map_frame)"/>
+      <arg name="merge_map_topic" value="$(arg merge_map_topic)"/>
+      <arg name="database_path" value="$(arg database_path)"/>
+      <arg name="rgbd_odometry" value="$(arg rgbd_odometry)"/>
+      <arg name="args" value="$(arg args)"/>
+      <arg name="rgb_topic" value="$(arg rgb_topic)"/>
+      <arg name="depth_topic" value="$(arg depth_topic)"/>
+      <arg name="camera_info_topic" value="$(arg camera_info_topic)"/>
+      <arg name="wait_for_transform" value="$(arg wait_for_transform)"/>
+    </include>
+  </group>
+
+</launch>

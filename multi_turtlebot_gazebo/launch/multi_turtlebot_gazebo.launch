@@ -1,12 +1,14 @@
 <launch>
     <env name="GAZEBO_MODEL_PATH" value="$(find multi_turtlebot_gazebo)/world/models:$(optenv GAZEBO_MODEL_PATH)" /> 
     <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/tdu_1-13_corridor_marker.world"/>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
 
     <arg name="gui" default="true"/>
 
     <arg name="mapping" default="true"/>
     <arg name="rtabmap" default="true"/>
     <arg name="gmapping" default="false"/>
+    <arg name="multi" default="false"/>
 
     <!-- ロボットを追加するときはarg部とgroup部をコピペして書き換えてください -->
 
@@ -33,7 +35,7 @@
 
 
     <group ns="$(arg robot1_name)">
-        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
             <arg name="robot_name" value="$(arg robot1_name)"/>
             <arg name="init_x" value="$(arg robot1_init_x)"/>
             <arg name="init_y" value="$(arg robot1_init_y)"/>
@@ -42,6 +44,7 @@
 
         <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
+            <arg name="multi" default="$(arg multi)"/>
         </include>
 
         <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
@@ -49,8 +52,8 @@
         </include>
     </group>
 
-    <!-- <group ns="$(arg robot2_name)">
-        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gazebo.launch.xml">
+    <group ns="$(arg robot2_name)">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
             <arg name="robot_name" value="$(arg robot2_name)"/>
             <arg name="init_x" value="$(arg robot2_init_x)"/>
             <arg name="init_y" value="$(arg robot2_init_y)"/>
@@ -59,12 +62,13 @@
 
         <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot2_name)"/>
+            <arg name="multi" default="$(arg multi)"/>
         </include>
 
         <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
             <arg name="robot_name"  value="$(arg robot2_name)"/>
         </include>
-    </group> -->
+    </group>
 </launch>
 <!-- 
 -x

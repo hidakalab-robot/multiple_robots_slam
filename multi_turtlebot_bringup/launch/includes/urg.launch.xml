@@ -1,0 +1,10 @@
+<launch>
+    <arg name="robot_name" default="robot1"/>
+    <arg name="urg_frame" default="$(arg robot_name)/urg_frame"/>
+    <arg name="scan_topic" default="urg_scan"/>
+
+    <node pkg="urg_node" type="urg_node" name="urg_node">
+        <remap from="scan" to="$(arg scan_topic)"/>
+        <param name="frame_id" value="$(arg urg_frame)"/>
+    </node>
+</launch>

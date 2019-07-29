@@ -58,6 +58,7 @@
   <exec_depend>yocs_cmd_vel_mux</exec_depend>
   <exec_depend>rtabmap_ros</exec_depend>
   <exec_depend>robot_pose_publisher</exec_depend>
+  <exec_depend>lab_turtlebot_description</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
