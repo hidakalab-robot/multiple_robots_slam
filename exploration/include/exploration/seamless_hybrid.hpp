@@ -1,12 +1,12 @@
 #ifndef SEAMLESS_HYBRID_HPP
 #define SEAMLESS_HYBRID_HPP
 
+#include <exploration_libraly/struct.hpp>
 #include <ros/ros.h>
 #include <exploration_msgs/Frontier.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Point.h>
-#include <exploration_libraly/common_lib.hpp>
 #include <exploration_libraly/path_planning.hpp>
 #include <navfn/navfn_ros.h>
 #include <geometry_msgs/Vector3.h>
@@ -34,7 +34,7 @@ private:
         exploration_msgs::RobotInfo robot;
         std::vector<eachValue> values; //各未探査領域に対する情報 //values.size() == frontiers.size()
         areaInfo(){};
-        areaInfo(const std::string& n,const geometry_msgs::Point& pt,const Eigen::Vector2d& v):robot(CommonLib::msgRobotInfo(n,pt,CommonLib::msgVector(v[0],v[1]))){};
+        areaInfo(const std::string& n,const geometry_msgs::Point& pt,const Eigen::Vector2d& v):robot(ExpLib::msgRobotInfo(n,pt,ExpLib::msgVector(v[0],v[1]))){};
     };
 
     std::string ROBOT_NAME;
@@ -50,9 +50,9 @@ private:
     int SIMULATE_ROBOT_INDEX;
     std::string EXTRA_PARAMETER_NAMESPACE;
 
-    CommonLib::subStruct<exploration_msgs::RobotInfoArray> *robotArray_;
+    ExpLib::subStruct<exploration_msgs::RobotInfoArray> *robotArray_;
 
-    std::vector<CommonLib::listStruct> inputBranches;
+    std::vector<ExpLib::listStruct> inputBranches;
     std::vector<exploration_msgs::Frontier> inputFrontiers;
     geometry_msgs::Pose pose;
 
@@ -71,7 +71,7 @@ private:
 
 public:
     SeamlessHybrid(PathPlanning<navfn::NavfnROS>& pp);
-    SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp, CommonLib::subStruct<exploration_msgs::RobotInfoArray>& ria);
+    SeamlessHybrid(const std::vector<ExpLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp, ExpLib::subStruct<exploration_msgs::RobotInfoArray>& ria);
     bool initialize(void);
     bool dataFilter(void);
     void evaluationInitialize(void);
@@ -95,7 +95,7 @@ SeamlessHybrid::SeamlessHybrid(PathPlanning<navfn::NavfnROS>& pp){
     ph.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "my_evaluation_reconfigure");
 }
 
-SeamlessHybrid::SeamlessHybrid(const std::vector<CommonLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp, CommonLib::subStruct<exploration_msgs::RobotInfoArray>& ria)
+SeamlessHybrid::SeamlessHybrid(const std::vector<ExpLib::listStruct>& b, const std::vector<exploration_msgs::Frontier>& f, const geometry_msgs::Pose& p, PathPlanning<navfn::NavfnROS>& pp, ExpLib::subStruct<exploration_msgs::RobotInfoArray>& ria)
     :inputBranches(b)
     ,inputFrontiers(f)
     ,pose(p)
@@ -133,7 +133,7 @@ bool SeamlessHybrid::dataFilter(void){
 
     for(const auto& i : inputBranches){
         //duplication filter
-        if(i.duplication == CommonLib::DuplicationStatus::NEWER){
+        if(i.duplication == ExpLib::DuplicationStatus::NEWER){
             ROS_INFO_STREAM("newer duplication!!");
             continue;
         }
@@ -193,9 +193,9 @@ void SeamlessHybrid::evaluationInitialize(void){
             // 目標地点での向きをpathの最後の方の移動で決めたい
             Eigen::Vector2d v2;
             double distance;
-            if(!pp_->getDistanceAndVec(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f,MAP_FRAME_ID),distance,v2)){
+            if(!pp_->getDistanceAndVec(ExpLib::pointToPoseStamped(p,MAP_FRAME_ID),ExpLib::pointToPoseStamped(f,MAP_FRAME_ID),distance,v2)){
                 v2 = Eigen::Vector2d(f.x - p.x, f.y - p.y).normalized();
-                if(!pp_->getDistance(CommonLib::pointToPoseStamped(p,MAP_FRAME_ID),CommonLib::pointToPoseStamped(f,MAP_FRAME_ID),distance)){
+                if(!pp_->getDistance(ExpLib::pointToPoseStamped(p,MAP_FRAME_ID),ExpLib::pointToPoseStamped(f,MAP_FRAME_ID),distance)){
                     //最終手段で直線距離を計算
                     distance = Eigen::Vector2d(f.x - p.x, f.y - p.y).norm();
                 }                
@@ -223,7 +223,7 @@ void SeamlessHybrid::evaluationInitialize(void){
     for(const auto& b : branches){
         double distance;
         Eigen::Vector2d v1;
-        if(!pp_->getDistanceAndVec(CommonLib::pointToPoseStamped(pose.position,MAP_FRAME_ID),CommonLib::pointToPoseStamped(b,MAP_FRAME_ID),distance,v1)){
+        if(!pp_->getDistanceAndVec(ExpLib::pointToPoseStamped(pose.position,MAP_FRAME_ID),ExpLib::pointToPoseStamped(b,MAP_FRAME_ID),distance,v1)){
             v1 = Eigen::Vector2d(b.x - pose.position.x, b.y - pose.position.y);
             distance = v1.lpNorm<1>();
             v1.normalize();
@@ -237,17 +237,17 @@ void SeamlessHybrid::evaluationInitialize(void){
     // ROS_INFO_STREAM("forward: " << forward);
 
     //直進時の計算
-    double yaw = CommonLib::qToYaw(pose.orientation);
+    double yaw = ExpLib::qToYaw(pose.orientation);
     double cosYaw = cos(yaw);
     double sinYaw = sin(yaw);
     // ROS_INFO_STREAM("yaw: " << yaw << ", cos: " << cosYaw << ", sin:" << sinYaw);
-    mainRobotInfo.emplace_back(calc(CommonLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),ROBOT_NAME));
+    mainRobotInfo.emplace_back(calc(ExpLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),ROBOT_NAME));
 
     //他のロボットに関する計算
     // forward する版
-    // for(const auto& r : robotList) subRobotsInfo.emplace_back(calc(CommonLib::msgPoint(r.coordinate.x+forward*r.vector.x,r.coordinate.y+forward*r.vector.y),CommonLib::msgVectorToVector2d(r.vector),r.name));
+    // for(const auto& r : robotList) subRobotsInfo.emplace_back(calc(ExpLib::msgPoint(r.coordinate.x+forward*r.vector.x,r.coordinate.y+forward*r.vector.y),ExpLib::msgVectorToVector2d(r.vector),r.name));
     // forward しない番
-    for(const auto& r : robotList) subRobotsInfo.emplace_back(calc(CommonLib::msgPoint(r.coordinate.x,r.coordinate.y),CommonLib::msgVectorToVector2d(r.vector),r.name));
+    for(const auto& r : robotList) subRobotsInfo.emplace_back(calc(ExpLib::msgPoint(r.coordinate.x,r.coordinate.y),ExpLib::msgVectorToVector2d(r.vector),r.name));
 }
 
 bool SeamlessHybrid::result(geometry_msgs::Point& goal){
@@ -305,15 +305,15 @@ void SeamlessHybrid::simulatorFunction(std::vector<geometry_msgs::Pose>& r, std:
     
     for(int i=0,ie=r.size(),index=0;i!=ie;++i){
         if(i+1 == SIMULATE_ROBOT_INDEX) continue;
-        double yaw = CommonLib::qToYaw(r[i].orientation);
-        robotList[index++] = CommonLib::msgRobotInfo("/robot"+std::to_string(i+1),r[i].position,CommonLib::msgVector(cos(yaw),sin(yaw)));
+        double yaw = ExpLib::qToYaw(r[i].orientation);
+        robotList[index++] = ExpLib::msgRobotInfo("/robot"+std::to_string(i+1),r[i].position,ExpLib::msgVector(cos(yaw),sin(yaw)));
     }
     evaluationInitialize();
     geometry_msgs::Point goal;
     
     result(goal);
 
-    pSim.createPath(CommonLib::poseToPoseStamped(pose,MAP_FRAME_ID),CommonLib::pointToPoseStamped(goal,MAP_FRAME_ID));
+    pSim.createPath(ExpLib::poseToPoseStamped(pose,MAP_FRAME_ID),ExpLib::pointToPoseStamped(goal,MAP_FRAME_ID));
     
 }
 

@@ -2,7 +2,7 @@
 #define LOG_HPP
 
 #include <ros/ros.h>
-#include <exploration_libraly/common_lib.hpp>
+#include <exploration_libraly/struct.hpp>
 #include <geometry_msgs/PoseStamped.h>
 #include <exploration_msgs/PoseStampedArray.h>
 
@@ -11,8 +11,8 @@ class Log
 private:
     double POSE_LOG_INTERVAL;
 
-    CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    CommonLib::pubStruct<exploration_msgs::PoseStampedArray> poseArray_;
+    ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExpLib::pubStruct<exploration_msgs::PoseStampedArray> poseArray_;
 
     exploration_msgs::PoseStampedArray poseLog;
 public:

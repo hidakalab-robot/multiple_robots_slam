@@ -1,6 +1,9 @@
 #ifndef MOVEMENT_HPP
 #define MOVEMENT_HPP
 
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/utility.hpp>
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/Point.h>
@@ -11,7 +14,6 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <actionlib/client/simple_action_client.h>
 #include <Eigen/Geometry>
-#include <exploration_libraly/common_lib.hpp>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -65,10 +67,10 @@ private:
     double EMERGENCY_DIFF_THRESHOLD;
     double ANGLE_BIAS;    
 
-    CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
-    CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    CommonLib::subStruct<kobuki_msgs::BumperEvent> bumper_;
-    CommonLib::pubStruct<geometry_msgs::Twist> velocity_;
+    ExpLib::subStruct<sensor_msgs::LaserScan> scan_;
+    ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExpLib::subStruct<kobuki_msgs::BumperEvent> bumper_;
+    ExpLib::pubStruct<geometry_msgs::Twist> velocity_;
 
     double previousOrientation;
     
@@ -190,7 +192,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
             prePoseFrame = pose_.data.header.frame_id;
             preGoalFrame = goal.header.frame_id;
         }
-        CommonLib::coordinateConverter<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
+        ExpLib::coordinateConverter<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
     move_base_msgs::MoveBaseGoal to;
@@ -198,7 +200,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     to.target_pose.header.stamp = ros::Time::now();
 
     // 回転角度の補正値
-    double yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
+    double yaw = ExpLib::qToYaw(pose_.data.pose.orientation);
     Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
     double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
     Eigen::Matrix2d rotation;
@@ -211,7 +213,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
 
-    to.target_pose.pose = CommonLib::msgPose(goal.point,CommonLib::eigenQuaToGeoQua(q));
+    to.target_pose.pose = ExpLib::msgPose(goal.point,ExpLib::eigenQuaToGeoQua(q));
 
     ROS_DEBUG_STREAM("goal pose : " << to.target_pose.pose);
     ROS_INFO_STREAM("send goal to move_base");
@@ -419,15 +421,15 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
 void Movement::recoveryRotation(void){
     ROS_WARN_STREAM("Recovery Rotation !");
-    velocity_.pub.publish(CommonLib::msgTwist(0,previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
+    velocity_.pub.publish(ExpLib::msgTwist(0,previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
-    return CommonLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
+    return ExpLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
 }
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
-    CommonLib::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
+    ExpLib::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
@@ -458,20 +460,20 @@ void Movement::oneRotation(void){
 
     if(pose_.q.callOne(ros::WallDuration(1))) return;
 
-    double initYaw,yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
+    double initYaw,yaw = ExpLib::qToYaw(pose_.data.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
 
     if(std::isnan(initSign)) initSign = 1.0;
 
     //initYawが+の時は+回転
     //initYawが-の時は-回転
-    geometry_msgs::Twist vel = CommonLib::msgTwist(0,initSign * ROTATION_VELOCITY);
+    geometry_msgs::Twist vel = ExpLib::msgTwist(0,initSign * ROTATION_VELOCITY);
     
     for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
         double yawOld = yaw;
         velocity_.pub.publish(vel);
         pose_.q.callOne(ros::WallDuration(1));
-        yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
+        yaw = ExpLib::qToYaw(pose_.data.pose.orientation);
         if(yawOld * yaw < 0) ++count;
     }
 }

@@ -4,7 +4,8 @@
 
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <exploration_libraly/common_lib.hpp>
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/constructor.hpp>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
@@ -20,11 +21,11 @@ private:
 
     ros::Time startTime;
 
-    CommonLib::subStructSimple map_;
-    CommonLib::pubStruct<std_msgs::Bool> end_;
-    CommonLib::pubStruct<std_msgs::Float64> area_;
-    CommonLib::pubStruct<std_msgs::Int32> frontier_;
-    CommonLib::pubStruct<std_msgs::Float64> elapsed_;
+    ExpLib::subStructSimple map_;
+    ExpLib::pubStruct<std_msgs::Bool> end_;
+    ExpLib::pubStruct<std_msgs::Float64> area_;
+    ExpLib::pubStruct<std_msgs::Int32> frontier_;
+    ExpLib::pubStruct<std_msgs::Float64> elapsed_;
 
     bool calcArea(const nav_msgs::OccupancyGrid::ConstPtr& msg){
         //マップの面積を計算して終了条件と比較
@@ -33,20 +34,20 @@ private:
             if(m == 0) ++freeSpace;
         }
         double area = msg->info.resolution * msg->info.resolution * freeSpace;
-        area_.pub.publish(CommonLib::msgDouble(area));
+        area_.pub.publish(ExpLib::msgDouble(area));
         return area >= END_AREA ? true : false;// true: end, false: continue
     }
 
     bool detectFrontier(const nav_msgs::OccupancyGrid::ConstPtr& msg){
         static FrontierSearch fs;
         int frontier = fs.frontierDetection<int>(*msg);
-        frontier_.pub.publish(CommonLib::msgInt(frontier));
+        frontier_.pub.publish(ExpLib::msgInt(frontier));
         return frontier < 0 || END_FRONTIER < frontier ? false : true;// true: end, false: continue
     }
 
     bool timer(void){
         double elapsedTime = ros::Duration(ros::Time::now()-startTime).toSec();
-        elapsed_.pub.publish(CommonLib::msgDouble(elapsedTime));
+        elapsed_.pub.publish(ExpLib::msgDouble(elapsedTime));
         return elapsedTime > END_TIME ? true : false;
     }
 
@@ -66,7 +67,7 @@ private:
                 ROS_WARN_STREAM("end_condition is invalid !!");
                 break;
         }
-        end ? end_.pub.publish(CommonLib::msgBool(true)) : end_.pub.publish(CommonLib::msgBool(false));
+        end ? end_.pub.publish(ExpLib::msgBool(true)) : end_.pub.publish(ExpLib::msgBool(false));
     };
 public:
     ExplorationManager():map_("map", 1,&ExplorationManager::mapCB, this),end_("end",1,true),area_("end/area",1,true),frontier_("end/frontier",1,true),elapsed_("end/elapsed_time",1,true){

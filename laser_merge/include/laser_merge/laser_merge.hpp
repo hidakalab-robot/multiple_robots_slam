@@ -5,7 +5,8 @@
 #include <sensor_msgs/LaserScan.h>
 #include <tf/transform_listener.h>
 #include <pcl_ros/point_cloud.h>
-#include <exploration_libraly/common_lib.hpp>
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/convert.hpp>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <Eigen/Geometry>
 
@@ -15,7 +16,7 @@ private:
     int LASER_NUMBER;
 
     laser_geometry::LaserProjection lp;
-    CommonLib::pubStruct<sensor_msgs::PointCloud2> pc2_;
+    ExpLib::pubStruct<sensor_msgs::PointCloud2> pc2_;
 
 public:
     LaserMerge();
@@ -52,7 +53,7 @@ void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sens
 
         double transX = transform.getOrigin().getX();
         double transY = transform.getOrigin().getY();
-        double transYaw = CommonLib::qToYaw(transform.getRotation());
+        double transYaw = ExpLib::qToYaw(transform.getRotation());
 
         ROS_INFO_STREAM("frame: " << scan[i].header.frame_id << ", transX: " << transX << ", transY: " << transY);
 

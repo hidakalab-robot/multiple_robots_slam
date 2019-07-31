@@ -7,7 +7,7 @@ int main(int argc, char *argv[]){
     BranchSearch bs;
     Movement mv;
 
-    CommonLib::subStruct<std_msgs::Bool> isEnd("end",1);
+    ExpLib::subStruct<std_msgs::Bool> isEnd("end",1);
 
     geometry_msgs::PointStamped goal;
     ros::NodeHandle p("~");

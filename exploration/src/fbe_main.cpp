@@ -8,7 +8,7 @@ int main(int argc, char *argv[]){
     FrontierSearch fs;
     Movement mv;
 
-    CommonLib::subStruct<std_msgs::Bool> isEnd("end",1);
+    ExpLib::subStruct<std_msgs::Bool> isEnd("end",1);
 
     geometry_msgs::PointStamped goal;
 

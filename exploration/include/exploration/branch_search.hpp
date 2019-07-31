@@ -2,6 +2,9 @@
 #define BRANCH_SEARCH_HPP
 
 //分岐領域を検出するクラス
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/constructor.hpp>
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -9,13 +12,13 @@
 #include <geometry_msgs/PointStamped.h>
 #include <exploration_msgs/PointArray.h>
 #include <std_msgs/Empty.h>
-#include <exploration_libraly/common_lib.hpp>
 #include <exploration/frontier_search.hpp>
 #include <exploration_msgs/Frontier.h>
 #include <exploration/seamless_hybrid.hpp>
 #include <exploration_libraly/path_planning.hpp>
 #include <navfn/navfn_ros.h>
 #include <exploration_msgs/RobotInfoArray.h>
+
 
 //分岐領域を検出
 class BranchSearch
@@ -36,19 +39,19 @@ private:
 	bool SEAMLESS_HYBRID;
 	double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
 
-	CommonLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
-	CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
-	CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
-	CommonLib::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
+	ExpLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
+	ExpLib::subStruct<sensor_msgs::LaserScan> scan_;
+	ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
+	ExpLib::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
 
-	CommonLib::pubStruct<geometry_msgs::PointStamped> goal_;
-	CommonLib::pubStruct<exploration_msgs::PointArray> goalArray_;
+	ExpLib::pubStruct<geometry_msgs::PointStamped> goal_;
+	ExpLib::pubStruct<exploration_msgs::PointArray> goalArray_;
 
-	bool branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose);
-    CommonLib::DuplicationStatus duplicateDetection(const geometry_msgs::Point& goal);
+	bool branchDetection(const ExpLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose);
+    ExpLib::DuplicationStatus duplicateDetection(const geometry_msgs::Point& goal);
 	void publishGoal(const geometry_msgs::Point& goal);
 	void publishGoalArray(const std::vector<geometry_msgs::Point>& goals);
-	std::vector<geometry_msgs::Point> listStructToPoint(const std::vector<CommonLib::listStruct>& list);
+	std::vector<geometry_msgs::Point> listStructToPoint(const std::vector<ExpLib::listStruct>& list);
 
 	FrontierSearch fs;
 	PathPlanning<navfn::NavfnROS> pp;
@@ -97,7 +100,7 @@ bool BranchSearch::getGoal(geometry_msgs::PointStamped& goal){
 		}
     }
 
-	CommonLib::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
+	ExpLib::scanStruct scanRect(scan_.data.ranges.size(),scan_.data.angle_max);
 
 	for(int i=0,e=scan_.data.ranges.size();i!=e;++i){
 		if(!std::isnan(scan_.data.ranges[i])){
@@ -123,7 +126,7 @@ bool BranchSearch::getGoal(geometry_msgs::PointStamped& goal){
 	}
 }
 
-bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose){
+bool BranchSearch::branchDetection(const ExpLib::scanStruct& ss,geometry_msgs::Point& goal,const geometry_msgs::Pose& pose){
 	ROS_DEBUG_STREAM("Searching Branch");
 
 	//なんフレームか連続で発見できないとダメということにする？
@@ -151,7 +154,7 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 				double nextScanY = ss.ranges[i+1]*sin(ss.angles[i+1]);
 				double diffY = std::abs(nextScanY - scanY);
 				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){//分岐のy座標の差は一定の範囲に入っていないと分岐にしないフィルタ
-					localList.emplace_back(CommonLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
+					localList.emplace_back(ExpLib::msgPoint((nextScanX + scanX)/2,(nextScanY + scanY)/2));
 				}
 			}
 		}
@@ -160,16 +163,16 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	if(localList.size()!=0){
 		ROS_DEBUG_STREAM("Branch Candidate Found : " << localList.size());
 
-		double yaw = CommonLib::qToYaw(pose.orientation);
-		std::vector<CommonLib::listStruct> globalList;
+		double yaw = ExpLib::qToYaw(pose.orientation);
+		std::vector<ExpLib::listStruct> globalList;
 		globalList.reserve(localList.size());
 		
-		for(const auto& l : localList) globalList.emplace_back(CommonLib::msgPoint(pose.position.x+(cos(yaw)*l.x)-(sin(yaw)*l.y),pose.position.y+(cos(yaw)*l.y)+(sin(yaw)*l.x)));
+		for(const auto& l : localList) globalList.emplace_back(ExpLib::msgPoint(pose.position.x+(cos(yaw)*l.x)-(sin(yaw)*l.y),pose.position.y+(cos(yaw)*l.y)+(sin(yaw)*l.x)));
 
 		//ここで前の目標と近いやつはリストから削除
 		static geometry_msgs::Point lastBranch;
 
-		auto removeResult = std::remove_if(globalList.begin(),globalList.end(),[this](CommonLib::listStruct& g){return Eigen::Vector2d(g.point.x - lastBranch.x, g.point.y - lastBranch.y).norm()<BRANCH_TOLERANCE;});
+		auto removeResult = std::remove_if(globalList.begin(),globalList.end(),[this](ExpLib::listStruct& g){return Eigen::Vector2d(g.point.x - lastBranch.x, g.point.y - lastBranch.y).norm()<BRANCH_TOLERANCE;});
 		globalList.erase(std::move(removeResult),globalList.end());
 		if(globalList.size() == 0) return false;
 
@@ -195,14 +198,14 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 
 			if(DUPLICATE_CHECK){
 				switch (duplicateDetection(goal)){
-					case CommonLib::DuplicationStatus::NOT_DUPLECATION:
+					case ExpLib::DuplicationStatus::NOT_DUPLECATION:
 						lastBranch = goal;
 						return true;
-					case CommonLib::DuplicationStatus::OLDER://重複してるけど古いからフロンティアも見ておく
-						globalList[id].duplication = CommonLib::DuplicationStatus::OLDER;
+					case ExpLib::DuplicationStatus::OLDER://重複してるけど古いからフロンティアも見ておく
+						globalList[id].duplication = ExpLib::DuplicationStatus::OLDER;
 						break;
-					case CommonLib::DuplicationStatus::NEWER://重複かつ最近通ったところなのでフロンティアも見ない
-						globalList[id].duplication = CommonLib::DuplicationStatus::NEWER;
+					case ExpLib::DuplicationStatus::NEWER://重複かつ最近通ったところなのでフロンティアも見ない
+						globalList[id].duplication = ExpLib::DuplicationStatus::NEWER;
 						break;
 				}
 				lastBranch = goal;
@@ -231,8 +234,8 @@ bool BranchSearch::branchDetection(const CommonLib::scanStruct& ss,geometry_msgs
 	return false;
 }
 
-CommonLib::DuplicationStatus BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
-	if(poseLog_.q.callOne(ros::WallDuration(1))) return CommonLib::DuplicationStatus::NOT_DUPLECATION;
+ExpLib::DuplicationStatus BranchSearch::duplicateDetection(const geometry_msgs::Point& goal){
+	if(poseLog_.q.callOne(ros::WallDuration(1))) return ExpLib::DuplicationStatus::NOT_DUPLECATION;
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
 	
@@ -249,14 +252,14 @@ CommonLib::DuplicationStatus BranchSearch::duplicateDetection(const geometry_msg
 		//過去のオドメトリが重複判定の範囲内に入っているか//
 		if(Eigen::Vector2d(goal.x-poseLog_.data.poses[i].pose.position.x,goal.y-poseLog_.data.poses[i].pose.position.y).norm() < DUPLICATE_TOLERANCE){
 			ROS_DEBUG_STREAM("This Branch is Duplicated");
-			return ros::Duration(poseLog_.data.header.stamp - poseLog_.data.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? CommonLib::DuplicationStatus::OLDER : CommonLib::DuplicationStatus::NEWER;
+			return ros::Duration(poseLog_.data.header.stamp - poseLog_.data.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? ExpLib::DuplicationStatus::OLDER : ExpLib::DuplicationStatus::NEWER;
 		}
 	}
 	ROS_DEBUG_STREAM("This Branch is Not Duplicated");
-	return CommonLib::DuplicationStatus::NOT_DUPLECATION;
+	return ExpLib::DuplicationStatus::NOT_DUPLECATION;
 }
 
-std::vector<geometry_msgs::Point> BranchSearch::listStructToPoint(const std::vector<CommonLib::listStruct>& list){
+std::vector<geometry_msgs::Point> BranchSearch::listStructToPoint(const std::vector<ExpLib::listStruct>& list){
 	std::vector<geometry_msgs::Point> point;
 	point.reserve(list.size());
 	for(const auto& l : list) point.emplace_back(l.point);

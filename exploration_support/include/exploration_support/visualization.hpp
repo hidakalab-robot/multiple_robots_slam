@@ -7,7 +7,8 @@
 #include <exploration_msgs/PointArray.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
-#include <exploration_libraly/common_lib.hpp>
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/constructor.hpp>
 #include <thread>
 #include <tf/transform_listener.h>
 
@@ -20,18 +21,18 @@ private:
     std::string MAP_FRAME_ID;
 
     //pose
-    CommonLib::subStructSimple pose_;
-    CommonLib::pubStruct<visualization_msgs::Marker> poseMarker_;    
+    ExpLib::subStructSimple pose_;
+    ExpLib::pubStruct<visualization_msgs::Marker> poseMarker_;    
     visualization_msgs::Marker pm;
 
     //goal
-    CommonLib::subStructSimple goal_;
-    CommonLib::pubStruct<visualization_msgs::Marker> goalMarker_;
+    ExpLib::subStructSimple goal_;
+    ExpLib::pubStruct<visualization_msgs::Marker> goalMarker_;
     visualization_msgs::Marker gm;
 
     //goalList
-    CommonLib::subStructSimple goalArray_;
-    CommonLib::pubStruct<visualization_msgs::Marker> goalArrayMarker_;
+    ExpLib::subStructSimple goalArray_;
+    ExpLib::pubStruct<visualization_msgs::Marker> goalArrayMarker_;
     visualization_msgs::Marker gam;
 
     tf::TransformListener listener;
@@ -110,7 +111,7 @@ Visualization::Visualization()
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
+    pm.points.push_back(ExpLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
     pm.header.frame_id = msg->header.frame_id;
     pm.header.stamp = ros::Time::now();
 }

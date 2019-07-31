@@ -3,14 +3,14 @@
 #define CONTINUITY_HPP
 
 #include <ros/ros.h>
-#include <exploration_libraly/common_lib.hpp>
+#include <exploration_libraly/struct.hpp>
 
 template<typename T>
 class Continuity
 {
 private:
-    CommonLib::subStruct<T> sub_;
-    CommonLib::pubStruct<T> pub_;
+    ExpLib::subStruct<T> sub_;
+    ExpLib::pubStruct<T> pub_;
 
 public:
     Continuity():sub_("sub_topic",1),pub_("pub_topic",1){};

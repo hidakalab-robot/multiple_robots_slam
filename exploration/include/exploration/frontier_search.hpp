@@ -1,6 +1,10 @@
 #ifndef FRONTIER_SEARCH_HPP
 #define FRONTIER_SEARCH_HPP
 
+
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/convert.hpp>
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -10,7 +14,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PoseArray.h>
 #include <tf/transform_listener.h>
-#include <exploration_libraly/common_lib.hpp>
+
 #include <std_msgs/Empty.h>
 #include <exploration_msgs/Frontier.h>
 #include <geometry_msgs/PointStamped.h>
@@ -18,6 +22,7 @@
 
 #include <exploration_libraly/path_planning.hpp>
 #include <navfn/navfn_ros.h>
+
 
 /*
 frontier_search tutorial
@@ -108,13 +113,13 @@ private:
     bool USE_MERGE_MAP;
     bool COLOR_CLUSTER;
 
-    CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    CommonLib::subStruct<nav_msgs::OccupancyGrid> map_;
+    ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExpLib::subStruct<nav_msgs::OccupancyGrid> map_;
 
-    CommonLib::pubStruct<geometry_msgs::PointStamped> goal_;
-    CommonLib::pubStruct<exploration_msgs::PointArray> goalArray_;
-    CommonLib::pubStruct<geometry_msgs::PoseArray> goalPoseArray_;
-    CommonLib::pubStruct<sensor_msgs::PointCloud2> colorCloud_;
+    ExpLib::pubStruct<geometry_msgs::PointStamped> goal_;
+    ExpLib::pubStruct<exploration_msgs::PointArray> goalArray_;
+    ExpLib::pubStruct<geometry_msgs::PoseArray> goalPoseArray_;
+    ExpLib::pubStruct<sensor_msgs::PointCloud2> colorCloud_;
     
     void horizonDetection(mapStruct& map);
     clusterStruct clusterDetection(const mapStruct& map);
@@ -178,7 +183,7 @@ void FrontierSearch::frontierDetection(const nav_msgs::OccupancyGrid& mapMsg, st
 
     for(int i=0,e=cluster.index.size();i!=e;++i){
         if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(CommonLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],CommonLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
+        frontiers.emplace_back(ExpLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExpLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
@@ -396,7 +401,7 @@ void FrontierSearch::obstacleFilter(FrontierSearch::mapStruct& map,std::vector<E
 }
 
 geometry_msgs::Point FrontierSearch::arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
-    return CommonLib::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
+    return ExpLib::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
 }
 
 bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, const geometry_msgs::Pose& pose,geometry_msgs::Point& goal){
@@ -405,7 +410,7 @@ bool FrontierSearch::selectGoal(const std::vector<geometry_msgs::Point>& goals, 
     static geometry_msgs::Point previousGoal;
 
     //ロボットの向きのベクトル(大きさ1)を計算
-    double yaw = CommonLib::qToYaw(pose.orientation);
+    double yaw = ExpLib::qToYaw(pose.orientation);
     Eigen::Vector2d directionVec(cos(yaw),sin(yaw));
 
     //変更点：前回の移動方向では無く現在のロボットの向きで評価する
@@ -457,7 +462,7 @@ void FrontierSearch::publishGoalArrayAsPose(const std::vector<geometry_msgs::Poi
     geometry_msgs::PoseArray msg;
     msg.poses.reserve(goals.size());
 
-    for(const auto& g : goals) msg.poses.emplace_back(CommonLib::pointToPose(g));
+    for(const auto& g : goals) msg.poses.emplace_back(ExpLib::pointToPose(g));
 
 	msg.header.frame_id = MAP_FRAME_ID;
     msg.header.stamp = ros::Time::now();
@@ -476,7 +481,7 @@ void FrontierSearch::publishColorCluster(const clusterStruct& cs){
         if(cs.index[i].z()==0) continue;
         int c = i%12;
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-            colorCloud -> points.emplace_back(CommonLib::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
+            colorCloud -> points.emplace_back(ExpLib::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
         }
     }
     colorCloud -> width = colorCloud -> points.size();
