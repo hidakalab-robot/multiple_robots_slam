@@ -27,6 +27,16 @@ geometry_msgs::Quaternion yawToQ(double yaw){
     return msg;
 }
 
+Eigen::Vector2d qToVector2d(const geometry_msgs::Quaternion& q){
+    double yaw = ExpLib::qToYaw(q);
+    return Eigen::Vector2d(cos(yaw),sin(yaw));
+}
+
+geometry_msgs::Quaternion vector2dToQ(const Eigen::Vector2d& v){
+    double yaw = atan2(v.y(),v.x());
+    return yawToQ(yaw);
+}
+
 geometry_msgs::Pose pointToPose(const geometry_msgs::Point& point){
     geometry_msgs::Pose msg;
     msg.position.x = point.x;

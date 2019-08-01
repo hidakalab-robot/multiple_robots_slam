@@ -1,4 +1,4 @@
 string name
-geometry_msgs/PoseStamped pose
-geometry_msgs/Point coordinate
-geometry_msgs/Vector3 vector
+geometry_msgs/Pose pose
+# geometry_msgs/Point coordinate
+# geometry_msgs/Vector3 vector

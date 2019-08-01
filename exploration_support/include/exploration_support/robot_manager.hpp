@@ -132,13 +132,14 @@ void RobotManager::update(const geometry_msgs::PoseStamped::ConstPtr& msg, Robot
 
 void RobotManager::convertPoseToRobotInfo(void){
     exploration_msgs::RobotInfoArray ria;
-    ria.list.reserve(std::distance(robotList.begin(),robotList.end()));
+    ria.info.reserve(std::distance(robotList.begin(),robotList.end()));
     {
         std::lock_guard<boost::shared_mutex> bLock(robotListMutex);
         for(auto&& robot : robotList){
             std::lock_guard<std::mutex> lock(robot.mutex);
             double yaw = ExpLib::qToYaw(robot.pose.pose.orientation);
-            ria.list.emplace_back(ExpLib::msgRobotInfo(robot.name,robot.pose,robot.pose.pose.position,ExpLib::msgVector(cos(yaw),sin(yaw))));
+            // ria.info.emplace_back(ExpLib::msgRobotInfo(robot.name,robot.pose,robot.pose.pose.position,ExpLib::msgVector(cos(yaw),sin(yaw))));
+            ria.info.emplace_back(ExpLib::msgRobotInfo(robot.name,robot.pose.pose));
         }
     }
     ria.header.stamp = ros::Time::now();

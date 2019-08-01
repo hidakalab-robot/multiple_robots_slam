@@ -80,24 +80,31 @@ pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b){
     return p;
 }
 
-exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::PoseStamped& pe, const geometry_msgs::Point& pt, const geometry_msgs::Vector3& v){
+exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Pose& p){
     exploration_msgs::RobotInfo msg;
     msg.name = n;
-    msg.pose = pe;
-    msg.coordinate = pt;
-    msg.vector = v;
+    msg.pose = p;
     return msg;
 }
 
-exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Point& pt, const geometry_msgs::Vector3& v){
-    exploration_msgs::RobotInfo msg;
-    msg.name = n;
-    geometry_msgs::PoseStamped ps;
-    msg.pose = ps;
-    msg.coordinate = pt;
-    msg.vector = v;
-    return msg;
-}
+// exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::PoseStamped& pe, const geometry_msgs::Point& pt, const geometry_msgs::Vector3& v){
+//     exploration_msgs::RobotInfo msg;
+//     msg.name = n;
+//     msg.pose = pe;
+//     msg.coordinate = pt;
+//     msg.vector = v;
+//     return msg;
+// }
+
+// exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Point& pt, const geometry_msgs::Vector3& v){
+//     exploration_msgs::RobotInfo msg;
+//     msg.name = n;
+//     geometry_msgs::PoseStamped ps;
+//     msg.pose = ps;
+//     msg.coordinate = pt;
+//     msg.vector = v;
+//     return msg;
+// }
 
 geometry_msgs::Quaternion msgGeoQuaternion(double x, double y, double z, double w){
     geometry_msgs::Quaternion q;

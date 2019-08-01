@@ -52,6 +52,7 @@ find_package(catkin REQUIRED COMPONENTS
    FILES
    PointArray.msg
    Frontier.msg
+   FrontierArray.msg
    PoseStampedArray.msg
    RobotInfo.msg
    RobotInfoArray.msg
