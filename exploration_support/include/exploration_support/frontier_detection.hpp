@@ -69,7 +69,7 @@ private:
     int MAX_CLUSTER_SIZE;
 
     ExpLib::subStructSimple map_;
-    ExpLib::pubStruct<exploration_msgs::Frontier> frontier_;
+    ExpLib::pubStruct<exploration_msgs::FrontierArray> frontier_;
     ExpLib::pubStruct<sensor_msgs::PointCloud2> horizon_;
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
     void horizonDetection(mapStruct& map);
