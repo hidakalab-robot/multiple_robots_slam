@@ -1,5 +1,5 @@
-#ifndef FRONTIER_SEARCH_HPP
-#define FRONTIER_SEARCH_HPP
+#ifndef FRONTIER_DETECTION_HPP
+#define FRONTIER_DETECTION_HPP
 
 #include <nav_msgs/OccupancyGrid.h>
 #include <sensor_msgs/PointCloud2.h>
@@ -300,4 +300,4 @@ void FrontierDetection::publishFrontier(const std::vector<exploration_msgs::Fron
     frontier_.pub.publish(msg);
     ROS_INFO_STREAM("Publish frontier");
 }
-#endif //FRONTIER_SEARCH_HPP
+#endif //FRONTIER_DETECTION_HPP
