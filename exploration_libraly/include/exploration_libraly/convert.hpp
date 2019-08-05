@@ -61,6 +61,13 @@ Eigen::Vector2d pointToVector2d(const geometry_msgs::Point& point){
     return vec;
 }
 
+geometry_msgs::Point vector2dToPoint(const Eigen::Vector2d& vec){
+    geometry_msgs::Point point;
+    point.x = vec.x();
+    point.y = vec.y();
+    return point;
+}
+
 Eigen::Vector2d msgVectorToVector2d(const geometry_msgs::Vector3& vector){
     Eigen::Vector2d vec;
     vec.x() = vector.x;
