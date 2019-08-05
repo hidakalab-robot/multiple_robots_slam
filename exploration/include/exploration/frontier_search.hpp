@@ -253,7 +253,7 @@ bool FrontierSearch::getGoal(geometry_msgs::PointStamped& goal){
 std::vector<geometry_msgs::Point> FrontierSearch::frontiersToPoints(const std::vector<exploration_msgs::Frontier>& frontiers){
     std::vector<geometry_msgs::Point> p;
     p.reserve(frontiers.size());
-    for(const auto& f : frontiers) p.emplace_back(f.coordinate);
+    for(const auto& f : frontiers) p.emplace_back(f.point);
     return p;
 }
 

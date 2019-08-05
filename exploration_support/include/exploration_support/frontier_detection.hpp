@@ -109,7 +109,8 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
 
     if(cluster.index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found");
-        return;
+        // return;
+        publishFrontier(std::vector<exploration_msgs::Frontier>(), msg->header.frame_id);
     }
     //ここでクラスタ表示したい
     publishHorizon(cluster, msg->header.frame_id);

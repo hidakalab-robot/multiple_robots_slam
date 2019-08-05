@@ -60,12 +60,12 @@ std_msgs::Int32 msgInt(int i){
     return msg;
 }
 
-exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& c, double a, const geometry_msgs::Vector3& v, double cv){
+exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& p, double a, const geometry_msgs::Vector3& v, double c){
     exploration_msgs::Frontier msg;
-    msg.coordinate = c;
+    msg.point = p;
     msg.area = a;
     msg.variance = v;
-    msg.covariance = cv;
+    msg.covariance = c;
     return msg;
 }
 

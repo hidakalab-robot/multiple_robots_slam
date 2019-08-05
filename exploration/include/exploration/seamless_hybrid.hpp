@@ -163,7 +163,7 @@ bool SeamlessHybrid::dataFilter(void){
     frontiers.reserve(inputFrontiers.size());
 
     for(const auto& i : inputFrontiers){
-        if(i.variance.x>i.variance.y ? i.variance.x : i.variance.y > VARIANCE_THRESHOLD || std::abs(i.covariance) > COVARIANCE_THRESHOLD) frontiers.emplace_back(i.coordinate);
+        if(i.variance.x>i.variance.y ? i.variance.x : i.variance.y > VARIANCE_THRESHOLD || std::abs(i.covariance) > COVARIANCE_THRESHOLD) frontiers.emplace_back(i.point);
     }
 
     ROS_INFO_STREAM("after frontiers size : " << frontiers.size());

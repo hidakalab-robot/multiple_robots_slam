@@ -216,3 +216,9 @@ target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
 
 add_executable(frontier_based_exploration src/fbe_main.cpp)
 target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
+
+add_executable(sensor_based_exploration_new src/sensor_based_exploration.cpp)
+target_link_libraries(sensor_based_exploration_new ${catkin_LIBRARIES})
+
+add_executable(frontier_based_exploration_new src/frontier_based_exploration.cpp)
+target_link_libraries(frontier_based_exploration_new ${catkin_LIBRARIES})

@@ -56,8 +56,8 @@ struct scanStruct{
 struct listStruct{
     geometry_msgs::Point point;
     DuplicationStatus duplication;
-    listStruct(){};
-    listStruct(const geometry_msgs::Point& p):point(p){};
+    listStruct():duplication(ExpLib::DuplicationStatus::NOT_DUPLECATION){};
+    listStruct(const geometry_msgs::Point& p):point(p),duplication(ExpLib::DuplicationStatus::NOT_DUPLECATION){};
 };
 }
 
