@@ -1,10 +1,10 @@
-#include <exploration/sensor_based_exploration.hpp>
+#include <exploration/seamless_hybrid_exploration.hpp>
 #include <exploration/movement.hpp>
 
-int main(int argc, char *argv[]){
-    ros::init(argc, argv, "sensor_based_exploration");
+int main(int argc, char* argv[]){
+    ros::init(argc, argv, "seamless_hybrid_exploration");
 
-    SensorBasedExploration sbe;
+    SeamlessHybridExploration she;
     Movement mv;
 
     ExpLib::subStruct<std_msgs::Bool> isEnd("end",1);
@@ -34,13 +34,13 @@ int main(int argc, char *argv[]){
     if(!DEBUG && ROTATION) mv.oneRotation();
 
     while(ros::ok()){
-        branchTimer() && sbe.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
+        branchTimer() && she.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
         if(AUTO_FINISH && !isEnd.q.callOne(ros::WallDuration(0.5)) && isEnd.data.data) break;
     }
 
     ROS_INFO_STREAM("exploration finish !! -> time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
 
     ros::shutdown();
-
+    
     return 0;
 }

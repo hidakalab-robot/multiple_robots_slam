@@ -222,3 +222,6 @@ target_link_libraries(sensor_based_exploration_new ${catkin_LIBRARIES})
 
 add_executable(frontier_based_exploration_new src/frontier_based_exploration.cpp)
 target_link_libraries(frontier_based_exploration_new ${catkin_LIBRARIES})
+
+add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration.cpp)
+target_link_libraries(seamless_hybrid_exploration ${catkin_LIBRARIES})
