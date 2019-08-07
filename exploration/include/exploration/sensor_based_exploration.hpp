@@ -26,8 +26,7 @@ private:
     ExpLib::pubStruct<geometry_msgs::PointStamped> goal_;
 
     void duplicateDetection(std::vector<ExpLib::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
-    bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
-    void publishGoal(const geometry_msgs::PointStamped& goal);
+    virtual bool decideGoal(geometry_msgs::PointStamped& goal, std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
 public:
     SensorBasedExploration();
     bool getGoal(geometry_msgs::PointStamped& goal);
@@ -111,7 +110,7 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExpLib::listStruct>&
 	}
 }
 
-bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
     // 重複していない中で距離が一番近いやつ
     double dist = DBL_MAX;
 
