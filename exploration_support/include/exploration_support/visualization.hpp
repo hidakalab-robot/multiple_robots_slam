@@ -11,6 +11,7 @@
 #include <exploration_libraly/constructor.hpp>
 #include <thread>
 #include <tf/transform_listener.h>
+#include <nav_msgs/Path.h>
 
 class Visualization
 {
@@ -22,8 +23,10 @@ private:
 
     //pose
     ExpLib::subStructSimple pose_;
-    ExpLib::pubStruct<visualization_msgs::Marker> poseMarker_;    
-    visualization_msgs::Marker pm;
+    // ExpLib::pubStruct<visualization_msgs::Marker> poseMarker_;
+    ExpLib::pubStruct<nav_msgs::Path> posePath_;   
+    // visualization_msgs::Marker pm;
+    nav_msgs::Path pp;
 
     //goal
     ExpLib::subStructSimple goal_;
@@ -52,11 +55,12 @@ public:
 
 Visualization::Visualization()
     :pose_("pose",1,&Visualization::poseCB, this)
-    ,poseMarker_("visualization", 1)
+    // ,poseMarker_("visualization", 1)
+    ,posePath_("visualization/pose", 1)
     ,goal_("goal",1,&Visualization::goalCB, this)
-    ,goalMarker_("visualization", 1)
+    ,goalMarker_("visualization/goal", 1)
     ,goalArray_("goal_array",1,&Visualization::goalArrayCB, this)
-    ,goalArrayMarker_("visualization", 1){
+    ,goalArrayMarker_("visualization/goal_array", 1){
 
     ros::NodeHandle p("~");
     p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 30.0);
@@ -65,18 +69,18 @@ Visualization::Visualization()
     std::string MAP_FRAME_ID;
     p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     //poseMarker
-    p.param<double>("line_width", pm.scale.x, 0.1);
-    pm.header.frame_id = MAP_FRAME_ID;
-    pm.pose.orientation.w = 1.0;
-    pm.type = visualization_msgs::Marker::LINE_STRIP;
-    pm.action = visualization_msgs::Marker::ADD;
-    pm.lifetime = ros::Duration(0);
-    pm.ns = "pose";
-    pm.id = 0;
-    pm.color.r = 0.0f;
-    pm.color.g = 0.0f;
-    pm.color.b = 1.0f;
-    pm.color.a = 1.0f;
+    // p.param<double>("line_width", pm.scale.x, 0.1);
+    // pm.header.frame_id = MAP_FRAME_ID;
+    // pm.pose.orientation.w = 1.0;
+    // pm.type = visualization_msgs::Marker::LINE_STRIP;
+    // pm.action = visualization_msgs::Marker::ADD;
+    // pm.lifetime = ros::Duration(0);
+    // pm.ns = "pose";
+    // pm.id = 0;
+    // pm.color.r = 0.0f;
+    // pm.color.g = 0.0f;
+    // pm.color.b = 1.0f;
+    // pm.color.a = 1.0f;
     //goalMarker
     double goalScale;
     p.param<double>("goal_scale", goalScale, 0.5);
@@ -111,9 +115,12 @@ Visualization::Visualization()
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    pm.points.push_back(ExpLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
-    pm.header.frame_id = msg->header.frame_id;
-    pm.header.stamp = ros::Time::now();
+    // pm.points.push_back(ExpLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
+    // pm.header.frame_id = msg->header.frame_id;
+    // pm.header.stamp = ros::Time::now();
+    pp.poses.push_back(*msg);
+    pp.header.frame_id = msg->header.frame_id;
+    pp.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
@@ -131,7 +138,8 @@ void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& ms
 void Visualization::poseMarkerPublisher(void){
     ros::Rate rate(POSE_PUBLISH_RATE);
     while(ros::ok()){
-        poseMarker_.pub.publish(pm);
+        // poseMarker_.pub.publish(pm);
+        posePath_.pub.publish(pp);
         rate.sleep();
     }
 }

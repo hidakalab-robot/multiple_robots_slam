@@ -251,12 +251,13 @@ void SeamlessHybrid::evaluationInitialize(void){
     // double yaw = ExpLib::qToYaw(pose.orientation);
     // double cosYaw = cos(yaw);
     // double sinYaw = sin(yaw);
-    // Eigen::Vector2d vec = ExpLib::qToVector2d(pose.orientation);
+    Eigen::Vector2d vec = ExpLib::qToVector2d(pose.orientation);
     // ROS_INFO_STREAM("yaw: " << yaw << ", cos: " << cosYaw << ", sin:" << sinYaw);
     // mainRobotInfo.emplace_back(calc(ExpLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw),ROBOT_NAME));
     // mainRobotInfo.emplace_back(calc(ExpLib::msgPoint(pose.position.x+forward*cosYaw,pose.position.y+forward*sinYaw),Eigen::Vector2d(cosYaw,sinYaw)));
     // mainRobotInfo.emplace_back(calc(ExpLib::msgPoint(pose.position.x+forward*vec.x(),pose.position.y+forward*vec.y()),vec));
-    mainRobotInfo.emplace_back(calc(pose));
+    // mainRobotInfo.emplace_back(calc(pose));
+    mainRobotInfo.emplace_back(calc(ExpLib::msgPose(ExpLib::msgPoint(pose.position.x+forward*vec.x(),pose.position.y+forward*vec.y()),pose.orientation)));
 
 
     //他のロボットに関する計算
