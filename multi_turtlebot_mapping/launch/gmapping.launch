@@ -12,7 +12,7 @@
   <group ns="$(arg robot_name)">
     <include file="$(find multi_turtlebot_mapping)/launch/includes/move_base.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
-      <arg if="multi" name="global_frame_id" default="$(arg merge_map_frame)"/>
+      <arg if="$(arg multi)" name="global_frame_id" default="$(arg merge_map_frame)"/>
       <arg if="$(arg multi)" name="map_topic" default="$(arg merge_map_topic)"/>
     </include>
    
