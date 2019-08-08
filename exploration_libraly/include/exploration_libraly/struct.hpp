@@ -36,12 +36,23 @@ struct subStructSimple{
     subStructSimple(const std::string& topic,uint32_t queue_size, void(*fp)(V)){ sub = n.subscribe(topic,queue_size,fp);};
 };
 
+struct subStructStd{
+    ros::NodeHandle n;
+    ros::Subscriber sub;
+};
+
 template<typename T>
 struct pubStruct{
     ros::NodeHandle n;
     ros::Publisher pub;
     pubStruct(const std::string& topic,uint32_t queue_size,bool latch=false){ pub = n.advertise<T>(topic, queue_size, latch);};
 };
+
+struct pubStructStd{
+    ros::NodeHandle n;
+    ros::Publisher pub;
+};
+
 
 struct scanStruct{
     std::vector<float> ranges;

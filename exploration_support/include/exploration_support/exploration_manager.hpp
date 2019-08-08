@@ -9,7 +9,8 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
-#include <exploration/frontier_search.hpp>
+// #include <exploration/frontier_search.hpp>
+#include <exploration_msgs/FrontierArray.h>
 
 class ExplorationManager
 {
@@ -19,13 +20,18 @@ private:
     int END_FRONTIER;
     double END_TIME;
 
+
+
     ros::Time startTime;
 
-    ExpLib::subStructSimple map_;
+    // ExpLib::subStructSimple map_;
     ExpLib::pubStruct<std_msgs::Bool> end_;
-    ExpLib::pubStruct<std_msgs::Float64> area_;
-    ExpLib::pubStruct<std_msgs::Int32> frontier_;
-    ExpLib::pubStruct<std_msgs::Float64> elapsed_;
+    // ExpLib::pubStruct<std_msgs::Float64> area_;
+    // ExpLib::pubStruct<std_msgs::Int32> frontier_;
+    // ExpLib::pubStruct<std_msgs::Float64> elapsed_;
+
+    ExpLib::subStructStd input_;
+    ExpLib::pubStructStd output_;
 
     bool calcArea(const nav_msgs::OccupancyGrid::ConstPtr& msg){
         //マップの面積を計算して終了条件と比較
@@ -69,10 +75,38 @@ private:
         }
         end ? end_.pub.publish(ExpLib::msgBool(true)) : end_.pub.publish(ExpLib::msgBool(false));
     };
+
+    void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg){};
+
+    
 public:
-    ExplorationManager():map_("map", 1,&ExplorationManager::mapCB, this),end_("end",1,true),area_("end/area",1,true),frontier_("end/frontier",1,true),elapsed_("end/elapsed_time",1,true){
+    ExplorationManager():end_("end",1,true){
         ros::NodeHandle p("~");
+
+        // map_("map", 1,&ExplorationManager::mapCB, this),
+        // elapsed_("end/elapsed_time",1,true)
+        // ,area_("end/area",1,true),frontier_("end/frontier",1,true),
+
         p.param<int>("end_condition",END_CONDITION,0); // 0:area, 1:frontier, 2:timer
+
+        switch (END_CONDITION){
+            case 0:
+                input_.sub = input_.n.subscribe("map",1,&ExplorationManager::mapCB,this);
+                ROS_INFO_STREAM("end_condition is Area");
+                break;
+            case 1:
+                input_.sub = input_.n.subscribe("frontier",1,&ExplorationManager::frontierCB,this);
+                ROS_INFO_STREAM("end_condition is Frontier");
+                break;
+            case 2:
+                ROS_INFO_STREAM("end_condition is Timer");
+                break;
+            default:
+                ROS_WARN_STREAM("end_condition is invalid !!");
+                break;
+        }
+
+
         p.param<int>("end_frontier",END_FRONTIER,0);
         p.param<double>("end_time",END_TIME,1200);// second
         p.param<double>("end_area",END_AREA,46.7*14-9.5*10-((4.1+2.7+7.5)*10-2.7*5.8)-8.0*10-7.5*10-0.9*10);//267.46
@@ -84,5 +118,49 @@ public:
         startTime = ros::Time::now();
     };
 };
+
+// template<class T>
+// class ExplorationManager
+// {
+// private:
+//     T mg;
+// public:
+//     ExplorationManager(){
+        
+//     };
+// };
+
+// namespace Management
+// {
+// class Frontier{
+// private:
+//     ExpLib::subStructSimple frontier_;
+//     void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
+// public:
+//     Frontier():frontier_("frontier", 1, &Frontier::frontierCB, this){
+
+//     };
+// };
+
+// class Timer{
+// private:
+
+// public:
+//     Timer(){
+
+//     };
+// };
+
+// class Area{
+// private:
+//     ExpLib::subStructSimple map_;
+//     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
+// public:
+//     Area():map_("map", 1, &Area::mapCB, this){
+
+//     };
+// };
+
+// }
 
 #endif //EXPLORATION_MANAGER_HPP
