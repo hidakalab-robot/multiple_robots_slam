@@ -4,7 +4,7 @@
 #include <fstream>
 
 int main(int argc, char* argv[]){
-    ros::init(argc, argv, "my_evaluation_reconfigure");
+    ros::init(argc, argv, "extra_parameter");
 
     ros::NodeHandle nh("~");
     std::string EXTRA_PARAMETER_FILE_PATH;
@@ -17,14 +17,14 @@ int main(int argc, char* argv[]){
     dynamic_reconfigure::Server<exploration_support::extra_parameter_reconfigureConfig>::CallbackType cbt;
 
     int SIMULATE_ROBOT_INDEX;
-    double ANGLE_WEIGHT,PATH_WEIGHT,ROBOT_WEIGHT;
+    double DIRECTION_WEIGHT,DISTANCE_WEIGHT,OTHER_ROBOT_WEIGHT;
 
-    cbt = boost::bind(+[](exploration_support::extra_parameter_reconfigureConfig &config, uint32_t level, int* sri, double* aw, double* pw, double* rw)->void{
+    cbt = boost::bind(+[](exploration_support::extra_parameter_reconfigureConfig &config, uint32_t level, int* sri, double* dr, double* ds, double* orw)->void{
         *sri = config.simulate_robot_index;
-        *aw = config.angle_weight;
-        *pw = config.path_weight;
-        *rw = config.robot_weight;
-    }, _1, _2, &SIMULATE_ROBOT_INDEX, &ANGLE_WEIGHT, &PATH_WEIGHT, &ROBOT_WEIGHT);
+        *dr = config.direction_weight;
+        *ds = config.distance_weight;
+        *orw = config.other_robot_weight;
+    }, _1, _2, &SIMULATE_ROBOT_INDEX, &DIRECTION_WEIGHT, &DIRECTION_WEIGHT, &OTHER_ROBOT_WEIGHT);
 
     server.setCallback(cbt);
     ros::spin();
@@ -39,9 +39,9 @@ int main(int argc, char* argv[]){
             return 0 ;
         }
         ofs << "simulate_robot_index: " << SIMULATE_ROBOT_INDEX << std::endl;
-        ofs << "angle_weight: " << ANGLE_WEIGHT << std::endl;
-        ofs << "path_weight: " << PATH_WEIGHT << std::endl;
-        ofs << "robot_weight: " << ROBOT_WEIGHT << std::endl;
+        ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
+        ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
+        ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
     }
 
     return 0;

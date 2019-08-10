@@ -89,6 +89,13 @@ geometry_msgs::PoseStamped poseToPoseStamped(const geometry_msgs::Pose& p, const
     return msg;
 }
 
+geometry_msgs::PoseStamped pointStampedToPoseStamped(const geometry_msgs::PointStamped& p){
+    geometry_msgs::PoseStamped msg;
+    msg.pose = pointToPose(p.point);
+    msg.header.frame_id = p.header.frame_id;
+    return msg;
+}
+
 geometry_msgs::Quaternion tfQuaToGeoQua(const tf::Quaternion& tq){
     geometry_msgs::Quaternion q;
     q.x = tq.getX();
