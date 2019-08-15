@@ -8,6 +8,8 @@
 
 namespace ExpLib
 {
+namespace Convert
+{
 double qToYaw(const tf::Quaternion& q){
     double roll, pitch, yaw;
     tf::Matrix3x3(q).getRPY(roll,pitch,yaw);
@@ -29,7 +31,7 @@ geometry_msgs::Quaternion yawToQ(double yaw){
 }
 
 Eigen::Vector2d qToVector2d(const geometry_msgs::Quaternion& q){
-    double yaw = ExpLib::qToYaw(q);
+    double yaw = qToYaw(q);
     return Eigen::Vector2d(cos(yaw),sin(yaw));
 }
 
@@ -131,6 +133,7 @@ geometry_msgs::Quaternion eigenQuaToGeoQua(const Eigen::Quaterniond& eq){
     return q;
 }
 
+}
 }
 
 #endif // CONVERT_HPP

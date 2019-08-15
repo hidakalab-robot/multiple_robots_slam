@@ -7,7 +7,7 @@ int main(int argc, char *argv[]){
     SensorBasedExploration sbe;
     Movement mv;
 
-    ExpLib::subStruct<std_msgs::Bool> end("end",1);
+    ExpLib::Struct::subStruct<std_msgs::Bool> end("end",1);
 
     geometry_msgs::PointStamped goal;
     ros::NodeHandle p("~");

@@ -5,7 +5,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <exploration_msgs/PointArray.h>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/construct.hpp>
 #include <exploration_libraly/utility.hpp>
 
 
@@ -20,9 +20,9 @@ private:
 
     tf::TransformListener listener_;
 
-    ExpLib::subStructSimple scan_;
-    ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExpLib::pubStruct<exploration_msgs::PointArray> branch_;
+    ExpLib::Struct::subStructSimple scan_;
+    ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExpLib::Struct::pubStruct<exploration_msgs::PointArray> branch_;
 
     void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
     void publishBranch(const std::vector<geometry_msgs::Point>& branches, const std::string& frameId);
@@ -67,7 +67,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     }
 
     // nan のデータを取り除いて 距離と角度のデータに分ける
-    ExpLib::scanStruct ss(msg->ranges.size(),msg->angle_max);
+    ExpLib::Struct::scanStruct ss(msg->ranges.size(),msg->angle_max);
 
     for(int i=0,e=msg->ranges.size();i!=e;++i){
 		if(!std::isnan(msg->ranges[i])){
@@ -101,7 +101,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
 				double diffY = std::abs(nextY - y);
 				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){//分岐のy座標の差は一定の範囲に入っていないと分岐にしないフィルタ
                     // 検出した座標をpose座標系に変換して input
-                    branches.emplace_back(ExpLib::coordinateConverter2d<geometry_msgs::Point>(listener_, pose_.data.header.frame_id, msg->header.frame_id, ExpLib::msgPoint((nextX + x)/2, (nextY + y)/2)));
+                    branches.emplace_back(ExpLib::Utility::coordinateConverter2d<geometry_msgs::Point>(listener_, pose_.data.header.frame_id, msg->header.frame_id, ExpLib::Construct::msgPoint((nextX + x)/2, (nextY + y)/2)));
 				}
 			}
 		}

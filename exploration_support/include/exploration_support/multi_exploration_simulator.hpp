@@ -5,7 +5,7 @@
 #include <geometry_msgs/Point.h>
 #include <string>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/construct.hpp>
 #include <exploration_libraly/convert.hpp>
 #include <geometry_msgs/PoseArray.h>
 #include <visualization_msgs/Marker.h>
@@ -32,9 +32,9 @@ private:
     visualization_msgs::Marker branchCoordinates_;
     visualization_msgs::Marker frontierCoordinates_;
 
-    ExpLib::pubStruct<geometry_msgs::PoseArray> poses_;
-    ExpLib::pubStruct<visualization_msgs::Marker> branches_;
-    ExpLib::pubStruct<visualization_msgs::Marker> frontiers_;
+    ExpLib::Struct::pubStruct<geometry_msgs::PoseArray> poses_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> branches_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> frontiers_;
 
 public:
     MultiExplorationSimulator();
@@ -102,7 +102,7 @@ void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<
         nh_.param<double>("robot"+std::to_string(i)+"_x",x,0.0);
         nh_.param<double>("robot"+std::to_string(i)+"_y",y,0.0);
         nh_.param<double>("robot"+std::to_string(i)+"_yaw",yaw,0.0);
-        robotPoses_.poses[i-1] = ExpLib::msgPose(ExpLib::msgPoint(x,y),ExpLib::yawToQ(yaw*M_PI/180));
+        robotPoses_.poses[i-1] = ExpLib::Construct::msgPose(ExpLib::Construct::msgPoint(x,y),ExpLib::Convert::yawToQ(yaw*M_PI/180));
     }
 
     // update branch parameters
@@ -110,7 +110,7 @@ void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<
         double x,y;
         nh_.param<double>("branch"+std::to_string(i)+"_x",x,0.0);
         nh_.param<double>("branch"+std::to_string(i)+"_y",y,0.0);
-        branchCoordinates_.points[i-1] = ExpLib::msgPoint(x,y);
+        branchCoordinates_.points[i-1] = ExpLib::Construct::msgPoint(x,y);
     }
 
     // update frontier parameters
@@ -118,7 +118,7 @@ void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<
         double x,y;
         nh_.param<double>("frontier"+std::to_string(i)+"_x",x,0.0);
         nh_.param<double>("frontier"+std::to_string(i)+"_y",y,0.0);
-        frontierCoordinates_.points[i-1] = ExpLib::msgPoint(x,y);
+        frontierCoordinates_.points[i-1] = ExpLib::Construct::msgPoint(x,y);
     }
 
     // publish for rviz
@@ -150,7 +150,7 @@ void MultiExplorationSimulator::writeParameters(void){
     for(int i=0,ie=robotPoses_.poses.size();i!=ie;++i){
         ofs << "robot" << i+1 << "_x: " << robotPoses_.poses[i].position.x << std::endl;
         ofs << "robot" << i+1 << "_y: " << robotPoses_.poses[i].position.y << std::endl;
-        ofs << "robot" << i+1 << "_yaw: " << ExpLib::qToYaw(robotPoses_.poses[i].orientation)*180/M_PI << std::endl;
+        ofs << "robot" << i+1 << "_yaw: " << ExpLib::Convert::qToYaw(robotPoses_.poses[i].orientation)*180/M_PI << std::endl;
     }
     for(int i=0,ie=branchCoordinates_.points.size();i!=ie;++i){
         ofs << "branch" << i+1 << "_x: " << branchCoordinates_.points[i].x << std::endl;

@@ -1,5 +1,5 @@
-#ifndef CONSTRUCTOR_HPP
-#define CONSTRUCTOR_HPP
+#ifndef CONSTRUCT_HPP
+#define CONSTRUCT_HPP
 
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Twist.h>
@@ -11,6 +11,8 @@
 #include <exploration_msgs/RobotInfo.h>
 
 namespace ExpLib
+{
+namespace Construct
 {
 geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0){
     geometry_msgs::Point msg;
@@ -97,5 +99,5 @@ geometry_msgs::Quaternion msgGeoQuaternion(double x, double y, double z, double 
 }
 
 }
-
-#endif // CONSTRUCTOR_HPP
+}
+#endif // CONSTRUCT_HPP

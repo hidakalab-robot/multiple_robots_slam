@@ -5,7 +5,7 @@
 #include <ros/ros.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/construct.hpp>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
@@ -19,16 +19,16 @@ private:
     int END_FRONTIER;
     double END_TIME;
 
-    ExpLib::subStructSimple map_;
-    ExpLib::subStructSimple frontier_;
+    ExpLib::Struct::subStructSimple map_;
+    ExpLib::Struct::subStructSimple frontier_;
 
-    ExpLib::pubStruct<std_msgs::Bool> areaEnd_;
-    ExpLib::pubStruct<std_msgs::Bool> frontierEnd_;
-    ExpLib::pubStruct<std_msgs::Bool> timerEnd_;
+    ExpLib::Struct::pubStruct<std_msgs::Bool> areaEnd_;
+    ExpLib::Struct::pubStruct<std_msgs::Bool> frontierEnd_;
+    ExpLib::Struct::pubStruct<std_msgs::Bool> timerEnd_;
 
-    ExpLib::pubStruct<std_msgs::Float64> areaVal_;
-    ExpLib::pubStruct<std_msgs::Int32> frontierVal_;
-    ExpLib::pubStruct<std_msgs::Float64> timerVal_;
+    ExpLib::Struct::pubStruct<std_msgs::Float64> areaVal_;
+    ExpLib::Struct::pubStruct<std_msgs::Int32> frontierVal_;
+    ExpLib::Struct::pubStruct<std_msgs::Float64> timerVal_;
 
     void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
@@ -66,14 +66,14 @@ void ExplorationManager::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
         if(m == 0) ++free;
     }
     int val = msg->info.resolution * msg->info.resolution * free;
-    areaVal_.pub.publish(ExpLib::msgDouble(val));
-    areaEnd_.pub.publish(ExpLib::msgBool(val >= END_AREA ? true : false));
+    areaVal_.pub.publish(ExpLib::Construct::msgDouble(val));
+    areaEnd_.pub.publish(ExpLib::Construct::msgBool(val >= END_AREA ? true : false));
 }
 
 void ExplorationManager::frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg){
     int val = msg->frontiers.size();
-    frontierVal_.pub.publish(ExpLib::msgInt(val));
-    frontierEnd_.pub.publish(ExpLib::msgBool(val <= END_FRONTIER ? true : false));
+    frontierVal_.pub.publish(ExpLib::Construct::msgInt(val));
+    frontierEnd_.pub.publish(ExpLib::Construct::msgBool(val <= END_FRONTIER ? true : false));
 }
 
 
@@ -82,8 +82,8 @@ void ExplorationManager::timer(void){
     ros::Rate rate(1);
     while(ros::ok()){
         double elapsedTime = ros::Duration(ros::Time::now()-startTime).toSec();
-        timerVal_.pub.publish(ExpLib::msgDouble(elapsedTime));
-        timerEnd_.pub.publish(ExpLib::msgBool(elapsedTime >= END_TIME ? true : false));
+        timerVal_.pub.publish(ExpLib::Construct::msgDouble(elapsedTime));
+        timerEnd_.pub.publish(ExpLib::Construct::msgBool(elapsedTime >= END_TIME ? true : false));
         rate.sleep();
     }
 }

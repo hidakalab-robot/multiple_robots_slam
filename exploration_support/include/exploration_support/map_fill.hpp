@@ -11,8 +11,8 @@
 class MapFill
 {
 private:
-    ExpLib::subStructSimple map_;
-    ExpLib::pubStruct<nav_msgs::OccupancyGrid> mapImage_;
+    ExpLib::Struct::subStructSimple map_;
+    ExpLib::Struct::pubStruct<nav_msgs::OccupancyGrid> mapImage_;
 
     double FILL_SIZE_MAX;
     double FILL_SIZE_MIN;

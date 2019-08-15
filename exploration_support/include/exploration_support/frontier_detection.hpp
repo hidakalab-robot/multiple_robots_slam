@@ -8,7 +8,7 @@
 #include <pcl_ros/point_cloud.h>
 #include <pcl/segmentation/extract_clusters.h>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/construct.hpp>
 
 
 // frontier を検出して座標をトピックに出す機能だけつける
@@ -68,9 +68,9 @@ private:
     int MIN_CLUSTER_SIZE;
     int MAX_CLUSTER_SIZE;
 
-    ExpLib::subStructSimple map_;
-    ExpLib::pubStruct<exploration_msgs::FrontierArray> frontier_;
-    ExpLib::pubStruct<sensor_msgs::PointCloud2> horizon_;
+    ExpLib::Struct::subStructSimple map_;
+    ExpLib::Struct::pubStruct<exploration_msgs::FrontierArray> frontier_;
+    ExpLib::Struct::pubStruct<sensor_msgs::PointCloud2> horizon_;
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
     void horizonDetection(mapStruct& map);
     clusterStruct clusterDetection(const mapStruct& map);
@@ -118,7 +118,7 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
 
     for(int i=0,e=cluster.index.size();i!=e;++i){
         if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(ExpLib::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExpLib::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
+        frontiers.emplace_back(ExpLib::Construct::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExpLib::Construct::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
@@ -261,7 +261,7 @@ void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,std::ve
 }
 
 geometry_msgs::Point FrontierDetection::arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
-    return ExpLib::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
+    return ExpLib::Construct::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
 }
 
 Eigen::Vector3i FrontierDetection::coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info){
@@ -277,7 +277,7 @@ void FrontierDetection::publishHorizon(const clusterStruct& cs, const std::strin
         if(cs.index[i].z()==0) continue;
         int c = i%12;
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-            colorCloud -> points.emplace_back(ExpLib::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
+            colorCloud -> points.emplace_back(ExpLib::Construct::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
         }
     }
     colorCloud -> width = colorCloud -> points.size();

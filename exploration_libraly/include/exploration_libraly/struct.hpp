@@ -8,6 +8,8 @@
 
 namespace ExpLib
 {
+namespace Struct
+{
 template <typename T>
 struct subStruct{
     ros::NodeHandle n;
@@ -65,11 +67,11 @@ struct scanStruct{
 
 struct listStruct{
     geometry_msgs::Point point;
-    DuplicationStatus duplication;
-    listStruct():duplication(ExpLib::DuplicationStatus::NOT_DUPLECATION){};
-    listStruct(const geometry_msgs::Point& p):point(p),duplication(ExpLib::DuplicationStatus::NOT_DUPLECATION){};
+    Enum::DuplicationStatus duplication;
+    listStruct():duplication(Enum::DuplicationStatus::NOT_DUPLECATION){};
+    listStruct(const geometry_msgs::Point& p):point(p),duplication(Enum::DuplicationStatus::NOT_DUPLECATION){};
 };
 
 }
-
+}
 #endif // STRUCT_HPP

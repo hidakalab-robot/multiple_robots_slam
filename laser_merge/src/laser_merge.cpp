@@ -6,7 +6,6 @@
 #include <tf/transform_listener.h>
 #include <pcl_ros/point_cloud.h>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/convert.hpp>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <exploration_libraly/utility.hpp>
 
@@ -30,7 +29,7 @@ int main(int argc, char** argv){
     sync.registerCallback(boost::bind(+[](const sensor_msgs::LaserScanConstPtr& scan1,const sensor_msgs::LaserScanConstPtr& scan2, const std::string& mlf)->void{
         static int LASER_NUMBER = 2;
         static laser_geometry::LaserProjection lp_;
-        static ExpLib::pubStruct<sensor_msgs::PointCloud2> pc2("cloud_out",1);
+        static ExpLib::Struct::pubStruct<sensor_msgs::PointCloud2> pc2("cloud_out",1);
         static std::vector<tf::TransformListener> listener(LASER_NUMBER);
         static std::vector<bool> initialized(LASER_NUMBER);
 
@@ -47,7 +46,7 @@ int main(int argc, char** argv){
             lp_.projectLaser(scan[i],cloud[i]);
             pcl::PointCloud<pcl::PointXYZ>::Ptr tempCloud(new pcl::PointCloud<pcl::PointXYZ>);
             pcl::fromROSMsg(cloud[i],*tempCloud);
-            for(auto&& p : tempCloud->points) ExpLib::coordinateConverter2d<void>(listener[i],mlf,scan[i].header.frame_id,p);
+            for(auto&& p : tempCloud->points) ExpLib::Utility::coordinateConverter2d<void>(listener[i],mlf,scan[i].header.frame_id,p);
             pcl::toROSMsg(*tempCloud,cloud[i]);
         }
 

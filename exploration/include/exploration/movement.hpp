@@ -66,10 +66,10 @@ private:
     double EMERGENCY_DIFF_THRESHOLD;
     double ANGLE_BIAS;    
 
-    ExpLib::subStruct<sensor_msgs::LaserScan> scan_;
-    ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExpLib::subStruct<kobuki_msgs::BumperEvent> bumper_;
-    ExpLib::pubStruct<geometry_msgs::Twist> velocity_;
+    ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
+    ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExpLib::Struct::subStruct<kobuki_msgs::BumperEvent> bumper_;
+    ExpLib::Struct::pubStruct<geometry_msgs::Twist> velocity_;
 
     double previousOrientation_;
     
@@ -186,7 +186,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
             listener.waitForTransform(pose_.data.header.frame_id, goal.header.frame_id, ros::Time(), ros::Duration(1.0));
             initialized = true;
         }
-        ExpLib::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
+        ExpLib::Utility::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
     move_base_msgs::MoveBaseGoal to;
@@ -194,7 +194,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     to.target_pose.header.stamp = ros::Time::now();
 
     // 回転角度の補正値
-    double yaw = ExpLib::qToYaw(pose_.data.pose.orientation);
+    double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
     Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
     double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
     Eigen::Matrix2d rotation;
@@ -207,7 +207,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
 
-    to.target_pose.pose = ExpLib::msgPose(goal.point,ExpLib::eigenQuaToGeoQua(q));
+    to.target_pose.pose = ExpLib::Construct::msgPose(goal.point,ExpLib::Convert::eigenQuaToGeoQua(q));
 
     ROS_DEBUG_STREAM("goal pose : " << to.target_pose.pose);
     ROS_INFO_STREAM("send goal to move_base");
@@ -415,15 +415,15 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
 void Movement::recoveryRotation(void){
     ROS_WARN_STREAM("Recovery Rotation !");
-    velocity_.pub.publish(ExpLib::msgTwist(0,previousOrientation_ * ROTATION_VELOCITY * VELOCITY_GAIN));
+    velocity_.pub.publish(ExpLib::Construct::msgTwist(0,previousOrientation_ * ROTATION_VELOCITY * VELOCITY_GAIN));
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
-    return ExpLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
+    return ExpLib::Construct::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
 }
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
-    ExpLib::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
+    ExpLib::Struct::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
@@ -454,20 +454,20 @@ void Movement::oneRotation(void){
 
     if(pose_.q.callOne(ros::WallDuration(1))) return;
 
-    double initYaw,yaw = ExpLib::qToYaw(pose_.data.pose.orientation);
+    double initYaw,yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
 
     if(std::isnan(initSign)) initSign = 1.0;
 
     //initYawが+の時は+回転
     //initYawが-の時は-回転
-    geometry_msgs::Twist vel = ExpLib::msgTwist(0,initSign * ROTATION_VELOCITY);
+    geometry_msgs::Twist vel = ExpLib::Construct::msgTwist(0,initSign * ROTATION_VELOCITY);
     
     for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
         double yawOld = yaw;
         velocity_.pub.publish(vel);
         pose_.q.callOne(ros::WallDuration(1));
-        yaw = ExpLib::qToYaw(pose_.data.pose.orientation);
+        yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
         if(yawOld * yaw < 0) ++count;
     }
 }

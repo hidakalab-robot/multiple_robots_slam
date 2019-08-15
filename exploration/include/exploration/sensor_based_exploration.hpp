@@ -16,15 +16,15 @@ private:
     double DUPLICATE_TOLERANCE;
     double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
 
-    ExpLib::subStruct<exploration_msgs::PointArray> branch_;
-    ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExpLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
+    ExpLib::Struct::subStruct<exploration_msgs::PointArray> branch_;
+    ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExpLib::Struct::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 
-    void duplicateDetection(std::vector<ExpLib::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
-    virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+    void duplicateDetection(std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
+    virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
 protected:
     geometry_msgs::Point lastGoal_;
-    ExpLib::pubStruct<geometry_msgs::PointStamped> goal_;
+    ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
 public:
     SensorBasedExploration();
     bool getGoal(geometry_msgs::PointStamped& goal);
@@ -62,7 +62,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
         return false;
     }
 
-    std::vector<ExpLib::listStruct> ls;
+    std::vector<ExpLib::Struct::listStruct> ls;
     ls.reserve(branch_.data.points.size());
 
     // 別形式 // 直前の目標と近い分岐は無視したい
@@ -83,7 +83,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 }
 
 
-void SensorBasedExploration::duplicateDetection(std::vector<ExpLib::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
+void SensorBasedExploration::duplicateDetection(std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
 	
@@ -101,19 +101,19 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExpLib::listStruct>&
             //過去のオドメトリが重複判定の範囲内に入っているか//
             if(Eigen::Vector2d(l.point.x - log.poses[i].pose.position.x, l.point.y - log.poses[i].pose.position.y).norm() < DUPLICATE_TOLERANCE){
                 ROS_DEBUG_STREAM("This Branch is Duplicated");
-                l.duplication = ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? ExpLib::DuplicationStatus::OLDER : ExpLib::DuplicationStatus::NEWER;
+                l.duplication = ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? ExpLib::Enum::DuplicationStatus::OLDER : ExpLib::Enum::DuplicationStatus::NEWER;
                 break;
             }
         }
 	}
 }
 
-bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
     // 重複していない中で距離が一番近いやつ
     double dist = DBL_MAX;
 
     for(const auto& l : ls){
-        if(l.duplication != ExpLib::DuplicationStatus::NOT_DUPLECATION) continue;
+        if(l.duplication != ExpLib::Enum::DuplicationStatus::NOT_DUPLECATION) continue;
         double temp = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y).norm();
         if(temp <= dist){
             dist = std::move(temp);

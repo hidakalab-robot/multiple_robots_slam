@@ -4,7 +4,7 @@
 #include <ros/ros.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/construct.hpp>
 #include <exploration_libraly/convert.hpp>
 #include <mutex>
 #include <geometry_msgs/PoseStamped.h>
@@ -37,8 +37,8 @@ private:
     double POSE_LOG_INTERVAL;
     std::string INDIVISUAL_POSE_LOG_TOPIC;
 
-    ExpLib::pubStruct<exploration_msgs::RobotInfoArray> robotArray_;
-    ExpLib::pubStruct<exploration_msgs::PoseStampedArray> poseArray_; 
+    ExpLib::Struct::pubStruct<exploration_msgs::RobotInfoArray> robotArray_;
+    ExpLib::Struct::pubStruct<exploration_msgs::PoseStampedArray> poseArray_; 
 
     exploration_msgs::PoseStampedArray allPoseLog_;
 
@@ -137,9 +137,9 @@ void RobotManager::convertPoseToRobotInfo(void){
         std::lock_guard<boost::shared_mutex> bLock(robotListMutex_);
         for(auto&& robot : robotList_){
             std::lock_guard<std::mutex> lock(robot.mutex);
-            double yaw = ExpLib::qToYaw(robot.pose.pose.orientation);
-            // ria.info.emplace_back(ExpLib::msgRobotInfo(robot.name,robot.pose,robot.pose.pose.position,ExpLib::msgVector(cos(yaw),sin(yaw))));
-            ria.info.emplace_back(ExpLib::msgRobotInfo(robot.name,robot.pose.pose));
+            double yaw = ExpLib::Convert::qToYaw(robot.pose.pose.orientation);
+            // ria.info.emplace_back(ExpLib::Construct::msgRobotInfo(robot.name,robot.pose,robot.pose.pose.position,ExpLib::Construct::msgVector(cos(yaw),sin(yaw))));
+            ria.info.emplace_back(ExpLib::Construct::msgRobotInfo(robot.name,robot.pose.pose));
         }
     }
     ria.header.stamp = ros::Time::now();

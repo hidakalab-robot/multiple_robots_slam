@@ -35,6 +35,8 @@ In source file
             pp.createPath(start,goal,path,map); // In addition to the above, insert voronoi-grid into map
 */
 
+namespace ExpLib
+{
 template<typename T>
 class PathPlanning
 {
@@ -104,5 +106,6 @@ public:
         return false;
     }
 };
+}
 
 #endif //PATH_PLANNING_HPP

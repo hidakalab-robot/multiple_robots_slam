@@ -8,7 +8,7 @@
 #include <forward_list>
 #include <iterator>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/construct.hpp>
 
 class CloudMapMerge
 {
@@ -29,7 +29,7 @@ private:
     ros::NodeHandle s_;
     ros::NodeHandle p_;
 
-    ExpLib::pubStruct<sensor_msgs::PointCloud2> pc2_;
+    ExpLib::Struct::pubStruct<sensor_msgs::PointCloud2> pc2_;
 
     std::forward_list<robotInfo> robotList_;
 
@@ -169,7 +169,7 @@ void CloudMapMerge::mapMerging(void){
                 for(const auto& point : robot.pclMap->points){
                     if(point.z < CEILING_HEIGHT && point.z > FLOOR_HEIGHT){
                         Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(point.x,point.y));
-                        tempCloud -> points.emplace_back(ExpLib::pclXYZRGB(tempPoint.x() + robot.initPose.x, tempPoint.y() + robot.initPose.y,point.z,point.r,point.g,point.b));
+                        tempCloud -> points.emplace_back(ExpLib::Construct::pclXYZRGB(tempPoint.x() + robot.initPose.x, tempPoint.y() + robot.initPose.y,point.z,point.r,point.g,point.b));
                     }
                 }
                 robot.processedPclMap = std::move(tempCloud);

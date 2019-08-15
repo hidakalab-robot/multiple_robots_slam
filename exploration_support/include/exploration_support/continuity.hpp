@@ -9,8 +9,8 @@ template<typename T>
 class Continuity
 {
 private:
-    ExpLib::subStruct<T> sub_;
-    ExpLib::pubStruct<T> pub_;
+    ExpLib::Struct::subStruct<T> sub_;
+    ExpLib::Struct::pubStruct<T> pub_;
 
 public:
     Continuity(const std::string& sub_topic, const std::string& pub_topic):sub_(sub_topic,1),pub_(pub_topic,1){};

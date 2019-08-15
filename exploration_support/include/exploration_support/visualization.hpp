@@ -8,7 +8,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <visualization_msgs/Marker.h>
 #include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/constructor.hpp>
+#include <exploration_libraly/construct.hpp>
 #include <thread>
 #include <nav_msgs/Path.h>
 #include <exploration_msgs/FrontierArray.h>
@@ -25,23 +25,23 @@ private:
     std::string MAP_FRAME_ID;
 
     //pose
-    ExpLib::subStructSimple pose_;
-    ExpLib::pubStruct<nav_msgs::Path> posePath_;   
+    ExpLib::Struct::subStructSimple pose_;
+    ExpLib::Struct::pubStruct<nav_msgs::Path> posePath_;   
     nav_msgs::Path pp_;
 
     //goal
-    ExpLib::subStructSimple goal_;
-    ExpLib::pubStruct<visualization_msgs::Marker> goalMarker_;
+    ExpLib::Struct::subStructSimple goal_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> goalMarker_;
     visualization_msgs::Marker gm_;
 
     // branch
-    ExpLib::subStructSimple branch_;
-    ExpLib::pubStruct<visualization_msgs::Marker> branchMarker_;
+    ExpLib::Struct::subStructSimple branch_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> branchMarker_;
     visualization_msgs::Marker bm_;
 
     // frontier
-    ExpLib::subStructSimple frontier_;
-    ExpLib::pubStruct<visualization_msgs::Marker> frontierMarker_;
+    ExpLib::Struct::subStructSimple frontier_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> frontierMarker_;
     visualization_msgs::Marker fm_;
 
     
