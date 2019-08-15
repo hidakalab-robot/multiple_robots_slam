@@ -36,7 +36,8 @@
     <arg name="cloud_map_topic" default="merge_map/cloud"/>
 
     <!-- map_fill -->
-    <arg name="fill" default="true"/>
+    <arg name="map_fill" default="true"/>
+    <arg name="fill_map" default="fill_map"/>
     
 
     <group ns="$(arg server_name)">
@@ -56,24 +57,28 @@
         </include>
 
         <!-- map_fill -->
-        <node pkg="exploration_support" type="map_fill" name="map_fill">
+        <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="map_fill">
             <remap from="map" to="$(arg grid_map_topic)"/>
+            <remap from="fill_map" to="$(arg fill_map)"/>
         </node>
 
         <!-- exploration_manager -->
         <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
-            <remap if="$(arg fill)" from="map" to="fill_map"/>
-            <remap unless="$(arg fill)" from="map" to="$(arg grid_map_topic)"/>
-            <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier 2:timer -->
-            <param name="min_cluster_size" value="30"/>
+            <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+            <remap unless="$(arg map_fill)" from="map" to="$(arg grid_map_topic)"/>
 	        <param name="area_rate" value="1.0"/>
             <param name="end_time" value="1200"/>
         </node>
 
         <!-- robot_manager --> <!-- ローカルlogとかについてちゃんと -->
         <node pkg="exploration_support" type="robot_manager" name="robot_manager">
-            <remap from="pose_log/all_robots" to="pose_log/global/all"/>
             <param name="pose_log_rate" value="1.0"/>
+        </node>
+
+        <!-- frontier_detection -->
+        <node pkg="exploration_support" type="frontier_detection" name="frontier_detection">
+            <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+            <remap unless="$(arg map_fill)" from="map" to="$(arg grid_map_topic)"/>
         </node>
     </group>
 </launch>

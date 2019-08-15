@@ -9,13 +9,14 @@
 #include <exploration_libraly/convert.hpp>
 #include <message_filters/sync_policies/approximate_time.h>
 #include <Eigen/Geometry>
+#include <exploration_libraly/utility.hpp>
 
 class LaserMerge{
 private:
     std::string MERGE_LASER_FRAME;
     int LASER_NUMBER;
 
-    laser_geometry::LaserProjection lp;
+    laser_geometry::LaserProjection lp_;
     ExpLib::pubStruct<sensor_msgs::PointCloud2> pc2_;
 
 public:
@@ -44,28 +45,10 @@ void LaserMerge::callback(const sensor_msgs::LaserScanConstPtr& scan1,const sens
             listener[i].waitForTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(), ros::Duration(1.0));
             initialized[i] = true;
         }
-        tf::StampedTransform transform;
-        listener[i].lookupTransform(MERGE_LASER_FRAME, scan[i].header.frame_id, ros::Time(0), transform);
-        lp.projectLaser(scan[i],cloud[i]);
-
+        lp_.projectLaser(scan[i],cloud[i]);
         pcl::PointCloud<pcl::PointXYZ>::Ptr tempCloud(new pcl::PointCloud<pcl::PointXYZ>);
         pcl::fromROSMsg(cloud[i],*tempCloud);
-
-        double transX = transform.getOrigin().getX();
-        double transY = transform.getOrigin().getY();
-        double transYaw = ExpLib::qToYaw(transform.getRotation());
-
-        ROS_INFO_STREAM("frame: " << scan[i].header.frame_id << ", transX: " << transX << ", transY: " << transY);
-
-        Eigen::Matrix2d rotation;
-        rotation << cos(transYaw) , -sin(transYaw) , sin(transYaw) , cos(transYaw);
-
-        for(auto&& p : tempCloud->points) {
-            Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(p.x - transX, p.y - transY));
-            p.x = tempPoint.x();
-            p.y = tempPoint.y();
-            p.z = 0;
-        }
+        for(auto&& p : tempCloud->points) ExpLib::coordinateConverter2d<void>(listener[i],MERGE_LASER_FRAME,scan[i].header.frame_id,p);
         pcl::toROSMsg(*tempCloud,cloud[i]);
     }
 

@@ -42,21 +42,21 @@ public:
 ExplorationManager::ExplorationManager()
     :map_("map", 1, &ExplorationManager::mapCB, this)
     ,frontier_("frontier", 1, &ExplorationManager::frontierCB, this)
-    ,areaEnd_("end_condition/area/is_end",1,true)
-    ,frontierEnd_("end_condition/frontier/is_end",1,true)
-    ,timerEnd_("end_condition/timer/is_end",1,true)
-    ,areaVal_("end_condition/area/value",1,true)
-    ,frontierVal_("end_condition/frontier/value",1,true)
-    ,timerVal_("end_condition/timer/value",1,true){
+    ,areaEnd_("end/area",1,true)
+    ,frontierEnd_("end/frontier",1,true)
+    ,timerEnd_("end/timer",1,true)
+    ,areaVal_("end/area/value",1,true)
+    ,frontierVal_("end/frontier/value",1,true)
+    ,timerVal_("end/timer/value",1,true){
 
     ros::NodeHandle p("~");
-    p.param<int>("end_frontier",this->END_FRONTIER,0);
-    p.param<double>("end_time",this->END_TIME,1200);// second
-    p.param<double>("end_area",this->END_AREA,46.7*14-9.5*10-((4.1+2.7+7.5)*10-2.7*5.8)-8.0*10-7.5*10-0.9*10);//267.46
+    p.param<int>("end_frontier",END_FRONTIER,0);
+    p.param<double>("end_time",END_TIME,1200);// second
+    p.param<double>("end_area",END_AREA,46.7*14-9.5*10-((4.1+2.7+7.5)*10-2.7*5.8)-8.0*10-7.5*10-0.9*10);//267.46
     double AREA_RATE,AREA_TOLERANCE;
     p.param<double>("area_rate",AREA_RATE,1.0);
     p.param<double>("area_tolerance",AREA_TOLERANCE,0.9);
-    this->END_AREA *= AREA_RATE * AREA_TOLERANCE;
+    END_AREA *= AREA_RATE * AREA_TOLERANCE;
 };
 
 
@@ -66,14 +66,14 @@ void ExplorationManager::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
         if(m == 0) ++free;
     }
     int val = msg->info.resolution * msg->info.resolution * free;
-    this->areaVal_.pub.publish(ExpLib::msgDouble(val));
-    this->areaEnd_.pub.publish(ExpLib::msgBool(val >= this->END_AREA ? true : false));
+    areaVal_.pub.publish(ExpLib::msgDouble(val));
+    areaEnd_.pub.publish(ExpLib::msgBool(val >= END_AREA ? true : false));
 }
 
 void ExplorationManager::frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg){
     int val = msg->frontiers.size();
-    this->frontierVal_.pub.publish(ExpLib::msgInt(val));
-    this->frontierEnd_.pub.publish(ExpLib::msgBool(val <= this->END_FRONTIER ? true : false));
+    frontierVal_.pub.publish(ExpLib::msgInt(val));
+    frontierEnd_.pub.publish(ExpLib::msgBool(val <= END_FRONTIER ? true : false));
 }
 
 
@@ -82,8 +82,8 @@ void ExplorationManager::timer(void){
     ros::Rate rate(1);
     while(ros::ok()){
         double elapsedTime = ros::Duration(ros::Time::now()-startTime).toSec();
-        this->timerVal_.pub.publish(ExpLib::msgDouble(elapsedTime));
-        this->timerEnd_.pub.publish(ExpLib::msgBool(elapsedTime >= this->END_TIME ? true : false));
+        timerVal_.pub.publish(ExpLib::msgDouble(elapsedTime));
+        timerEnd_.pub.publish(ExpLib::msgBool(elapsedTime >= END_TIME ? true : false));
         rate.sleep();
     }
 }

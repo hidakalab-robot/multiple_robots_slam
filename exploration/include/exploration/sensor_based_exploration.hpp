@@ -16,18 +16,14 @@ private:
     double DUPLICATE_TOLERANCE;
     double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
 
-
-    
-
     ExpLib::subStruct<exploration_msgs::PointArray> branch_;
     ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExpLib::subStruct<exploration_msgs::PoseStampedArray> log_;
+    ExpLib::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 
-    
     void duplicateDetection(std::vector<ExpLib::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
     virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
 protected:
-    geometry_msgs::Point lastGoal;
+    geometry_msgs::Point lastGoal_;
     ExpLib::pubStruct<geometry_msgs::PointStamped> goal_;
 public:
     SensorBasedExploration();
@@ -37,7 +33,7 @@ public:
 SensorBasedExploration::SensorBasedExploration()
     :branch_("branch", 1)
     ,pose_("pose", 1)
-    ,log_("log", 1)
+    ,poseLog_("pose_log", 1)
     ,goal_("goal", 1){
 
     ros::NodeHandle p("~");
@@ -61,7 +57,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     }
 
     // log の読みこみ
-    if(log_.q.callOne(ros::WallDuration(1))){
+    if(poseLog_.q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read pose log");
         return false;
     }
@@ -71,7 +67,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 
     // 別形式 // 直前の目標と近い分岐は無視したい
     for(const auto& b : branch_.data.points){
-        if(Eigen::Vector2d(b.x - lastGoal.x, b.y - lastGoal.y).norm()<LAST_GOAL_TOLERANCE) ls.emplace_back(b);
+        if(Eigen::Vector2d(b.x - lastGoal_.x, b.y - lastGoal_.y).norm()<LAST_GOAL_TOLERANCE) ls.emplace_back(b);
     }
 
     if(ls.size() == 0) {
@@ -80,7 +76,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     }
 
     // 重複探査検出
-    duplicateDetection(ls, log_.data);
+    duplicateDetection(ls, poseLog_.data);
 
     // goal を決定 // 適切なゴールが無ければ false
     return decideGoal(goal, ls, pose_.data);
@@ -128,8 +124,8 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
     if(dist < DBL_MAX){
         goal.header.frame_id = pose.header.frame_id;
         goal.header.stamp = ros::Time::now();
-        lastGoal = goal.point;
-        this->goal_.pub.publish(goal);
+        lastGoal_ = goal.point;
+        goal_.pub.publish(goal);
         return true;
     }
     return false;

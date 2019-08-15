@@ -75,51 +75,23 @@ SeamlessHybridExploration::SeamlessHybridExploration()
 }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
-    if(this->robotArray_.q.callOne(ros::WallDuration(1))){
+    if(robotArray_.q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read robot_array or don't find robot_array"); 
         return false;
     }
-    if(this->frontier_.q.callOne(ros::WallDuration(1))){
+    if(frontier_.q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read frontier or don't find frontier"); 
         return false;
     }
 
-    this->ps_ = pose;
-    this->ls_ = ls;
-    this->fa_ = this->frontier_.data;
-    this->ria_ = this->robotArray_.data;
+    ps_ = pose;
+    ls_ = ls;
+    fa_ = frontier_.data;
+    ria_ = robotArray_.data;
 
-    if(!this->filter(ls_, fa_, ria_)) return false;
+    if(!filter(ls_, fa_, ria_)) return false;
 
-    return this->decideGoal(goal);
-
-    // preCalc(ls_, fa_, ria_, pose);
-
-    // // 評価計算
-    // auto evaluation = [this](const double d, const double a){return DISTANCE_WEIGHT * d / mVal.distance + DIRECTION_WEIGHT * a / mVal.angle;};
-
-    // double minE = DBL_MAX;
-
-    // for(int m=0,me=ownPreCalc.size();m!=me;++m){
-    //     double e = 1;
-    //     for(int i=0,ie=ownPreCalc[m].values.size();i!=ie;++i){
-    //         double subE = 0;
-    //         if(otherPreCalc.size()==0) subE = DBL_MAX;
-    //         else for(const auto& opc : otherPreCalc) subE += evaluation(opc.values[i].distance, opc.values[i].angle);
-    //         e *= evaluation(ownPreCalc[m].values[i].distance, ownPreCalc[m].values[i].angle) + (OTHER_ROBOT_WEIGHT/subE);
-    //     }
-    //     // ROS_DEBUG_STREAM("position : (" << mainRobotInfo[m].robot.coordinate.x << "," << mainRobotInfo[m].robot.coordinate.y << "), sum : " << e);
-    //     ROS_DEBUG_STREAM("position : (" << ownPreCalc[m].point.x << "," << ownPreCalc[m].point.y << "), sum : " << e);
-    //     if(e < minE){
-    //         minE = std::move(e);
-    //         // goal = mainRobotInfo[m].robot.coordinate;
-    //         goal.header.frame_id = pose.header.frame_id;
-    //         goal.header.stamp = ros::Time::now();
-    //         goal.point = ownPreCalc[m].point;
-    //         goal_.pub.publish(goal);
-    //         if(m == me -1) return false;
-    //     }
-    // }
-    // this->lastGoal = goal.point;
-    // return true;
+    return decideGoal(goal);
 }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
@@ -151,7 +123,7 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
             if(m == me -1) return false;
         }
     }
-    this->lastGoal = goal.point;
+    lastGoal_ = goal.point;
     return true;
 }
 
@@ -185,9 +157,9 @@ bool SeamlessHybridExploration::filter(std::vector<ExpLib::listStruct>& ls, expl
 }
 
 void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
-    this->ownPreCalc_ = std::vector<preCalcResult>();
-    this->otherPreCalc_ = std::vector<preCalcResult>();
-    this->mVal_ = maxValue();
+    ownPreCalc_ = std::vector<preCalcResult>();
+    otherPreCalc_ = std::vector<preCalcResult>();
+    mVal_ = maxValue();
 
     auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1){
         SeamlessHybridExploration::preCalcResult pcr;
@@ -221,22 +193,22 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::listStruct>& l
     for(const auto& l : ls){
         double distance;
         Eigen::Vector2d v1;
-        if(!this->pp_.getDistanceAndVec(pose,ExpLib::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
+        if(!pp_.getDistanceAndVec(pose,ExpLib::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
             v1 = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y);
             distance = v1.lpNorm<1>();
             v1.normalize();
         }
-        this->ownPreCalc_.emplace_back(calc(l.point,v1));
+        ownPreCalc_.emplace_back(calc(l.point,v1));
         forward += distance;
     }
     forward /= ls.size();
 
     // 直進時の計算
     Eigen::Vector2d fwdV1 = ExpLib::qToVector2d(pose.pose.orientation);; 
-    this->ownPreCalc_.emplace_back(calc(ExpLib::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
+    ownPreCalc_.emplace_back(calc(ExpLib::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
 
     // 他のロボットに関する計算
-    for(const auto& ri : ria.info) this->otherPreCalc_.emplace_back(calc(ri.pose.position,ExpLib::qToVector2d(ri.pose.orientation)));
+    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExpLib::qToVector2d(ri.pose.orientation)));
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){
@@ -249,9 +221,9 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
 
     p.param<std::string>("frame_id", FRAME_ID, "map");
     p.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "extra_parameter");
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/direction_weight", this->DIRECTION_WEIGHT, 1.5);
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/distance_weight", this->DISTANCE_WEIGHT, 2.5);
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/other_robot_weight", this->OTHER_ROBOT_WEIGHT, 1.0); 
+    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/direction_weight", DIRECTION_WEIGHT, 1.5);
+    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/distance_weight", DISTANCE_WEIGHT, 2.5);
+    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0); 
     p.param<int>("/"+EXTRA_PARAMETER_NAMESPACE+"/simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
 
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
@@ -264,18 +236,18 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
     // ls 格納
     ls.resize(b.size());
     for(int i=0,ie=b.size();i!=ie;++i) ls[i].point = b[i];
-    this->ls_ = ls;
+    ls_ = ls;
 
     // fa 格納
     fa.frontiers.resize(f.size());
     fa.header.frame_id = FRAME_ID;
     for(int i=0,ie=f.size();i!=ie;++i) fa.frontiers[i].point = f[i];
-    this->fa_ = fa;
+    fa_ = fa;
 
     // ps 格納
     ps.header.frame_id = FRAME_ID;
     ps.pose = r[SIMULATE_ROBOT_INDEX-1];
-    this->ps_ = ps;
+    ps_ = ps;
 
     // ria 格納 
     ria.info.resize(r.size()-1);
@@ -283,10 +255,10 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
         if(i+1 == SIMULATE_ROBOT_INDEX) continue;
         ria.info[ix++].pose = r[i];
     }
-    this->ria_ = ria;
+    ria_ = ria;
 
     geometry_msgs::PointStamped goal;
-    this->decideGoal(goal);
+    decideGoal(goal);
 
     pp.createPath(ps_,ExpLib::pointStampedToPoseStamped(goal));
 }

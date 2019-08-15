@@ -8,9 +8,9 @@
 namespace ExpLib
 {
 // destFrame から見た origFrame の座標を取得する // origFrame の座標を destFrame での座標に変換する
-template <typename T> T coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p);
+template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p);
 
-template<> void coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p){
+template<> void coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p){
     tf::StampedTransform transform;
     l.lookupTransform(destFrame, origFrame, ros::Time(0), transform);
 
@@ -18,8 +18,6 @@ template<> void coordinateConverter(const tf::TransformListener& l, const std::s
     double transYaw = qToYaw(transQ);
     double transX = transform.getOrigin().getX();
     double transY = transform.getOrigin().getY();
-
-    // ROS_INFO_STREAM("trans : " << transX << ", " << transY << ", " << transYaw);
 
     Eigen::Matrix2d rotation;
     rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
@@ -29,26 +27,32 @@ template<> void coordinateConverter(const tf::TransformListener& l, const std::s
     p.orientation = tfQuaToGeoQua(tf::Quaternion(p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w)*=transQ);
 }
 
-template<> geometry_msgs::Pose coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p){
-    coordinateConverter<void>(l,destFrame,origFrame,p);
+template<> geometry_msgs::Pose coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p){
+    coordinateConverter2d<void>(l,destFrame,origFrame,p);
     return p;
 }
 
-template <typename T> T coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p);
-template <typename T> T coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, const geometry_msgs::Point& p);
+template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p);
+template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, const geometry_msgs::Point& p);
 
-template<> void coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p){
+template<> void coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p){
     geometry_msgs::Pose ps = pointToPose(p);
-    coordinateConverter<void>(l,destFrame,origFrame,ps);
+    coordinateConverter2d<void>(l,destFrame,origFrame,ps);
     p = ps.position;
 }
 
-template<> geometry_msgs::Point coordinateConverter(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, const geometry_msgs::Point& p){
-    // ROS_INFO_STREAM("input : " << p.x << ", " << p.y);
+template<> geometry_msgs::Point coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, const geometry_msgs::Point& p){
     geometry_msgs::Point pl = p;
-    coordinateConverter<void>(l,destFrame,origFrame,pl);
-    // ROS_INFO_STREAM("output : " << pl.x << ", " << pl.y);
+    coordinateConverter2d<void>(l,destFrame,origFrame,pl);
     return pl;
+}
+
+template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, pcl::PointXYZ& p);
+
+template<> void coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, pcl::PointXYZ& p){
+    geometry_msgs::Pose ps = pointToPose(pclPointXYZToPoint(p));
+    coordinateConverter2d<void>(l,destFrame,origFrame,ps);
+    p = pointToPclPointXYZ(ps.position);
 }
 
 }

@@ -18,7 +18,7 @@ private:
     double BRANCH_MAX_X;
 	double BRANCH_DIFF_X_MIN;
 
-    tf::TransformListener listener;
+    tf::TransformListener listener_;
 
     ExpLib::subStructSimple scan_;
     ExpLib::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -37,12 +37,11 @@ BranchDetection::BranchDetection()
 
     ros::NodeHandle p("~");
     p.param<double>("obstacle_check_angle", OBSTACLE_CHECK_ANGLE, 0.04);
-    p.param<double>("obstacle_range_mix", OBSTACLE_RANGE_MIX,2.0);
+    p.param<double>("obstacle_range_mix", OBSTACLE_RANGE_MIX,2.5);
 
     p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
     p.param<double>("branch_max_x", BRANCH_MAX_X, 5.5);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
-    
 }
 
 void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
@@ -54,7 +53,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
 
     static bool initialized = false;
     if(!initialized){
-        listener.waitForTransform(pose_.data.header.frame_id, msg->header.frame_id, ros::Time(), ros::Duration(1.0));
+        listener_.waitForTransform(pose_.data.header.frame_id, msg->header.frame_id, ros::Time(), ros::Duration(1.0));
         initialized = true;
     }
 
@@ -102,7 +101,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
 				double diffY = std::abs(nextY - y);
 				if(BRANCH_MIN_Y <= diffY && diffY <= BRANCH_MAX_Y){//分岐のy座標の差は一定の範囲に入っていないと分岐にしないフィルタ
                     // 検出した座標をpose座標系に変換して input
-                    branches.emplace_back(ExpLib::coordinateConverter<geometry_msgs::Point>(listener, pose_.data.header.frame_id, msg->header.frame_id, ExpLib::msgPoint((nextX + x)/2, (nextY + y)/2)));
+                    branches.emplace_back(ExpLib::coordinateConverter2d<geometry_msgs::Point>(listener_, pose_.data.header.frame_id, msg->header.frame_id, ExpLib::msgPoint((nextX + x)/2, (nextY + y)/2)));
 				}
 			}
 		}

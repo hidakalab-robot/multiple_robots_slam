@@ -112,14 +112,7 @@
     </group>
 
     <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="robot_pose_publisher">
-        <remap from="robot_pose" to="robot_pose/local"/>
-        <param name="map_frame" value="$(arg robot_name)/map"/>
-        <param name="base_frame" value="$(arg robot_name)/base_link"/>
-        <param name="is_stamped" value="true"/>
-    </node>
-
-    <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
-        <remap from="robot_pose" to="robot_pose/global"/>
+        <remap from="robot_pose" to="pose"/>
         <param if="$(arg multi)" name="map_frame" value="$(arg merge_map_frame)"/>
         <param unless="$(arg multi)" name="map_frame" value="$(arg robot_name)/map"/>
         <param name="base_frame" value="$(arg robot_name)/base_link"/>

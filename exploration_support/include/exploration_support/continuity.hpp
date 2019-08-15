@@ -13,7 +13,7 @@ private:
     ExpLib::pubStruct<T> pub_;
 
 public:
-    Continuity():sub_("sub_topic",1),pub_("pub_topic",1){};
+    Continuity(const std::string& sub_topic, const std::string& pub_topic):sub_(sub_topic,1),pub_(pub_topic,1){};
     void publish(void){
         sub_.q.callOne(ros::WallDuration(0.1));
         pub_.pub.publish(sub_.data);

@@ -27,9 +27,9 @@ private:
         ros::Publisher pub;
     };
 
-    ros::NodeHandle nhs;
-    boost::shared_mutex robotListMutex;
-    std::forward_list<robotStruct> robotList;
+    ros::NodeHandle nhs_;
+    boost::shared_mutex robotListMutex_;
+    std::forward_list<robotStruct> robotList_;
 
     std::string ROBOT_TOPIC;
     double RAGISTRATION_RATE;
@@ -40,7 +40,7 @@ private:
     ExpLib::pubStruct<exploration_msgs::RobotInfoArray> robotArray_;
     ExpLib::pubStruct<exploration_msgs::PoseStampedArray> poseArray_; 
 
-    exploration_msgs::PoseStampedArray allPoseLog;
+    exploration_msgs::PoseStampedArray allPoseLog_;
 
     void robotRegistration(void);//ロボットの情報を登録
     void update(const geometry_msgs::PoseStamped::ConstPtr& msg, RobotManager::robotStruct& robot); // データの更新
@@ -53,9 +53,9 @@ public:
     void multiThreadMain(void);
 };
 
-RobotManager::RobotManager():robotArray_("robot_array",1,true),poseArray_("pose_log/all_robots",1,true){
+RobotManager::RobotManager():robotArray_("robot_array",1,true),poseArray_("pose_log/merge",1,true){
     ros::NodeHandle p("~");
-    p.param<std::string>("robot_topic",ROBOT_TOPIC,"robot_pose/global");//globalのポーズを撮ってこないと厳しい
+    p.param<std::string>("robot_topic",ROBOT_TOPIC,"pose");//globalのポーズを撮ってこないと厳しい
     p.param<double>("ragistration_rate", RAGISTRATION_RATE, 0.5);
     p.param<double>("convert_rate", CONVERT_RATE, 1.0);
 
@@ -63,7 +63,7 @@ RobotManager::RobotManager():robotArray_("robot_array",1,true),poseArray_("pose_
     p.param<double>("pose_log_rate",POSE_LOG_RATE,10.0);
     POSE_LOG_INTERVAL = 1/POSE_LOG_RATE;
 
-    p.param<std::string>("indivisual_pose_log_topic",INDIVISUAL_POSE_LOG_TOPIC,"pose_log/global");
+    p.param<std::string>("indivisual_pose_log_topic",INDIVISUAL_POSE_LOG_TOPIC,"pose_log");
 }
 
 void RobotManager::robotRegistration(void){
@@ -78,8 +78,8 @@ void RobotManager::robotRegistration(void){
         {
             bool isRegisterd = false;
             {
-                boost::shared_lock<boost::shared_mutex> bLock(robotListMutex);
-                for(auto&& robot : robotList){
+                boost::shared_lock<boost::shared_mutex> bLock(robotListMutex_);
+                for(auto&& robot : robotList_){
                     std::lock_guard<std::mutex> lock(robot.mutex);
                     if(robotName == robot.name){
                         isRegisterd = true;
@@ -92,15 +92,15 @@ void RobotManager::robotRegistration(void){
 
         ROS_DEBUG_STREAM("registrationThread << add to system : " << robotName);
         {
-            std::lock_guard<boost::shared_mutex> bLock(robotListMutex);
-            robotList.emplace_front();
-            RobotManager::robotStruct& robot = robotList.front();
+            std::lock_guard<boost::shared_mutex> bLock(robotListMutex_);
+            robotList_.emplace_front();
+            RobotManager::robotStruct& robot = robotList_.front();
             {
                 ROS_DEBUG_STREAM("registrationThread << edit list");
                 std::lock_guard<std::mutex> lock(robot.mutex);
                 robot.name = robotName;
-                robot.sub = nhs.subscribe<geometry_msgs::PoseStamped>(topic.name, 1, [this, &robot](const geometry_msgs::PoseStamped::ConstPtr& msg) {update(msg, robot);});
-                robot.pub = nhs.advertise<exploration_msgs::PoseStampedArray>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
+                robot.sub = nhs_.subscribe<geometry_msgs::PoseStamped>(topic.name, 1, [this, &robot](const geometry_msgs::PoseStamped::ConstPtr& msg) {update(msg, robot);});
+                robot.pub = nhs_.advertise<exploration_msgs::PoseStampedArray>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
             }
         }
     }
@@ -121,21 +121,21 @@ void RobotManager::update(const geometry_msgs::PoseStamped::ConstPtr& msg, Robot
 
     if(ros::Duration(robot.pose.header.stamp - robot.poseLog.header.stamp).toSec() >= POSE_LOG_INTERVAL){
         robot.poseLog.poses.emplace_back(*msg);
-        allPoseLog.poses.emplace_back(*msg);
+        allPoseLog_.poses.emplace_back(*msg);
         robot.poseLog.header = msg -> header;
-        robot.poseLog.header.stamp = allPoseLog.header.stamp = ros::Time::now();
+        robot.poseLog.header.stamp = allPoseLog_.header.stamp = ros::Time::now();
     }
     robot.pub.publish(robot.poseLog);
     // poseArray_.pub.publish(robot.poseLog);
-    poseArray_.pub.publish(allPoseLog);
+    poseArray_.pub.publish(allPoseLog_);
 }
 
 void RobotManager::convertPoseToRobotInfo(void){
     exploration_msgs::RobotInfoArray ria;
-    ria.info.reserve(std::distance(robotList.begin(),robotList.end()));
+    ria.info.reserve(std::distance(robotList_.begin(),robotList_.end()));
     {
-        std::lock_guard<boost::shared_mutex> bLock(robotListMutex);
-        for(auto&& robot : robotList){
+        std::lock_guard<boost::shared_mutex> bLock(robotListMutex_);
+        for(auto&& robot : robotList_){
             std::lock_guard<std::mutex> lock(robot.mutex);
             double yaw = ExpLib::qToYaw(robot.pose.pose.orientation);
             // ria.info.emplace_back(ExpLib::msgRobotInfo(robot.name,robot.pose,robot.pose.pose.position,ExpLib::msgVector(cos(yaw),sin(yaw))));

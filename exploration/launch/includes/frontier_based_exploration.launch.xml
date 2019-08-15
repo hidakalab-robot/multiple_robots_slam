@@ -1,36 +1,29 @@
 <launch>
+    <!-- frontier-based -->
+    <arg name="frontier" default="frontier"/> <!-- sub topic -->
+    <!-- <arg name="pose"/> sub topic -->
+    <arg name="end"/> <!-- sub topic (main) -->
+    <arg name="debug"/> <!-- param (main) -->
+    <arg name="rotation"/> <!-- param (main) -->
+
+    <!-- movement -->
+    <!-- <arg name="scan"/> sub topic -->
+    <!-- <arg name="bumper"/> sub topic -->
+    <!-- <arg name="velocity"/> pub topic -->
+    <!-- <arg name="pose"/> sub topic -->
+
+    <!-- launch -->
+    <!-- <arg name="debug" default="false"/> -->
     <arg name="robot_name"/>
-    <arg name="pose"/>
-    <arg name="velocity"/>
-    <arg name="map_frame_id"/>
-    <arg name="map_topic"/>
-    <arg name="rotation"/>
-    <arg name="debug" default="true"/>
-    <arg name="end"/>
-    <arg name="bumper_continuity"/>
-    
 
     <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
-        <remap from="map" to="$(arg map_topic)"/>
-        <remap from="pose" to="$(arg pose)"/>
-        <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
-        <param name="debug" value="$(arg debug)"/>
-        <param name="map_frame_id" value="$(arg map_frame_id)"/>
-        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <remap from="bumper" to="$(arg bumper_continuity)"/>
-        <param name="direction_weight" value="0.0"/>
-        <param name="min_cluster_size" value="30"/>
-        <param name="previous_goal_effect" value="true"/>
-        <param name="previous_goal_threshold" value="0.5"/>
-        <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
-        <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
-        <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
-        <param name="robot_name" value="$(arg robot_name)"/>
-        <param name="angle_bias" value="10"/>
-        <param name="rotation" value="$(arg rotation)"/>
-        <remap from="scan" to="/$(arg robot_name)/scan"/>
-        <remap from="mobile_base/sensors/bumper_pointcloud" to="/$(arg robot_name)/mobile_base/sensors/bumper_pointcloud"/>
+        <remap from="frontier" to="$(arg frontier)"/>
         <remap from="end" to="$(arg end)"/>
+        <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
+        
+        <param name="debug" value="$(arg debug)"/>
+        <param name="rotation" value="$(arg rotation)"/>
+        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
+        <param name="angle_bias" value="10"/>
     </node>
-
 </launch>

@@ -1,55 +1,21 @@
 
 <launch>
-  <!-- 
-       Bringup Turtlebot:
-       $ roslaunch turtlebot_bringup minimal.launch
-       
-       Mapping:
-       $ roslaunch rtabmap_ros demo_turtlebot_mapping.launch
-       
-       Visualization:
-       $ roslaunch rtabmap_ros demo_turtlebot_rviz.launch
-       
-       This launch file is a one to one replacement of the gmapping_demo.launch in the 
-       "SLAM Map Building with TurtleBot" tutorial:
-       http://wiki.ros.org/turtlebot_navigation/Tutorials/indigo/Build%20a%20map%20with%20SLAM
-       
-       For localization-only after a mapping session, add argument "localization:=true" to
-       demo_turtlebot_mapping.launch line above. Move the robot around until it can relocalize in 
-       the previous map, then the 2D map should re-appear again. You can then follow the same steps 
-       from 3.3.2 of the "Autonomous Navigation of a Known Map with TurtleBot" tutorial:
-       http://wiki.ros.org/turtlebot_navigation/Tutorials/Autonomously%20navigate%20in%20a%20known%20map
- 
-       For turtlebot in simulation (Gazebo):
-         $ roslaunch turtlebot_gazebo turtlebot_world.launch
-         $ roslaunch rtabmap_ros demo_turtlebot_mapping.launch simulation:=true
-         $ roslaunch rtabmap_ros demo_turtlebot_rviz.launch
-  -->
-  
   <arg name="robot_name"/>
 
   <!-- sensor range for using depth and laserscan -->
-  <arg name="scan_range_max_for_map"/>
+  <arg name="scan_range_max_for_map" default="6.0"/>
 
   <arg name="multi"/>
   <arg name="merge_map_frame"/>
   <arg name="merge_map_topic"/>
 
-
-  <arg name="database_path"/>
-  <arg name="rgbd_odometry"/>
-
-  <arg name="args"/>
-
-  <arg name="rgb_topic"/>
-  <arg name="depth_topic"/>
-  <arg name="camera_info_topic"/>
-  
-  <arg name="wait_for_transform"/>
-  <!-- 
-      robot_state_publisher's publishing frequency in "turtlebot_bringup/launch/includes/robot.launch.xml" 
-      can be increase from 5 to 10 Hz to avoid some TF warnings.
-  -->
+  <arg name="database_path" default="$(arg robot_name)_rtabmap.db"/>
+  <arg name="rgbd_odometry" default="false"/>
+  <arg name="args" default="--delete_db_on_start"/>
+  <arg name="rgb_topic" default="/$(arg robot_name)/camera/rgb/image_rect_color"/>
+  <arg name="depth_topic" default="/$(arg robot_name)/camera/depth_registered/image_raw"/>
+  <arg name="camera_info_topic" default="/$(arg robot_name)/camera/rgb/camera_info"/>
+  <arg name="wait_for_transform"  default="0.2"/>
 
   <include file="$(find multi_turtlebot_mapping)/launch/includes/move_base.launch.xml">
     <arg name="robot_name" value="$(arg robot_name)"/>
@@ -123,15 +89,8 @@
     </node>
   </group>
 
-  <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="local_robot_pose_publisher">
-    <remap from="robot_pose" to="robot_pose/local"/>
-    <param name="map_frame" value="$(arg robot_name)/map"/>
-    <param name="base_frame" value="$(arg robot_name)/base_link"/>
-    <param name="is_stamped" value="true"/>
-  </node>
-
-  <node  pkg="robot_pose_publisher" type="robot_pose_publisher" name="global_robot_pose_publisher">
-    <remap from="robot_pose" to="robot_pose/global"/>
+  <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="robot_pose_publisher">
+    <remap from="robot_pose" to="pose"/>
     <param if="$(arg multi)" name="map_frame" value="$(arg merge_map_frame)"/>
     <param unless="$(arg multi)" name="map_frame" value="$(arg robot_name)/map"/>
     <param name="base_frame" value="$(arg robot_name)/base_link"/>

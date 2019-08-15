@@ -59,7 +59,6 @@ private:
     double ROAD_CENTER_GAIN;
     double ROTATION_GAIN;
     std::string MOVEBASE_NAME;
-    std::string MAP_FRAME_ID;
     double FORWARD_ANGLE;
     double WALL_RATE_THRESHOLD;
     double WALL_DISTANCE_UPPER_THRESHOLD;
@@ -72,7 +71,7 @@ private:
     ExpLib::subStruct<kobuki_msgs::BumperEvent> bumper_;
     ExpLib::pubStruct<geometry_msgs::Twist> velocity_;
 
-    double previousOrientation;
+    double previousOrientation_;
     
     void approx(std::vector<float>& scanRanges);
     void vfhMovement(sensor_msgs::LaserScan& scan,bool straight, double angle);
@@ -100,7 +99,7 @@ Movement::Movement()
     ,pose_("pose",1)
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
-    ,previousOrientation(1.0){
+    ,previousOrientation_(1.0){
 
     ros::NodeHandle p("~");
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
@@ -121,7 +120,6 @@ Movement::Movement()
     p.param<double>("vfh_gain", VFH_GAIN, 0.5);
     p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
     p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
-    p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<double>("forward_angle", FORWARD_ANGLE, 0.17);
     p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
     p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
@@ -184,15 +182,11 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     if(pose_.data.header.frame_id != goal.header.frame_id){
         static bool initialized = false;
         static tf::TransformListener listener;
-        static std::string prePoseFrame;
-        static std::string preGoalFrame;
-        if(!initialized || pose_.data.header.frame_id != preGoalFrame || goal.header.frame_id != preGoalFrame){
+        if(!initialized){
             listener.waitForTransform(pose_.data.header.frame_id, goal.header.frame_id, ros::Time(), ros::Duration(1.0));
             initialized = true;
-            prePoseFrame = pose_.data.header.frame_id;
-            preGoalFrame = goal.header.frame_id;
         }
-        ExpLib::coordinateConverter<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
+        ExpLib::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
     move_base_msgs::MoveBaseGoal to;
@@ -269,7 +263,7 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
                 vel.angular.z = -ROTATION_VELOCITY;
                 break;
             case 1:
-                vel.angular.z = -previousOrientation * ROTATION_VELOCITY;
+                vel.angular.z = -previousOrientation_ * ROTATION_VELOCITY;
                 break;
             case 2:
                 vel.angular.z = ROTATION_VELOCITY;
@@ -406,11 +400,11 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     //まずよけれる範囲か見る
     if(aveP > EMERGENCY_THRESHOLD || aveM > EMERGENCY_THRESHOLD){
         //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
-        if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation = aveP > aveM ? 1.0 : -1.0;
+        if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation_ = aveP > aveM ? 1.0 : -1.0;
 
-        ROS_INFO_STREAM((previousOrientation > 0 ? "Avoidance to Left" : "Avoidance to Right"));
+        ROS_INFO_STREAM((previousOrientation_ > 0 ? "Avoidance to Left" : "Avoidance to Right"));
 
-        velocity_.pub.publish(velocityGenerator(previousOrientation*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
+        velocity_.pub.publish(velocityGenerator(previousOrientation_*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
         return true;
     }
     else{
@@ -421,7 +415,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
 void Movement::recoveryRotation(void){
     ROS_WARN_STREAM("Recovery Rotation !");
-    velocity_.pub.publish(ExpLib::msgTwist(0,previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
+    velocity_.pub.publish(ExpLib::msgTwist(0,previousOrientation_ * ROTATION_VELOCITY * VELOCITY_GAIN));
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){

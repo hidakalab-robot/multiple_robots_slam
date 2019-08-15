@@ -53,7 +53,6 @@ struct pubStructStd{
     ros::Publisher pub;
 };
 
-
 struct scanStruct{
     std::vector<float> ranges;
     std::vector<float> angles;
@@ -70,6 +69,7 @@ struct listStruct{
     listStruct():duplication(ExpLib::DuplicationStatus::NOT_DUPLECATION){};
     listStruct(const geometry_msgs::Point& p):point(p),duplication(ExpLib::DuplicationStatus::NOT_DUPLECATION){};
 };
+
 }
 
 #endif // STRUCT_HPP

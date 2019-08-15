@@ -8,7 +8,7 @@ int main(int argc, char *argv[]){
     FrontierBasedExploration fbe;
     Movement mv;
 
-    ExpLib::subStruct<std_msgs::Bool> isEnd("end",1);
+    ExpLib::subStruct<std_msgs::Bool> end("end",1);
 
     geometry_msgs::PointStamped goal;
 
@@ -25,7 +25,7 @@ int main(int argc, char *argv[]){
 
     while(ros::ok()){
         if(fbe.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
-        if(AUTO_FINISH && !isEnd.q.callOne(ros::WallDuration(0.5)) && isEnd.data.data) break;
+        if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
     }
 
     ROS_INFO_STREAM("exploration finish !! -> time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");

@@ -92,11 +92,10 @@ FrontierDetection::FrontierDetection()
     ,horizon_("horizon",1){
     
     ros::NodeHandle p("~");
-    p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.4);
+    p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);
     p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
-    p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 50);
+    p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 30);
     p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000); 
-
 }
 
 void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){

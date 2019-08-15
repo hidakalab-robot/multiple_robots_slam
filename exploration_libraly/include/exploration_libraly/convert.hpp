@@ -4,6 +4,7 @@
 #include <geometry_msgs/Quaternion.h>
 #include <tf/tf.h>
 #include <Eigen/Geometry>
+#include <pcl_ros/point_cloud.h>
 
 namespace ExpLib
 {
@@ -73,6 +74,22 @@ Eigen::Vector2d msgVectorToVector2d(const geometry_msgs::Vector3& vector){
     vec.x() = vector.x;
     vec.y() = vector.y;
     return vec;
+}
+
+geometry_msgs::Point pclPointXYZToPoint(const pcl::PointXYZ& pcl){
+    geometry_msgs::Point point;
+    point.x = pcl.x;
+    point.y = pcl.y;
+    point.z = pcl.z;
+    return point;
+}
+
+pcl::PointXYZ pointToPclPointXYZ(const geometry_msgs::Point& point){
+    pcl::PointXYZ pcl;
+    pcl.x = point.x;
+    pcl.y = point.y;
+    pcl.z = point.z;
+    return pcl;
 }
 
 geometry_msgs::PoseStamped pointToPoseStamped(const geometry_msgs::Point& p, const std::string& f){
