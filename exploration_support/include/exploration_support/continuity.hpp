@@ -2,8 +2,8 @@
 #ifndef CONTINUITY_HPP
 #define CONTINUITY_HPP
 
-#include <ros/ros.h>
 #include <exploration_libraly/struct.hpp>
+#include <ros/ros.h>
 
 template<typename T>
 class Continuity

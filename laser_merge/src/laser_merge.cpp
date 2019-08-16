@@ -1,13 +1,13 @@
-#include <ros/ros.h>
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/utility.hpp>
 #include <laser_geometry/laser_geometry.h>
 #include <message_filters/subscriber.h>
+#include <message_filters/sync_policies/approximate_time.h>
 #include <message_filters/time_synchronizer.h>
+#include <pcl_ros/point_cloud.h>
+#include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
 #include <tf/transform_listener.h>
-#include <pcl_ros/point_cloud.h>
-#include <exploration_libraly/struct.hpp>
-#include <message_filters/sync_policies/approximate_time.h>
-#include <exploration_libraly/utility.hpp>
 
 int main(int argc, char** argv){
     ros::init(argc, argv, "laser_merge");

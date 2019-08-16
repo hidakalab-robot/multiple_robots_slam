@@ -1,5 +1,5 @@
-#include<ros/ros.h>
 #include<actionlib_msgs/GoalStatusArray.h>
+#include<ros/ros.h>
 
 /*
 how to use

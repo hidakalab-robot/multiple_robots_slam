@@ -1,5 +1,5 @@
-#include <ros/ros.h>
 #include <geometry_msgs/PointStamped.h>
+#include <ros/ros.h>
 
 // clicked point の座標でrosparam を更新する
 int main(int argc, char** argv){

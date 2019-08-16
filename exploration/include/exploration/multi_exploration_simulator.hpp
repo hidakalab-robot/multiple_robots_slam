@@ -1,17 +1,17 @@
-#ifndef MULTI_EXPLORATION
-#define MULTI_EXPLORATION
+#ifndef MULTI_EXPLORATION_SIMULATOR_HPP
+#define MULTI_EXPLORATION_SIMULATOR_HPP
 
-#include <ros/ros.h>
-#include <geometry_msgs/Point.h>
-#include <string>
+#include <dynamic_reconfigure/server.h>
+#include <exploration/multi_exploration_simulatorConfig.h>
 #include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
 #include <exploration_libraly/convert.hpp>
-#include <geometry_msgs/PoseArray.h>
-#include <visualization_msgs/Marker.h>
-#include <dynamic_reconfigure/server.h>
-#include <exploration_support/multi_exploration_simulatorConfig.h>
 #include <fstream>
+#include <geometry_msgs/Point.h>
+#include <geometry_msgs/PoseArray.h>
+#include <ros/ros.h>
+#include <string>
+#include <visualization_msgs/Marker.h>
 
 // 終了時にパラメータの設定を保存したい
 // 毎回設定値を保存しておいて終了のときにそれを書き出す
@@ -38,7 +38,7 @@ private:
 
 public:
     MultiExplorationSimulator();
-    void callback(exploration_support::multi_exploration_simulatorConfig &cfg, uint32_t level);
+    void callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level);
     void updateParameters(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
     void writeParameters(void);
 };
@@ -84,7 +84,7 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     branchCoordinates_.id = frontierCoordinates_.id =  0;
 }
 
-void MultiExplorationSimulator::callback(exploration_support::multi_exploration_simulatorConfig &cfg, uint32_t level){
+void MultiExplorationSimulator::callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level){
     // resize array
     ROBOT_NUMBER = cfg.robot_number;
     BRANCH_NUMBER = cfg.branch_number;
@@ -162,4 +162,4 @@ void MultiExplorationSimulator::writeParameters(void){
     }
 }
 
-#endif // MULTI_EXPLORATION
+#endif // MULTI_EXPLORATION_SIMULATOR_HPP

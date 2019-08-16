@@ -49,15 +49,9 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>rospy</build_depend>
-  <build_export_depend>roscpp</build_export_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <exec_depend>multimaster_sync_fkie</exec_depend>
-  <exec_depend>multimaster_discovery_fkie</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>rospy</exec_depend>
 
+  <exec_depend>master_discovery_fkie</exec_depend>
+  <exec_depend>master_sync_fkie</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

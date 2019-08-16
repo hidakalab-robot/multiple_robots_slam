@@ -1,12 +1,12 @@
 #ifndef SENSOR_BASED_EXPLORATION_HPP
 #define SENSOR_BASED_EXPLORATION_HPP
 
-#include <geometry_msgs/PointStamped.h>
+#include <exploration_libraly/struct.hpp>
 #include <exploration_msgs/PointArray.h>
 #include <exploration_msgs/PoseStampedArray.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <Eigen/Geometry>
-#include <exploration_libraly/struct.hpp>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseStamped.h>
 
 class SensorBasedExploration
 {

@@ -1,19 +1,19 @@
 #ifndef MOVEMENT_HPP
 #define MOVEMENT_HPP
 
-#include <exploration_libraly/struct.hpp>
+#include <actionlib/client/simple_action_client.h>
 #include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/utility.hpp>
-#include <ros/ros.h>
-#include <sensor_msgs/LaserScan.h>
+#include <Eigen/Geometry>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/Twist.h>
+#include <kobuki_msgs/BumperEvent.h>
 #include <move_base_msgs/MoveBaseAction.h>
-#include <actionlib/client/simple_action_client.h>
-#include <Eigen/Geometry>
+#include <ros/ros.h>
+#include <sensor_msgs/LaserScan.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む

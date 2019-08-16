@@ -1,7 +1,7 @@
-#include <ros/ros.h>
-#include <exploration_support/extra_parameter_reconfigureConfig.h>
 #include <dynamic_reconfigure/server.h>
+#include <exploration/extra_parameter_reconfigureConfig.h>
 #include <fstream>
+#include <ros/ros.h>
 
 int main(int argc, char* argv[]){
     ros::init(argc, argv, "extra_parameter");
@@ -13,13 +13,13 @@ int main(int argc, char* argv[]){
     nh.param<std::string>("extra_parameter_file_path",EXTRA_PARAMETER_FILE_PATH,"simulator_last_extra_parameters.yaml");
     nh.param<bool>("output_extra_parameters",OUTPUT_EXTRA_PARAMETERS,true);
 
-    dynamic_reconfigure::Server<exploration_support::extra_parameter_reconfigureConfig> server;
-    dynamic_reconfigure::Server<exploration_support::extra_parameter_reconfigureConfig>::CallbackType cbt;
+    dynamic_reconfigure::Server<exploration::extra_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration::extra_parameter_reconfigureConfig>::CallbackType cbt;
 
     int SIMULATE_ROBOT_INDEX;
     double DIRECTION_WEIGHT,DISTANCE_WEIGHT,OTHER_ROBOT_WEIGHT;
 
-    cbt = boost::bind(+[](exploration_support::extra_parameter_reconfigureConfig &config, uint32_t level, int* sri, double* dr, double* ds, double* orw)->void{
+    cbt = boost::bind(+[](exploration::extra_parameter_reconfigureConfig &config, uint32_t level, int* sri, double* dr, double* ds, double* orw)->void{
         *sri = config.simulate_robot_index;
         *dr = config.direction_weight;
         *ds = config.distance_weight;

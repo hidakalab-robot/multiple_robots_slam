@@ -1,13 +1,12 @@
 #ifndef BRANCH_DETECTION_HPP
 #define BRANCH_DETECTION_HPP
 
-#include <sensor_msgs/LaserScan.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <exploration_msgs/PointArray.h>
-#include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
+#include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/utility.hpp>
-
+#include <exploration_msgs/PointArray.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <sensor_msgs/LaserScan.h>
 
 class BranchDetection
 {

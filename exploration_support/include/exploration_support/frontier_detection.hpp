@@ -1,14 +1,14 @@
 #ifndef FRONTIER_DETECTION_HPP
 #define FRONTIER_DETECTION_HPP
 
-#include <nav_msgs/OccupancyGrid.h>
-#include <sensor_msgs/PointCloud2.h>
+#include <exploration_libraly/construct.hpp>
+#include <exploration_libraly/struct.hpp>
 #include <exploration_msgs/FrontierArray.h>
 #include <Eigen/Geometry>
-#include <pcl_ros/point_cloud.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <pcl/segmentation/extract_clusters.h>
-#include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/construct.hpp>
+#include <pcl_ros/point_cloud.h>
+#include <sensor_msgs/PointCloud2.h>
 
 
 // frontier を検出して座標をトピックに出す機能だけつける

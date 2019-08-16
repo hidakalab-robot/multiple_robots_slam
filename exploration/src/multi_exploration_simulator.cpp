@@ -1,4 +1,4 @@
-#include <exploration_support/multi_exploration_simulator.hpp> // 必須
+#include <exploration/multi_exploration_simulator.hpp> // 必須
 // #include <exploration/seamless_hybrid.hpp> // SeamlessHybrid sh(pp);　用
 #include <exploration/seamless_hybrid_exploration.hpp> // SeamlessHybrid sh(pp);　用
 // #include <exploration_libraly/path_planning.hpp> // PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS"); 用
@@ -11,8 +11,8 @@ int main(int argc, char* argv[]){
     ros::init(argc, argv, "multi_exploration_simulator");
     MultiExplorationSimulator mes;
 
-    dynamic_reconfigure::Server<exploration_support::multi_exploration_simulatorConfig> server;
-    dynamic_reconfigure::Server<exploration_support::multi_exploration_simulatorConfig>::CallbackType cbt;
+    dynamic_reconfigure::Server<exploration::multi_exploration_simulatorConfig> server;
+    dynamic_reconfigure::Server<exploration::multi_exploration_simulatorConfig>::CallbackType cbt;
     cbt = boost::bind(&MultiExplorationSimulator::callback,&mes, _1, _2);
     server.setCallback(cbt);
 

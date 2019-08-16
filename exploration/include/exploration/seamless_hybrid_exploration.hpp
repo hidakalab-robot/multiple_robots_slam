@@ -2,11 +2,11 @@
 #define SEAMLESS_HYBRID_EXPLORATION_HPP
 
 #include <exploration/sensor_based_exploration.hpp>
-#include <exploration_libraly/path_planning.hpp>
-#include <navfn/navfn_ros.h>
-#include <exploration_msgs/RobotInfoArray.h>
-#include <exploration_msgs/FrontierArray.h>
 #include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/path_planning.hpp>
+#include <exploration_msgs/FrontierArray.h>
+#include <exploration_msgs/RobotInfoArray.h>
+#include <navfn/navfn_ros.h>
 
 class SeamlessHybridExploration :public SensorBasedExploration
 {

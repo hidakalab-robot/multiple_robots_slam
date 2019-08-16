@@ -1,5 +1,4 @@
 <launch>
-    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
     <arg name="robot_name"/>
     <arg name="mapping"/>
     <arg name="mapping_method"/> <!-- 0: rtabmap, 1:gmapping -->

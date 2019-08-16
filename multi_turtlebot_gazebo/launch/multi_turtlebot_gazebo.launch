@@ -1,7 +1,6 @@
 <launch>
     <env name="GAZEBO_MODEL_PATH" value="$(find multi_turtlebot_gazebo)/world/models:$(optenv GAZEBO_MODEL_PATH)" /> 
     <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/tdu_1-13_corridor_marker.world"/>
-    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
 
     <arg name="gui" default="true"/>
 

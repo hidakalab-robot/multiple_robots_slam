@@ -1,11 +1,11 @@
 #ifndef FRONTIER_BASED_EXPLORATION_HPP
 #define FRONTIER_BASED_EXPLORATION_HPP
 
+#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/struct.hpp>
+#include <exploration_msgs/FrontierArray.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <exploration_msgs/FrontierArray.h>
-#include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/convert.hpp>
 
 class FrontierBasedExploration
 {

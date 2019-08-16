@@ -50,6 +50,12 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
 
+  <exec_depend>explroation</exec_depend>
+  <exec_depend>exploration_support</exec_depend>
+  <exec_depend>map_merge</exec_depend>
+  <exec_depend>multi_turtlebot_bringup</exec_depend>
+  <exec_depend>multi_turtlebot_mapping</exec_depend>
+  
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

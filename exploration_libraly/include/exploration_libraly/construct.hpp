@@ -1,14 +1,14 @@
 #ifndef CONSTRUCT_HPP
 #define CONSTRUCT_HPP
 
+#include <exploration_msgs/Frontier.h>
+#include <exploration_msgs/RobotInfo.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Twist.h>
+#include <pcl_ros/point_cloud.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
-#include <exploration_msgs/Frontier.h>
-#include <pcl_ros/point_cloud.h>
-#include <exploration_msgs/RobotInfo.h>
 
 namespace ExpLib
 {

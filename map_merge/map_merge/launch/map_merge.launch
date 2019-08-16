@@ -1,6 +1,4 @@
 <launch>
-  <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
-
   <arg name="server_name" default="server"/>
 
   <arg name="merge_map_frame" default="/$(arg server_name)/merge_map"/>

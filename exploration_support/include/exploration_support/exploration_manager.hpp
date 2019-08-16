@@ -2,14 +2,14 @@
 #ifndef EXPLORATION_MANAGER_HPP
 #define EXPLORATION_MANAGER_HPP
 
-#include <ros/ros.h>
-#include <nav_msgs/OccupancyGrid.h>
 #include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
+#include <exploration_msgs/FrontierArray.h>
+#include <nav_msgs/OccupancyGrid.h>
+#include <ros/ros.h>
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
-#include <exploration_msgs/FrontierArray.h>
 #include <thread>
 
 class ExplorationManager

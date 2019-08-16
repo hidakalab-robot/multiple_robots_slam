@@ -1,10 +1,10 @@
 #ifndef STRUCT_HPP
 #define STRUCT_HPP
 
-#include <ros/ros.h>
-#include <ros/callback_queue.h>
-#include <geometry_msgs/Point.h>
 #include <exploration_libraly/enum.hpp>
+#include <geometry_msgs/Point.h>
+#include <ros/callback_queue.h>
+#include <ros/ros.h>
 
 namespace ExpLib
 {

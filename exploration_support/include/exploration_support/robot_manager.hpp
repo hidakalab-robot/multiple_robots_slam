@@ -1,16 +1,16 @@
 #ifndef ROBOT_MANAGER
 #define ROBOT_MANAGER
 
-#include <ros/ros.h>
-#include <exploration_msgs/RobotInfoArray.h>
-#include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
 #include <exploration_libraly/convert.hpp>
-#include <mutex>
-#include <geometry_msgs/PoseStamped.h>
-#include <forward_list>
-#include <iterator>
+#include <exploration_libraly/struct.hpp>
 #include <exploration_msgs/PoseStampedArray.h>
+#include <exploration_msgs/RobotInfoArray.h>
+#include <forward_list>
+#include <geometry_msgs/PoseStamped.h>
+#include <iterator>
+#include <mutex>
+#include <ros/ros.h>
 #include <thread>
 
 //複数台のロボットの情報を管理する

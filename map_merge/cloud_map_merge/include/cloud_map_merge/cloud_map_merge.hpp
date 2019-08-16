@@ -1,14 +1,14 @@
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <geometry_msgs/Pose2D.h>
-#include <pcl_ros/point_cloud.h>
-#include <thread>
-#include <mutex>
 #include <boost/thread.hpp>
-#include <forward_list>
-#include <iterator>
 #include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
+#include <forward_list>
+#include <geometry_msgs/Pose2D.h>
+#include <iterator>
+#include <mutex>
+#include <pcl_ros/point_cloud.h>
+#include <ros/ros.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <thread>
 
 class CloudMapMerge
 {

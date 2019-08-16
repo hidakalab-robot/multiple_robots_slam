@@ -1,12 +1,12 @@
 #ifndef MAP_FILL_HPP
 #define MAP_FILL_HPP
 
-#include <ros/ros.h>
 #include <exploration_libraly/struct.hpp>
 #include <nav_msgs/OccupancyGrid.h>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <ros/ros.h>
 
 class MapFill
 {

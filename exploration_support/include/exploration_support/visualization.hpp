@@ -1,19 +1,16 @@
 #ifndef VISUALIZATION_HPP
 #define VISUALIZATION_HPP
 
-//topicの情報をrvizで表示するためのクラス
-#include <ros/ros.h>
-#include <geometry_msgs/PointStamped.h>
-#include <exploration_msgs/PointArray.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <visualization_msgs/Marker.h>
-#include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
-#include <thread>
-#include <nav_msgs/Path.h>
+#include <exploration_libraly/struct.hpp>
 #include <exploration_msgs/FrontierArray.h>
-
-// goal_array -> frontier, branch
+#include <exploration_msgs/PointArray.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <nav_msgs/Path.h>
+#include <ros/ros.h>
+#include <thread>
+#include <visualization_msgs/Marker.h>
 
 class Visualization
 {

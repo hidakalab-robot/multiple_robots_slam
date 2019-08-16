@@ -1,10 +1,10 @@
 #ifndef PATH_PLANNING_HPP
 #define PATH_PLANNING_HPP
 
-#include <ros/ros.h>
 #include <costmap_2d/costmap_2d_ros.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <Eigen/Geometry>
+#include <geometry_msgs/PoseStamped.h>
+#include <ros/ros.h>
 
 /*
 path_planning tutorial

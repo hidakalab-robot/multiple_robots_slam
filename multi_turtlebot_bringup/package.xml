@@ -49,38 +49,21 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>diagnostic_aggregator</build_depend>
-  <build_depend>nodelet</build_depend>
-  <build_depend>robot_state_publisher</build_depend>
-  <build_depend>kobuki_node</build_depend>
-  <build_depend>turtlebot_bringup</build_depend>
-  <build_depend>xacro</build_depend>
-  <build_depend>lab_turtlebot_description</build_depend>
-  <build_depend>freenect_launch</build_depend>
-  <build_depend>urg_node</build_depend>
-  <build_depend>laser_merge</build_depend>
-  <build_export_depend>diagnostic_aggregator</build_export_depend>
-  <build_export_depend>nodelet</build_export_depend>
-  <build_export_depend>robot_state_publisher</build_export_depend>
-  <build_export_depend>kobuki_node</build_export_depend>
-  <build_export_depend>turtlebot_bringup</build_export_depend>
-  <build_export_depend>xacro</build_export_depend>
-  <build_export_depend>lab_turtlebot_description</build_export_depend>
-  <build_export_depend>freenect_launch</build_export_depend>
-  <build_export_depend>urg_node</build_export_depend>
-  <build_export_depend>laser_merge</build_export_depend>
+
+  <exec_depend>depthimage_to_laserscan</exec_depend>
   <exec_depend>diagnostic_aggregator</exec_depend>
+  <exec_depend>freenect_launch</exec_depend>
+  <exec_depend>kobuki_bumper2pc</exec_depend>
+  <exec_depend>kobuki_node</exec_depend>
+  <exec_depend>kobuki_safety_controller</exec_depend>
+  <exec_depend>lab_turtlebot_description</exec_depend>
+  <exec_depend>laser_merge</exec_depend>
   <exec_depend>nodelet</exec_depend>
   <exec_depend>robot_state_publisher</exec_depend>
-  <exec_depend>kobuki_node</exec_depend>
   <exec_depend>turtlebot_bringup</exec_depend>
-  <exec_depend>xacro</exec_depend>
-  <exec_depend>lab_turtlebot_description</exec_depend>
-  <exec_depend>freenect_launch</exec_depend>
   <exec_depend>urg_node</exec_depend>
-  <exec_depend>laser_merge</exec_depend>
-
-
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>yocs_cmd_vel_mux</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
