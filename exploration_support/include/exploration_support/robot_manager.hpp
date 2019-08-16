@@ -73,7 +73,7 @@ void RobotManager::robotRegistration(void){
     for(const auto& topic : topicList){
         // ROS_DEBUG_STREAM("topic name : " << topic.name);
         if(!isRobotTopic(topic)) continue;
-        std::string robotName = ros::names::parentNamespace(ros::names::parentNamespace(topic.name));
+        std::string robotName = ros::names::parentNamespace(topic.name);
         //すでに登録されていないかロボットの名前を確認
         {
             bool isRegisterd = false;
@@ -107,7 +107,7 @@ void RobotManager::robotRegistration(void){
 }
 
 bool RobotManager::isRobotTopic(const ros::master::TopicInfo& topic){
-    bool isRobot = topic.name == ros::names::append(ros::names::parentNamespace(ros::names::parentNamespace(topic.name)),ROBOT_TOPIC);
+    bool isRobot = topic.name == ros::names::append(ros::names::parentNamespace(topic.name),ROBOT_TOPIC);
     bool isPose = topic.datatype == "geometry_msgs/PoseStamped";
     // ROS_DEBUG_STREAM("isRobot : " << isRobot << " : " << topic.name);
     // ROS_DEBUG_STREAM("isPose : " << isPose << " : " << topic.datatype);

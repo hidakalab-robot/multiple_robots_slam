@@ -61,7 +61,7 @@ public:
 };
 
 SeamlessHybridExploration::SeamlessHybridExploration()
-    :robotArray_("robotArray", 1)
+    :robotArray_("robot_array", 1)
     ,frontier_("frontier", 1)
     ,pp_("global_costmap","NavfnROS"){
 

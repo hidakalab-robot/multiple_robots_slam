@@ -60,8 +60,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     // センサと障害物の距離が近い時は検出を行わない
     for(int t=OBSTACLE_CHECK_ANGLE/msg->angle_increment,i=(msg->ranges.size()/2)-1-t,ie=(msg->ranges.size()/2)+t;i!=ie;++i){
 		if(!std::isnan(msg->ranges[i]) && msg->ranges[i] < OBSTACLE_RANGE_MIX){
-			ROS_ERROR_STREAM("May be close to obstacles");
-			// return;
+			// ROS_ERROR_STREAM("May be close to obstacles");
             publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
 		}
     }
@@ -78,7 +77,6 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
 
     if(ss.ranges.size() < 2){
 		ROS_ERROR_STREAM("Scan data is insufficient");
-		// return;
         publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
     }
 

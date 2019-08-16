@@ -43,7 +43,6 @@ private:
     ExpLib::Struct::subStructSimple frontier_;
     ExpLib::Struct::pubStruct<visualization_msgs::Marker> frontierMarker_;
     visualization_msgs::Marker fm_;
-
     
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
@@ -67,16 +66,16 @@ Visualization::Visualization()
     ,goalMarker_("visualization/goal", 1)
     ,branch_("branch",1,&Visualization::branchCB, this)
     ,branchMarker_("visualization/branch", 1)
-    ,frontier_("branch",1,&Visualization::frontierCB, this)
+    ,frontier_("frontier",1,&Visualization::frontierCB, this)
     ,frontierMarker_("visualization/frontier", 1){
 
     ros::NodeHandle p("~");
-    p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 30.0);
-    p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 30.0);
-    p.param<double>("branch_publish_rate", BRANCH_PUBLISH_RATE, 30.0);
-    p.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 30.0);
+    p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 10.0);
+    p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 10.0);
+    p.param<double>("branch_publish_rate", BRANCH_PUBLISH_RATE, 10.0);
+    p.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
     
-    std::string INIT_FRAME_ID = "map";
+    std::string INIT_FRAME_ID = "robot1/map";
 
     //goalMarker
     gm_.header.frame_id = INIT_FRAME_ID;

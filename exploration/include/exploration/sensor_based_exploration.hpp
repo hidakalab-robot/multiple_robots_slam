@@ -67,10 +67,10 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 
     // 別形式 // 直前の目標と近い分岐は無視したい
     for(const auto& b : branch_.data.points){
-        if(Eigen::Vector2d(b.x - lastGoal_.x, b.y - lastGoal_.y).norm()<LAST_GOAL_TOLERANCE) ls.emplace_back(b);
+        if(Eigen::Vector2d(b.x - lastGoal_.x, b.y - lastGoal_.y).norm()>LAST_GOAL_TOLERANCE) ls.emplace_back(b);
     }
 
-    if(ls.size() == 0) {
+    if(ls.size() == 0){
         ROS_ERROR_STREAM("Branch array became empty");
         return false;
     }
