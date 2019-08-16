@@ -9,8 +9,6 @@ int main(int argc, char** argv){
     std::string PARAMETER_NAMESPACE;
     nh.param<std::string>("parameter_namespace",PARAMETER_NAMESPACE,"multi_exploration_simulator");
 
-    ROS_INFO_STREAM("in");
-
     ros::Subscriber sub = nh.subscribe<geometry_msgs::PointStamped>("/clicked_point", 1, [&](const geometry_msgs::PointStamped::ConstPtr& msg){
         ROS_INFO_STREAM("input clicked_point (" << msg->point.x << ", " << msg->point.y << ")");
         std::string name;

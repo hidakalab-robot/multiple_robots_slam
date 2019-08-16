@@ -1,4 +1,4 @@
 simulate_robot_index: 1
-angle_weight: 1.5
-path_weight: 2.52
-robot_weight: 1
+direction_weight: 1
+distance_weight: 6.89992e-310
+other_robot_weight: 1
