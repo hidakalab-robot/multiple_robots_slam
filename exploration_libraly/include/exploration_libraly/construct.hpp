@@ -9,6 +9,7 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
+#include <std_msgs/Int8.h>
 
 namespace ExpLib
 {
@@ -58,6 +59,12 @@ std_msgs::Float64 msgDouble(double d){
 
 std_msgs::Int32 msgInt(int i){
     std_msgs::Int32 msg;
+    msg.data = i;
+    return msg;
+}
+
+std_msgs::Int8 msgInt8(int i){
+    std_msgs::Int8 msg;
     msg.data = i;
     return msg;
 }

@@ -6,7 +6,7 @@
     <arg name="bumper_continuity" default="false"/>
     <arg name="visualization" default="false"/>
     <arg name="exploration" default="false"/>
-    <arg name="exploration_method" default="0"/> <!-- 0: seamless, 1:frontier, 2:sensor -->
+    <arg name="exploration_method" default="0"/> <!-- 0: seamless, 1:frontier, 2:sensor, 3:legacy-hybrid -->
     <arg name="branch_detection" default="true"/>
     <arg name="debug" default="false"/>
 

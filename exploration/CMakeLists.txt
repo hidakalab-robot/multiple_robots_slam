@@ -229,3 +229,6 @@ target_link_libraries(extra_parameter_reconfigure ${catkin_LIBRARIES})
 
 add_executable(simulator_input_support src/simulator_input_support.cpp)
 target_link_libraries(simulator_input_support ${catkin_LIBRARIES})
+
+add_executable(legacy_hybrid_exploration src/legacy_hybrid_exploration.cpp)
+target_link_libraries(legacy_hybrid_exploration ${catkin_LIBRARIES})

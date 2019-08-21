@@ -5,7 +5,7 @@
     <arg name="bumper_continuity"/>
     <arg name="visualization"/>
     <arg name="exploration"/>
-    <arg name="exploration_method"/> <!-- 0: seamless, 1:frontier, 2:sensor -->
+    <arg name="exploration_method"/> <!-- 0: seamless, 1:frontier, 2:sensor, 3:legacy-hybrid -->
     <arg name="branch_detection"/>
     <arg name="debug"/>
 
@@ -68,6 +68,16 @@
         <arg name="end" value="$(arg end)"/>
         <arg name="debug" value="$(arg debug)"/>
         <arg name="rotation" value="false"/>
+        <arg name="robot_name" value="$(arg robot_name)"/>
+    </include>
+
+    <!-- exploration (legacy-hybrid) -->
+    <include if="$(eval arg('exploration') and arg('exploration_method')==3)" file="$(find exploration)/launch/includes/legacy_hybrid_exploration.launch.xml">
+        <arg name="pose_log" value="$(arg pose_log_indivisual)"/>
+        <arg name="end" value="$(arg end)"/>
+        <arg name="debug" value="$(arg debug)"/>
+        <arg name="rotation" value="false"/>
+        <arg name="frontier" default="$(arg frontier)"/>
         <arg name="robot_name" value="$(arg robot_name)"/>
     </include>
 
