@@ -46,8 +46,8 @@ BranchDetection::BranchDetection()
 void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     if(pose_.q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read pose");
-        // return;
         publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
+        return;
     }
 
     static bool initialized = false;
@@ -61,6 +61,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
 		if(!std::isnan(msg->ranges[i]) && msg->ranges[i] < OBSTACLE_RANGE_MIX){
 			// ROS_ERROR_STREAM("May be close to obstacles");
             publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
+            return;
 		}
     }
 
@@ -77,6 +78,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     if(ss.ranges.size() < 2){
 		ROS_ERROR_STREAM("Scan data is insufficient");
         publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
+        return;
     }
 
     // 分岐検出部

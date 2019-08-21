@@ -14,8 +14,14 @@ template <typename T> T coordinateConverter2d(const tf::TransformListener& l, co
 
 template<> void coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p){
     tf::StampedTransform transform;
-    l.lookupTransform(destFrame, origFrame, ros::Time(0), transform);
-
+    try {
+        l.lookupTransform(destFrame, origFrame, ros::Time(0), transform);
+    }
+    catch (tf::TransformException &ex){
+        ROS_ERROR("%s",ex.what());
+        ROS_ERROR_STREAM("transform is failed");
+        return;
+    }
     tf::Quaternion transQ = transform.getRotation();
     double transYaw = Convert::qToYaw(transQ);
     double transX = transform.getOrigin().getX();
