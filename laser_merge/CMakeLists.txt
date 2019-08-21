@@ -8,16 +8,13 @@ project(laser_merge)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
-  geometry_msgs
+  exploration_libraly
   laser_geometry
-  pointcloud_to_laserscan
-  roscpp
-  sensor_msgs
-  std_msgs
-  tf
   message_filters
   pcl_ros
-  exploration
+  roscpp
+  sensor_msgs
+  tf
 )
 
 ## System dependencies are found with CMake's conventions
@@ -110,9 +107,9 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
+  # INCLUDE_DIRS include
 #  LIBRARIES laser_merge
-  CATKIN_DEPENDS geometry_msgs laser_geometry pointcloud_to_laserscan roscpp sensor_msgs std_msgs tf pcl_ros exploration message_filters
+  CATKIN_DEPENDS exploration_libraly laser_geometry message_filters pcl_ros roscpp sensor_msgs tf
 #  DEPENDS system_lib
 )
 

@@ -1,5 +1,5 @@
 #Navfn parameter
-simulator_calc_path:
+NavfnROS:
   visualize_potential: false    #Publish potential for rviz as pointcloud2, not really helpful, default false
   allow_unknown: false          #Specifies whether or not to allow navfn to create plans that traverse unknown space, default true
                                   #Needs to have track_unknown_space: true in the obstacle / voxel layer (in costmap_commons_param) to work
@@ -10,7 +10,7 @@ simulator_calc_path:
                                   #The area is always searched, so could be slow for big values
 
 #costmap parameter
-simulator_calc_costmap:
+global_costmap:
   max_obstacle_height: 0.60  # assume something like an arm is mounted on top of the robot
 
   # Obstacle Cost Shaping (http://wiki.ros.org/costmap_2d/hydro/inflation)

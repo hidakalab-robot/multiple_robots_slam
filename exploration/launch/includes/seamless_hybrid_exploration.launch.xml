@@ -1,44 +1,48 @@
 <launch>
-    <arg name="robot_name"/>
-    <arg name="pose"/>
-    <arg name="velocity"/>
-    <arg name="scan"/>
-    <arg name="bumper_continuity"/>
-    <arg name="map_frame_id"/>
-    <arg name="map_topic"/>
-    <arg name="branch_frame_id"/>
-    <arg name="rotation"/>
-    <arg name="robot_array"/>
-    <arg name="end"/>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+    <!-- sensor-based -->
+    <!-- <arg name="branch"/> sub topic -->
+    <!-- <arg name="pose"/> sub topic -->
+    <arg name="pose_log"/> <!-- sub topic -->
 
-    <arg name="debug" default="false"/>
+    <!-- seamless hybrid -->
+    <!-- <arg name="robot_array"/> sub topic (header) -->
+    <arg name="frontier" default="frontier"/> <!-- sub topic (header) -->
+    <arg name="end"/> <!-- sub topic (main) -->
+    <arg name="robot_name"/> <!-- param (header) -->
+    <arg name="debug"/> <!-- param (main) -->
+    <arg name="rotation"/> <!-- param (main) -->
 
-    <node pkg="exploration" type="sensor_based_exploration" name="seamless_hybrid_exploration" output="screen">
-        <remap from="map" to="$(arg map_topic)"/>
-        <remap from="scan" to="$(arg scan)"/>
-        <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
-        <param name="debug" value="$(arg debug)"/>
-        <remap from="pose" to="$(arg pose)"/>
-        <remap from="pose_log" to="pose_log/local"/>
-        <remap from="bumper" to="$(arg bumper_continuity)"/>
-        <remap from="robot_array" to="$(arg robot_array)"/>
+    <!-- movement -->
+    <!-- <arg name="scan"/> sub topic -->
+    <!-- <arg name="bumper"/> sub topic -->
+    <!-- <arg name="velocity"/> pub topic -->
+    <!-- <arg name="pose"/> sub topic -->
+
+    <!-- path planner (seamless hybrid) -->
+    <arg name="map"/> <!-- sub topic -->
+    <arg name="map_frame_id"/> <!-- param -->
+
+    <!-- launch -->
+    <!-- <arg name="debug" default="false"/> -->
+    <!-- <arg name="robot_name"/> -->
+
+    <node pkg="exploration" type="seamless_hybrid_exploration" name="seamless_hybrid_exploration" output="screen">
+        <remap from="pose_log" to="$(arg pose_log)"/>
+        <remap from="frontier" to="$(arg frontier)"/>
         <remap from="end" to="$(arg end)"/>
-        <param name="map_frame_id" value="$(arg map_frame_id)"/>
-        <param name="branch_frame_id" value="$(arg branch_frame_id)"/>
-        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <param name="color_cluster" value="true"/>
-        <param name="min_cluster_size" value="30"/>
-        <param name="seamless_hybrid" value="true"/>
-        <param name="filter_square_diameter" value="0.75"/>
-        <param name="rotation" value="$(arg rotation)"/>
-        <param name="center_range_min" value="2.5"/>
-        <param name="newer_duplication_threshold" value="100"/>
+        <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
+        <remap from="map" to="$(arg map)"/>
+        <remap from="mobile_base/sensors/bumper_pointcloud" to="/$(arg robot_name)/mobile_base/sensors/bumper_pointcloud"/>
+
         <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
         <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
         <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
-        <remap from="mobile_base/sensors/bumper_pointcloud" to="/$(arg robot_name)/mobile_base/sensors/bumper_pointcloud"/>
+        
         <param name="robot_name" value="$(arg robot_name)"/>
+        <param name="rotation" value="$(arg rotation)"/>
+        <param name="debug" value="$(arg debug)"/>
+        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
         <param name="angle_bias" value="60"/>
     </node>
-
 </launch>

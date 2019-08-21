@@ -1,18 +1,18 @@
 #ifndef MAP_FILL_HPP
 #define MAP_FILL_HPP
 
-#include <ros/ros.h>
-#include <exploration_libraly/common_lib.hpp>
+#include <exploration_libraly/struct.hpp>
 #include <nav_msgs/OccupancyGrid.h>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <ros/ros.h>
 
 class MapFill
 {
 private:
-    CommonLib::subStructSimple map_;
-    CommonLib::pubStruct<nav_msgs::OccupancyGrid> mapImage_;
+    ExpLib::Struct::subStructSimple map_;
+    ExpLib::Struct::pubStruct<nav_msgs::OccupancyGrid> mapImage_;
 
     double FILL_SIZE_MAX;
     double FILL_SIZE_MIN;

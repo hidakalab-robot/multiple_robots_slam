@@ -50,8 +50,8 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
 
-  <exec_depend>grid_map_merge</exec_depend>
   <exec_depend>cloud_map_merge</exec_depend>
+  <exec_depend>grid_map_merge</exec_depend>
 
 
 

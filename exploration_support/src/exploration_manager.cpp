@@ -3,6 +3,6 @@
 int main(int argc, char* argv[]){
     ros::init(argc,argv,"exploration_manager");
     ExplorationManager em;
-    ros::spin();
+    em.multiThreadMain();
     return 0;
 }

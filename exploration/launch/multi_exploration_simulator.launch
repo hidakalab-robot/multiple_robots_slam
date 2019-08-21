@@ -1,15 +1,14 @@
 <launch>
-    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration_support)/cfg/custom_rosconsole.config"/>
-    <arg name="map_path" default="$(find exploration_support)/fig/edit_map.yaml"/>
+    <arg name="map_path" default="$(find exploration)/fig/edit_map.yaml"/>
 
     <!-- main parameter -->
-    <arg name="parameter_file_path" default="$(find exploration_support)/param/simulator_last_parameters.yaml"/>
+    <arg name="parameter_file_path" default="$(find exploration)/param/simulator_last_parameters.yaml"/>
     <arg name="input_last_parameters" default="true"/>
     <arg name="output_last_parameters" default="true"/>
 
     <!-- extra parameter -->
     <arg name="extra_parameter_namespace" default="extra_parameter"/>
-    <arg name="extra_parameter_file_path" default="$(find exploration_support)/param/simulator_last_extra_parameters.yaml"/>
+    <arg name="extra_parameter_file_path" default="$(find exploration)/param/simulator_last_extra_parameters.yaml"/>
     <arg name="input_last_extra_parameters" default="true"/>
     <arg name="output_last_extra_parameters" default="true"/>
 
@@ -21,19 +20,23 @@
     <!-- mapserver -->
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)"/>
     <!-- simurator main -->
-    <node pkg="exploration_support" type="multi_exploration_simulator" name="multi_exploration_simulator" output="screen">
+    <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator">
         <param name="parameter_file_path" value="$(arg parameter_file_path)"/>
         <param name="output_parameters" value="$(arg output_last_parameters)"/>
         <param name="extra_parameter_namespace" value="$(arg extra_parameter_namespace)"/>
         <rosparam if="$(arg input_last_parameters)" file="$(arg parameter_file_path)" command="load"/>
-        <rosparam file="$(find exploration_support)/param/simulator_calc_path_planner_params.yaml" command="load"/>
-        <rosparam file="$(find exploration_support)/param/simulator_goal_path_planner_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/simulator_calc_path_planner_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/simulator_goal_path_planner_params.yaml" command="load"/>
     </node>
 
     <!-- extra parameter node -->
-    <node pkg="exploration_support" type="extra_parameter_reconfigure" name="$(arg extra_parameter_namespace)">
+    <node pkg="exploration" type="extra_parameter_reconfigure" name="$(arg extra_parameter_namespace)">
         <param name="extra_parameter_file_path" value="$(arg extra_parameter_file_path)"/>
         <param name="output_extra_parameters" value="$(arg output_last_extra_parameters)"/>
         <rosparam if="$(arg input_last_extra_parameters)" file="$(arg extra_parameter_file_path)" command="load"/>
+    </node>
+
+    <node pkg="exploration" type="simulator_input_support" name="simulator_input_support" output="screen">
+        <param name="parameter_namespace" value="multi_exploration_simulator"/>
     </node>
 </launch>

@@ -9,19 +9,15 @@ add_compile_options(-std=c++11)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   actionlib_msgs
-  dynamic_reconfigure
-  exploration
   exploration_libraly
+  exploration_msgs
   geometry_msgs
+  kobuki_msgs
   nav_msgs
   roscpp
-  std_msgs
-  tf
+  sensor_msgs
+  pcl_ros
   visualization_msgs
-  rosbag
-  map_server
-  kobuki_msgs
-  navfn
 )
 
 find_package(OpenCV REQUIRED)
@@ -101,10 +97,10 @@ find_package(OpenCV REQUIRED)
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-generate_dynamic_reconfigure_options(
-  cfg/multi_exploration_simulator.cfg
-  cfg/extra_parameter_reconfigure.cfg
-)
+# generate_dynamic_reconfigure_options(
+#   cfg/multi_exploration_simulator.cfg
+#   cfg/extra_parameter_reconfigure.cfg
+# )
 
 ###################################
 ## catkin specific configuration ##
@@ -118,7 +114,7 @@ generate_dynamic_reconfigure_options(
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES exploration_support
-  CATKIN_DEPENDS actionlib_msgs dynamic_reconfigure exploration exploration_libraly geometry_msgs nav_msgs roscpp std_msgs tf visualization_msgs rosbag map_server kobuki_msgs navfn
+  CATKIN_DEPENDS actionlib_msgs exploration_libraly exploration_msgs geometry_msgs kobuki_msgs nav_msgs roscpp sensor_msgs pcl_ros visualization_msgs
 #  DEPENDS system_lib
 )
 
@@ -212,9 +208,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(log src/log.cpp)
-target_link_libraries(log ${catkin_LIBRARIES})
-
 add_executable(visualization src/visualization.cpp)
 target_link_libraries(visualization ${catkin_LIBRARIES})
 
@@ -233,10 +226,11 @@ target_link_libraries(exploration_manager ${catkin_LIBRARIES})
 add_executable(robot_manager src/robot_manager.cpp)
 target_link_libraries(robot_manager ${catkin_LIBRARIES})
 
-add_executable(multi_exploration_simulator src/multi_exploration_simulator.cpp)
-add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
-target_link_libraries(multi_exploration_simulator ${catkin_LIBRARIES})
+add_executable(frontier_detection src/frontier_detection.cpp)
+target_link_libraries(frontier_detection ${catkin_LIBRARIES})
 
-add_executable(extra_parameter_reconfigure src/extra_parameter_reconfigure.cpp)
-add_dependencies(extra_parameter_reconfigure ${PROJECT_NAME}_gencfg)
-target_link_libraries(extra_parameter_reconfigure ${catkin_LIBRARIES})
+add_executable(branch_detection src/branch_detection.cpp)
+target_link_libraries(branch_detection ${catkin_LIBRARIES})
+
+add_executable(loop_closure_counter src/loop_closure_counter.cpp)
+target_link_libraries(loop_closure_counter ${catkin_LIBRARIES})

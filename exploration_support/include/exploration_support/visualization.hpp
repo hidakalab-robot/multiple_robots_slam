@@ -1,48 +1,55 @@
 #ifndef VISUALIZATION_HPP
 #define VISUALIZATION_HPP
 
-//topicの情報をrvizで表示するためのクラス
-#include <ros/ros.h>
-#include <geometry_msgs/PointStamped.h>
+#include <exploration_libraly/construct.hpp>
+#include <exploration_libraly/struct.hpp>
+#include <exploration_msgs/FrontierArray.h>
 #include <exploration_msgs/PointArray.h>
+#include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <visualization_msgs/Marker.h>
-#include <exploration_libraly/common_lib.hpp>
+#include <nav_msgs/Path.h>
+#include <ros/ros.h>
 #include <thread>
-#include <tf/transform_listener.h>
+#include <visualization_msgs/Marker.h>
 
 class Visualization
 {
 private:
     double POSE_PUBLISH_RATE;
     double GOAL_PUBLISH_RATE;
-    double GOALARRAY_PUBLISH_RATE;
+    double BRANCH_PUBLISH_RATE;
+    double FRONTIER_PUBLISH_RATE;
     std::string MAP_FRAME_ID;
 
     //pose
-    CommonLib::subStructSimple pose_;
-    CommonLib::pubStruct<visualization_msgs::Marker> poseMarker_;    
-    visualization_msgs::Marker pm;
+    ExpLib::Struct::subStructSimple pose_;
+    ExpLib::Struct::pubStruct<nav_msgs::Path> posePath_;   
+    nav_msgs::Path pp_;
 
     //goal
-    CommonLib::subStructSimple goal_;
-    CommonLib::pubStruct<visualization_msgs::Marker> goalMarker_;
-    visualization_msgs::Marker gm;
+    ExpLib::Struct::subStructSimple goal_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> goalMarker_;
+    visualization_msgs::Marker gm_;
 
-    //goalList
-    CommonLib::subStructSimple goalArray_;
-    CommonLib::pubStruct<visualization_msgs::Marker> goalArrayMarker_;
-    visualization_msgs::Marker gam;
+    // branch
+    ExpLib::Struct::subStructSimple branch_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> branchMarker_;
+    visualization_msgs::Marker bm_;
 
-    tf::TransformListener listener;
+    // frontier
+    ExpLib::Struct::subStructSimple frontier_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> frontierMarker_;
+    visualization_msgs::Marker fm_;
     
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
-    void goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg);
+    void branchCB(const exploration_msgs::PointArray::ConstPtr& msg);
+    void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
 
-    void poseMarkerPublisher(void);
+    void posePathPublisher(void);
     void goalMarkerPublisher(void);
-    void goalArrayMarkerPublisher(void);
+    void branchMarkerPublisher(void);
+    void frontierMarkerPublisher(void);
 
 public:
     Visualization();
@@ -51,86 +58,94 @@ public:
 
 Visualization::Visualization()
     :pose_("pose",1,&Visualization::poseCB, this)
-    ,poseMarker_("visualization", 1)
+    ,posePath_("visualization/pose", 1)
     ,goal_("goal",1,&Visualization::goalCB, this)
-    ,goalMarker_("visualization", 1)
-    ,goalArray_("goal_array",1,&Visualization::goalArrayCB, this)
-    ,goalArrayMarker_("visualization", 1){
+    ,goalMarker_("visualization/goal", 1)
+    ,branch_("branch",1,&Visualization::branchCB, this)
+    ,branchMarker_("visualization/branch", 1)
+    ,frontier_("frontier",1,&Visualization::frontierCB, this)
+    ,frontierMarker_("visualization/frontier", 1){
 
     ros::NodeHandle p("~");
-    p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 30.0);
-    p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 30.0);
-    p.param<double>("goalarray_publish_rate", GOALARRAY_PUBLISH_RATE, 30.0);
-    std::string MAP_FRAME_ID;
-    p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
-    //poseMarker
-    p.param<double>("line_width", pm.scale.x, 0.1);
-    pm.header.frame_id = MAP_FRAME_ID;
-    pm.pose.orientation.w = 1.0;
-    pm.type = visualization_msgs::Marker::LINE_STRIP;
-    pm.action = visualization_msgs::Marker::ADD;
-    pm.lifetime = ros::Duration(0);
-    pm.ns = "pose";
-    pm.id = 0;
-    pm.color.r = 0.0f;
-    pm.color.g = 0.0f;
-    pm.color.b = 1.0f;
-    pm.color.a = 1.0f;
+    p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 10.0);
+    p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 10.0);
+    p.param<double>("branch_publish_rate", BRANCH_PUBLISH_RATE, 10.0);
+    p.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
+    
+    std::string INIT_FRAME_ID = "robot1/map";
+
     //goalMarker
-    double goalScale;
-    p.param<double>("goal_scale", goalScale, 0.5);
-    gm.header.frame_id = MAP_FRAME_ID;
-    gm.pose.orientation.w = 1.0;
-    gm.scale.x = gm.scale.y = gm.scale.z = goalScale;
-    gm.pose.position.z = 0;
-    gm.type = visualization_msgs::Marker::CUBE;
-    gm.action = visualization_msgs::Marker::ADD;
-    gm.lifetime = ros::Duration(0);
-    gm.ns = "goal";
-    gm.id = 0;
-    gm.color.r = 1.0f;
-    gm.color.g = 0.0f;
-    gm.color.b = 1.0f;
-    gm.color.a = 1.0f;
-    //goalArrayMarker
-    double goalArrayScale;
-    p.param<double>("goal_array_scale", goalArrayScale, 0.3);
-    gam.header.frame_id = MAP_FRAME_ID;
-    gam.pose.orientation.w = 1.0;
-    gam.scale.x = gam.scale.y = gam.scale.z = goalArrayScale;
-    gam.type = visualization_msgs::Marker::CUBE_LIST;
-    gam.action = visualization_msgs::Marker::ADD;
-    gam.lifetime = ros::Duration(0);
-    gam.ns = "goalArray";
-    gam.id = 0;
-    gam.color.r = 1.0f;
-    gam.color.g = 1.0f;
-    gam.color.b = 0.0f;
-    gam.color.a = 1.0f;
+    gm_.header.frame_id = INIT_FRAME_ID;
+    gm_.pose.orientation.w = 1.0;
+    gm_.scale.x = gm_.scale.y = gm_.scale.z = 0.5;
+    gm_.pose.position.z = 0;
+    gm_.type = visualization_msgs::Marker::CUBE;
+    gm_.action = visualization_msgs::Marker::ADD;
+    gm_.lifetime = ros::Duration(0);
+    gm_.color.r = 1.0f;
+    gm_.color.g = 0.0f;
+    gm_.color.b = 1.0f;
+    gm_.color.a = 1.0f;
+
+    //branchMarker
+    bm_.header.frame_id = INIT_FRAME_ID;
+    bm_.pose.orientation.w = 1.0;
+    bm_.scale.x = bm_.scale.y = bm_.scale.z = 0.5;
+    bm_.type = visualization_msgs::Marker::CUBE_LIST;
+    bm_.action = visualization_msgs::Marker::ADD;
+    bm_.lifetime = ros::Duration(0);
+    bm_.color.r = 1.0f;
+    bm_.color.g = 1.0f;
+    bm_.color.b = 0.0f;
+    bm_.color.a = 1.0f;
+
+    //frontierMarker
+    fm_.header.frame_id = INIT_FRAME_ID;
+    fm_.pose.orientation.w = 1.0;
+    fm_.scale.x = fm_.scale.y = fm_.scale.z = 0.5;
+    fm_.type = visualization_msgs::Marker::CUBE_LIST;
+    fm_.action = visualization_msgs::Marker::ADD;
+    fm_.lifetime = ros::Duration(0);
+    fm_.color.r = 0.0f;
+    fm_.color.g = 1.0f;
+    fm_.color.b = 1.0f;
+    fm_.color.a = 1.0f;
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    pm.points.push_back(CommonLib::msgPoint(msg -> pose.position.x,msg -> pose.position.y,msg -> pose.position.z));
-    pm.header.frame_id = msg->header.frame_id;
-    pm.header.stamp = ros::Time::now();
+    pp_.poses.push_back(*msg);
+    pp_.header.frame_id = msg->header.frame_id;
+    pp_.header.stamp = ros::Time::now();
 }
 
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
-    gm.pose.position = msg->point;
-    gm.header.frame_id = msg->header.frame_id;
-    gm.header.stamp = ros::Time::now();
+    gm_.pose.position = msg->point;
+    gm_.header.frame_id = msg->header.frame_id;
+    gm_.header.stamp = ros::Time::now();
 }
 
-void Visualization::goalArrayCB(const exploration_msgs::PointArray::ConstPtr& msg){
-    gam.points = msg->points;
-    gam.header.frame_id = msg->header.frame_id;
-    gam.header.stamp = ros::Time::now();
+void Visualization::branchCB(const exploration_msgs::PointArray::ConstPtr& msg){
+    bm_.points = msg->points;
+    bm_.header.frame_id = msg->header.frame_id;
+    bm_.header.stamp = ros::Time::now();
 }
 
-void Visualization::poseMarkerPublisher(void){
+void Visualization::frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg){
+    auto replace = [&msg]{
+        std::vector<geometry_msgs::Point> p;
+        p.reserve(msg->frontiers.size());
+        for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
+        return p;
+    };
+    fm_.points = replace();
+    fm_.header.frame_id = msg->header.frame_id;
+    fm_.header.stamp = ros::Time::now();
+}
+
+void Visualization::posePathPublisher(void){
     ros::Rate rate(POSE_PUBLISH_RATE);
     while(ros::ok()){
-        poseMarker_.pub.publish(pm);
+        posePath_.pub.publish(pp_);
         rate.sleep();
     }
 }
@@ -138,15 +153,23 @@ void Visualization::poseMarkerPublisher(void){
 void Visualization::goalMarkerPublisher(void){
     ros::Rate rate(GOAL_PUBLISH_RATE);
     while(ros::ok()){
-        goalMarker_.pub.publish(gm);
+        goalMarker_.pub.publish(gm_);
         rate.sleep();
     }
 }
 
-void Visualization::goalArrayMarkerPublisher(void){
-    ros::Rate rate(GOALARRAY_PUBLISH_RATE);
+void Visualization::branchMarkerPublisher(void){
+    ros::Rate rate(BRANCH_PUBLISH_RATE);
     while(ros::ok()){
-        goalArrayMarker_.pub.publish(gam);
+        branchMarker_.pub.publish(bm_);
+        rate.sleep();
+    }
+}
+
+void Visualization::frontierMarkerPublisher(void){
+    ros::Rate rate(FRONTIER_PUBLISH_RATE);
+    while(ros::ok()){
+        frontierMarker_.pub.publish(fm_);
         rate.sleep();
     }
 }
@@ -154,13 +177,15 @@ void Visualization::goalArrayMarkerPublisher(void){
 void Visualization::multiThreadMain(void){
     ROS_INFO_STREAM("start threads\n");
     ros::spinOnce();
-    std::thread pmThread([this]() { poseMarkerPublisher(); });
+    std::thread ppThread([this]() { posePathPublisher(); });
     std::thread gmThread([this]() { goalMarkerPublisher(); });
-    std::thread gamThread([this]() { goalArrayMarkerPublisher(); });
+    std::thread bmThread([this]() { branchMarkerPublisher(); });
+    std::thread fmThread([this]() { frontierMarkerPublisher(); });
     ros::spin();
-    pmThread.join();//スレッドの終了を待つ
+    ppThread.join();//スレッドの終了を待つ
     gmThread.join();
-    gamThread.join();
+    bmThread.join();
+    fmThread.join();
     ROS_INFO_STREAM("end main loop\n");
 }
 

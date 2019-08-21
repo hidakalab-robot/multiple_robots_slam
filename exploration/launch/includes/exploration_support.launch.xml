@@ -1,0 +1,42 @@
+<launch>
+    <arg name="frontier_detection"/>
+    <arg name="branch_detection"/>
+    <arg name="map_fill"/>
+
+    <arg name="orig_map" default="map"/>
+    <arg name="fill_map" default="fill_map"/>
+
+    <!-- frontier_detection -->
+    <node if="$(arg frontier_detection)" pkg="exploration_support" type="frontier_detection" name="frontier_detection">
+        <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+        <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
+    </node>
+
+    <!-- branch_detection -->
+    <node if="$(arg branch_detection)" pkg="exploration_support" type="branch_detection" name="branch_detection"/>
+
+    <!-- map_fill -->
+    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="map_fill">
+        <remap from="map" to="$(arg orig_map)"/>
+        <remap from="fill_map" to="$(arg fill_map)"/>
+    </node>
+
+    <!-- exploration_manager -->
+    <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
+        <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+        <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
+        <param name="area_rate" value="1.0"/>
+        <param name="end_time" value="1200"/>
+    </node>
+
+    <!-- robot_manager -->
+    <node pkg="exploration_support" type="robot_manager" name="robot_manager">
+        <param name="pose_log_rate" value="1.0"/>
+    </node>
+
+    <!-- bumper_continuity -->
+    <node pkg="exploration_support" type="bumper_continuity" name="bumper_continuity"/>
+
+    <!-- visualization -->
+    <node pkg="exploration_support" type="visualization" name="visualization"/>
+</launch>

@@ -9,8 +9,7 @@ project(exploration_msgs)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
-  nav_msgs
-  sensor_msgs
+  message_generation
   std_msgs
 )
 
@@ -48,10 +47,11 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
- add_message_files(
+add_message_files(
    FILES
-   PointArray.msg
    Frontier.msg
+   FrontierArray.msg
+   PointArray.msg
    PoseStampedArray.msg
    RobotInfo.msg
    RobotInfoArray.msg
@@ -74,7 +74,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
    DEPENDENCIES
-   geometry_msgs   nav_msgs   sensor_msgs   std_msgs
+   geometry_msgs std_msgs
  )
 
 ################################################

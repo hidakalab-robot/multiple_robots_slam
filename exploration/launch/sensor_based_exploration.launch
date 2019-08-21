@@ -4,98 +4,28 @@
     <arg name="robot_name" default="robot1"/>
     <arg name="multi" default="false"/>
 
-    <arg name="pose" default="/$(arg robot_name)/robot_pose/local"/>
-    <arg name="velocity" default="/$(arg robot_name)/mobile_base/commands/velocity"/>
-    <arg name="scan" default="/$(arg robot_name)/scan"/>
-    <arg name="bumper_raw" default="/$(arg robot_name)/mobile_base/events/bumper"/>
-    <arg name="bumper_continuity" default="bumper_continuity"/>
-
-    <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
-    <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
-    <arg unless="$(arg multi)" name="map_topic" default="/$(arg robot_name)/map"/>
-    <arg if="$(arg multi)" name="map_topic" default="/server/merge_map/grid"/>
-
-    <arg name="branch_frame_id" default="$(arg robot_name)/map"/>
-
-    <arg name="ns" default="exploration"/>
-
-    <arg name="rosbag" default="false"/>
     <arg name="debug" default="false"/>
-
     <arg name="rotation" default="false"/>
-
-    <arg name="fill" default="true"/>
     
-    <group ns="$(arg robot_name)/$(arg ns)">
-        <node pkg="exploration" type="sensor_based_exploration" name="sensor_based_exploration" output="screen">
-            <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
-            <remap if="$(arg fill)" from="map" to="fill_map"/>
-            <remap from="scan" to="$(arg scan)"/>
-            <remap unless="$(arg debug)" from="velocity" to="$(arg velocity)"/>
-            <remap from="pose" to="$(arg pose)"/>
-            <remap from="pose_log" to="pose_log/local"/>
-            <remap from="bumper" to="$(arg bumper_continuity)"/>
-            <param name="map_frame_id" value="$(arg map_frame_id)"/>
-            <param name="branch_frame_id" value="$(arg branch_frame_id)"/>
-            <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-            <param name="debug" value="$(arg debug)"/>
-            <param name="color_cluster" value="true"/>
-            <param name="min_cluster_size" value="30"/>
-            <param name="seamless_hybrid" value="false"/>
-            <param name="filter_square_diameter" value="0.75"/>
-            <param name="rotation" value="$(arg rotation)"/>
-            <param name="center_range_min" value="2.5"/>
-            <param name="newer_duplication_threshold" value="100"/>
-            <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
-            <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
-            <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
-            <param name="robot_name" value="$(arg robot_name)"/>
-            <param name="angle_bias" value="60"/>
-        </node>
+    <arg unless="$(arg multi)" name="map" default="/$(arg robot_name)/map"/>
+    <arg if="$(arg multi)" name="map" default="/server/merge_map/grid"/>
 
-        <node pkg="exploration_support" type="visualization" name="visualization">
-            <param name="map_frame_id" value="$(arg map_frame_id)"/>
-        </node>
+    <group ns="$(arg robot_name)">
+        <!-- exploration main -->
+        <include file="$(find exploration)/launch/includes/sensor_based_exploration.launch.xml">
+            <arg name="pose_log" value="pose_log/$(arg robot_name)"/>
+            <arg name="end" value="end/area"/>
+            <arg name="debug" value="$(arg debug)"/>
+            <arg name="rotation" value="$(arg rotation)"/>
+            <arg name="robot_name" value="$(arg robot_name)"/>
+        </include>
 
-        <node unless="$(arg debug)" pkg="exploration_support" type="log" name="log">
-            <remap from="pose" to="$(arg pose)"/>
-            <remap from="pose_log" to="pose_log/local"/>
-            <param name="pose_log_rate" value="1.0"/>
-        </node>
-
-        <node unless="$(arg debug)" pkg="exploration_support" type="robot_manager" name="robot_manager">
-            <remap from="pose_log/all_robots" to="pose_log/global/all"/>
-            <param name="pose_log_rate" value="1.0"/>
-        </node>
-
-        <node pkg="exploration_support" type="bumper_continuity" name="bumper_continuity">
-            <remap from="sub_topic" to="$(arg bumper_raw)"/>
-            <remap from="pub_topic" to="$(arg bumper_continuity)"/>
-        </node>
-
-        <node pkg="exploration_support" type="map_fill" name="map_fill">
-            <remap from="map" to="$(arg map_topic)"/>
-        </node>
-
-        <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
-            <remap if="$(arg fill)" from="map" to="fill_map"/>
-            <remap unless="$(arg fill)" from="map" to="$(arg map_topic)"/>
-            <param name="end_condition" value="0"/> <!-- 0: area, 1: frontier -->
-            <param name="min_cluster_size" value="30"/>
-        </node>
-
-        <include if="$(arg rosbag)" file="$(find exploration_support)/launch/includes/rosbag_record.launch.xml">
-            <arg name="topics" value="  $(arg pose) 
-                                        /$(arg robot_name)/$(arg ns)/pose_log 
-                                        $(arg bumper_raw) 
-                                        $(arg scan) 
-                                        $(arg velocity) 
-                                        /$(arg robot_name)/$(arg ns)/visualization 
-                                        /tf 
-                                        /tf_static 
-                                        /$(arg robot_name)/map 
-                                        /$(arg robot_name)/move_base/global_costmap/costmap 
-                                        /$(arg robot_name)/NavfnROS/plan"/>
+        <!-- exploration support -->
+        <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
+            <arg name="frontier_detection" value="false"/>
+            <arg name="branch_detection" value="true"/>
+            <arg name="map_fill" value="false"/>
+            <arg name="orig_map" value="$(arg map)"/>
         </include>
     </group>
 </launch>

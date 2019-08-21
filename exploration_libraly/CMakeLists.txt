@@ -8,13 +8,13 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  costmap_2d
   exploration_msgs
   geometry_msgs
   pcl_ros
   roscpp
   std_msgs
   tf
-  costmap_2d
 )
 
 ## System dependencies are found with CMake's conventions
@@ -109,7 +109,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES exploration_libraly
-  CATKIN_DEPENDS exploration_msgs geometry_msgs pcl_ros roscpp std_msgs tf costmap_2d
+  CATKIN_DEPENDS costmap_2d exploration_msgs geometry_msgs pcl_ros roscpp std_msgs tf
 #  DEPENDS system_lib
 )
 

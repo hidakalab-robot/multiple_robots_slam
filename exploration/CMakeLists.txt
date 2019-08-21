@@ -8,19 +8,16 @@ add_compile_options(-std=c++11)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  dynamic_reconfigure
   geometry_msgs
-  kobuki_msgs
-  nav_msgs
-  roscpp
-  sensor_msgs
-  std_msgs
   exploration_msgs
-  tf
-  navfn
-  move_base_msgs
-  actionlib
-  pcl_ros
   exploration_libraly
+  actionlib
+  roscpp
+  kobuki_msgs
+  sensor_msgs
+  move_base_msgs
+  navfn
 )
 
 ## System dependencies are found with CMake's conventions
@@ -101,8 +98,10 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-# )
+generate_dynamic_reconfigure_options(
+  cfg/multi_exploration_simulator.cfg
+  cfg/extra_parameter_reconfigure.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -116,7 +115,7 @@ find_package(catkin REQUIRED COMPONENTS
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES exploration
-  CATKIN_DEPENDS geometry_msgs kobuki_msgs nav_msgs roscpp sensor_msgs std_msgs exploration_msgs tf navfn move_base_msgs actionlib pcl_ros exploration_libraly
+  CATKIN_DEPENDS dynamic_reconfigure geometry_msgs exploration_msgs exploration_libraly actionlib roscpp kobuki_msgs sensor_msgs move_base_msgs navfn
 #  DEPENDS system_lib
 )
 
@@ -211,8 +210,25 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(sensor_based_exploration src/sbe_main.cpp)
+add_executable(sensor_based_exploration src/sensor_based_exploration.cpp)
 target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
 
-add_executable(frontier_based_exploration src/fbe_main.cpp)
+add_executable(frontier_based_exploration src/frontier_based_exploration.cpp)
 target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
+
+add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration.cpp)
+target_link_libraries(seamless_hybrid_exploration ${catkin_LIBRARIES})
+
+add_executable(multi_exploration_simulator src/multi_exploration_simulator.cpp)
+add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
+target_link_libraries(multi_exploration_simulator ${catkin_LIBRARIES})
+
+add_executable(extra_parameter_reconfigure src/extra_parameter_reconfigure.cpp)
+add_dependencies(extra_parameter_reconfigure ${PROJECT_NAME}_gencfg)
+target_link_libraries(extra_parameter_reconfigure ${catkin_LIBRARIES})
+
+add_executable(simulator_input_support src/simulator_input_support.cpp)
+target_link_libraries(simulator_input_support ${catkin_LIBRARIES})
+
+add_executable(legacy_hybrid_exploration src/legacy_hybrid_exploration.cpp)
+target_link_libraries(legacy_hybrid_exploration ${catkin_LIBRARIES})

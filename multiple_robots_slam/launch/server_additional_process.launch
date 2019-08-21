@@ -1,20 +1,27 @@
 <launch>
     <arg name="robot_name" default="robot1"/>
+    <arg name="server_name" default="server"/>
     <arg name="mapping" default="true"/>
-    <arg name="continuity" default="false"/>
+    <arg name="mapping_method" default="0"/> <!-- 0: rtabmap, 1:gmapping -->
+    <arg name="bumper_continuity" default="false"/>
     <arg name="visualization" default="false"/>
     <arg name="exploration" default="false"/>
-    <arg name="exploration_method" default="0"/> <!-- 0: seamless, 1:frontier, 2:sensor -->
+    <arg name="exploration_method" default="0"/> <!-- 0: seamless, 1:frontier, 2:sensor, 3:legacy-hybrid -->
+    <arg name="branch_detection" default="true"/>
+    <arg name="debug" default="false"/>
 
     <group ns="$(arg robot_name)">
         <include file="$(find multiple_robots_slam)/launch/includes/additional_process.launch.xml">
             <arg name="robot_name" value="$(arg robot_name)"/>
+            <arg name="server_name" value="$(arg server_name)"/>
+            <arg name="debug" value="$(arg debug)"/>
             <arg name="mapping" value="$(arg mapping)"/>
-            <arg name="continuity" value="$(arg continuity)"/>
+            <arg name="mapping_method" value="$(arg mapping_method)"/>
+            <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
             <arg name="visualization" value="$(arg visualization)"/>
             <arg name="exploration" value="$(arg exploration)"/>
             <arg name="exploration_method" value="$(arg exploration_method)"/>
-            <arg name="log" value="false"/>
+            <arg name="branch_detection" value="$(arg branch_detection)"/>
         </include>
     </group>
     

@@ -1,7 +1,8 @@
-#include <exploration_support/multi_exploration_simulator.hpp> // 必須
-#include <exploration/seamless_hybrid.hpp> // SeamlessHybrid sh(pp);　用
-#include <exploration_libraly/path_planning.hpp> // PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS"); 用
-#include <navfn/navfn_ros.h>
+#include <exploration/multi_exploration_simulator.hpp> // 必須
+// #include <exploration/seamless_hybrid.hpp> // SeamlessHybrid sh(pp);　用
+#include <exploration/seamless_hybrid_exploration.hpp> // SeamlessHybrid sh(pp);　用
+// #include <exploration_libraly/path_planning.hpp> // PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS"); 用
+// #include <navfn/navfn_ros.h>
 
 int main(int argc, char* argv[]){
     // 見づらいのでusingしておく
@@ -10,8 +11,8 @@ int main(int argc, char* argv[]){
     ros::init(argc, argv, "multi_exploration_simulator");
     MultiExplorationSimulator mes;
 
-    dynamic_reconfigure::Server<exploration_support::multi_exploration_simulatorConfig> server;
-    dynamic_reconfigure::Server<exploration_support::multi_exploration_simulatorConfig>::CallbackType cbt;
+    dynamic_reconfigure::Server<exploration::multi_exploration_simulatorConfig> server;
+    dynamic_reconfigure::Server<exploration::multi_exploration_simulatorConfig>::CallbackType cbt;
     cbt = boost::bind(&MultiExplorationSimulator::callback,&mes, _1, _2);
     server.setCallback(cbt);
 
@@ -31,11 +32,11 @@ int main(int argc, char* argv[]){
 
     // 使用例
 
-    PathPlanning<navfn::NavfnROS> pp("simulator_calc_costmap","simulator_calc_path");
-    SeamlessHybrid sh(pp);
+    // PathPlanning<navfn::NavfnROS> pp("simulator_calc_costmap","simulator_calc_path");
+    SeamlessHybridExploration sbe;
 
     // 渡す関数のオブジェクトを作成
-    fnType fn = std::bind(&SeamlessHybrid::simulatorFunction,&sh,std::placeholders::_1,std::placeholders::_2,std::placeholders::_3);
+    fnType fn = std::bind(&SeamlessHybridExploration::simBridge,&sbe,std::placeholders::_1,std::placeholders::_2,std::placeholders::_3);
 
     while(ros::ok()){
         ros::spinOnce(); // 必須

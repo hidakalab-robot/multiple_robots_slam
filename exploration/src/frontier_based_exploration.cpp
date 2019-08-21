@@ -1,14 +1,14 @@
-#include <exploration/frontier_search.hpp>
+#include <exploration/frontier_based_exploration.hpp>
 #include <exploration/movement.hpp>
 
 //mainのところにexploration_endを評価する部分
 int main(int argc, char *argv[]){
     ros::init(argc, argv, "frontier_based_exploration_movebase");
 
-    FrontierSearch fs;
+    FrontierBasedExploration fbe;
     Movement mv;
 
-    CommonLib::subStruct<std_msgs::Bool> isEnd("end",1);
+    ExpLib::Struct::subStruct<std_msgs::Bool> end("end",1);
 
     geometry_msgs::PointStamped goal;
 
@@ -24,8 +24,8 @@ int main(int argc, char *argv[]){
     if(!DEBUG && ROTATION) mv.oneRotation();
 
     while(ros::ok()){
-        if(fs.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
-        if(AUTO_FINISH && !isEnd.q.callOne(ros::WallDuration(0.5)) && isEnd.data.data) break;
+        if(fbe.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
+        if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
     }
 
     ROS_INFO_STREAM("exploration finish !! -> time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");

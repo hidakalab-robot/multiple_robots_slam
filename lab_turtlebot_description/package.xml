@@ -49,13 +49,9 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>turtlebot_description</build_depend>
-  <build_depend>kobuki_description</build_depend>
-  <build_export_depend>turtlebot_description</build_export_depend>
-  <build_export_depend>kobuki_description</build_export_depend>
-  <exec_depend>turtlebot_description</exec_depend>
-  <exec_depend>kobuki_description</exec_depend>
 
+  <exec_depend>kobuki_description</exec_depend>
+  <exec_depend>turtlebot_description</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

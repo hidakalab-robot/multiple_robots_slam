@@ -1,17 +1,19 @@
 #ifndef MOVEMENT_HPP
 #define MOVEMENT_HPP
 
-#include <ros/ros.h>
-#include <sensor_msgs/LaserScan.h>
+#include <actionlib/client/simple_action_client.h>
+#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/utility.hpp>
+#include <Eigen/Geometry>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
-#include <kobuki_msgs/BumperEvent.h>
 #include <geometry_msgs/Twist.h>
+#include <kobuki_msgs/BumperEvent.h>
 #include <move_base_msgs/MoveBaseAction.h>
-#include <actionlib/client/simple_action_client.h>
-#include <Eigen/Geometry>
-#include <exploration_libraly/common_lib.hpp>
+#include <ros/ros.h>
+#include <sensor_msgs/LaserScan.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -57,7 +59,6 @@ private:
     double ROAD_CENTER_GAIN;
     double ROTATION_GAIN;
     std::string MOVEBASE_NAME;
-    std::string MAP_FRAME_ID;
     double FORWARD_ANGLE;
     double WALL_RATE_THRESHOLD;
     double WALL_DISTANCE_UPPER_THRESHOLD;
@@ -65,12 +66,12 @@ private:
     double EMERGENCY_DIFF_THRESHOLD;
     double ANGLE_BIAS;    
 
-    CommonLib::subStruct<sensor_msgs::LaserScan> scan_;
-    CommonLib::subStruct<geometry_msgs::PoseStamped> pose_;
-    CommonLib::subStruct<kobuki_msgs::BumperEvent> bumper_;
-    CommonLib::pubStruct<geometry_msgs::Twist> velocity_;
+    ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
+    ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExpLib::Struct::subStruct<kobuki_msgs::BumperEvent> bumper_;
+    ExpLib::Struct::pubStruct<geometry_msgs::Twist> velocity_;
 
-    double previousOrientation;
+    double previousOrientation_;
     
     void approx(std::vector<float>& scanRanges);
     void vfhMovement(sensor_msgs::LaserScan& scan,bool straight, double angle);
@@ -98,7 +99,7 @@ Movement::Movement()
     ,pose_("pose",1)
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
-    ,previousOrientation(1.0){
+    ,previousOrientation_(1.0){
 
     ros::NodeHandle p("~");
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
@@ -119,7 +120,6 @@ Movement::Movement()
     p.param<double>("vfh_gain", VFH_GAIN, 0.5);
     p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
     p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
-    p.param<std::string>("map_frame_id", MAP_FRAME_ID, "map");
     p.param<double>("forward_angle", FORWARD_ANGLE, 0.17);
     p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
     p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
@@ -182,15 +182,11 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     if(pose_.data.header.frame_id != goal.header.frame_id){
         static bool initialized = false;
         static tf::TransformListener listener;
-        static std::string prePoseFrame;
-        static std::string preGoalFrame;
-        if(!initialized || pose_.data.header.frame_id != preGoalFrame || goal.header.frame_id != preGoalFrame){
+        if(!initialized){
             listener.waitForTransform(pose_.data.header.frame_id, goal.header.frame_id, ros::Time(), ros::Duration(1.0));
             initialized = true;
-            prePoseFrame = pose_.data.header.frame_id;
-            preGoalFrame = goal.header.frame_id;
         }
-        CommonLib::coordinateConverter<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
+        ExpLib::Utility::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
     move_base_msgs::MoveBaseGoal to;
@@ -198,7 +194,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     to.target_pose.header.stamp = ros::Time::now();
 
     // 回転角度の補正値
-    double yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
+    double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
     Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
     double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
     Eigen::Matrix2d rotation;
@@ -211,7 +207,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
 
-    to.target_pose.pose = CommonLib::msgPose(goal.point,CommonLib::eigenQuaToGeoQua(q));
+    to.target_pose.pose = ExpLib::Construct::msgPose(goal.point,ExpLib::Convert::eigenQuaToGeoQua(q));
 
     ROS_DEBUG_STREAM("goal pose : " << to.target_pose.pose);
     ROS_INFO_STREAM("send goal to move_base");
@@ -267,7 +263,7 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
                 vel.angular.z = -ROTATION_VELOCITY;
                 break;
             case 1:
-                vel.angular.z = -previousOrientation * ROTATION_VELOCITY;
+                vel.angular.z = -previousOrientation_ * ROTATION_VELOCITY;
                 break;
             case 2:
                 vel.angular.z = ROTATION_VELOCITY;
@@ -404,11 +400,11 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     //まずよけれる範囲か見る
     if(aveP > EMERGENCY_THRESHOLD || aveM > EMERGENCY_THRESHOLD){
         //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
-        if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation = aveP > aveM ? 1.0 : -1.0;
+        if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation_ = aveP > aveM ? 1.0 : -1.0;
 
-        ROS_INFO_STREAM((previousOrientation > 0 ? "Avoidance to Left" : "Avoidance to Right"));
+        ROS_INFO_STREAM((previousOrientation_ > 0 ? "Avoidance to Left" : "Avoidance to Right"));
 
-        velocity_.pub.publish(velocityGenerator(previousOrientation*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
+        velocity_.pub.publish(velocityGenerator(previousOrientation_*scan.angle_max/6 * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, AVOIDANCE_GAIN));
         return true;
     }
     else{
@@ -419,15 +415,15 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
 void Movement::recoveryRotation(void){
     ROS_WARN_STREAM("Recovery Rotation !");
-    velocity_.pub.publish(CommonLib::msgTwist(0,previousOrientation * ROTATION_VELOCITY * VELOCITY_GAIN));
+    velocity_.pub.publish(ExpLib::Construct::msgTwist(0,previousOrientation_ * ROTATION_VELOCITY * VELOCITY_GAIN));
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
-    return CommonLib::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
+    return ExpLib::Construct::msgTwist(v,(CURVE_GAIN*theta)/(t/ROTATION_GAIN));
 }
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
-    CommonLib::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
+    ExpLib::Struct::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
@@ -458,20 +454,20 @@ void Movement::oneRotation(void){
 
     if(pose_.q.callOne(ros::WallDuration(1))) return;
 
-    double initYaw,yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
+    double initYaw,yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
 
     if(std::isnan(initSign)) initSign = 1.0;
 
     //initYawが+の時は+回転
     //initYawが-の時は-回転
-    geometry_msgs::Twist vel = CommonLib::msgTwist(0,initSign * ROTATION_VELOCITY);
+    geometry_msgs::Twist vel = ExpLib::Construct::msgTwist(0,initSign * ROTATION_VELOCITY);
     
     for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
         double yawOld = yaw;
         velocity_.pub.publish(vel);
         pose_.q.callOne(ros::WallDuration(1));
-        yaw = CommonLib::qToYaw(pose_.data.pose.orientation);
+        yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
         if(yawOld * yaw < 0) ++count;
     }
 }

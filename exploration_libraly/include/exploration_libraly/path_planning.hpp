@@ -1,10 +1,10 @@
 #ifndef PATH_PLANNING_HPP
 #define PATH_PLANNING_HPP
 
-#include <ros/ros.h>
 #include <costmap_2d/costmap_2d_ros.h>
-#include <geometry_msgs/PoseStamped.h>
 #include <Eigen/Geometry>
+#include <geometry_msgs/PoseStamped.h>
+#include <ros/ros.h>
 
 /*
 path_planning tutorial
@@ -35,6 +35,8 @@ In source file
             pp.createPath(start,goal,path,map); // In addition to the above, insert voronoi-grid into map
 */
 
+namespace ExpLib
+{
 template<typename T>
 class PathPlanning
 {
@@ -62,7 +64,6 @@ public:
 
     bool createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
         ros::spinOnce();
-
         return planner.makePlan(start,goal,plan);
     };
 
@@ -105,5 +106,6 @@ public:
         return false;
     }
 };
+}
 
 #endif //PATH_PLANNING_HPP
