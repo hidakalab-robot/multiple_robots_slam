@@ -17,10 +17,10 @@
     <arg name="merge_map_topic" default="/$(arg server_name)/merge_map/grid"/>
 
     <!-- exploration -->
-    <arg name="pose_log_merge" default="/$(server_name)/pose_log/merge"/>
-    <arg name="pose_log_indivisual" default="/$(server_name)/pose_log/$(arg robot_name)"/>
+    <arg name="pose_log_merge" default="/$(arg server_name)/pose_log/merge"/>
+    <arg name="pose_log_indivisual" default="/$(arg server_name)/pose_log/$(arg robot_name)"/>
     <arg name="robot_array" default="/$(arg server_name)/robot_array"/>
-    <arg name="frontier" default="/$(server_name)/frontier"/>
+    <arg name="frontier" default="/$(arg server_name)/frontier"/>
     <arg name="end" default="/$(arg server_name)/end/$(arg end_condition)"/>
     <arg name="fill_map" default="/$(arg server_name)/fill_map"/>
 
@@ -44,7 +44,7 @@
     <!-- exploration (seamless) -->
     <include if="$(eval arg('exploration') and arg('exploration_method')==0)" file="$(find exploration)/launch/includes/seamless_hybrid_exploration.launch.xml">
         <arg name="pose_log" value="$(arg pose_log_merge)"/>
-        <arg name="frontier" default="$(arg frontier)"/>
+        <arg name="frontier" value="$(arg frontier)"/>
         <arg name="end" value="$(arg end)"/>
         <arg name="robot_name" value="$(arg robot_name)"/>
         <arg name="debug" value="$(arg debug)"/>
@@ -55,7 +55,7 @@
 
     <!-- exploration (frontier) -->
     <include if="$(eval arg('exploration') and arg('exploration_method')==1)" file="$(find exploration)/launch/includes/frontier_based_exploration.launch.xml">
-        <arg name="frontier" default="$(arg frontier)"/>
+        <arg name="frontier" value="$(arg frontier)"/>
         <arg name="end" value="$(arg end)"/>
         <arg name="debug" value="$(arg debug)"/>
         <arg name="rotation" value="true"/>

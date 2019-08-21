@@ -17,7 +17,7 @@
             <arg name="debug" value="$(arg debug)"/>
             <arg name="mapping" value="$(arg mapping)"/>
             <arg name="mapping_method" value="$(arg mapping_method)"/>
-            <arg name="bumper_continuity" value="$(arg continuity)"/>
+            <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
             <arg name="visualization" value="$(arg visualization)"/>
             <arg name="exploration" value="$(arg exploration)"/>
             <arg name="exploration_method" value="$(arg exploration_method)"/>
