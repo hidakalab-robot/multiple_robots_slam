@@ -36,8 +36,8 @@
         <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
         <param name="angle_bias" value="60"/>
 
-        <arg name="distance_weight" default="3.0"/>
-        <arg name="direction_weight" default="2.0"/>
+        <param name="distance_weight" value="3.0"/>
+        <param name="direction_weight" value="2.0"/>
     </node>
 
     <node pkg="exploration_support" type="loop_closure_counter" name="loop_closure_counter">

@@ -78,6 +78,7 @@ void ExplorationManager::frontierCB(const exploration_msgs::FrontierArray::Const
 
 
 void ExplorationManager::timer(void){
+    usleep(2e5); // sim time が追いつくのを待機
     ros::Time startTime = ros::Time::now();
     ros::Rate rate(1);
     while(ros::ok()){
