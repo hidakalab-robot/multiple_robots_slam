@@ -20,7 +20,7 @@ int main(int argc, char* argv[]){
     
     p.param<std::string>("odom_frame_id",ODOM_FRAME_ID,"odom");
     p.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
-    p.param<double>("loop_closure_threshold",LOOP_CLOSURE_THRESHOLD,1.0);
+    p.param<double>("loop_closure_threshold",LOOP_CLOSURE_THRESHOLD,0.0);
     p.param<double>("publish_rate",PUBLISH_RATE,10.0);
 
     tf::TransformListener listener;
