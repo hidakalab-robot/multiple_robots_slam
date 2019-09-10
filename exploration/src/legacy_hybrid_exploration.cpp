@@ -50,7 +50,8 @@ int main(int argc, char* argv[]){
         }
     }
 
-    ROS_INFO_STREAM("Switch exploration method SBE to FBE -> switch time :" << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
+    ros::Time switchTime = ros::Time::now();
+    ROS_INFO_STREAM("Switch exploration method SBE to FBE -> switch time :" << ros::Duration(switchTime-start).toSec() << " [s]");
 
     // frontier-based exploration
     {
@@ -58,9 +59,10 @@ int main(int argc, char* argv[]){
             if(fbe.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
             if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
         }
-    } 
+    }
 
     ROS_INFO_STREAM("exploration finish !! -> time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");
+    ROS_INFO_STREAM("switch time :" << ros::Duration(switchTime-start).toSec() << " [s]");
 
     ros::shutdown();
 
