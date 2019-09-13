@@ -4,6 +4,7 @@
     <arg name="mapping" default="true"/>
     <arg name="mapping_method" default="0"/> <!-- 0: rtabmap, 1:gmapping -->
     <arg name="bumper_continuity" default="false"/>
+    <arg name="map_continuity" default="true"/>
     <arg name="visualization" default="false"/>
     <arg name="exploration" default="false"/>
     <arg name="exploration_method" default="0"/> <!-- 0: seamless, 1:frontier, 2:sensor, 3:legacy-hybrid -->
@@ -18,6 +19,7 @@
             <arg name="mapping" value="$(arg mapping)"/>
             <arg name="mapping_method" value="$(arg mapping_method)"/>
             <arg name="bumper_continuity" value="$(arg bumper_continuity)"/>
+            <arg name="map_continuity" value="$(arg map_continuity)"/>
             <arg name="visualization" value="$(arg visualization)"/>
             <arg name="exploration" value="$(arg exploration)"/>
             <arg name="exploration_method" value="$(arg exploration_method)"/>
