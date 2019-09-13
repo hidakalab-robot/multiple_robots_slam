@@ -97,4 +97,6 @@
     <param name="is_stamped" value="true"/>
   </node>
 
+  <node pkg="exploration_support" type="map_continuity" name="map_continuity"/>
+
 </launch>

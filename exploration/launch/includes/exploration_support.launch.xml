@@ -37,9 +37,6 @@
     <!-- bumper_continuity -->
     <node pkg="exploration_support" type="bumper_continuity" name="bumper_continuity"/>
 
-    <!-- map_continuity -->
-    <node pkg="exploration_support" type="map_continuity" name="map_continuity"/>
-
     <!-- visualization -->
     <node pkg="exploration_support" type="visualization" name="visualization"/>
 </launch>
