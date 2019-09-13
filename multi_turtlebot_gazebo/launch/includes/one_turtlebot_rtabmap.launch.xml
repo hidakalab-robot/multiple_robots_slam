@@ -16,7 +16,7 @@
     <arg name="depth_topic" default="/$(arg robot_name)/camera/depth/image_raw"/>
     <arg name="camera_info_topic" default="/$(arg robot_name)/camera/rgb/camera_info"/>
     
-    <arg name="wait_for_transform"  default="0.2"/>
+    <arg name="wait_for_transform"  default="10.0"/>
 
     <arg name="multi" default="false"/>
     <arg name="merge_map_frame" default="/server/merge_map"/>
