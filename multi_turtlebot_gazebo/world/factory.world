@@ -26,5 +26,17 @@
       <uri>model://baggage_D</uri>
       <pose>1 -1 0.1 0 0 0</pose>
     </include>
+    <include>
+      <uri>model://baggage_A_x5</uri>
+      <pose>5 -1 0.25 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://baggage_B_x5</uri>
+      <pose>3 -1 0.1 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://baggage_C_x5</uri>
+      <pose>3 -1 0.2 0 0 0</pose>
+    </include>
   </world>
 </sdf>

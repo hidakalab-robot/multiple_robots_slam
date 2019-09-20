@@ -1,0 +1,9 @@
+<launch>
+    <env name="GAZEBO_MODEL_PATH" value="$(find multi_turtlebot_gazebo)/world/models:$(optenv GAZEBO_MODEL_PATH)" /> 
+
+    <!--<include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="use_sim_time" value="true"/>
+        <arg name="debug" value="false"/>
+        <arg name="gui" value="true" />
+    </include>-->
+</launch>
