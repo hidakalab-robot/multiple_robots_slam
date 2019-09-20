@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="default">
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://factory_floor</uri>
+    </include>
+    <include>
+      <uri>model://factory_outer_frame</uri>
+    </include>
+    <include>
+      <uri>model://baggage_A</uri>
+      <pose>1 1 0.25 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://baggage_B</uri>
+      <pose>-1 1 0.1 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://baggage_C</uri>
+      <pose>-1 -1 0.2 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://baggage_D</uri>
+      <pose>1 -1 0.1 0 0 0</pose>
+    </include>
+  </world>
+</sdf>
