@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sdf version='1.4'>
-    <model name="baggage_A_x5">
+    <model name="baggage_A_x3">
         <model name="baggage_A_0">
             <static>true</static>
             <link name="link">
@@ -78,58 +78,6 @@
                 </visual>
             </link>
             <pose frame=''>0 0 1.0 0 0 0</pose>
-        </model>
-        <model name="baggage_A_3">
-            <static>true</static>
-            <link name="link">
-                <collision name="collision">
-                    <geometry>
-                    <box>
-                        <size>0.7 0.6 0.5</size>
-                    </box>
-                    </geometry>
-                </collision>
-                <visual name="visual">
-                    <geometry>
-                    <box>
-                        <size>0.7 0.6 0.5</size>
-                    </box>
-                    </geometry>
-                    <material>
-                    <script>
-                        <uri>file://media/materials/scripts/gazebo.material</uri>
-                        <name>Gazebo/Red</name>
-                    </script>
-                    </material>
-                </visual>
-            </link>
-            <pose frame=''>0 0 1.5 0 0 0</pose>
-        </model>
-        <model name="baggage_A_4">
-            <static>true</static>
-            <link name="link">
-                <collision name="collision">
-                    <geometry>
-                    <box>
-                        <size>0.7 0.6 0.5</size>
-                    </box>
-                    </geometry>
-                </collision>
-                <visual name="visual">
-                    <geometry>
-                    <box>
-                        <size>0.7 0.6 0.5</size>
-                    </box>
-                    </geometry>
-                    <material>
-                    <script>
-                        <uri>file://media/materials/scripts/gazebo.material</uri>
-                        <name>Gazebo/Red</name>
-                    </script>
-                    </material>
-                </visual>
-            </link>
-            <pose frame=''>0 0 2.0 0 0 0</pose>
         </model>
     </model>
 </sdf>
