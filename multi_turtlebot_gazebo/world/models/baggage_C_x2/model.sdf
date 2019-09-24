@@ -25,7 +25,7 @@
                   </material>
                </visual>
             </link>
-            <pose frame=''>0 0 0 0 0 0</pose>
+            <pose frame=''>0 0 0.2 0 0 0</pose>
       </model>
       <model name="baggage_C_1">
          <static>true</static>
@@ -51,7 +51,8 @@
                   </material>
                </visual>
             </link>
-            <pose frame=''>0 0 0.4 0 0 0</pose>
+            <!-- <pose frame=''>0 0 0.4 0 0 0</pose> -->
+            <pose frame=''>0.0093 -0.0020 0.6 0 0 0</pose>
       </model>
    </model>
 </sdf>

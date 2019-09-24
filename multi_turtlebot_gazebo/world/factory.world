@@ -16,19 +16,19 @@
     </include>
     <include>
       <uri>model://baggage_A_x2</uri>
-      <pose>1 3 0.25 0 0 0</pose>
+      <pose>1 3 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_A_x3</uri>
-      <pose>1 5 0.25 0 0 0</pose>
+      <pose>1 5 0 0 0 0</pose>
     </include>
      <include>
       <uri>model://baggage_A_x4</uri>
-      <pose>1 7 0.25 0 0 0</pose>
+      <pose>1 7 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_A_x5</uri>
-      <pose>1 9 0.25 0 0 0</pose>
+      <pose>1 9 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_B</uri>
@@ -36,23 +36,23 @@
     </include>
     <include>
       <uri>model://baggage_B_x3</uri>
-      <pose>-1 3 0.1 0 0 0</pose>
+      <pose>-1 3 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_B_x5</uri>
-      <pose>-1 5 0.1 0 0 0</pose>
+      <pose>-1 5 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_B_x7</uri>
-      <pose>-1 7 0.1 0 0 0</pose>
+      <pose>-1 7 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_B_x9</uri>
-      <pose>-1 9 0.1 0 0 0</pose>
+      <pose>-1 9 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_B_x11</uri>
-      <pose>-1 11 0.1 0 0 0</pose>
+      <pose>-1 11 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_C</uri>
@@ -60,23 +60,23 @@
     </include>
     <include>
       <uri>model://baggage_C_x2</uri>
-      <pose>1 -3 0.2 0 0 0</pose>
+      <pose>1 -3 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_C_x3</uri>
-      <pose>1 -5 0.2 0 0 0</pose>
+      <pose>1 -5 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_C_x4</uri>
-      <pose>1 -7 0.2 0 0 0</pose>
+      <pose>1 -7 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_C_x5</uri>
-      <pose>1 -9 0.2 0 0 0</pose>
+      <pose>1 -9 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_C_x6</uri>
-      <pose>1 -11 0.2 0 0 0</pose>
+      <pose>1 -11 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_D</uri>
@@ -84,23 +84,23 @@
     </include>
     <include>
       <uri>model://baggage_D_x3</uri>
-      <pose>-1 -3 0.1 0 0 0</pose>
+      <pose>-1 -3 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_D_x5</uri>
-      <pose>-1 -5 0.1 0 0 0</pose>
+      <pose>-1 -5 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_D_x7</uri>
-      <pose>-1 -7 0.1 0 0 0</pose>
+      <pose>-1 -7 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_D_x9</uri>
-      <pose>-1 -9 0.1 0 0 0</pose>
+      <pose>-1 -9 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_D_x11</uri>
-      <pose>-1 -11 0.1 0 0 0</pose>
+      <pose>-1 -11 0 0 0 0</pose>
     </include>
    
     

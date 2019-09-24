@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sdf version='1.4'>
   <model name="baggage_A">
-    <static>false</static>
-    <link name="link">
+      <static>true</static>
+      <link name="link">
          <collision name="collision">
             <geometry>
                <box>
