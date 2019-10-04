@@ -4,6 +4,7 @@
 #include <costmap_2d/costmap_2d_ros.h>
 #include <Eigen/Geometry>
 #include <geometry_msgs/PoseStamped.h>
+#include <tf2_ros/transform_listener.h>
 #include <ros/ros.h>
 
 /*
@@ -41,17 +42,18 @@ template<typename T>
 class PathPlanning
 {
 private:
-    tf::TransformListener tfl;
+    tf2_ros::Buffer buf;
+    tf2_ros::TransformListener tfl;
     costmap_2d::Costmap2DROS gcr;
     T planner;
 
 public:
-    PathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
+    PathPlanning():buf(ros::Duration(10)),tfl(buf),gcr("costmap", buf){
         planner.initialize("path_planner",&gcr);
         ros::spinOnce();
     };
     
-    PathPlanning(const std::string& costmapName, const std::string& plannerName):tfl(ros::Duration(10)),gcr(costmapName, tfl){
+    PathPlanning(const std::string& costmapName, const std::string& plannerName):buf(ros::Duration(10)),tfl(buf),gcr(costmapName, buf){
         planner.initialize(plannerName,&gcr);
         ros::spinOnce();
     };
