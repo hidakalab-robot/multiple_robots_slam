@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version="1.4">
+  <model name="baggage_group_A_old">
+    <model name='baggage_D_x5'>
+      <pose frame=''>-16.0603 -3.09138 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_0'>
+      <pose frame=''>-15.1916 -2.77971 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3'>
+      <pose frame=''>-14.3395 -2.41254 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x4'>
+      <pose frame=''>-14.3888 -2.985664 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3'>
+      <pose frame=''>-13.6814 -2.97255 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_0'>
+      <pose frame=''>-12.9672 -2.99066 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x3'>
+      <pose frame=''>-11.6581 -3.23288 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5'>
+      <pose frame=''>-11.7207 -2.7222 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_0'>
+      <pose frame=''>-12.3958 -2.65895 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_1'>
+      <pose frame=''>-15.9557 -1.37192 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2'>
+      <pose frame=''>-15.7141 -0.71732 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_2'>
+      <pose frame=''>-15.7621 -0.111141 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_3'>
+      <pose frame=''>-14.902 -0.36223 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_4'>
+      <pose frame=''>-14.8854 -0.995082 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2_0'>
+      <pose frame=''>-15.2121 -1.62004 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x4_0'>
+      <pose frame=''>-14.8718 -0.108549 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2_1'>
+      <pose frame=''>-14.2882 -0.683416 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x3_0'>
+      <pose frame=''>-12.3653 -2.347 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_1'>
+      <pose frame=''>-11.6217 -2.22105 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3'>
+      <pose frame=''>-11.7735 -1.71632 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_0'>
+      <pose frame=''>-11.8281 -1.20127 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2'>
+      <pose frame=''>-12.4698 -1.30971 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x4'>
+      <pose frame=''>-13.1083 -1.26847 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_0'>
+      <pose frame=''>-13.721 -1.31855 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_1'>
+      <pose frame=''>-15.7532 0.485614 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_1'>
+      <pose frame=''>-14.9923 0.523276 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x3_1'>
+      <pose frame=''>-11.732 -0.670798 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_2'>
+      <pose frame=''>-11.7456 -0.151198 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_3'>
+      <pose frame=''>-11.6263 0.282143 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3_0'>
+      <pose frame=''>-12.466 -0.703041 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3_1'>
+      <pose frame=''>-13.376 -0.65813 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_4'>
+      <pose frame=''>-12.2401 0.487142 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_5'>
+      <pose frame=''>-11.5805 0.867645 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_2'>
+      <pose frame=''>-15.2186 1.03486 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3_2'>
+      <pose frame=''>-15.2862 1.55706 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_1'>
+      <pose frame=''>-16.0562 0.989731 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_2'>
+      <pose frame=''>-15.9802 1.60915 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x3_2'>
+      <pose frame=''>-13.6671 1.37486 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_6'>
+      <pose frame=''>-13.4176 1.92528 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_7'>
+      <pose frame=''>-14.1184 1.98865 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_5'>
+      <pose frame=''>-11.7805 1.41002 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2_2'>
+      <pose frame=''>-11.796 2.03958 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3_3'>
+      <pose frame=''>-13.3434 2.44958 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_3'>
+      <pose frame=''>-14.1762 2.70446 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_6'>
+      <pose frame=''>-11.6674 2.65733 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_3'>
+      <pose frame=''>-13.4172 2.94838 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_4'>
+      <pose frame=''>-15.5016 2.13917 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_5'>
+      <pose frame=''>-15.399 2.6424 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_7'>
+      <pose frame=''>-15.760444 6.594052 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_8'>
+      <pose frame=''>-11.8901 3.21914 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x3_3'>
+      <pose frame=''>-11.6939 3.71424 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_9'>
+      <pose frame=''>-12.0327 4.17077 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_4'>
+      <pose frame=''>-12.5123 4.64712 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3_4'>
+      <pose frame=''>-13.2351 4.62581 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_6'>
+      <pose frame=''>-13.204 5.1654 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x4_0'>
+      <pose frame=''>-14.0724 3.61629 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x3_4'>
+      <pose frame=''>-15.5356 11.2582 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x5_10'>
+      <pose frame=''>-16.1787 10.9888 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_B_x3_5'>
+      <pose frame=''>-15.982618 10.468168 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_7'>
+      <pose frame=''>-16.134039 8.550429 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_8'>
+      <pose frame=''>-15.2946 10.7566 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_5'>
+      <pose frame=''>-14.6437 10.8336 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_2'>
+      <pose frame=''>-14.6345 10.3232 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_6'>
+      <pose frame=''>-11.8892 11.2923 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_8'>
+      <pose frame=''>-11.8235 9.39654 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_7'>
+      <pose frame=''>-11.6823 10.7803 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_3'>
+      <pose frame=''>-11.8284 10.2777 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_8'>
+      <pose frame=''>-12.2968 10.7942 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_4'>
+      <pose frame=''>-12.4871 10.2856 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_5'>
+      <pose frame=''>-12.4953 9.77218 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2_3'>
+      <pose frame=''>-14.5414 8.51247 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_9'>
+      <pose frame=''>-13.8096 8.64829 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2_4'>
+      <pose frame=''>-13.0667 8.67794 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_9'>
+      <pose frame=''>-12.428078 8.832895 0 0 -0 -1.57</pose>
+    </model>
+    <model name='baggage_D_x5_10'>
+      <pose frame=''>-11.9091 8.21599 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_10'>
+      <pose frame=''>-15.2514 5.87077 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_11'>
+      <pose frame=''>-14.486 5.99908 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2_5'>
+      <pose frame=''>-13.7115 5.72892 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x4_1'>
+      <pose frame=''>-12.8917 6.0254 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_12'>
+      <pose frame=''>-12.1162 6.27226 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3_5'>
+      <pose frame=''>-16.0868 3.16804 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x3_6'>
+      <pose frame=''>-15.4684 3.13344 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_D_x5_11'>
+      <pose frame=''>-15.9791 3.62983 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x3_13'>
+      <pose frame=''>-16.0040 5.924286 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_9'>
+      <pose frame=''>-15.0236 6.62739 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_6'>
+      <pose frame=''>-14.3387 6.54913 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_10'>
+      <pose frame=''>-13.7053 6.46809 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x2_7'>
+      <pose frame=''>-13.0994 6.55326 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x3_11'>
+      <pose frame=''>-12.4205 6.89482 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_C_x4_1'>
+      <pose frame=''>-11.7266 6.69966 0 0 -0 0</pose>
+    </model>
+    <model name='baggage_A_x2_6'>
+      <pose frame=''>-15.287872 8.553086 0 0 -0 0</pose>
+    </model>
+  </model>
+</sdf>

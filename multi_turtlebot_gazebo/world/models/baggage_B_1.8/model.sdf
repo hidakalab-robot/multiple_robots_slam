@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdf version='1.4'>
+  <model name="baggage_B_1.8">
+      <static>true</static>
+      <link name="link">
+         <collision name="collision">
+            <geometry>
+               <box>
+                  <size>0.65 0.45 1.8</size>
+               </box>
+            </geometry>
+         </collision>
+         <visual name="visual">
+            <geometry>
+               <box>
+                  <size>0.65 0.45 1.8</size>
+               </box>
+            </geometry>
+            <material>
+               <script>
+                  <uri>file://media/materials/scripts/gazebo.material</uri>
+                  <name>Gazebo/Blue</name>
+               </script>
+            </material>
+         </visual>
+      </link>
+  </model>
+</sdf>
