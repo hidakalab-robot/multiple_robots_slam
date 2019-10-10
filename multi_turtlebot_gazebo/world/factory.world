@@ -11,23 +11,40 @@
       <uri>model://factory_outer_frame</uri>
     </include>
     <include>
-      <uri>model://factory_baggage_group_A</uri>
+      <uri>model://baggage_group_A</uri>
+      <pose>0 0 0 0 0 0</pose>
     </include>
     <include>
-      <uri>model://factory_baggage_group_B</uri>
-      <pose>11.2973 0 0 0 0 0</pose>
+      <uri>model://baggage_group_B</uri>
+      <pose>0 0 0 0 0 0</pose>
     </include>
     <include>
-      <uri>model://factory_baggage_group_A</uri>
-      <pose>4.342536 -4.620020 0 0 0 -1.57</pose>
+      <uri>model://baggage_group_A</uri>
+      <pose>16.4785 0 0 0 0 0</pose>
     </include>
     <include>
-      <uri>model://factory_baggage_group_A</uri>
-      <pose>16.376604 15.163360 0 0 0 1.57</pose>
+      <uri>model://baggage_group_B</uri>
+      <pose>4.6868 2.7612 0 0 0 -1.57</pose>
     </include>
     <include>
-      <uri>model://factory_baggage_group_A</uri>
-      <pose>-4.919831 5.162537 0 0 0 1.57</pose>
+      <uri>model://baggage_group_B</uri>
+      <pose>4.7830 -8.4001 0 0 0 -1.57</pose>
+    </include>
+    <include>
+      <uri>model://baggage_group_A</uri>
+      <pose>-13.0905 -22.9885 0 0 0 -1.57</pose>
+    </include>
+    <include>
+      <uri>model://baggage_group_A</uri>
+      <pose>3.7331 4.6536 0 0 0 1.57</pose>
+    </include>
+    <include>
+      <uri>model://baggage_group_A</uri>
+      <pose>7.8453 -9.7033 0 0 0 -1.57</pose>
+    </include>
+    <include>
+      <uri>model://baggage_group_B</uri>
+      <pose>10.7910 -16.2892 0 0 0 -1.57</pose>
     </include>
   </world>
 </sdf>

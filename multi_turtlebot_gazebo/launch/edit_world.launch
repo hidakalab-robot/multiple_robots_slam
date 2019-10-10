@@ -1,6 +1,8 @@
 <launch>
     <env name="GAZEBO_MODEL_PATH" value="$(find multi_turtlebot_gazebo)/world/models:$(optenv GAZEBO_MODEL_PATH)" /> 
     <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/factory_edit.world"/>
+    <!-- <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/baggage_group_B.world"/> -->
+    <!-- <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/factory.world"/> -->
 
     <arg name="gui" default="true"/>
 
