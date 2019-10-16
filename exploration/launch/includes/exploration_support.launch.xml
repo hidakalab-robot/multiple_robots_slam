@@ -26,7 +26,7 @@
         <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
         <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
         <param name="area_rate" value="1.0"/>
-        <param name="end_time" value="1200"/>
+        <param name="end_time" value="2000"/>
     </node>
 
     <!-- robot_manager -->
