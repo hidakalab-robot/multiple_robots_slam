@@ -6,29 +6,31 @@
     </include>
     <include>
       <uri>model://factory_floor</uri>
+      <pose>15.7 5.25 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://factory_outer_frame</uri>
+      <pose>15.7 5.25 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_group_A</uri>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>15.7 5.25 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_group_B</uri>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>15.7 5.25 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_group_C</uri>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>15.7 5.25 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_group_D</uri>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>15.7 5.25 0 0 0 0</pose>
     </include>
     <include>
       <uri>model://baggage_group_E</uri>
-      <pose>0 0 0 0 0 0</pose>
+      <pose>15.7 5.25 0 0 0 0</pose>
     </include>
   </world>
 </sdf>
