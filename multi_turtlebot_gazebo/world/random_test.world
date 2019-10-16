@@ -1,0 +1,218 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="default">
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://factory_floor</uri>
+    </include>
+    <include>
+      <uri>model://factory_outer_frame</uri>
+    </include>
+
+    <population name="baggage_A_0.5_population">
+      <model name="baggage_A_0.5">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_A_0.5</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.25 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population>
+
+    <population name="baggage_A_1.0_population">
+      <model name="baggage_A_1.0">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_A_1.0</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.5 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_A_1.5_population">
+      <model name="baggage_A_1.5">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_A_1.5</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.75 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_B_0.2_population">
+      <model name="baggage_B_0.2">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_B_0.2</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.1 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_B_0.6_population">
+      <model name="baggage_B_0.6">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_B_0.6</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.3 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_B_1.0_population">
+      <model name="baggage_B_1.0">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_B_1.0</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.5 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_C_0.4_population">
+      <model name="baggage_C_0.4">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_C_0.4</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.2 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_C_0.8_population">
+      <model name="baggage_C_0.8">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_C_0.8</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.4 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_C_1.2_population">
+      <model name="baggage_C_1.2">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_C_1.2</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.6 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_D_0.2_population">
+      <model name="baggage_D_0.2">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_D_0.2</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.1 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_D_0.6_population">
+      <model name="baggage_D_0.6">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_D_0.6</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.3 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+
+    <population name="baggage_D_1.0_population">
+      <model name="baggage_D_1.0">
+        <include>
+          <static>true</static>
+          <uri>model://baggage_D_1.0</uri>
+        </include>
+      </model>
+      <pose>-4.75 -9.25 0.5 0 0 0</pose>
+      <box>
+        <size>23 4.5 0.001</size>
+      </box>
+      <model_count>20</model_count>
+      <distribution>
+        <type>random</type>
+      </distribution>
+    </population> 
+  </world>
+</sdf>
