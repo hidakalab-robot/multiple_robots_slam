@@ -234,3 +234,6 @@ target_link_libraries(branch_detection ${catkin_LIBRARIES})
 
 add_executable(loop_closure_counter src/loop_closure_counter.cpp)
 target_link_libraries(loop_closure_counter ${catkin_LIBRARIES})
+
+add_executable(map_continuity src/map_continuity.cpp)
+target_link_libraries(map_continuity ${catkin_LIBRARIES})
