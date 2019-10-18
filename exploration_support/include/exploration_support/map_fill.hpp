@@ -21,7 +21,7 @@ private:
 public:
     MapFill():map_("map", 1, &MapFill::mapCB, this),mapImage_("fill_map",1){
         ros::NodeHandle p("~");
-        p.param<double>("fill_size_max",FILL_SIZE_MAX,4000);
+        p.param<double>("fill_size_max",FILL_SIZE_MAX,2000);
         p.param<double>("fill_size_min",FILL_SIZE_MIN,5);
     };
 };
