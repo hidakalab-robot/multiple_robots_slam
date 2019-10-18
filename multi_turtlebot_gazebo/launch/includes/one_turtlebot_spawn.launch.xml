@@ -22,7 +22,9 @@
     </node>
 
     <!-- Bumper/cliff to pointcloud (not working, as it needs sensors/core messages) -->
-    <include file="$(find turtlebot_bringup)/launch/includes/kobuki/bumper2pc.launch.xml"/>
+    <include file="$(find multi_turtlebot_gazebo)/launch/includes/bumper2pc.launch.xml">
+        <arg name="robot_name" value="$(arg robot_name)"/>
+    </include>
 
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
         <param name="publish_frequency" type="double" value="30.0" />
