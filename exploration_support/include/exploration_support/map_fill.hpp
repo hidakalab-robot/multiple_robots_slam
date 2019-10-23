@@ -39,7 +39,7 @@ void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     std::vector<std::vector<cv::Point>> contours;
     cv::findContours(image,contours,CV_RETR_LIST,CV_CHAIN_APPROX_NONE);
 
-    //輪郭の面積を計算して、面積がある範囲内の場合のみ輪郭として抽出する
+    //輪郭の面積を計算して、面積がある範囲内の場合のみ輪郭として抽出する // 大きすぎる領域を埋めないように
     std::vector<std::vector<cv::Point>> contoursRect;
     contoursRect.reserve(contours.size());
     for(int i=0,e=contours.size();i!=e;++i){
