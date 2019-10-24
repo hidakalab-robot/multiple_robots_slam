@@ -222,6 +222,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
 void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
+    ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
 
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
