@@ -43,6 +43,6 @@
         <param name="rotation" value="$(arg rotation)"/>
         <param name="debug" value="$(arg debug)"/>
         <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <param name="angle_bias" value="60"/>
+        <param name="angle_bias" value="0"/>
     </node>
 </launch>
