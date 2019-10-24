@@ -14,6 +14,8 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
+#include <exploration_libraly/path_planning.hpp>
+#include <navfn/navfn_ros.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -72,6 +74,8 @@ private:
     ExpLib::Struct::subStruct<kobuki_msgs::BumperEvent> bumper_;
     ExpLib::Struct::pubStruct<geometry_msgs::Twist> velocity_;
 
+    ExpLib::PathPlanning<navfn::NavfnROS> pp_;
+
     double previousOrientation_;
     
     void approx(std::vector<float>& scanRanges);
@@ -100,7 +104,8 @@ Movement::Movement()
     ,pose_("pose",1)
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
-    ,previousOrientation_(1.0){
+    ,previousOrientation_(1.0)
+    ,pp_("path2vec_costmap","path2vec_planner"){
 
     ros::NodeHandle p("~");
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
@@ -195,15 +200,18 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     to.target_pose.header.frame_id = pose_.data.header.frame_id;
     to.target_pose.header.stamp = ros::Time::now();
 
-    // 回転角度の補正値
-    double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
-    Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
-    double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
-    Eigen::Matrix2d rotation;
-    rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
-
     // 目標での姿勢
-    Eigen::Vector2d startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y);
+    Eigen::Vector2d startToGoal;
+
+    if(!pp_.getVec(pose_.data,ExpLib::Convert::pointStampedToPoseStamped(goal),startToGoal)){
+        // 回転角度の補正値
+        double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
+        double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
+        Eigen::Matrix2d rotation;
+        rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
+        startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y);
+    }
 
     ROS_INFO_STREAM("after_vector_x : " << startToGoal.x() << ", after_vector_y : " << startToGoal.y());
 
@@ -427,7 +435,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     //一回目に避けた方向に基本的に従う
     //一回避けたら大きく差が出ない限りおなじほうこうに避ける
 
-    ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM << "\n");
+    ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM);
 
     // ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM << "\n");
 
