@@ -316,7 +316,7 @@
     <model name="baggage_A_1.0_2">
         <include>
             <uri>model://baggage_A_1.0</uri>
-            <pose>-6.65161 2.86872 0.5 0 0 0</pose>
+            <pose>-6.545535 2.495535 0.5 0 0 0</pose>
         </include>
     </model>
     <model name="baggage_A_1.5_3">
@@ -335,12 +335,6 @@
         <include>
             <uri>model://baggage_D_1.0</uri>
             <pose>-5.55277 2.16351 0.5 0 0 0</pose>
-        </include>
-    </model>
-    <model name="baggage_D_1.0_7">
-        <include>
-            <uri>model://baggage_D_1.0</uri>
-            <pose>-4.87402 2.04713 0.5 0 0 -1.57628</pose>
         </include>
     </model>
     <model name="baggage_B_0.6_2">
@@ -377,12 +371,6 @@
         <include>
             <uri>model://baggage_D_1.0</uri>
             <pose>-4.58159 0.114753 0.5 0 0 0</pose>
-        </include>
-    </model>
-    <model name="baggage_D_1.0_10">
-        <include>
-            <uri>model://baggage_D_1.0</uri>
-            <pose>-4.45854 0.753022 0.5 0 0 -1.59498</pose>
         </include>
     </model>
     <model name="baggage_A_1.5_4">

@@ -310,7 +310,7 @@
       <model name='baggage_B_0.6_14'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>-0.855295 -10.7759 0.3 0 -0 0</pose>
+          <pose>-0.854525 -10.50134 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_15'>
@@ -652,7 +652,7 @@
       <model name='baggage_C_1.2_19'>
         <include>
           <uri>model://baggage_C_1.2</uri>
-          <pose>-0.241138 -11.1961 0.599803 0 -0 0</pose>
+          <pose>-0.68353 -11.025056 0.599803 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_1.2_2'>
