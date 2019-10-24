@@ -112,7 +112,7 @@ Movement::Movement()
     p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.5);
     p.param<double>("forward_angle", FORWARD_ANGLE, 0.09);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
-    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.5);
+    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.3);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
