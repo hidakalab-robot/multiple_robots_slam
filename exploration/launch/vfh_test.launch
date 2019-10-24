@@ -1,0 +1,16 @@
+<launch>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+
+
+    <group ns="robot1">
+        <node pkg="exploration" type="vfh_test" name="vfh_test" output="screen">
+        
+        </node>
+
+        <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
+            <arg name="frontier_detection" value="false"/>
+            <arg name="branch_detection" value="false"/>
+            <arg name="map_fill" value="false"/>
+        </include>
+    </group>
+</launch>
