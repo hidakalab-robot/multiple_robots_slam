@@ -88,8 +88,8 @@ public:
 
 FrontierDetection::FrontierDetection()
     :map_("map", 1, &FrontierDetection::mapCB, this)
-    ,frontier_("frontier",1)
-    ,horizon_("horizon",1){
+    ,frontier_("frontier",1,true)
+    ,horizon_("horizon",1,true){
     
     ros::NodeHandle p("~");
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);

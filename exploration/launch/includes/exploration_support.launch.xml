@@ -29,7 +29,7 @@
     </node>
 
     <!-- map_fill -->
-    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="costmap_fill" output="screen">
+    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="costmap_fill">
         <remap from="map" to="$(arg orig_costmap)"/>
         <remap from="fill_map" to="$(arg fill_costmap)"/>
     </node>

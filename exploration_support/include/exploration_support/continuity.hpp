@@ -18,6 +18,11 @@ public:
         sub_.q.callOne(ros::WallDuration(0.1));
         pub_.pub.publish(sub_.data);
     };
+    void publishNow(void){
+        sub_.q.callOne(ros::WallDuration(0.1));
+        sub_.data.header.stamp = ros::Time::now();
+        pub_.pub.publish(sub_.data);
+    };
 };
 
 #endif //CONTINUITY_HPP
