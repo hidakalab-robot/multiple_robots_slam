@@ -16,6 +16,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <exploration_libraly/path_planning.hpp>
 #include <navfn/navfn_ros.h>
+#include <random>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -223,8 +224,29 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     ROS_INFO_STREAM("send goal to move_base");
     ac.sendGoal(to);
     ROS_INFO_STREAM("wait for result");
-    ac.waitForResult();
+    // ROS_INFO_STREAM("before isdone" << ac.getState().isDone());
+    // ROS_INFO_STREAM("before state" << ac.getState().toString());
+    // ac.waitForResult();
+    ros::Rate rate(1);
+    move_base_msgs::MoveBaseGoal origin;
+    origin = to;
+    // bool flag = true;
+    while(!ac.getState().isDone()){
+        ROS_INFO_STREAM("check"); //costmapの確認作業
+        sleep(3);
+        if(false){//問題があった場合
+            ROS_INFO_STREAM("問題発生"); //costmapの確認作業 //ここに現在のゴール座標を送る
+            origin.target_pose.pose.position.x += 1.5;
+            origin.target_pose.pose.position.y += 1.5;
+            ac.sendGoal(origin);
+            // flag = false;
+        }
+        rate.sleep();
+    };
+
     ROS_INFO_STREAM("move_base was finished");
+    // ROS_INFO_STREAM("after isdone" << ac.getState().isDone());
+    // ROS_INFO_STREAM("after state" << ac.getState().toString());
     ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
 }
 
