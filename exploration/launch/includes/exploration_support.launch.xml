@@ -2,14 +2,21 @@
     <arg name="frontier_detection"/>
     <arg name="branch_detection"/>
     <arg name="map_fill"/>
+    <arg name="use_costmap" default="true"/>
 
     <arg name="orig_map" default="map"/>
+    <arg name="orig_costmap" default="move_base/global_costmap/costmap"/>
     <arg name="fill_map" default="fill_map"/>
+    <arg name="fill_costmap" default="fill_costmap"/>
 
     <!-- frontier_detection -->
     <node if="$(arg frontier_detection)" pkg="exploration_support" type="frontier_detection" name="frontier_detection">
-        <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
-        <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
+        <!-- <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+        <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/> -->
+        <remap if="$(eval arg('map_fill') and arg('use_costmap'))" from="map" to="$(arg fill_costmap)"/>
+        <remap if="$(eval arg('map_fill') and not arg('use_costmap'))" from="map" to="$(arg fill_map)"/>
+        <remap if="$(eval not arg('map_fill') and not arg('use_costmap'))" from="map" to="$(arg orig_map)"/>
+        <remap if="$(eval not arg('map_fill') and arg('use_costmap'))" from="map" to="$(arg orig_costmap)"/>
     </node>
 
     <!-- branch_detection -->
@@ -21,12 +28,18 @@
         <remap from="fill_map" to="$(arg fill_map)"/>
     </node>
 
+    <!-- map_fill -->
+    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="costmap_fill" output="screen">
+        <remap from="map" to="$(arg orig_costmap)"/>
+        <remap from="fill_map" to="$(arg fill_costmap)"/>
+    </node>
+
     <!-- exploration_manager -->
     <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
         <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
         <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
         <param name="area_rate" value="1.0"/>
-        <param name="end_time" value="2000"/>
+        <param name="end_time" value="36000000"/>
     </node>
 
     <!-- robot_manager -->

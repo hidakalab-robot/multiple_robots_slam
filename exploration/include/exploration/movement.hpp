@@ -14,6 +14,8 @@
 #include <move_base_msgs/MoveBaseAction.h>
 #include <ros/ros.h>
 #include <sensor_msgs/LaserScan.h>
+#include <exploration_libraly/path_planning.hpp>
+#include <navfn/navfn_ros.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -48,6 +50,7 @@ private:
     double BACK_VELOCITY;
     double BACK_TIME;
     double BUMPER_ROTATION_TIME;
+    double FORWARD_ANGLE;
     double ROTATION_VELOCITY;
     double EMERGENCY_THRESHOLD;
     double ROAD_CENTER_THRESHOLD;
@@ -59,7 +62,7 @@ private:
     double ROAD_CENTER_GAIN;
     double ROTATION_GAIN;
     std::string MOVEBASE_NAME;
-    double FORWARD_ANGLE;
+    double WALL_FORWARD_ANGLE;
     double WALL_RATE_THRESHOLD;
     double WALL_DISTANCE_UPPER_THRESHOLD;
     double WALL_DISTANCE_LOWER_THRESHOLD;
@@ -70,6 +73,8 @@ private:
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::subStruct<kobuki_msgs::BumperEvent> bumper_;
     ExpLib::Struct::pubStruct<geometry_msgs::Twist> velocity_;
+
+    ExpLib::PathPlanning<navfn::NavfnROS> pp_;
 
     double previousOrientation_;
     
@@ -99,7 +104,8 @@ Movement::Movement()
     ,pose_("pose",1)
     ,bumper_("bumper",1)
     ,velocity_("velocity", 1)
-    ,previousOrientation_(1.0){
+    ,previousOrientation_(1.0)
+    ,pp_("path2vec_costmap","path2vec_planner"){
 
     ros::NodeHandle p("~");
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
@@ -109,8 +115,9 @@ Movement::Movement()
     p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
     p.param<double>("back_time", BACK_TIME, 0.5);
     p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.5);
+    p.param<double>("forward_angle", FORWARD_ANGLE, 0.09);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
-    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.5);
+    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.3);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
@@ -120,10 +127,10 @@ Movement::Movement()
     p.param<double>("vfh_gain", VFH_GAIN, 0.5);
     p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
     p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
-    p.param<double>("forward_angle", FORWARD_ANGLE, 0.17);
+    p.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.17);
     p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
     p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
-    p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 3.0);
+    p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 0.5);
     p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.3);
     p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
 }
@@ -193,15 +200,18 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     to.target_pose.header.frame_id = pose_.data.header.frame_id;
     to.target_pose.header.stamp = ros::Time::now();
 
-    // 回転角度の補正値
-    double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
-    Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
-    double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
-    Eigen::Matrix2d rotation;
-    rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
-
     // 目標での姿勢
-    Eigen::Vector2d startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y);
+    Eigen::Vector2d startToGoal;
+
+    if(!pp_.getVec(pose_.data,ExpLib::Convert::pointStampedToPoseStamped(goal),startToGoal)){
+        // 回転角度の補正値
+        double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
+        double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
+        Eigen::Matrix2d rotation;
+        rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
+        startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y);
+    }
 
     ROS_INFO_STREAM("after_vector_x : " << startToGoal.x() << ", after_vector_y : " << startToGoal.y());
 
@@ -220,6 +230,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
 void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
+    ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
 
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
@@ -291,14 +302,33 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 
     ROS_DEBUG_STREAM("Goal Angle : " << angle << " [deg]");
 
-    approx(scan.ranges);
-
     static int centerPosition = 0;
     int goalI;
 
     if(isCenter){
         goalI = scan.ranges.size() / 2 - centerPosition;
         centerPosition = centerPosition == 0 ? 1 : 0;
+
+        // ここでとりあえず正面の安全を確認(問題なければ正面に進ませる)
+        int PLUS = goalI + (int)(FORWARD_ANGLE/scan.angle_increment);
+        int MINUS = goalI - (int)(FORWARD_ANGLE/scan.angle_increment);
+        ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", goalI : " << goalI << ", goalI(rad) : " << scan.angle_min + goalI*scan.angle_increment << ", calc : " << (int)(FORWARD_ANGLE/scan.angle_increment));
+
+        int count = 0;
+
+        for(int i=MINUS;i!=PLUS;++i){
+            // ROS_INFO_STREAM("range[" << i << "] : " << scan.ranges[i]);
+            if(!std::isnan(scan.ranges[i])) ++count;
+        }
+
+        double rate = (double)count/(PLUS-MINUS);
+
+        ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << rate);
+
+        if(rate < 0.1) {
+            ROS_INFO_STREAM("center is safety");
+            return scan.angle_min + goalI*scan.angle_increment;
+        }
     }
     else{
         double min = DBL_MAX;
@@ -310,6 +340,8 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 		    }
         }
     }
+
+    approx(scan.ranges);
 
     const int SAFE_NUM = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
     int start;
@@ -379,23 +411,34 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
     //minus側の平均
     double aveM=0;
+    int nanM = 0;
     for(int i=0,e=scan.ranges.size()/2;i!=e;++i){
         if(!std::isnan(scan.ranges[i])) aveM += scan.ranges[i];
+        else ++nanM;
     }
-    aveM /= scan.ranges.size()/2;
+    aveM = nanM > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveM / scan.ranges.size()/2;
+
+    // aveM /= scan.ranges.size()/2;
+
 
     //plus側
     double aveP=0;
+    int nanP = 0;
     for(int i=scan.ranges.size()/2,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])) aveP += scan.ranges[i];
+        else ++nanP;
     }
-    aveP /= scan.ranges.size()/2;
+    aveP = nanP > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveP / scan.ranges.size()/2;
+    // aveP /= scan.ranges.size()/2;
 
     //左右の差がそんなにないなら前回避けた方向を採用する
     //一回目に避けた方向に基本的に従う
     //一回避けたら大きく差が出ない限りおなじほうこうに避ける
 
-    //ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM << "\n");
+    ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM <<  ", nanP : " << nanP << ", nanM : " << nanM);
+
+    // ROS_DEBUG_STREAM("aveP : " << aveP << ", aveM : " << aveM << "\n");
+
 
     //まずよけれる範囲か見る
     if(aveP > EMERGENCY_THRESHOLD || aveM > EMERGENCY_THRESHOLD){
@@ -479,10 +522,10 @@ bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& 
     //壁があった場合右と左のどっちに避けるか決定
 
     const int CENTER_SUBSCRIPT = scan.ranges.size()/2;
-    int PLUS = CENTER_SUBSCRIPT + (int)(FORWARD_ANGLE/scan.angle_increment);
-    int MINUS = CENTER_SUBSCRIPT - (int)(FORWARD_ANGLE/scan.angle_increment);
+    int PLUS = CENTER_SUBSCRIPT + (int)(WALL_FORWARD_ANGLE/scan.angle_increment);
+    int MINUS = CENTER_SUBSCRIPT - (int)(WALL_FORWARD_ANGLE/scan.angle_increment);
 
-    //ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", CENTER_SUBSCRIPT : " << CENTER_SUBSCRIPT << ", calc : " << (int)(FORWARD_ANGLE/scan.angle_increment) << "\n");
+    ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", CENTER_SUBSCRIPT : " << CENTER_SUBSCRIPT << ", calc : " << (int)(WALL_FORWARD_ANGLE/scan.angle_increment));
 
     int count = 0;
     double wallDistance = 0;
@@ -493,7 +536,7 @@ bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& 
             wallDistance += scan.ranges[i];
         }
     }
-    //ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << (double)count/(PLUS-MINUS) << "\n");
+    ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << (double)count/(PLUS-MINUS));
 
     wallDistance /= count;
 
@@ -553,8 +596,8 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
         }
     }
 
-    //ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
-    //ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
+    // ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
+    // ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
 
     aveMinus /= (minus - countNanMinus);
     avePlus /= (scan.ranges.size() - plus - countNanPlus);
@@ -573,5 +616,4 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
         return 0;
     }
 }
-
 #endif //MOVEMENT_HPP
