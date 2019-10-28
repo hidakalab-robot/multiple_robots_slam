@@ -40,9 +40,9 @@
         <param name="distance_weight" value="3.0"/>
         <param name="direction_weight" value="2.0"/>
 
-        <rosparam file="$(find exploration)/param/path2vec_params.yaml" command="load"/>
-        <param name="path2vec_costmap/global_frame" value="$(arg map_frame_id)"/>
-        <param name="path2vec_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+        <rosparam file="$(find exploration)/param/movement_params.yaml" command="load"/>
+        <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
+        <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
     </node>
 
     <node pkg="exploration_support" type="loop_closure_counter" name="loop_closure_counter">
