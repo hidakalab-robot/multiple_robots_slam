@@ -6,6 +6,7 @@
 #include <pcl_ros/point_cloud.h>
 #include <tf/tf.h>
 
+// 型変換用
 namespace ExpLib
 {
 namespace Convert
@@ -98,6 +99,20 @@ geometry_msgs::PoseStamped pointToPoseStamped(const geometry_msgs::Point& p, con
     geometry_msgs::PoseStamped msg;
     msg.pose = pointToPose(p);
     msg.header.frame_id = f;
+    return msg;
+}
+
+geometry_msgs::PointStamped pointToPointStamped(const geometry_msgs::Point& p, const std::string& f){
+    geometry_msgs::PointStamped msg;
+    msg.point = p;
+    msg.header.frame_id = f;
+    return msg;
+}
+
+geometry_msgs::PointStamped poseStampedToPointStamped(const geometry_msgs::PoseStamped& p){
+    geometry_msgs::PointStamped msg;
+    msg.point = p.pose.position;
+    msg.header.frame_id = p.header.frame_id;
     return msg;
 }
 

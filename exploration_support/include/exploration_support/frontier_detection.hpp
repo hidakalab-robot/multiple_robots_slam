@@ -9,6 +9,7 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <exploration_libraly/utility.hpp>
 
 
 // frontier を検出して座標をトピックに出す機能だけつける
@@ -24,21 +25,23 @@ private:
         std::vector<std::vector<int8_t>> horizon;
         std::vector<std::vector<int8_t>> frontierMap;
         mapStruct(const nav_msgs::OccupancyGrid& m)
-            :source(m.info.width,std::vector<int8_t>(m.info.height))
+            // :source(m.info.width,std::vector<int8_t>(m.info.height))
+            :source(ExpLib::Utility::mapArray1dTo2d(m.data,m.info))
             ,horizon(m.info.width,std::vector<int8_t>(m.info.height,0))
             ,frontierMap(m.info.width,std::vector<int8_t>(m.info.height,0)){
                 
             info = m.info;
-            for(int y=0,k=0,ey=info.height;y!=ey;++y){
-                for(int x=0,ex=info.width;x!=ex;++x,++k){
-                    source[x][y] = m.data[k];
-                }
-            }
+            // for(int y=0,k=0,ey=info.height;y!=ey;++y){
+            //     for(int x=0,ex=info.width;x!=ex;++x,++k){
+            //         source[x][y] = m.data[k];
+            //     }
+            // }
         };
     };
 
     struct clusterStruct{
-        std::vector<Eigen::Vector3i> index;
+        std::vector<Eigen::Vector2i> index;
+        std::vector<int> isObstacle;
         std::vector<double> areas;
         std::vector<Eigen::Vector2d> variances;
         std::vector<double> covariance;
@@ -49,6 +52,7 @@ private:
 
         clusterStruct(const clusterStruct& cs)
             :index(cs.index)
+            ,isObstacle(cs.isObstacle)
             ,areas(cs.areas)
             ,variances(cs.variances)
             ,covariance(cs.covariance)
@@ -57,6 +61,7 @@ private:
         
         void reserve(int size){
             index.reserve(size);
+            isObstacle.reserve(size);
             areas.reserve(size);
             variances.reserve(size);
             covariance.reserve(size);
@@ -74,9 +79,9 @@ private:
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
     void horizonDetection(mapStruct& map);
     clusterStruct clusterDetection(const mapStruct& map);
-    void obstacleFilter(mapStruct& map,std::vector<Eigen::Vector3i>& index);
-    Eigen::Vector3i coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info);
-    geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info);
+    void obstacleFilter(mapStruct& map,clusterStruct& cs);
+    // Eigen::Vector3i coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info);
+    // geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info);
 
     void publishHorizon(const clusterStruct& cs, const std::string& frameId);
     void publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId);
@@ -104,7 +109,7 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     horizonDetection(map);
 
     clusterStruct cluster(clusterDetection(map));
-    obstacleFilter(map,cluster.index);
+    obstacleFilter(map,cluster);
 
     if(cluster.index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found");
@@ -117,8 +122,9 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     frontiers.reserve(cluster.index.size());
 
     for(int i=0,e=cluster.index.size();i!=e;++i){
-        if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(ExpLib::Construct::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExpLib::Construct::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
+        // if(cluster.index[i].z() == 0) continue;
+        if(cluster.isObstacle[i] == 0) continue;
+        frontiers.emplace_back(ExpLib::Construct::msgFrontier(ExpLib::Utility::mapIndexToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExpLib::Construct::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
@@ -154,7 +160,7 @@ FrontierDetection::clusterStruct FrontierDetection::clusterDetection(const mapSt
     points.reserve(map.info.height*map.info.width);
     for(int y=0,ey=map.info.height;y!=ey;++y){
         for(int x=0,ex=map.info.width;x!=ex;++x){
-            if(map.horizon[x][y] == 1) points.emplace_back(arrayToCoordinate(x,y,map.info));
+            if(map.horizon[x][y] == 1) points.emplace_back(ExpLib::Utility::mapIndexToCoordinate(x,y,map.info));
         }
     }
 
@@ -210,7 +216,8 @@ FrontierDetection::clusterStruct FrontierDetection::clusterDetection(const mapSt
 
         cs.variances.emplace_back(variance);
         cs.covariance.emplace_back(covariance/sqrt(variance.x())/sqrt(variance.y()));
-        cs.index.emplace_back(coordinateToArray(std::move(centroid),map.info));
+        cs.index.emplace_back(ExpLib::Utility::coordinateToMapIndex(std::move(centroid),map.info));
+        cs.isObstacle.emplace_back(1);
         Eigen::Vector2d diff(max-min);
         cs.areas.emplace_back(std::abs(diff.x()*diff.y()));
     }
@@ -218,7 +225,7 @@ FrontierDetection::clusterStruct FrontierDetection::clusterDetection(const mapSt
     return cs;
 }
 
-void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,std::vector<Eigen::Vector3i>& index){
+void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,clusterStruct& cs){
     ROS_INFO_STREAM("Obstacle Filter");
     
     //add obstacle cell
@@ -235,38 +242,60 @@ void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,std::ve
         return;
     }
 
-    for(auto&& i : index){
-        if(map.frontierMap[i.x()][i.y()] == 100){
-            i.z() = 0;
+    for(int i=0,ie=cs.index.size();i!=ie;++i){
+        if(map.frontierMap[cs.index[i].x()][cs.index[i].y()] == 100){
+            cs.isObstacle[i] = 0;
             continue;
         }
 
-        int LEFT = i.x()-FILTER_HALF_CELL < 0 ? i.x() : FILTER_HALF_CELL;
-        int RIGHT = i.x()+FILTER_HALF_CELL > map.info.width-1 ? (map.info.width-1)-i.x() : FILTER_HALF_CELL;
-        int TOP = i.y()-FILTER_HALF_CELL < 0 ? i.y() : FILTER_HALF_CELL;
-        int BOTTOM = i.y()+FILTER_HALF_CELL > map.info.height-1 ? (map.info.height-1)-i.y() : FILTER_HALF_CELL;
+        int LEFT = cs.index[i].x()-FILTER_HALF_CELL < 0 ? cs.index[i].x() : FILTER_HALF_CELL;
+        int RIGHT = cs.index[i].x()+FILTER_HALF_CELL > map.info.width-1 ? (map.info.width-1)-cs.index[i].x() : FILTER_HALF_CELL;
+        int TOP = cs.index[i].y()-FILTER_HALF_CELL < 0 ? cs.index[i].y() : FILTER_HALF_CELL;
+        int BOTTOM = cs.index[i].y()+FILTER_HALF_CELL > map.info.height-1 ? (map.info.height-1)-cs.index[i].y() : FILTER_HALF_CELL;
 
-        for(int y=i.y()-TOP,ey=i.y()+BOTTOM+1;y!=ey;++y){
-            for(int x=i.x()-LEFT,ex=i.x()+RIGHT+1;x!=ex;++x){
+        for(int y=cs.index[i].y()-TOP,ey=cs.index[i].y()+BOTTOM+1;y!=ey;++y){
+            for(int x=cs.index[i].x()-LEFT,ex=cs.index[i].x()+RIGHT+1;x!=ex;++x){
                 if(map.frontierMap[x][y] == 100){//障害部があったら終了
-                    map.frontierMap[i.x()][i.y()] = 0;
-                    i.z() = 0;
+                    map.frontierMap[cs.index[i].x()][cs.index[i].y()] = 0;
+                    cs.isObstacle[i] = 0;
                     x = ex -1;//ラムダで関数作ってreturnで終わっても良いかも
                     y = ey -1;
                 }
             }
         }
     }
+    // for(auto&& i : index){
+    //     if(map.frontierMap[i.x()][i.y()] == 100){
+    //         i.z() = 0;
+    //         continue;
+    //     }
+
+    //     int LEFT = i.x()-FILTER_HALF_CELL < 0 ? i.x() : FILTER_HALF_CELL;
+    //     int RIGHT = i.x()+FILTER_HALF_CELL > map.info.width-1 ? (map.info.width-1)-i.x() : FILTER_HALF_CELL;
+    //     int TOP = i.y()-FILTER_HALF_CELL < 0 ? i.y() : FILTER_HALF_CELL;
+    //     int BOTTOM = i.y()+FILTER_HALF_CELL > map.info.height-1 ? (map.info.height-1)-i.y() : FILTER_HALF_CELL;
+
+    //     for(int y=i.y()-TOP,ey=i.y()+BOTTOM+1;y!=ey;++y){
+    //         for(int x=i.x()-LEFT,ex=i.x()+RIGHT+1;x!=ex;++x){
+    //             if(map.frontierMap[x][y] == 100){//障害部があったら終了
+    //                 map.frontierMap[i.x()][i.y()] = 0;
+    //                 i.z() = 0;
+    //                 x = ex -1;//ラムダで関数作ってreturnで終わっても良いかも
+    //                 y = ey -1;
+    //             }
+    //         }
+    //     }
+    // }
     ROS_INFO_STREAM("Obstacle Filter complete");
 }
 
-geometry_msgs::Point FrontierDetection::arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
-    return ExpLib::Construct::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
-}
+// geometry_msgs::Point FrontierDetection::arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
+//     return ExpLib::Construct::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
+// }
 
-Eigen::Vector3i FrontierDetection::coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info){
-    return Eigen::Vector3i((coordinate.x()-info.origin.position.x)/info.resolution,(coordinate.y()-info.origin.position.y)/info.resolution,1);
-}
+// Eigen::Vector3i FrontierDetection::coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info){
+//     return Eigen::Vector3i((coordinate.x()-info.origin.position.x)/info.resolution,(coordinate.y()-info.origin.position.y)/info.resolution,1);
+// }
 
 void FrontierDetection::publishHorizon(const clusterStruct& cs, const std::string& frameId){
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -274,7 +303,8 @@ void FrontierDetection::publishHorizon(const clusterStruct& cs, const std::strin
     float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
     int i=0;
     for (std::vector<pcl::PointIndices>::const_iterator it = cs.indices.begin (); it != cs.indices.end (); ++it,++i){
-        if(cs.index[i].z()==0) continue;
+        // if(cs.index[i].z()==0) continue;
+        if(cs.isObstacle[i]==0) continue;
         int c = i%12;
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
             colorCloud -> points.emplace_back(ExpLib::Construct::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
