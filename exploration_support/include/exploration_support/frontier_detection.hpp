@@ -235,26 +235,14 @@ void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,cluster
         }
     }
 
-    int FILTER_HALF_CELL = (FILTER_SQUARE_DIAMETER / map.info.resolution) / 2.0;
-
-    if(FILTER_HALF_CELL < 1){
-        ROS_ERROR_STREAM("FILTER_SQUARE_DIAMETER is Bad");
-        return;
-    }
-
     for(int i=0,ie=cs.index.size();i!=ie;++i){
         if(map.frontierMap[cs.index[i].x()][cs.index[i].y()] == 100){
             cs.isObstacle[i] = 0;
             continue;
         }
-
-        int LEFT = cs.index[i].x()-FILTER_HALF_CELL < 0 ? cs.index[i].x() : FILTER_HALF_CELL;
-        int RIGHT = cs.index[i].x()+FILTER_HALF_CELL > map.info.width-1 ? (map.info.width-1)-cs.index[i].x() : FILTER_HALF_CELL;
-        int TOP = cs.index[i].y()-FILTER_HALF_CELL < 0 ? cs.index[i].y() : FILTER_HALF_CELL;
-        int BOTTOM = cs.index[i].y()+FILTER_HALF_CELL > map.info.height-1 ? (map.info.height-1)-cs.index[i].y() : FILTER_HALF_CELL;
-
-        for(int y=cs.index[i].y()-TOP,ey=cs.index[i].y()+BOTTOM+1;y!=ey;++y){
-            for(int x=cs.index[i].x()-LEFT,ex=cs.index[i].x()+RIGHT+1;x!=ex;++x){
+        ExpLib::Struct::mapSearchWindow msw(cs.index[i].x(),cs.index[i].y(),map.info.width,map.info.height,FILTER_SQUARE_DIAMETER);
+        for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+            for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
                 if(map.frontierMap[x][y] == 100){//障害部があったら終了
                     map.frontierMap[cs.index[i].x()][cs.index[i].y()] = 0;
                     cs.isObstacle[i] = 0;
@@ -264,38 +252,8 @@ void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,cluster
             }
         }
     }
-    // for(auto&& i : index){
-    //     if(map.frontierMap[i.x()][i.y()] == 100){
-    //         i.z() = 0;
-    //         continue;
-    //     }
-
-    //     int LEFT = i.x()-FILTER_HALF_CELL < 0 ? i.x() : FILTER_HALF_CELL;
-    //     int RIGHT = i.x()+FILTER_HALF_CELL > map.info.width-1 ? (map.info.width-1)-i.x() : FILTER_HALF_CELL;
-    //     int TOP = i.y()-FILTER_HALF_CELL < 0 ? i.y() : FILTER_HALF_CELL;
-    //     int BOTTOM = i.y()+FILTER_HALF_CELL > map.info.height-1 ? (map.info.height-1)-i.y() : FILTER_HALF_CELL;
-
-    //     for(int y=i.y()-TOP,ey=i.y()+BOTTOM+1;y!=ey;++y){
-    //         for(int x=i.x()-LEFT,ex=i.x()+RIGHT+1;x!=ex;++x){
-    //             if(map.frontierMap[x][y] == 100){//障害部があったら終了
-    //                 map.frontierMap[i.x()][i.y()] = 0;
-    //                 i.z() = 0;
-    //                 x = ex -1;//ラムダで関数作ってreturnで終わっても良いかも
-    //                 y = ey -1;
-    //             }
-    //         }
-    //     }
-    // }
     ROS_INFO_STREAM("Obstacle Filter complete");
 }
-
-// geometry_msgs::Point FrontierDetection::arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
-//     return ExpLib::Construct::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
-// }
-
-// Eigen::Vector3i FrontierDetection::coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info){
-//     return Eigen::Vector3i((coordinate.x()-info.origin.position.x)/info.resolution,(coordinate.y()-info.origin.position.y)/info.resolution,1);
-// }
 
 void FrontierDetection::publishHorizon(const clusterStruct& cs, const std::string& frameId){
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
