@@ -96,8 +96,8 @@ private:
     bool forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle);
     double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
 
-    bool lookupCostmap(move_base_msgs::MoveBaseGoal& goal);
-    bool resetGoal(move_base_msgs::MoveBaseGoal& goal, const geometry_msgs::PoseStamped& pose);
+    bool lookupCostmap(const geometry_msgs::PoseStamped& goal);
+    bool resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::PoseStamped& pose);
 
 
 public:
@@ -227,7 +227,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
         startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y);
     }
 
-    ROS_INFO_STREAM("after_vector_x : " << startToGoal.x() << ", after_vector_y : " << startToGoal.y());
+    // ROS_INFO_STREAM("after_vector_x : " << startToGoal.x() << ", after_vector_y : " << startToGoal.y());
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
 
@@ -242,20 +242,24 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     ros::Rate rate(GOAL_RESET_RATE);
 
     while(!ac.getState().isDone() && ros::ok()){
-        if(lookupCostmap(to)){ //コストマップに被っているばあい
+        if(lookupCostmap(to.target_pose)){ //コストマップに被っているばあい
             // 目的地を再設定
-            while(!lookupCostmap(to) && ros::ok()){
+            while(!lookupCostmap(to.target_pose) && ros::ok()){
                 if(!pose_.q.callOne(ros::WallDuration(1.0))) continue;
-                if(!resetGoal(to,pose_.data)){ 
+                if(!resetGoal(to.target_pose,pose_.data)){ 
+                    ROS_INFO_STREAM("current goal is canceled");
                     ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
                     break;
                 }
             }
             if(ac.getState().isDone()) break;
             // 大丈夫な目的地に変わっているので再設定
+            ROS_INFO_STREAM("set a new goal pose : " << to.target_pose.pose);
+            ROS_INFO_STREAM("send new goal to move_base");
             ac.sendGoal(to);
             // ゴールtopicに再出力
             goal_.pub.publish(ExpLib::Convert::poseStampedToPointStamped(to.target_pose));
+            ROS_INFO_STREAM("wait for result");
         }
         rate.sleep();
     };
@@ -264,39 +268,48 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
 }
 
-bool Movement::lookupCostmap(move_base_msgs::MoveBaseGoal& goal){
+bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
+    ROS_INFO_STREAM("lookup costmap");
     // 現在設定されているゴールがコストマップに被っているかだけを見る関数
     // true:被ってる, false:被ってない
     // コストマップを更新
-    while(!costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting costmap ...");
-
-    // ゴールがコストマップの中に入ってるか // COSTMAP_MARGIN内に入っているかを見る
-    
-    //ゴールの座標をコストマップの二次元配列のindexに変換
-    Eigen::Vector2i index(ExpLib::Utility::coordinateToMapIndex(goal.target_pose.pose.position,costmap_.data.info));
-
+    do{
+        ROS_INFO_STREAM("Waiting costmap ...");
+    }while(!costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok());
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(costmap_.data.data,costmap_.data.info));
-
-    // マージンが配列要素何個分か計算
-    int MARGIN = COSTMAP_MARGIN / costmap_.data.info.resolution;
-
-    //  xとyをどこから始めるか計算top,bottomなど
+    // ゴールを中心としたマップの検索窓を作る
+    ExpLib::Struct::mapSearchWindow msw(goal.pose.position,costmap_.data.info,COSTMAP_MARGIN);
+    // ゴールにコストマップが被ってないか検索
+    for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+        for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
+            if(cmap[x][y] > 0){
+                ROS_INFO_STREAM("current goal is over the costmap !!");
+                return true; //被ってたら終了
+            }
+        }
+    }
+    return false;
 }
 
-bool Movement::resetGoal(move_base_msgs::MoveBaseGoal& goal, const geometry_msgs::PoseStamped& pose){
+bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::PoseStamped& pose){
     // 現在のゴール地点までのパスを一定間隔だけ遡って新たな目的地にする
     // true:リセっと可能, false:リセット不可能
     //現在のパスを取得
     std::vector<geometry_msgs::PoseStamped> path;
-    while(pp_.createPath(pose,goal.target_pose,path) && ros::ok()) ROS_INFO_STREAM("Waiting path ...");
+    do{
+        ROS_INFO_STREAM("Waiting path ...");
+    }while(pp_.createPath(pose,goal,path) && ros::ok());
 
     // パスを少し遡ったところを目的地にする
     if(PATH_BACK_INTERVAL < path.size()){
-        goal.target_pose = path[path.size() - PATH_BACK_INTERVAL];
+        goal = path[path.size() - PATH_BACK_INTERVAL];
         return true;
     }
-    else return false;
+    else{
+        ROS_INFO_STREAM("Can't reset goal");
+        return false;
+    }
     
 }
 
