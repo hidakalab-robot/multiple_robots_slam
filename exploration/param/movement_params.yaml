@@ -64,8 +64,9 @@ movement_costmap:
   #global costmap parameter
   global_frame: /map
   robot_base_frame: /base_footprint
-  update_frequency: 1.0
-  publish_frequency: 0.5
+  update_frequency: 10.0
+  publish_frequency: 10.0
+  always_send_full_costmap: true
   static_map: true
   transform_tolerance: 0.5
   plugins:

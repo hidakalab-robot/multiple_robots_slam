@@ -239,15 +239,15 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     ROS_INFO_STREAM("wait for result");
     // ac.waitForResult();
 
+    // ナビ開始時にコストマップの中にいたら出るようにする
+
     ros::Rate rate(GOAL_RESET_RATE);
 
     while(!ac.getState().isDone() && ros::ok()){
         if(lookupCostmap(to.target_pose)){ //コストマップに被っているばあい
             // 目的地を再設定
             do{
-                do{
-                    ROS_INFO_STREAM("Waiting pose ...");
-                }while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok());
+                while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
                 if(!resetGoal(to.target_pose,pose_.data)){ 
                     ROS_INFO_STREAM("current goal is canceled");
                     ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
@@ -276,9 +276,7 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     // 現在設定されているゴールがコストマップに被っているかだけを見る関数
     // true:被ってる, false:被ってない
     // コストマップを更新
-    do{
-        ROS_INFO_STREAM("Waiting costmap ...");
-    }while(costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok());
+    while(costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting costmap ...");
     ROS_INFO_STREAM("get costmap");
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(costmap_.data.data,costmap_.data.info));
@@ -306,20 +304,23 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     // true:リセっと可能, false:リセット不可能
     //現在のパスを取得
     std::vector<geometry_msgs::PoseStamped> path;
-    do{
-        ROS_INFO_STREAM("Waiting path ...");
-    }while(!pp_.createPath(pose,goal,path) && ros::ok());
+    ros::Rate rate(0.5);
+    while(!pp_.createPath(pose,goal,path) && ros::ok()){
+        ROS_INFO_STREAM("Waiting path ..."); // 一生パスが作れない場合もあるので注意
+        rate.sleep();
+    }
     ROS_INFO_STREAM("get path");
     // パスを少し遡ったところを目的地にする
     ROS_INFO_STREAM("path size: " << path.size());
     ROS_INFO_STREAM("PATH_BACK_INTERVAL: " << PATH_BACK_INTERVAL);
 
-    ROS_INFO_STREAM("before goal: " << goal);
+    // ROS_INFO_STREAM("before goal: " << goal);
     
     if(PATH_BACK_INTERVAL < path.size()){
-        ROS_INFO_STREAM("last path: " << path[path.size()-1]);
+        // ROS_INFO_STREAM("last path: " << path[path.size()-1]);
         goal = path[path.size() - PATH_BACK_INTERVAL];
-        ROS_INFO_STREAM("after goal: " << goal);
+        ROS_INFO_STREAM("reset goal");
+        // ROS_INFO_STREAM("after goal: " << goal);
         return true;
     }
     else{
