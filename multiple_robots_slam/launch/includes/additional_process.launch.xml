@@ -3,7 +3,6 @@
     <arg name="mapping"/>
     <arg name="mapping_method"/> <!-- 0: rtabmap, 1:gmapping -->
     <arg name="bumper_continuity"/>
-    <arg name="map_continuity"/>
     <arg name="visualization"/>
     <arg name="exploration"/>
     <arg name="exploration_method"/> <!-- 0: seamless, 1:frontier, 2:sensor, 3:legacy-hybrid -->
@@ -84,9 +83,6 @@
 
     <!-- bumper_continuity -->
     <node if="$(arg bumper_continuity)" pkg="exploration_support" type="bumper_continuity" name="bumper_continuity"/>
-
-    <!-- map_continuity -->
-    <node if="$(arg map_continuity)" pkg="exploration_support" type="map_continuity" name="map_continuity"/>
 
     <!-- visualization -->
     <node if="$(arg visualization)" pkg="exploration_support" type="visualization" name="visualization">

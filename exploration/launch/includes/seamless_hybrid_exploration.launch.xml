@@ -38,11 +38,15 @@
         <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
         <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
         <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+
+        <rosparam file="$(find exploration)/param/path2vec_params.yaml" command="load"/>
+        <param name="path2vec_costmap/global_frame" value="$(arg map_frame_id)"/>
+        <param name="path2vec_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
         
         <param name="robot_name" value="$(arg robot_name)"/>
         <param name="rotation" value="$(arg rotation)"/>
         <param name="debug" value="$(arg debug)"/>
         <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <param name="angle_bias" value="60"/>
+        <param name="angle_bias" value="0"/>
     </node>
 </launch>

@@ -6,6 +6,7 @@
 
     <arg name="debug" default="false"/>
     <arg name="rotation" default="false"/>
+    <arg name="end_method" default="area"/>
     
     <!-- <arg unless="$(arg multi)" name="map" default="/$(arg robot_name)/map"/> -->
     <arg unless="$(arg multi)" name="map" default="map_continuity"/>
@@ -15,7 +16,7 @@
         <!-- exploration main -->
         <include file="$(find exploration)/launch/includes/legacy_hybrid_exploration.launch.xml">
             <arg name="pose_log" value="pose_log/$(arg robot_name)"/>
-            <arg name="end" value="end/area"/>
+            <arg name="end" value="end/$(arg end_method)"/>
             <arg name="debug" value="$(arg debug)"/>
             <arg name="rotation" value="$(arg rotation)"/>
             <arg name="robot_name" value="$(arg robot_name)"/>

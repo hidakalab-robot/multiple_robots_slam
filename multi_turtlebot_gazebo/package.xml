@@ -53,6 +53,7 @@
   <exec_depend>costmap_2d</exec_depend>
   <exec_depend>depthimage_to_laserscan</exec_depend>
   <exec_depend>dwa_local_planner</exec_depend>
+  <exec_depend>exploration_support</exec_depend>
   <exec_depend>gazebo_ros</exec_depend>
   <exec_depend>gmapping</exec_depend>
   <exec_depend>kobuki_safety_controller</exec_depend>

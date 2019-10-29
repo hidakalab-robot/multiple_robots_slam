@@ -30,7 +30,9 @@
   </node>
   
   <!-- bumper/cliff to pointcloud -->
-  <include file="$(find multi_turtlebot_bringup)/launch/includes/bumper2pc.launch.xml"/>
+  <include file="$(find multi_turtlebot_bringup)/launch/includes/bumper2pc.launch.xml">
+    <arg name="robot_name" value="$(arg robot_name)"/>
+  </include>
   
   <!-- velocity commands multiplexer -->
   <node pkg="nodelet" type="nodelet" name="cmd_vel_mux" args="load yocs_cmd_vel_mux/CmdVelMuxNodelet mobile_base_nodelet_manager">
