@@ -22,6 +22,7 @@
         <remap from="frontier" to="$(arg frontier)"/>
         <remap from="end" to="$(arg end)"/>
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
+        <remap from="costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
 
         <rosparam file="$(find exploration)/param/movement_params.yaml" command="load"/>
         <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>

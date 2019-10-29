@@ -276,13 +276,18 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     do{
         ROS_INFO_STREAM("Waiting costmap ...");
     }while(!costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok());
+    ROS_INFO_STREAM("get costmap");
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(costmap_.data.data,costmap_.data.info));
+    ROS_INFO_STREAM("create costmap array(2d)");
     // ゴールを中心としたマップの検索窓を作る
     ExpLib::Struct::mapSearchWindow msw(goal.pose.position,costmap_.data.info,COSTMAP_MARGIN);
+    ROS_INFO_STREAM("create map search window");
+    ROS_INFO_STREAM("top: " << msw.top << ", bottom: " << msw.bottom << ", left: " << msw.left << ", right: " << msw.right);
     // ゴールにコストマップが被ってないか検索
     for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
         for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
+            ROS_INFO_STREAM("searching costmap ...");
             if(cmap[x][y] > 0){
                 ROS_INFO_STREAM("current goal is over the costmap !!");
                 return true; //被ってたら終了
@@ -300,7 +305,7 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     do{
         ROS_INFO_STREAM("Waiting path ...");
     }while(pp_.createPath(pose,goal,path) && ros::ok());
-
+    ROS_INFO_STREAM("get path");
     // パスを少し遡ったところを目的地にする
     if(PATH_BACK_INTERVAL < path.size()){
         goal = path[path.size() - PATH_BACK_INTERVAL];
