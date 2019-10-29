@@ -244,14 +244,17 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     while(!ac.getState().isDone() && ros::ok()){
         if(lookupCostmap(to.target_pose)){ //コストマップに被っているばあい
             // 目的地を再設定
-            while(!lookupCostmap(to.target_pose) && ros::ok()){
-                if(!pose_.q.callOne(ros::WallDuration(1.0))) continue;
+            do{
+                do{
+                    ROS_INFO_STREAM("Waiting pose ...");
+                }while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok());
                 if(!resetGoal(to.target_pose,pose_.data)){ 
                     ROS_INFO_STREAM("current goal is canceled");
                     ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
                     break;
                 }
-            }
+            }while(lookupCostmap(to.target_pose) && ros::ok());
+                
             if(ac.getState().isDone()) break;
             // 大丈夫な目的地に変わっているので再設定
             ROS_INFO_STREAM("set a new goal pose : " << to.target_pose.pose);
@@ -275,7 +278,7 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     // コストマップを更新
     do{
         ROS_INFO_STREAM("Waiting costmap ...");
-    }while(!costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok());
+    }while(costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok());
     ROS_INFO_STREAM("get costmap");
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(costmap_.data.data,costmap_.data.info));
@@ -305,7 +308,7 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     std::vector<geometry_msgs::PoseStamped> path;
     do{
         ROS_INFO_STREAM("Waiting path ...");
-    }while(pp_.createPath(pose,goal,path) && ros::ok());
+    }while(!pp_.createPath(pose,goal,path) && ros::ok());
     ROS_INFO_STREAM("get path");
     // パスを少し遡ったところを目的地にする
     ROS_INFO_STREAM("path size: " << path.size());
