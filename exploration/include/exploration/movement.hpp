@@ -146,7 +146,7 @@ Movement::Movement()
     p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
     p.param<int>("path_back_interval", PATH_BACK_INTERVAL, 10);
     p.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
-    p.param<double>("costmap_margin", COSTMAP_MARGIN, 0.2);
+    p.param<double>("costmap_margin", COSTMAP_MARGIN, 0.4); // コストマップの検索窓の直径
 }
 
 void Movement::approx(std::vector<float>& scanRanges){
@@ -294,6 +294,7 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
             }
         }
     }
+    ROS_INFO_STREAM("this goal is ok");
     return false;
 }
 

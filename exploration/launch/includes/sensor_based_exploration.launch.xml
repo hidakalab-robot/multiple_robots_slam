@@ -23,6 +23,7 @@
         <remap from="pose_log" to="$(arg pose_log)"/>
         <remap from="end" to="$(arg end)"/>
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
+        <remap from="costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
 
         <param name="debug" value="$(arg debug)"/>
         <param name="rotation" value="$(arg rotation)"/>

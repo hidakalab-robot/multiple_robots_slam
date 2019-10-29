@@ -34,6 +34,7 @@
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
         <remap from="map" to="$(arg map)"/>
         <remap from="mobile_base/sensors/bumper_pointcloud" to="/$(arg robot_name)/mobile_base/sensors/bumper_pointcloud"/>
+        <remap from="costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
 
         <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
         <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>

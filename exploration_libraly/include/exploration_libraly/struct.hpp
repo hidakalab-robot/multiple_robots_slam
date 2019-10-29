@@ -83,9 +83,13 @@ struct mapSearchWindow{// 中心の座標, マップの大きさ, 窓の大き�
         if(ly ==  0.0) ly = lx;
         else if(ly < info.resolution) ly = info.resolution;
         Eigen::Vector2i index(ExpLib::Utility::coordinateToMapIndex(cc,info));
-        mapSearchWindow(index.x(),index.y(),info.width, info.height, lx/info.resolution, ly/info.resolution);
+        calcWindowSize(index.x(),index.y(),info.width, info.height, lx/info.resolution, ly/info.resolution);
     }
     mapSearchWindow(const int cx, const int cy, const int mx, const int my, int lx, int ly=0){ // cx,cy : 検索窓の中心の二次元配列インデックス, mx,my : 地図の辺の長さ(cell), lx,ly : 検索窓の辺の長さ(cell)
+        calcWindowSize(cx,cy,mx,my,lx,ly);
+    }
+
+    void calcWindowSize(const int cx, const int cy, const int mx, const int my, int lx, int ly=0){
         if(lx < 1) lx = 1;
         if(ly == 0) ly = lx;
         else if(ly<  1) ly = 1;
@@ -93,7 +97,6 @@ struct mapSearchWindow{// 中心の座標, マップの大きさ, 窓の大き�
         int hx2 = lx%2 == 1 ? lx/2 : lx/2-1; 
         int hy1 = ly/2;
         int hy2 = ly%2 == 1 ? ly/2 : ly/2-1;
-
         top = cy < hy1 ? 0 : cy-hy1;
         bottom = cy+hy2 > my-1 ? my-1 : cy+hy2;
         left = cx < hx1 ? 0 : cx-hx1; 
