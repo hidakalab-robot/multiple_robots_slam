@@ -279,15 +279,15 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     ROS_INFO_STREAM("get costmap");
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(costmap_.data.data,costmap_.data.info));
-    ROS_INFO_STREAM("create costmap array(2d)");
+    // ROS_INFO_STREAM("create costmap array(2d)");
     // ゴールを中心としたマップの検索窓を作る
     ExpLib::Struct::mapSearchWindow msw(goal.pose.position,costmap_.data.info,COSTMAP_MARGIN);
-    ROS_INFO_STREAM("create map search window");
-    ROS_INFO_STREAM("top: " << msw.top << ", bottom: " << msw.bottom << ", left: " << msw.left << ", right: " << msw.right);
+    // ROS_INFO_STREAM("create map search window");
+    // ROS_INFO_STREAM("top: " << msw.top << ", bottom: " << msw.bottom << ", left: " << msw.left << ", right: " << msw.right);
     // ゴールにコストマップが被ってないか検索
     for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
         for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
-            ROS_INFO_STREAM("searching costmap ...");
+            // ROS_INFO_STREAM("searching costmap ...");
             if(cmap[x][y] > 0){
                 ROS_INFO_STREAM("current goal is over the costmap !!");
                 return true; //被ってたら終了
@@ -308,8 +308,15 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     }while(pp_.createPath(pose,goal,path) && ros::ok());
     ROS_INFO_STREAM("get path");
     // パスを少し遡ったところを目的地にする
+    ROS_INFO_STREAM("path size: " << path.size());
+    ROS_INFO_STREAM("PATH_BACK_INTERVAL: " << PATH_BACK_INTERVAL);
+
+    ROS_INFO_STREAM("before goal: " << goal);
+    
     if(PATH_BACK_INTERVAL < path.size()){
+        ROS_INFO_STREAM("last path: " << path[path.size()-1]);
         goal = path[path.size() - PATH_BACK_INTERVAL];
+        ROS_INFO_STREAM("after goal: " << goal);
         return true;
     }
     else{
