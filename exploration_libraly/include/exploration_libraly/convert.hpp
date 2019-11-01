@@ -148,6 +148,15 @@ geometry_msgs::Quaternion eigenQuaToGeoQua(const Eigen::Quaterniond& eq){
     return q;
 }
 
+Eigen::Quaterniond geoQuaToEigenQua(const geometry_msgs::Quaternion& gq){
+    Eigen::Quaterniond q;
+    q.x() = gq.x;
+    q.y() = gq.y;
+    q.z() = gq.z;
+    q.w() = gq.w;
+    return q;
+}
+
 }
 }
 

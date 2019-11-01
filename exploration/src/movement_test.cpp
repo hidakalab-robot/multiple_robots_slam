@@ -6,8 +6,8 @@ int main(int argc, char** argv){
     ros::init(argc, argv, "vfh_test");
     Movement mv;
 
-    while(true){
-        mv.moveToForward();
+    while(ros::ok()){
+        mv.testFunc();
     }
 
     return 0;

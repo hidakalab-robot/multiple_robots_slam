@@ -16,6 +16,8 @@
 #include <sensor_msgs/LaserScan.h>
 #include <exploration_libraly/path_planning.hpp>
 #include <navfn/navfn_ros.h>
+// #include <pcl/segmentation/extract_clusters.h>
+// #include <pcl_ros/point_cloud.h>
 
 //センサーデータを受け取った後にロボットの動作を決定する
 //障害物回避を含む
@@ -71,13 +73,17 @@ private:
     int PATH_BACK_INTERVAL;
     double GOAL_RESET_RATE;
     double COSTMAP_MARGIN;
+    int DIV_WIDTH;
+    int DIV_HEIGHT;
 
     ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::subStruct<kobuki_msgs::BumperEvent> bumper_;
-    ExpLib::Struct::subStruct<nav_msgs::OccupancyGrid> costmap_;
+    ExpLib::Struct::subStruct<nav_msgs::OccupancyGrid> gCostmap_;
+    ExpLib::Struct::subStruct<nav_msgs::OccupancyGrid> lCostmap_;
     ExpLib::Struct::pubStruct<geometry_msgs::Twist> velocity_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
+    ExpLib::Struct::pubStruct<sensor_msgs::PointCloud2> free_;
 
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
 
@@ -97,6 +103,7 @@ private:
     double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
 
     bool lookupCostmap(const geometry_msgs::PoseStamped& goal);
+    bool escapeFromCostmap(const geometry_msgs::PoseStamped& pose);
     bool resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::PoseStamped& pose);
 
 
@@ -106,6 +113,7 @@ public:
     void moveToGoal(geometry_msgs::PointStamped goal);
     void moveToForward(void);
     void oneRotation(void);
+    void testFunc(void);
 };
 
 Movement::Movement()
@@ -116,7 +124,9 @@ Movement::Movement()
     ,previousOrientation_(1.0)
     ,pp_("movement_costmap","movement_planner") //クラス名
     ,goal_("goal", 1)
-    ,costmap_("costmap",1){
+    ,gCostmap_("global_costmap",1)
+    ,lCostmap_("local_costmap",1)
+    ,free_("free_pointcloud",1){
 
     ros::NodeHandle p("~");
     p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
@@ -147,6 +157,13 @@ Movement::Movement()
     p.param<int>("path_back_interval", PATH_BACK_INTERVAL, 10);
     p.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
     p.param<double>("costmap_margin", COSTMAP_MARGIN, 0.4); // コストマップの検索窓の直径
+    p.param<int>("DIV_HEIGHT", DIV_HEIGHT, 5);
+    p.param<int>("DIV_WIDTH", DIV_WIDTH, 5);
+}
+
+void Movement::testFunc(void){
+    if(pose_.q.callOne(ros::WallDuration(1.0))) return;
+    if(lookupCostmap(pose_.data)) escapeFromCostmap(pose_.data);
 }
 
 void Movement::approx(std::vector<float>& scanRanges){
@@ -210,6 +227,8 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
         ExpLib::Utility::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
+    if(lookupCostmap(pose_.data)) escapeFromCostmap(pose_.data);
+
     move_base_msgs::MoveBaseGoal to;
     to.target_pose.header.frame_id = pose_.data.header.frame_id;
     to.target_pose.header.stamp = ros::Time::now();
@@ -272,17 +291,18 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 }
 
 bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
-    ROS_INFO_STREAM("lookup costmap");
+    ROS_INFO_STREAM("lookup global costmap");
     // 現在設定されているゴールがコストマップに被っているかだけを見る関数
+    // 正確にはposeStampedの座標がコストマップに被ってるかを見る
     // true:被ってる, false:被ってない
     // コストマップを更新
-    while(costmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting costmap ...");
-    ROS_INFO_STREAM("get costmap");
+    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
+    ROS_INFO_STREAM("get global costmap");
     // コストマップの配列を二次元に変換
-    std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(costmap_.data.data,costmap_.data.info));
+    std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
     // ROS_INFO_STREAM("create costmap array(2d)");
     // ゴールを中心としたマップの検索窓を作る
-    ExpLib::Struct::mapSearchWindow msw(goal.pose.position,costmap_.data.info,COSTMAP_MARGIN);
+    ExpLib::Struct::mapSearchWindow msw(goal.pose.position,gCostmap_.data.info,COSTMAP_MARGIN);
     // ROS_INFO_STREAM("create map search window");
     // ROS_INFO_STREAM("top: " << msw.top << ", bottom: " << msw.bottom << ", left: " << msw.left << ", right: " << msw.right);
     // ゴールにコストマップが被ってないか検索
@@ -319,6 +339,9 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     if(PATH_BACK_INTERVAL < path.size()){
         // ROS_INFO_STREAM("last path: " << path[path.size()-1]);
         goal = path[path.size() - PATH_BACK_INTERVAL];
+        Eigen::Vector2d vec;
+        pp_.getVec(pose,goal,vec,path);
+        goal.pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(vec.x(),vec.y(),0.0)));
         ROS_INFO_STREAM("reset goal");
         // ROS_INFO_STREAM("after goal: " << goal);
         return true;
@@ -328,6 +351,252 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
         return false;
     }
     
+}
+
+bool Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
+    // 目標設定前に足元にコストマップあったら外に出るようにする
+    // true: 脱出成功, false: 脱出不可
+    // ローカルコストマップを分割して安全そうなエリアに向かって脱出
+    // 出来ればゴールに近い方が良いかもしれない
+    // ローカルコストマップのサイズ変更なども試してみる
+    // const int DIV_HEIGHT = 4; // 4の倍数限定
+    // const int DIV_WIDTH = 4;
+
+    // 単純にコストマップの密度が小さいへ行けば良いのか？　// 単純に数字が入ってるかどうかで判断
+
+    // // コストマップ
+    // while(lCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting local costmap ...");
+    // ROS_INFO_STREAM("get local costmap");
+    // std::vector<std::vector<int8_t>> lcmap(ExpLib::Utility::mapArray1dTo2d(lCostmap_.data.data,lCostmap_.data.info));
+
+    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting local costmap ...");
+    ROS_INFO_STREAM("get local costmap");
+    std::vector<std::vector<int8_t>> gcmap(ExpLib::Utility::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
+
+    double  LOCAL_MAP_X = 0.9;
+    double  LOCAL_MAP_Y = 0.9;
+
+    ExpLib::Struct::mapSearchWindow msw(pose.pose.position,gCostmap_.data.info,LOCAL_MAP_X,LOCAL_MAP_Y);
+
+    // const int lwidth = lCostmap_.data.info.width / DIV_WIDTH;
+    // const int lheight = lCostmap_.data.info.height / DIV_HEIGHT;
+
+    const int gwidth = (msw.right-msw.left) / DIV_WIDTH;
+    const int gheight = (msw.bottom-msw.top) / DIV_HEIGHT;
+
+    struct miniMap{
+        Eigen::Vector2i cIndex; //中心のいんでっくす
+        double risk; // コストマップの影響度
+        double grad;
+        bool escape;
+    };
+
+    std::vector<std::vector<miniMap>> gmm(DIV_WIDTH,std::vector<miniMap>(DIV_HEIGHT));
+    // std::vector<miniMap> lmm(DIV_HEIGHT*DIV_WIDTH);
+
+    // for(int dh=0, dhe=DIV_HEIGHT; dh!=dhe; ++dh){
+    //     for(int dw=0, dwe=DIV_WIDTH; dw!=dwe; ++dw){
+    //         double risk = 0;
+    //         for(int h=dh*lheight,he=(dh+1)*lheight;h!=he;++h){
+    //             for(int w=dw*lwidth,we=(dw+1)*lwidth;w!=we;++w) risk += lcmap[w][h];// != 0 ? 1.0 : 0.0;
+    //         }
+    //         lmm[dh*DIV_HEIGHT+dw].cIndex = Eigen::Vector2i((2*dw+1)*lwidth/2,(2*dh+1)*lheight/2);
+    //         lmm[dh*DIV_HEIGHT+dw].risk = risk /= (lwidth*lheight);
+    //     }
+    // }
+
+    // for(int dh=0, dhe=DIV_HEIGHT; dh!=dhe; ++dh){
+    //     for(int dw=0, dwe=DIV_WIDTH; dw!=dwe; ++dw){
+    //         double risk = 0;
+    //         for(int h=msw.top+dh*gheight,he=msw.top+(dh+1)*gheight;h!=he;++h){
+    //             for(int w=msw.left+dw*gwidth,we=msw.left+(dw+1)*gwidth;w!=we;++w) risk += gcmap[w][h];// != 0 && gcmap[w][h] != -1? 1.0 : 0.0;
+    //         }
+    //         gmm[dh*DIV_HEIGHT+dw].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gwidth)/2,(msw.top*2+(2*dh+1)*gheight)/2);
+    //         gmm[dh*DIV_HEIGHT+dw].risk = risk /= (gwidth*gheight);
+    //     }
+    // }
+
+    for(int dh=0, dhe=DIV_HEIGHT; dh!=dhe; ++dh){
+        for(int dw=0, dwe=DIV_WIDTH; dw!=dwe; ++dw){
+            double risk = 0;
+            for(int h=msw.top+dh*gheight,he=msw.top+(dh+1)*gheight;h!=he;++h){
+                for(int w=msw.left+dw*gwidth,we=msw.left+(dw+1)*gwidth;w!=we;++w) risk += gcmap[w][h];// != 0 && gcmap[w][h] != -1? 1.0 : 0.0;
+            }
+            gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gwidth)/2,(msw.top*2+(2*dh+1)*gheight)/2);
+            gmm[dw][dh].risk = risk /= (gwidth*gheight);
+        }
+    }
+
+    Eigen::Vector2i c(DIV_WIDTH/2,DIV_HEIGHT/2);
+
+    ROS_INFO_STREAM("c: " << c);
+
+    for(int y=DIV_HEIGHT-1;y!=-1;--y){
+        for(int x=0;x!=DIV_WIDTH;++x){
+            // if(x!=c.x()||y!=c.y()) gmm[x][y].grad = gmm[c.x()][c.y()].risk > 0 ? gmm[x][y].risk < gmm[c.x()][c.y()].risk : gmm[x][y].risk <= gmm[c.x()][c.y()].risk;
+            gmm[x][y].grad = x!=c.x()||y!=c.y() ? gmm[x][y].risk - gmm[c.x()][c.y()].risk : 100;
+        }    
+    }
+
+    // pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc(new pcl::PointCloud<pcl::PointXYZRGB>);
+    
+    // pc->points.reserve(gCostmap_.data.info.height*gCostmap_.data.info.width);
+
+    // for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+    //     for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
+    //         if(gcmap[x][y] == 0){
+    //             geometry_msgs::Point temp = ExpLib::Utility::mapIndexToCoordinate(x,y,gCostmap_.data.info);
+    //             pc->points.emplace_back(ExpLib::Construct::pclXYZRGB((float)temp.x,(float)temp.y,0.0f,0.0f,0.0f,0.0f));
+    //         } 
+    //     }
+    // }
+
+    // pc -> width = pc -> points.size();
+    // pc -> height = 1;
+    // pc -> is_dense = true;
+
+    // pcl::search::KdTree<pcl::PointXYZRGB>::Ptr tree(new pcl::search::KdTree<pcl::PointXYZRGB>);
+    // tree->setInputCloud (pc);
+
+    // pcl::EuclideanClusterExtraction<pcl::PointXYZRGB> ec;
+    // ec.setClusterTolerance (2*gCostmap_.data.info.resolution);//同じクラスタとみなす距離
+  	// ec.setMinClusterSize (30);//クラスタを構成する最小の点数
+  	// ec.setMaxClusterSize (gCostmap_.data.info.height*gCostmap_.data.info.width);//クラスタを構成する最大の点数
+	// ec.setSearchMethod (tree);
+	// ec.setInputCloud (pc);
+
+    // std::vector<pcl::PointIndices> indices;
+    // ec.extract (indices);
+
+    // float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
+
+    // int i = 0;
+    // for (std::vector<pcl::PointIndices>::const_iterator it = indices.begin (); it != indices.end (); ++it,++i){
+    //     int c = i%12;
+    //     for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
+    //         pc -> points[*pit] = ExpLib::Construct::pclXYZRGB(pc->points[*pit].x,pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]);
+    //     }
+    // }
+
+    // sensor_msgs::PointCloud2 msg;
+    // pcl::toROSMsg(*pc,msg);
+    // msg.header.frame_id = gCostmap_.data.header.frame_id;
+    // msg.header.stamp = ros::Time::now();
+    // free_.pub.publish(msg);
+
+    // for(int dh=0, dhe=DIV_HEIGHT; dh!=dhe; ++dh){
+    //     for(int dw=0, dwe=DIV_WIDTH; dw!=dwe; ++dw){
+    //         double risk = 0;
+    //         for(int h=msw.top+dh*gheight,he=msw.top+(dh+1)*gheight;h!=he;++h){
+    //             for(int w=msw.left+dw*gwidth,we=msw.left+(dw+1)*gwidth;w!=we;++w) risk += gcmap[w][h];// != 0 && gcmap[w][h] != -1? 1.0 : 0.0;
+    //         }
+    //         // gmm[dh*DIV_HEIGHT+dw].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gwidth)/2,(msw.top*2+(2*dh+1)*gheight)/2);
+    //         // gmm[dh*DIV_HEIGHT+dw].risk = risk /= (gwidth*gheight);
+    //     }
+    // }
+
+
+
+
+
+    // 各領域のリスクを出力してみる
+    // double RISK_THRESHOLD = 0.2;
+    // ROS_DEBUG_STREAM("from local_costmap");
+
+    // for(auto&& m : lmm){
+    //     geometry_msgs::Point temp = ExpLib::Utility::mapIndexToCoordinate(m.cIndex.x(),m.cIndex.y(),lCostmap_.data.info);
+    //     ROS_INFO_STREAM("position: (" << temp.x << ", " << temp.y << ")\nrisk: " << m.risk);
+    // }
+
+    //図で出力してみる
+    // ROS_INFO_STREAM("mini map");
+    // for(int y=DIV_HEIGHT-1;y!=-1;--y){
+    //     std::cout << "|";
+    //     for(int x=0;x!=DIV_WIDTH;++x){
+    //         std::cout << std::fixed << std::setprecision(2) << lmm[y*DIV_HEIGHT+x].risk  << "|";
+    //     }
+    //     std::cout << std::endl;
+    // }
+
+    ROS_DEBUG_STREAM("from global_costmap");
+
+    // for(auto&& m : gmm){
+    //     geometry_msgs::Point temp = ExpLib::Utility::mapIndexToCoordinate(m.cIndex.x(),m.cIndex.y(),gCostmap_.data.info);
+    //     ROS_INFO_STREAM("position: (" << temp.x << ", " << temp.y << ")\nrisk: " << m.risk);
+    // }
+
+    //図で出力してみる
+    ROS_INFO_STREAM("mini map");
+    for(int y=DIV_HEIGHT-1;y!=-1;--y){
+        std::cout << "|";
+        for(int x=0;x!=DIV_WIDTH;++x){
+            std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";
+            // std::cout << gmm[x][y].risk  << "|";
+        }
+        std::cout << std::endl;
+    }
+
+    //勾配が小さくなっている
+    ROS_INFO_STREAM("grad map");
+    for(int y=DIV_HEIGHT-1;y!=-1;--y){
+        std::cout << "|";
+        for(int x=0;x!=DIV_WIDTH;++x){
+            // std::cout << (gmm[x][y].grad ? "*" : " ") << "|";
+            std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
+        }
+        std::cout << std::endl;
+    }
+
+    ROS_INFO_STREAM("near angle map");
+    // 逃げる方向 // 自分の現在の方向に近い方
+    //pose.pose.orientation;
+    // ざひょう ExpLib::Utility::mapIndexToCoordinate(gmm[x][y].cIndex.x(),gmm[x][y].cIndex.y(),gCostmap_.data.info);
+    // 
+    Eigen::Quaterniond now = ExpLib::Convert::geoQuaToEigenQua(pose.pose.orientation);
+
+    double minad = DBL_MAX;
+    double mingr = 0;
+    Eigen::Vector2i minIndex(c.x(),c.y());
+    for(int y=DIV_HEIGHT-1;y!=-1;--y){
+        for(int x=0;x!=DIV_WIDTH;++x){
+            if(gmm[x][y].grad <= mingr){
+                geometry_msgs::Point tempp = ExpLib::Utility::mapIndexToCoordinate(gmm[x][y].cIndex.x(),gmm[x][y].cIndex.y(),gCostmap_.data.info);
+                Eigen::Quaterniond tempq = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(tempp.x-pose.pose.position.x,tempp.y-pose.pose.position.y,0.0));
+                double tempad = now.angularDistance(tempq);
+                ROS_INFO_STREAM("tempad: " << tempad);
+                if(gmm[x][y].grad == mingr){
+                    if(tempad <= minad){
+                        minad = tempad;
+                        mingr = gmm[x][y].grad;
+                        gmm[x][y].escape = true;
+                        gmm[minIndex.x()][minIndex.y()].escape = false;
+                        minIndex << x,y;
+                    }
+                }
+                else{
+                    minad = tempad;
+                    mingr = gmm[x][y].grad;
+                    gmm[x][y].escape = true;
+                    gmm[minIndex.x()][minIndex.y()].escape = false;
+                    minIndex << x,y;
+                }   
+            }
+        }
+        std::cout << std::endl;
+    }
+
+    ROS_INFO_STREAM("new kobai map");
+    for(int y=DIV_HEIGHT-1;y!=-1;--y){
+        std::cout << "|";
+        for(int x=0;x!=DIV_WIDTH;++x){
+            std::cout << (gmm[x][y].escape ? "*" : " ") << "|";
+        }
+        std::cout << std::endl;
+    }
+
+    // これの向きに合わせてから直進で抜けるまで
+
+    return true;
 }
 
 void Movement::moveToForward(void){
