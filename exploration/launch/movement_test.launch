@@ -7,9 +7,6 @@
      <group ns="$(arg robot_name)">
         <node pkg="exploration" type="movement_test" name="movement_test" output="screen">
             <remap from="global_costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
-            <remap from="local_costmap" to="/$(arg robot_name)/move_base/local_costmap/costmap"/>
-            <param name="DIV_HEIGHT" value="3"/>
-            <param name="DIV_WIDTH" value="3"/>
 
             <rosparam file="$(find exploration)/param/movement_params.yaml" command="load"/>
             <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
