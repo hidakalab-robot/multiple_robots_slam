@@ -25,17 +25,10 @@ private:
         std::vector<std::vector<int8_t>> horizon;
         std::vector<std::vector<int8_t>> frontierMap;
         mapStruct(const nav_msgs::OccupancyGrid& m)
-            // :source(m.info.width,std::vector<int8_t>(m.info.height))
             :source(ExpLib::Utility::mapArray1dTo2d(m.data,m.info))
             ,horizon(m.info.width,std::vector<int8_t>(m.info.height,0))
             ,frontierMap(m.info.width,std::vector<int8_t>(m.info.height,0)){
-                
             info = m.info;
-            // for(int y=0,k=0,ey=info.height;y!=ey;++y){
-            //     for(int x=0,ex=info.width;x!=ex;++x,++k){
-            //         source[x][y] = m.data[k];
-            //     }
-            // }
         };
     };
 
@@ -80,8 +73,6 @@ private:
     void horizonDetection(mapStruct& map);
     clusterStruct clusterDetection(const mapStruct& map);
     void obstacleFilter(mapStruct& map,clusterStruct& cs);
-    // Eigen::Vector3i coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info);
-    // geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info);
 
     void publishHorizon(const clusterStruct& cs, const std::string& frameId);
     void publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId);

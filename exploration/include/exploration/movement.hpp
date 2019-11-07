@@ -365,15 +365,16 @@ bool Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // // コストマップ
     while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
     ROS_INFO_STREAM("get global costmap");
-    std::vector<std::vector<int8_t>> gcmap(ExpLib::Utility::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
+    std::vector<std::vector<int8_t>> gMap(ExpLib::Utility::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
 
     ExpLib::Struct::mapSearchWindow msw(pose.pose.position,gCostmap_.data.info,ESC_MAP_X,ESC_MAP_Y);
 
-    const int gwidth = (msw.right-msw.left) / DIV_X;
-    const int gheight = (msw.bottom-msw.top) / DIV_Y;
+    const int gw = (msw.right-msw.left) / DIV_X;
+    const int gh = (msw.bottom-msw.top) / DIV_Y;
 
     struct escMap{
         Eigen::Vector2i cIndex; //中心のいんでっくす
+        geometry_msgs::Pose pose;
         double risk; // コストマップの影響度
         double grad;
         bool escape;
@@ -384,19 +385,21 @@ bool Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     for(int dh=0, dhe=DIV_Y; dh!=dhe; ++dh){
         for(int dw=0, dwe=DIV_X; dw!=dwe; ++dw){
             double risk = 0;
-            for(int h=msw.top+dh*gheight,he=msw.top+(dh+1)*gheight;h!=he;++h){
-                for(int w=msw.left+dw*gwidth,we=msw.left+(dw+1)*gwidth;w!=we;++w) risk += gcmap[w][h];// != 0 && gcmap[w][h] != -1? 1.0 : 0.0;
+            for(int h=msw.top+dh*gh,he=msw.top+(dh+1)*gh;h!=he;++h){
+                for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h];
             }
-            gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gwidth)/2,(msw.top*2+(2*dh+1)*gheight)/2);
-            gmm[dw][dh].risk = risk /= (gwidth*gheight);
+            gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gw)/2,(msw.top*2+(2*dh+1)*gh)/2);
+            gmm[dw][dh].pose.position = ExpLib::Utility::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_.data.info);
+            gmm[dw][dh].pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[dw][dh].pose.position.x-pose.pose.position.x,gmm[dw][dh].pose.position.y-pose.pose.position.y,0.0)));
+            gmm[dw][dh].risk = risk / (gw*gh);
         }
     }
 
-    Eigen::Vector2i c(DIV_X/2,DIV_Y/2);
+    Eigen::Vector2i mci(DIV_X/2,DIV_Y/2);
     for(int y=DIV_Y-1;y!=-1;--y){
         for(int x=0;x!=DIV_X;++x){
             // if(x!=c.x()||y!=c.y()) gmm[x][y].grad = gmm[c.x()][c.y()].risk > 0 ? gmm[x][y].risk < gmm[c.x()][c.y()].risk : gmm[x][y].risk <= gmm[c.x()][c.y()].risk;
-            gmm[x][y].grad = x!=c.x()||y!=c.y() ? gmm[x][y].risk - gmm[c.x()][c.y()].risk : 100;
+            gmm[x][y].grad = x!=mci.x()||y!=mci.y() ? gmm[x][y].risk - gmm[mci.x()][mci.y()].risk : 100;
         }    
     }
 
@@ -429,18 +432,19 @@ bool Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     //pose.pose.orientation;
     // ざひょう ExpLib::Utility::mapIndexToCoordinate(gmm[x][y].cIndex.x(),gmm[x][y].cIndex.y(),gCostmap_.data.info);
     // 
-    Eigen::Quaterniond now = ExpLib::Convert::geoQuaToEigenQua(pose.pose.orientation);
+    Eigen::Quaterniond cAng = ExpLib::Convert::geoQuaToEigenQua(pose.pose.orientation);
 
     double minad = DBL_MAX;
-    double mingr = 0;
-    Eigen::Vector2i minIndex(c.x(),c.y());
+    double mingr = DBL_MAX;
+    Eigen::Vector2i minIndex = mci;
     for(int y=DIV_Y-1;y!=-1;--y){
         for(int x=0;x!=DIV_X;++x){
             if(gmm[x][y].grad <= mingr){
-                geometry_msgs::Point tempp = ExpLib::Utility::mapIndexToCoordinate(gmm[x][y].cIndex.x(),gmm[x][y].cIndex.y(),gCostmap_.data.info);
-                Eigen::Quaterniond tempq = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(tempp.x-pose.pose.position.x,tempp.y-pose.pose.position.y,0.0));
-                double tempad = now.angularDistance(tempq);
-                ROS_INFO_STREAM("tempad: " << tempad);
+                // geometry_msgs::Point tempp = ExpLib::Utility::mapIndexToCoordinate(gmm[x][y].cIndex.x(),gmm[x][y].cIndex.y(),gCostmap_.data.info);
+                // Eigen::Quaterniond tempq = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(tempp.x-pose.pose.position.x,tempp.y-pose.pose.position.y,0.0));
+                // double tempad = cAng.angularDistance(tempq);
+                double tempad = cAng.angularDistance(ExpLib::Convert::geoQuaToEigenQua(gmm[x][y].pose.orientation));
+                // ROS_INFO_STREAM("tempad: " << tempad);
                 if(gmm[x][y].grad == mingr){
                     if(tempad <= minad){
                         minad = tempad;
@@ -471,6 +475,30 @@ bool Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     }
 
     // これの向きに合わせてから直進で抜けるまで
+    // 回転部分
+    // pose.pose.orientation // 現在向き
+    // 回避方向 escape:true && gmm[x][y].pose.orientation
+
+    double yaw;
+
+    for(int y=DIV_Y-1;y!=-1;--y){
+        for(int x=0;x!=DIV_X;++x){
+            if(gmm[x][y].escape){
+                tf::Quaternion tq = ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation).slerp(ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation),0.5);
+                double asp = ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation).angleShortestPath(ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation));
+                double a = ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation).angleShortestPath(ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation));
+                tf::Quaternion dq = ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation)-ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation);
+                yaw = ExpLib::Convert::qToYaw(tq);
+                ROS_INFO_STREAM("tf q : " << ExpLib::Convert::tfQuaToGeoQua(tq)); // これのプラスかマイナスかをみたい
+                ROS_INFO_STREAM("rotate yaw : " << yaw*180/M_PI); // これのプラスかマイナスかをみたい
+                ROS_INFO_STREAM("asp : " << asp*180/M_PI); // これのプラスかマイナスかをみたい
+                ROS_INFO_STREAM("a : " << a*180/M_PI); // これのプラスかマイナスかをみたい
+                ROS_INFO_STREAM("dq : " << ExpLib::Convert::qToYaw(dq)*180/M_PI); // これのプラスかマイナスかをみたい //多分割る // dotもみてみる
+            }
+        }
+    }
+
+    
 
     return true;
 }
