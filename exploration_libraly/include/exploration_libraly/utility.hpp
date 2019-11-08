@@ -87,6 +87,15 @@ std::vector<std::vector<int8_t>> mapArray1dTo2d(const std::vector<int8_t>& data,
     return map2d;
 }
 
+double shorterRotationAngle(const double orig, const double dest){
+    double diff = dest - orig;
+    return diff > M_PI ? diff-2*M_PI : diff < -M_PI ? diff+2*M_PI : diff;
+}
+
+double shorterRotationAngle(const geometry_msgs::Quaternion& orig, const geometry_msgs::Quaternion& dest){
+    return shorterRotationAngle(Convert::qToYaw(orig), Convert::qToYaw(dest));
+}
+
 }
 }
 #endif // UTILITY_HPP

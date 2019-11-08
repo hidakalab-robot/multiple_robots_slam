@@ -103,8 +103,10 @@ private:
     double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
 
     bool lookupCostmap(const geometry_msgs::PoseStamped& goal);
-    bool escapeFromCostmap(const geometry_msgs::PoseStamped& pose);
+    bool lookupCostmap(void);
+    void escapeFromCostmap(const geometry_msgs::PoseStamped& pose);
     bool resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::PoseStamped& pose);
+    void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
 
 
 public:
@@ -227,7 +229,10 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
         ExpLib::Utility::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
-    if(lookupCostmap(pose_.data)) escapeFromCostmap(pose_.data);
+    if(lookupCostmap(pose_.data)){
+        escapeFromCostmap(pose_.data);
+        pose_.q.callOne(ros::WallDuration(1.0));
+    } 
 
     move_base_msgs::MoveBaseGoal to;
     to.target_pose.header.frame_id = pose_.data.header.frame_id;
@@ -270,6 +275,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
                 if(!resetGoal(to.target_pose,pose_.data)){ 
                     ROS_INFO_STREAM("current goal is canceled");
                     ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
+                    ac.waitForResult();
                     break;
                 }
             }while(lookupCostmap(to.target_pose) && ros::ok());
@@ -319,6 +325,11 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     return false;
 }
 
+bool Movement::lookupCostmap(void){
+    while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+    return lookupCostmap(pose_.data);
+}
+
 bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::PoseStamped& pose){
     // 現在のゴール地点までのパスを一定間隔だけ遡って新たな目的地にする
     // true:リセっと可能, false:リセット不可能
@@ -353,7 +364,7 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     
 }
 
-bool Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
+void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // 目標設定前に足元にコストマップあったら外に出るようにする
     // true: 脱出成功, false: 脱出不可
     // ローカルコストマップを分割して安全そうなエリアに向かって脱出
@@ -479,28 +490,52 @@ bool Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // pose.pose.orientation // 現在向き
     // 回避方向 escape:true && gmm[x][y].pose.orientation
 
-    double yaw;
-
     for(int y=DIV_Y-1;y!=-1;--y){
         for(int x=0;x!=DIV_X;++x){
             if(gmm[x][y].escape){
-                tf::Quaternion tq = ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation).slerp(ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation),0.5);
-                double asp = ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation).angleShortestPath(ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation));
-                double a = ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation).angleShortestPath(ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation));
-                tf::Quaternion dq = ExpLib::Convert::geoQuaToTfQua(gmm[x][y].pose.orientation)-ExpLib::Convert::geoQuaToTfQua(pose.pose.orientation);
-                yaw = ExpLib::Convert::qToYaw(tq);
-                ROS_INFO_STREAM("tf q : " << ExpLib::Convert::tfQuaToGeoQua(tq)); // これのプラスかマイナスかをみたい
-                ROS_INFO_STREAM("rotate yaw : " << yaw*180/M_PI); // これのプラスかマイナスかをみたい
-                ROS_INFO_STREAM("asp : " << asp*180/M_PI); // これのプラスかマイナスかをみたい
-                ROS_INFO_STREAM("a : " << a*180/M_PI); // これのプラスかマイナスかをみたい
-                ROS_INFO_STREAM("dq : " << ExpLib::Convert::qToYaw(dq)*180/M_PI); // これのプラスかマイナスかをみたい //多分割る // dotもみてみる
+                rotationFromTo(pose.pose.orientation,gmm[x][y].pose.orientation);
+                while(lookupCostmap() && ros::ok()) velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY*2,0));
+                return;
             }
         }
     }
+}
 
-    
+void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to){
+    double rotation = ExpLib::Utility::shorterRotationAngle(from,to);
 
-    return true;
+    ROS_INFO_STREAM("need rotation : " << rotation);
+    ROS_INFO_STREAM("from : " << ExpLib::Convert::qToYaw(from));
+    ROS_INFO_STREAM("to : " << ExpLib::Convert::qToYaw(to));
+
+    if(rotation>=0){
+        if(rotation+ExpLib::Convert::qToYaw(from)>M_PI){
+            while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 && ros::ok()){
+                velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY*2));
+                while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+                // ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
+            }
+        }
+        while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < ExpLib::Convert::qToYaw(to)&& ros::ok()){
+            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY*2));
+            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            // ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
+        }
+    }
+    else{
+        if(rotation+ExpLib::Convert::qToYaw(from)<-M_PI){
+            while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 && ros::ok()){
+                velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY*2));
+                while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+                // ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
+            }
+        }
+        while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > ExpLib::Convert::qToYaw(to)&& ros::ok()){
+            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY*2));
+            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            // ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
+        }
+    }
 }
 
 void Movement::moveToForward(void){

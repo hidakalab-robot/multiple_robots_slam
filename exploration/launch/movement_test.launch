@@ -6,6 +6,7 @@
 
      <group ns="$(arg robot_name)">
         <node pkg="exploration" type="movement_test" name="movement_test" output="screen">
+            <remap from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
             <remap from="global_costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
 
             <rosparam file="$(find exploration)/param/movement_params.yaml" command="load"/>
