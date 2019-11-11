@@ -234,15 +234,14 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
         pose_.q.callOne(ros::WallDuration(1.0));
     } 
 
-    move_base_msgs::MoveBaseGoal to;
-    to.target_pose.header.frame_id = pose_.data.header.frame_id;
-    to.target_pose.header.stamp = ros::Time::now();
+    move_base_msgs::MoveBaseGoal mbg;
+    mbg.target_pose.header.frame_id = pose_.data.header.frame_id;
+    mbg.target_pose.header.stamp = ros::Time::now();
 
     // 目標での姿勢
     Eigen::Vector2d startToGoal;
-
     if(!pp_.getVec(pose_.data,ExpLib::Convert::pointStampedToPoseStamped(goal),startToGoal)){
-        // 回転角度の補正値
+        // pathが取得できなかった場合の回転角度の補正値
         double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
         Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
         double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
@@ -251,42 +250,36 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
         startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y);
     }
 
-    // ROS_INFO_STREAM("after_vector_x : " << startToGoal.x() << ", after_vector_y : " << startToGoal.y());
-
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
+    mbg.target_pose.pose = ExpLib::Construct::msgPose(goal.point,ExpLib::Convert::eigenQuaToGeoQua(q));
 
-    to.target_pose.pose = ExpLib::Construct::msgPose(goal.point,ExpLib::Convert::eigenQuaToGeoQua(q));
-
-    ROS_DEBUG_STREAM("goal pose : " << to.target_pose.pose);
+    ROS_DEBUG_STREAM("goal pose : " << mbg.target_pose.pose);
     ROS_INFO_STREAM("send goal to move_base");
-    ac.sendGoal(to);
+    ac.sendGoal(mbg);
     ROS_INFO_STREAM("wait for result");
-    // ac.waitForResult();
-
-    // ナビ開始時にコストマップの中にいたら出るようにする
 
     ros::Rate rate(GOAL_RESET_RATE);
 
     while(!ac.getState().isDone() && ros::ok()){
-        if(lookupCostmap(to.target_pose)){ //コストマップに被っているばあい
+        if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
             // 目的地を再設定
             do{
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-                if(!resetGoal(to.target_pose,pose_.data)){ 
+                if(!resetGoal(mbg.target_pose,pose_.data)){ 
                     ROS_INFO_STREAM("current goal is canceled");
                     ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
                     ac.waitForResult();
                     break;
                 }
-            }while(lookupCostmap(to.target_pose) && ros::ok());
+            }while(lookupCostmap(mbg.target_pose) && ros::ok()); // 大丈夫な位置になるまでゴールを再設定したくないからwhile
                 
             if(ac.getState().isDone()) break;
             // 大丈夫な目的地に変わっているので再設定
-            ROS_INFO_STREAM("set a new goal pose : " << to.target_pose.pose);
+            ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
             ROS_INFO_STREAM("send new goal to move_base");
-            ac.sendGoal(to);
+            ac.sendGoal(mbg);
             // ゴールtopicに再出力
-            goal_.pub.publish(ExpLib::Convert::poseStampedToPointStamped(to.target_pose));
+            goal_.pub.publish(ExpLib::Convert::poseStampedToPointStamped(mbg.target_pose));
             ROS_INFO_STREAM("wait for result");
         }
         rate.sleep();
@@ -309,12 +302,9 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     // ROS_INFO_STREAM("create costmap array(2d)");
     // ゴールを中心としたマップの検索窓を作る
     ExpLib::Struct::mapSearchWindow msw(goal.pose.position,gCostmap_.data.info,COSTMAP_MARGIN);
-    // ROS_INFO_STREAM("create map search window");
-    // ROS_INFO_STREAM("top: " << msw.top << ", bottom: " << msw.bottom << ", left: " << msw.left << ", right: " << msw.right);
     // ゴールにコストマップが被ってないか検索
     for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
         for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
-            // ROS_INFO_STREAM("searching costmap ...");
             if(cmap[x][y] > 0){
                 ROS_INFO_STREAM("current goal is over the costmap !!");
                 return true; //被ってたら終了
@@ -344,17 +334,13 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     // パスを少し遡ったところを目的地にする
     ROS_INFO_STREAM("path size: " << path.size());
     ROS_INFO_STREAM("PATH_BACK_INTERVAL: " << PATH_BACK_INTERVAL);
-
-    // ROS_INFO_STREAM("before goal: " << goal);
     
     if(PATH_BACK_INTERVAL < path.size()){
-        // ROS_INFO_STREAM("last path: " << path[path.size()-1]);
         goal = path[path.size() - PATH_BACK_INTERVAL];
         Eigen::Vector2d vec;
         pp_.getVec(pose,goal,vec,path);
         goal.pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(vec.x(),vec.y(),0.0)));
         ROS_INFO_STREAM("reset goal");
-        // ROS_INFO_STREAM("after goal: " << goal);
         return true;
     }
     else{
@@ -368,10 +354,6 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // 目標設定前に足元にコストマップあったら外に出るようにする
     // true: 脱出成功, false: 脱出不可
     // ローカルコストマップを分割して安全そうなエリアに向かって脱出
-    // 出来ればゴールに近い方が良いかもしれない
-    // ローカルコストマップのサイズ変更なども試してみる
-
-    // 単純にコストマップの密度が小さいへ行けば良いのか？　// 単純に数字が入ってるかどうかで判断
 
     // // コストマップ
     while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
@@ -388,7 +370,6 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         geometry_msgs::Pose pose;
         double risk; // コストマップの影響度
         double grad;
-        bool escape;
     };
 
     std::vector<std::vector<escMap>> gmm(DIV_X,std::vector<escMap>(DIV_Y));
@@ -408,80 +389,41 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
 
     Eigen::Vector2i mci(DIV_X/2,DIV_Y/2);
     for(int y=DIV_Y-1;y!=-1;--y){
-        for(int x=0;x!=DIV_X;++x){
-            // if(x!=c.x()||y!=c.y()) gmm[x][y].grad = gmm[c.x()][c.y()].risk > 0 ? gmm[x][y].risk < gmm[c.x()][c.y()].risk : gmm[x][y].risk <= gmm[c.x()][c.y()].risk;
-            gmm[x][y].grad = x!=mci.x()||y!=mci.y() ? gmm[x][y].risk - gmm[mci.x()][mci.y()].risk : 100;
-        }    
+        for(int x=0;x!=DIV_X;++x) gmm[x][y].grad = x!=mci.x()||y!=mci.y() ? gmm[x][y].risk - gmm[mci.x()][mci.y()].risk : 100;
     }
-
-    ROS_DEBUG_STREAM("from global_costmap");
-
-    //図で出力してみる
-    ROS_INFO_STREAM("mini map");
-    for(int y=DIV_Y-1;y!=-1;--y){
-        std::cout << "|";
-        for(int x=0;x!=DIV_X;++x){
-            std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";
-            // std::cout << gmm[x][y].risk  << "|";
-        }
-        std::cout << std::endl;
-    }
-
-    //勾配が小さくなっている
-    ROS_INFO_STREAM("grad map");
-    for(int y=DIV_Y-1;y!=-1;--y){
-        std::cout << "|";
-        for(int x=0;x!=DIV_X;++x){
-            // std::cout << (gmm[x][y].grad ? "*" : " ") << "|";
-            std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
-        }
-        std::cout << std::endl;
-    }
-
-    ROS_INFO_STREAM("near angle map");
-    // 逃げる方向 // 自分の現在の方向に近い方
-    //pose.pose.orientation;
-    // ざひょう ExpLib::Utility::mapIndexToCoordinate(gmm[x][y].cIndex.x(),gmm[x][y].cIndex.y(),gCostmap_.data.info);
-    // 
+    
     Eigen::Quaterniond cAng = ExpLib::Convert::geoQuaToEigenQua(pose.pose.orientation);
 
     double minad = DBL_MAX;
     double mingr = DBL_MAX;
-    Eigen::Vector2i minIndex = mci;
+    Eigen::Vector2i escIndex = mci; //回避する方向のインデックス
     for(int y=DIV_Y-1;y!=-1;--y){
         for(int x=0;x!=DIV_X;++x){
             if(gmm[x][y].grad <= mingr){
-                // geometry_msgs::Point tempp = ExpLib::Utility::mapIndexToCoordinate(gmm[x][y].cIndex.x(),gmm[x][y].cIndex.y(),gCostmap_.data.info);
-                // Eigen::Quaterniond tempq = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(tempp.x-pose.pose.position.x,tempp.y-pose.pose.position.y,0.0));
-                // double tempad = cAng.angularDistance(tempq);
                 double tempad = cAng.angularDistance(ExpLib::Convert::geoQuaToEigenQua(gmm[x][y].pose.orientation));
-                // ROS_INFO_STREAM("tempad: " << tempad);
                 if(gmm[x][y].grad == mingr){
                     if(tempad <= minad){
                         minad = tempad;
                         mingr = gmm[x][y].grad;
-                        gmm[x][y].escape = true;
-                        gmm[minIndex.x()][minIndex.y()].escape = false;
-                        minIndex << x,y;
+                        escIndex << x,y;
                     }
                 }
                 else{
                     minad = tempad;
                     mingr = gmm[x][y].grad;
-                    gmm[x][y].escape = true;
-                    gmm[minIndex.x()][minIndex.y()].escape = false;
-                    minIndex << x,y;
+                    escIndex << x,y;
                 }   
             }
         }
-    }
+    }  
 
-    ROS_INFO_STREAM("new kobai map");
+    if(escIndex.x()==mci.x()&&escIndex.y()==mci.y()) ROS_WARN_STREAM("Can't avoid !!");
+
+    ROS_INFO_STREAM("avoid angle map");
+    std::cout << "y↑\n →\n  x" << std::endl;
     for(int y=DIV_Y-1;y!=-1;--y){
         std::cout << "|";
-        for(int x=0;x!=DIV_X;++x){
-            std::cout << (gmm[x][y].escape ? "*" : " ") << "|";
-        }
+        for(int x=0;x!=DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "*" : " ") << "|";
         std::cout << std::endl;
     }
 
@@ -489,16 +431,11 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // 回転部分
     // pose.pose.orientation // 現在向き
     // 回避方向 escape:true && gmm[x][y].pose.orientation
+    // どこかでコストマップを見直す処理かもういちどけいさんしなおすかしたほうが良さそう
 
-    for(int y=DIV_Y-1;y!=-1;--y){
-        for(int x=0;x!=DIV_X;++x){
-            if(gmm[x][y].escape){
-                rotationFromTo(pose.pose.orientation,gmm[x][y].pose.orientation);
-                while(lookupCostmap() && ros::ok()) velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY*2,0));
-                return;
-            }
-        }
-    }
+    rotationFromTo(pose.pose.orientation,gmm[escIndex.x()][escIndex.y()].pose.orientation);
+    while(lookupCostmap() && ros::ok()) velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY*2,0));
+    
 }
 
 void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to){
@@ -513,13 +450,11 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 && ros::ok()){
                 velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY*2));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-                // ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
             }
         }
         while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < ExpLib::Convert::qToYaw(to)&& ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY*2));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            // ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
         }
     }
     else{
@@ -527,13 +462,11 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 && ros::ok()){
                 velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY*2));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-                // ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
             }
         }
         while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > ExpLib::Convert::qToYaw(to)&& ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY*2));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            // ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation));
         }
     }
 }
@@ -541,6 +474,13 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
 void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
     ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
+
+    if(pose_.q.callOne(ros::WallDuration(1))) return;
+
+    if(lookupCostmap(pose_.data)){
+        escapeFromCostmap(pose_.data);
+        pose_.q.callOne(ros::WallDuration(1.0));
+    } 
 
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
