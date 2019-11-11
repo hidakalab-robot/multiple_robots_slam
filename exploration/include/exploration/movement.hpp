@@ -417,7 +417,11 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         }
     }  
 
+<<<<<<< HEAD
     if(escIndex.x()==mci.x()&&escIndex.y()==mci.y()) ROS_WARN_STREAM("Can't avoid !!");
+=======
+    if(escIndex.x()==msi.x()&&escIndex.y()==msi.y()) ROS_WARN_STREAM("Can't avoid !!");
+>>>>>>> 589ffe7a02262d15b344f4a9744a58aed10530d6
 
     ROS_INFO_STREAM("avoid angle map");
     std::cout << "y↑\n →\n  x" << std::endl;
