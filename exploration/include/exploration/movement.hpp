@@ -129,16 +129,16 @@ Movement::Movement()
     ,gCostmap_("global_costmap",1){
 
     ros::NodeHandle p("~");
-    p.param<double>("safe_distance", SAFE_DISTANCE, 0.75);
-    p.param<double>("safe_space", SAFE_SPACE, 0.6);
-    p.param<double>("scan_threshold", SCAN_THRESHOLD, 1.5);
+    p.param<double>("safe_distance", SAFE_DISTANCE, 0.25);
+    p.param<double>("safe_space", SAFE_SPACE, 0.3);
+    p.param<double>("scan_threshold", SCAN_THRESHOLD, 0.5);
     p.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
     p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
     p.param<double>("back_time", BACK_TIME, 0.5);
     p.param<double>("bumper_rotation_time", BUMPER_ROTATION_TIME, 1.5);
     p.param<double>("forward_angle", FORWARD_ANGLE, 0.09);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
-    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.3);
+    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.1);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
@@ -152,7 +152,7 @@ Movement::Movement()
     p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
     p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
     p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 0.5);
-    p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.3);
+    p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.1);
     p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
     p.param<int>("path_back_interval", PATH_BACK_INTERVAL, 10);
     p.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
@@ -325,9 +325,12 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     // true:リセっと可能, false:リセット不可能
     //現在のパスを取得
     std::vector<geometry_msgs::PoseStamped> path;
+    int count = 0;
+    int PATH_LIMIT = 120;
     ros::Rate rate(0.5);
     while(!pp_.createPath(pose,goal,path) && ros::ok()){
         ROS_INFO_STREAM("Waiting path ..."); // 一生パスが作れない場合もあるので注意
+        if(++count > PATH_LIMIT) return false;
         rate.sleep();
     }
     ROS_INFO_STREAM("get path");
@@ -550,7 +553,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
     //要求角度に最も近くなる右側と左側の番号を探索
     ROS_DEBUG_STREAM("VFH Calculation");
 
-    ROS_DEBUG_STREAM("Goal Angle : " << angle << " [deg]");
+    ROS_DEBUG_STREAM("Goal Angle : " << angle << " [rad]");
 
     static int centerPosition = 0;
     int goalI;
@@ -579,6 +582,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
             ROS_INFO_STREAM("center is safety");
             return scan.angle_min + goalI*scan.angle_increment;
         }
+        else ROS_INFO_STREAM("found any obstacle on forward");
     }
     else{
         double min = DBL_MAX;
@@ -589,6 +593,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 			    goalI = i;
 		    }
         }
+        ROS_INFO_STREAM("goal I : " << goalI);
     }
 
     approx(scan.ranges);
@@ -599,6 +604,8 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
     int count;
     int plus = INT_MAX;
     int minus = INT_MAX;
+
+    ROS_INFO_STREAM("SAFE_SPACE : " << SAFE_SPACE << ", SAFE_DISTANCE : " << SAFE_DISTANCE << ", SAFE_NUM : " << SAFE_NUM << ", SCAN_THRESHOLD : " << SCAN_THRESHOLD);
 
     //plus側
     for(int i=goalI,e=scan.ranges.size();i!=e;++i){
