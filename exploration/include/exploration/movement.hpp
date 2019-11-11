@@ -494,6 +494,8 @@ void Movement::moveToForward(void){
 }
 
 void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
+    //vfhいらない？？？
+    //  距離見て大丈夫そうだったらそのまま移動させる？？
     if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){
         double resultAngle = vfhCalculation(scan,straight,angle);
         if((int)resultAngle == INT_MAX){
@@ -571,7 +573,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 
         for(int i=MINUS;i!=PLUS;++i){
             // ROS_INFO_STREAM("range[" << i << "] : " << scan.ranges[i]);
-            if(!std::isnan(scan.ranges[i])) ++count;
+            if(!std::isnan(scan.ranges[i])||scan.ranges[i]>) ++count;
         }
 
         double rate = (double)count/(PLUS-MINUS);
@@ -598,13 +600,16 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 
     approx(scan.ranges);
 
-    const int SAFE_NUM = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
+    const int SAFE_NUM_lag = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
+
+    const int SAFE_NUM = 2*atan(SAFE_SPACE/SAFE_DISTANCE) / scan.angle_increment ;    
     int start;
     int k;
     int count;
     int plus = INT_MAX;
     int minus = INT_MAX;
 
+    ROS_INFO_STREAM("SAFE_NUM lag : " << (asin((SAFE_SPACE)/(2*SAFE_DISTANCE)))*180/M_PI << ", SAFE_NUM new: " << 2*atan(SAFE_SPACE/SAFE_DISTANCE)*180/M_PI);
     ROS_INFO_STREAM("SAFE_SPACE : " << SAFE_SPACE << ", SAFE_DISTANCE : " << SAFE_DISTANCE << ", SAFE_NUM : " << SAFE_NUM << ", SCAN_THRESHOLD : " << SCAN_THRESHOLD);
 
     //plus側
