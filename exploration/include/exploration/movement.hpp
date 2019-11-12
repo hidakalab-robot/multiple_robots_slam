@@ -108,7 +108,7 @@ private:
     bool resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::PoseStamped& pose);
     void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
 
-    void nonGoalMove(sensor_msgs::LaserScan& scan, bool straight, double angle);
+    void nonGoalMove(const sensor_msgs::LaserScan& scan, bool straight, double angle);
     double isMoveable(const sensor_msgs::LaserScan& scan, double angle);
 public:
     Movement();
@@ -507,30 +507,16 @@ void Movement::moveToForward(void){
     
 }
 
-void Movement::nonGoalMove(sensor_msgs::LaserScan& scan, bool straight, double angle){
-    //vfhMovementの代わり
-    // 目標アングルの周辺が大丈夫そうか見る
-    if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
-        double resultAngle = straght ? isMoveable(scan) : isMoveable(scan,angle);
-        if(resultAngle == DBL_MAX){
-            if(!emergencyAvoidance(scan)) recoveryRotation();
-        }
-        else{
-            velocity_.pub.publish(velocityGenerator(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN));
-        }
-    }
-}
+
 
 double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     // 目標の周辺がNanになってればtrueでそのまま通す
     // 安全の確認ができなければその近くで安全になるアングルに行く
     // nan もしくは障害物距離がx以上であれば安全角度判定
 
-
-
     int ti; //target i
     // 中心の要素番号設定
-    static int cp[2] = scan.ranges.size()%2==0 ? {scan.ranges.size()/2,scan.ranges.size()/2-1} : {scan.ranges.size()/2,scan.ranges.size()/2};//中心の位置調整
+    static Eigen::Vector2i cp = scan.ranges.size()%2==0 ? Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2-1) : Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2);//中心の位置調整
     std::swap(cp[0],cp[1]);
 
     // 目標角に一番近い要素番号を計算 0 radのときは特殊処理(要素サイズが偶数の場合))
@@ -563,6 +549,7 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     // ここでrateがthreshold以下になるまでずらして計算　// plusとminusに足したり引いたりすれば良い
 
     int sw = 0;
+    double rate = DBL_MAX;
 
     // これtiを動かしていけばいいのでは
     do{
@@ -579,8 +566,8 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
         }
 
         int c = 0;
-        for(int i=MINUS;i!=PLUS;++i) if(!std::isnan(scan.ranges[i])||scan.ranges[i]>SAFETY_THRESHOLD) ++c;
-        double rate = (double)c/(PLUS-MINUS);
+        for(int i=MINUS;i!=PLUS;++i) if(!std::isnan(scan.ranges[i])||scan.ranges[i]>SAFETY_RANGE_THRESHOLD) ++c;
+        rate = (double)c/(PLUS-MINUS);
         ROS_INFO_STREAM("ti : " << ti << "PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
         sw = sw > 0 ? -sw-1 : -sw+1;
     }while(rate>SAFETY_RATE_THRESHOLD);
@@ -588,6 +575,20 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     ROS_INFO_STREAM("ti : " << ti <<  "angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate);
     ROS_INFO_STREAM("this angle is safety");
     return scan.angle_min + ti * scan.angle_increment;
+}
+
+void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, bool straight, double angle){
+    //vfhMovementの代わり
+    // 目標アングルの周辺が大丈夫そうか見る
+    if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
+        double resultAngle = straight ? isMoveable(scan) : isMoveable(scan,angle);
+        if(resultAngle == DBL_MAX){
+            if(!emergencyAvoidance(scan)) recoveryRotation();
+        }
+        else{
+            velocity_.pub.publish(velocityGenerator(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN));
+        }
+    }
 }
 
 void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
