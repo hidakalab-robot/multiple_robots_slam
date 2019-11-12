@@ -177,15 +177,6 @@ void Movement::testFunc(void){
 
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
-    static bool ii = true;
-
-    // if(ii){
-    //      for(int i=0,ie=scan_.data.ranges.size();i!=ie;++i){
-    //         ROS_INFO_STREAM("ranges.size() : " << scan_.data.ranges.size() << ", i : " << i << ", rad : " << scan_.data.angle_min + i*scan_.data.angle_increment);
-    //     }
-    //     ii = false;
-    // }
-
     double angle;
     if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,false,std::move(angle));
     else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,true,0.0);
@@ -354,7 +345,10 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::
     ros::Rate rate(0.5);
     while(!pp_.createPath(pose,goal,path) && ros::ok()){
         ROS_INFO_STREAM("Waiting path ..."); // 一生パスが作れない場合もあるので注意
-        if(++count > PATH_LIMIT) return false;
+        if(++count > PATH_LIMIT){
+            ROS_WARN_STREAM("create path limit");
+            return false;
+        }
         rate.sleep();
     }
     ROS_INFO_STREAM("get path");
@@ -451,21 +445,24 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     if(escIndex.x()==mci.x()&&escIndex.y()==mci.y()) ROS_WARN_STREAM("Can't avoid !!");
 
     //図で出力してみる	
-    ROS_INFO_STREAM("position map");	
+    ROS_INFO_STREAM("position map");
+    std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
         for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.position << "|";		
         std::cout << std::endl;	
     }	
     
-    ROS_INFO_STREAM("orientation map");	
+    ROS_INFO_STREAM("orientation map");
+    std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
         for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.orientation << "|";		
         std::cout << std::endl;	
     }	
     
-    ROS_INFO_STREAM("risk map");	
+    ROS_INFO_STREAM("risk map");
+    std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
         for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";		
@@ -473,7 +470,8 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     }	
 
      //勾配が小さくなっている	
-    ROS_INFO_STREAM("grad map");	
+    ROS_INFO_STREAM("grad map");
+    std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
         for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
@@ -481,7 +479,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     }
 
     ROS_INFO_STREAM("avoid angle map");
-    std::cout << "y↑\n →\n  x" << std::endl;
+    std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=DIV_Y-1;y!=-1;--y){
         std::cout << "|";
         for(int x=0;x!=DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "*" : " ") << "|";
@@ -570,12 +568,11 @@ void Movement::moveToForward(void){
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
     double angle;
-    if(forwardWallDetection(scan_.data, angle)) vfhMovement(scan_.data,false,std::move(angle));
-    else if(!roadCenterDetection(scan_.data)) vfhMovement(scan_.data,true,0.0);
-    
+    // if(forwardWallDetection(scan_.data, angle)) vfhMovement(scan_.data,false,std::move(angle));
+    // else if(!roadCenterDetection(scan_.data)) vfhMovement(scan_.data,true,0.0);
+    if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,false,std::move(angle));
+    else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,true,0.0);    
 }
-
-
 
 double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     // 目標の周辺がNanになってればtrueでそのまま通す
@@ -650,7 +647,7 @@ void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, bool straight, do
     // 目標アングルの周辺が大丈夫そうか見る
     if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
         double resultAngle = straight ? isMoveable(scan) : isMoveable(scan,angle);
-        if(resultAngle == DBL_MAX){
+        if(resultAngle == DBL_MAX){ // コストマップにかかってないけど障害物を避けられない場合、ある？？？
             if(!emergencyAvoidance(scan)) recoveryRotation();
         }
         else{
@@ -659,19 +656,19 @@ void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, bool straight, do
     }
 }
 
-void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
-    //vfhいらない？？？
-    //  距離見て大丈夫そうだったらそのまま移動させる？？
-    if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){
-        double resultAngle = vfhCalculation(scan,straight,angle);
-        if((int)resultAngle == INT_MAX){
-            if(!emergencyAvoidance(scan)) recoveryRotation();
-        }
-        else{
-            velocity_.pub.publish(velocityGenerator(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN));
-        }
-    }
-}
+// void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
+//     //vfhいらない？？？
+//     //  距離見て大丈夫そうだったらそのまま移動させる？？
+//     if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){
+//         double resultAngle = vfhCalculation(scan,straight,angle);
+//         if((int)resultAngle == INT_MAX){
+//             if(!emergencyAvoidance(scan)) recoveryRotation();
+//         }
+//         else{
+//             velocity_.pub.publish(velocityGenerator(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN));
+//         }
+//     }
+// }
 
 bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     //壁に衝突してるかを確認して、してたらバック
@@ -715,127 +712,129 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     return false;
 }
 
-double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double angle){
-    //要求角度と最も近くなる配列の番号を探索
-    //安全な角度マージンの定義
-    //要求角度に最も近くなる右側と左側の番号を探索
-    ROS_DEBUG_STREAM("VFH Calculation");
+// double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, double angle){
+//     //要求角度と最も近くなる配列の番号を探索
+//     //安全な角度マージンの定義
+//     //要求角度に最も近くなる右側と左側の番号を探索
+//     ROS_DEBUG_STREAM("VFH Calculation");
 
-    ROS_DEBUG_STREAM("Goal Angle : " << angle << " [rad]");
+//     ROS_DEBUG_STREAM("Goal Angle : " << angle << " [rad]");
 
-    static int centerPosition = 0;
-    int goalI;
+//     static int centerPosition = 0;
+//     int goalI;
 
-    if(isCenter){
-        goalI = scan.ranges.size() / 2 - centerPosition;
-        centerPosition = centerPosition == 0 ? 1 : 0;
+//     if(isCenter){
+//         goalI = scan.ranges.size() / 2 - centerPosition;
+//         centerPosition = centerPosition == 0 ? 1 : 0;
 
-        // ここでとりあえず正面の安全を確認(問題なければ正面に進ませる)
-        int PLUS = goalI + (int)(FORWARD_ANGLE/scan.angle_increment);
-        int MINUS = goalI - (int)(FORWARD_ANGLE/scan.angle_increment);
-        ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", goalI : " << goalI << ", goalI(rad) : " << scan.angle_min + goalI*scan.angle_increment << ", calc : " << (int)(FORWARD_ANGLE/scan.angle_increment));
+//         // ここでとりあえず正面の安全を確認(問題なければ正面に進ませる)
+//         int PLUS = goalI + (int)(FORWARD_ANGLE/scan.angle_increment);
+//         int MINUS = goalI - (int)(FORWARD_ANGLE/scan.angle_increment);
+//         ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", goalI : " << goalI << ", goalI(rad) : " << scan.angle_min + goalI*scan.angle_increment << ", calc : " << (int)(FORWARD_ANGLE/scan.angle_increment));
 
-        int count = 0;
+//         int count = 0;
 
-        for(int i=MINUS;i!=PLUS;++i){
-            // ROS_INFO_STREAM("range[" << i << "] : " << scan.ranges[i]);
-            if(!std::isnan(scan.ranges[i])) ++count;
-        }
+//         for(int i=MINUS;i!=PLUS;++i){
+//             // ROS_INFO_STREAM("range[" << i << "] : " << scan.ranges[i]);
+//             if(!std::isnan(scan.ranges[i])) ++count;
+//         }
 
-        double rate = (double)count/(PLUS-MINUS);
+//         double rate = (double)count/(PLUS-MINUS);
 
-        ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << rate);
+//         ROS_INFO_STREAM("PLUS : " << PLUS << ", MINUS : " << MINUS << ", count : " << count << ", rate : " << rate);
 
-        if(rate < 0.1) {
-            ROS_INFO_STREAM("center is safety");
-            return scan.angle_min + goalI*scan.angle_increment;
-        }
-        else ROS_INFO_STREAM("found any obstacle on forward");
-    }
-    else{
-        double min = DBL_MAX;
-        for(int i=0,e=scan.ranges.size();i!=e;++i){
-		    double diff = std::abs(angle - (scan.angle_min + scan.angle_increment * i));
-		    if(diff < min){
-			    min = std::move(diff);
-			    goalI = i;
-		    }
-        }
-        ROS_INFO_STREAM("goal I : " << goalI);
-    }
+//         if(rate < 0.1) {
+//             ROS_INFO_STREAM("center is safety");
+//             return scan.angle_min + goalI*scan.angle_increment;
+//         }
+//         else ROS_INFO_STREAM("found any obstacle on forward");
+//     }
+//     else{
+//         double min = DBL_MAX;
+//         for(int i=0,e=scan.ranges.size();i!=e;++i){
+// 		    double diff = std::abs(angle - (scan.angle_min + scan.angle_increment * i));
+// 		    if(diff < min){
+// 			    min = std::move(diff);
+// 			    goalI = i;
+// 		    }
+//         }
+//         ROS_INFO_STREAM("goal I : " << goalI);
+//     }
 
-    approx(scan.ranges);
+//     approx(scan.ranges);
 
-    const int SAFE_NUM_lag = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
+//     const int SAFE_NUM_lag = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
 
-    const int SAFE_NUM = 2*atan(SAFE_SPACE/(2*SAFE_DISTANCE)) / scan.angle_increment ;    
-    int start;
-    int k;
-    int count;
-    int plus = INT_MAX;
-    int minus = INT_MAX;
+//     const int SAFE_NUM = 2*atan(SAFE_SPACE/(2*SAFE_DISTANCE)) / scan.angle_increment ;    
+//     int start;
+//     int k;
+//     int count;
+//     int plus = INT_MAX;
+//     int minus = INT_MAX;
 
-    ROS_INFO_STREAM("SAFE_NUM lag : " << (asin((SAFE_SPACE)/(2*SAFE_DISTANCE)))*180/M_PI << ", SAFE_NUM new: " << 2*atan(SAFE_SPACE/SAFE_DISTANCE)*180/M_PI);
-    ROS_INFO_STREAM("SAFE_SPACE : " << SAFE_SPACE << ", SAFE_DISTANCE : " << SAFE_DISTANCE << ", SAFE_NUM : " << SAFE_NUM << ", SCAN_THRESHOLD : " << SCAN_THRESHOLD);
+//     ROS_INFO_STREAM("SAFE_NUM lag : " << (asin((SAFE_SPACE)/(2*SAFE_DISTANCE)))*180/M_PI << ", SAFE_NUM new: " << 2*atan(SAFE_SPACE/SAFE_DISTANCE)*180/M_PI);
+//     ROS_INFO_STREAM("SAFE_SPACE : " << SAFE_SPACE << ", SAFE_DISTANCE : " << SAFE_DISTANCE << ", SAFE_NUM : " << SAFE_NUM << ", SCAN_THRESHOLD : " << SCAN_THRESHOLD);
 
-    //plus側
-    for(int i=goalI,e=scan.ranges.size();i!=e;++i){
-		if(scan.ranges[i] > SCAN_THRESHOLD){
-			start = i;
-			k = i;
-			count = 0;
-			while(scan.ranges[k] > SCAN_THRESHOLD && count < SAFE_NUM && k < scan.ranges.size()-1){
-				++count;
-				++k;
-			}
-			if(count == SAFE_NUM && start >= SAFE_NUM){
-				count = 0;
-				for(int j=start,f=start-SAFE_NUM;j!=f;--j){
-					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM) ++count;
-				}
-				if(count == SAFE_NUM){
-					plus = start;
-					break;
-				}	
-			}
-		}
-    }
+//     //plus側
+//     for(int i=goalI,e=scan.ranges.size();i!=e;++i){
+// 		if(scan.ranges[i] > SCAN_THRESHOLD){
+// 			start = i;
+// 			k = i;
+// 			count = 0;
+// 			while(scan.ranges[k] > SCAN_THRESHOLD && count < SAFE_NUM && k < scan.ranges.size()-1){
+// 				++count;
+// 				++k;
+// 			}
+// 			if(count == SAFE_NUM && start >= SAFE_NUM){
+// 				count = 0;
+// 				for(int j=start,f=start-SAFE_NUM;j!=f;--j){
+// 					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM) ++count;
+// 				}
+// 				if(count == SAFE_NUM){
+// 					plus = start;
+// 					break;
+// 				}	
+// 			}
+// 		}
+//     }
 
-    //minus側
-	for(int i=goalI;i!=-1;--i){
-		if(scan.ranges[i] > SCAN_THRESHOLD){
-			start = i;
-			k = i;
-			count = 0;
-			while(scan.ranges[k] > SCAN_THRESHOLD && count < SAFE_NUM && k > 0){
-				++count;
-				--k;
-			}
-			if(count == SAFE_NUM && start <= scan.ranges.size()-SAFE_NUM){
-				count = 0;
-				for(int j=start,e=start+SAFE_NUM;j!=e;++j){
-					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM) ++count;
-				}
-				if(count == SAFE_NUM){
-					minus = start;
-					break;
-				}	
-			}
-		}
-	}
+//     //minus側
+// 	for(int i=goalI;i!=-1;--i){
+// 		if(scan.ranges[i] > SCAN_THRESHOLD){
+// 			start = i;
+// 			k = i;
+// 			count = 0;
+// 			while(scan.ranges[k] > SCAN_THRESHOLD && count < SAFE_NUM && k > 0){
+// 				++count;
+// 				--k;
+// 			}
+// 			if(count == SAFE_NUM && start <= scan.ranges.size()-SAFE_NUM){
+// 				count = 0;
+// 				for(int j=start,e=start+SAFE_NUM;j!=e;++j){
+// 					if(scan.ranges[j] > SCAN_THRESHOLD && count < SAFE_NUM) ++count;
+// 				}
+// 				if(count == SAFE_NUM){
+// 					minus = start;
+// 					break;
+// 				}	
+// 			}
+// 		}
+// 	}
 
-    if(plus != INT_MAX || minus != INT_MAX){
-		double pd = plus == INT_MAX ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
-		double md = minus == INT_MAX ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
-        return pd<=md ? scan.angle_min + scan.angle_increment * plus : scan.angle_min + scan.angle_increment * minus;
-    }
-    else{
-        ROS_DEBUG_STREAM("Move Angle : Not Found");
-        return INT_MAX;
-    }
-}
+//     if(plus != INT_MAX || minus != INT_MAX){
+// 		double pd = plus == INT_MAX ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * plus));
+// 		double md = minus == INT_MAX ? INT_MAX : std::abs((scan.angle_min + scan.angle_increment * goalI) - (scan.angle_min + scan.angle_increment * minus));
+//         return pd<=md ? scan.angle_min + scan.angle_increment * plus : scan.angle_min + scan.angle_increment * minus;
+//     }
+//     else{
+//         ROS_DEBUG_STREAM("Move Angle : Not Found");
+//         return INT_MAX;
+//     }
+// }
 
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
+
+    ROS_INFO_STREAM("emergencyAvoidance");
 
     //minus側の平均
     double aveM=0;
@@ -894,6 +893,7 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t)
 }
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
+    ROS_INFO_STREAM("roadCenterDetection");
     ExpLib::Struct::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
@@ -949,6 +949,8 @@ bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& 
     //その範囲にセンサデータが何割存在するかで壁かどうか決める
     //壁があった場合右と左のどっちに避けるか決定
 
+    ROS_INFO_STREAM("forwardWallDetection");
+
     const int CENTER_SUBSCRIPT = scan.ranges.size()/2;
     int PLUS = CENTER_SUBSCRIPT + (int)(WALL_FORWARD_ANGLE/scan.angle_increment);
     int MINUS = CENTER_SUBSCRIPT - (int)(WALL_FORWARD_ANGLE/scan.angle_increment);
@@ -982,6 +984,7 @@ bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& 
 }
 
 double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus){
+    ROS_INFO_STREAM("sideSpaceDetection");
     //minus
     int countNanMinus = 0;
     double maxSpaceMinus = 0;
