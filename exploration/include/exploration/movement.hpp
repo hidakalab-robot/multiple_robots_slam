@@ -511,18 +511,28 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
     ROS_INFO_STREAM("from : " << ExpLib::Convert::qToYaw(from) << ", from(rad) : " << ExpLib::Convert::qToYaw(from)*180/M_PI);
     ROS_INFO_STREAM("to : " << ExpLib::Convert::qToYaw(to) << ", to(rad) : " << ExpLib::Convert::qToYaw(to)*180/M_PI);
 
-    if(rotation>=0){
+    // ぴったり180度とかだと止まれなくなる  // 角度の差を積分して累計回転角度を求める方式に変更？
+
+    double sum = 0;
+    double la = ExpLib::Convert::qToYaw(from);
+
+    if(rotation>=0){    
         if(rotation+ExpLib::Convert::qToYaw(from)>M_PI){
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 && ros::ok()){
                 velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-                ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose1-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
+                sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : M_PI - la;
+                la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : -M_PI;
+                ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
             }
         }
-        while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < ExpLib::Convert::qToYaw(to)&& ros::ok()){
+        // while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < ExpLib::Convert::qToYaw(to)&& ros::ok()){
+        while(sum < rotation && ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose1-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
+            sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
+            la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+            ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
     }
     else{
@@ -530,13 +540,18 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 && ros::ok()){
                 velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-                ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose2-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
+                sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : -M_PI - la;
+                la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : M_PI;
+                ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
             }
         }
-        while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > ExpLib::Convert::qToYaw(to)&& ros::ok()){
+        // while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > ExpLib::Convert::qToYaw(to)&& ros::ok()){
+        while(sum > rotation && ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose2-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
+            sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
+            la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+            ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
     }
 }
