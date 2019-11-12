@@ -108,7 +108,8 @@ private:
     bool resetGoal(geometry_msgs::PoseStamped& goal, const geometry_msgs::PoseStamped& pose);
     void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
 
-
+    void nonGoalMove(sensor_msgs::LaserScan& scan, bool straight, double angle);
+    double isMoveable(const sensor_msgs::LaserScan& scan, double angle);
 public:
     Movement();
 
@@ -164,8 +165,21 @@ Movement::Movement()
 }
 
 void Movement::testFunc(void){
-    if(pose_.q.callOne(ros::WallDuration(1.0))) return;
-    if(lookupCostmap(pose_.data)) escapeFromCostmap(pose_.data);
+    ROS_INFO_STREAM("Moving Straight");
+    ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
+
+    if(pose_.q.callOne(ros::WallDuration(1))) return;
+
+    if(lookupCostmap(pose_.data)){
+        escapeFromCostmap(pose_.data);
+        pose_.q.callOne(ros::WallDuration(1.0));
+    } 
+
+    if(scan_.q.callOne(ros::WallDuration(1))) return;
+
+    double angle;
+    if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,false,std::move(angle));
+    else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,true,0.0);
 }
 
 void Movement::approx(std::vector<float>& scanRanges){
@@ -437,7 +451,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // どこかでコストマップを見直す処理かもういちどけいさんしなおすかしたほうが良さそう
 
     rotationFromTo(pose.pose.orientation,gmm[escIndex.x()][escIndex.y()].pose.orientation);
-    while(lookupCostmap() && ros::ok()) velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY*2,0));
+    while(lookupCostmap() && ros::ok()) velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY,0));
     
 }
 
@@ -451,24 +465,24 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
     if(rotation>=0){
         if(rotation+ExpLib::Convert::qToYaw(from)>M_PI){
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 && ros::ok()){
-                velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY*2));
+                velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             }
         }
         while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < ExpLib::Convert::qToYaw(to)&& ros::ok()){
-            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY*2));
+            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
         }
     }
     else{
         if(rotation+ExpLib::Convert::qToYaw(from)<-M_PI){
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 && ros::ok()){
-                velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY*2));
+                velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             }
         }
         while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > ExpLib::Convert::qToYaw(to)&& ros::ok()){
-            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY*2));
+            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
         }
     }
@@ -491,6 +505,89 @@ void Movement::moveToForward(void){
     if(forwardWallDetection(scan_.data, angle)) vfhMovement(scan_.data,false,std::move(angle));
     else if(!roadCenterDetection(scan_.data)) vfhMovement(scan_.data,true,0.0);
     
+}
+
+void Movement::nonGoalMove(sensor_msgs::LaserScan& scan, bool straight, double angle){
+    //vfhMovementの代わり
+    // 目標アングルの周辺が大丈夫そうか見る
+    if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
+        double resultAngle = straght ? isMoveable(scan) : isMoveable(scan,angle);
+        if(resultAngle == DBL_MAX){
+            if(!emergencyAvoidance(scan)) recoveryRotation();
+        }
+        else{
+            velocity_.pub.publish(velocityGenerator(resultAngle * VELOCITY_GAIN, FORWARD_VELOCITY * VELOCITY_GAIN, VFH_GAIN));
+        }
+    }
+}
+
+double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
+    // 目標の周辺がNanになってればtrueでそのまま通す
+    // 安全の確認ができなければその近くで安全になるアングルに行く
+    // nan もしくは障害物距離がx以上であれば安全角度判定
+
+
+
+    int ti; //target i
+    // 中心の要素番号設定
+    static int cp[2] = scan.ranges.size()%2==0 ? {scan.ranges.size()/2,scan.ranges.size()/2-1} : {scan.ranges.size()/2,scan.ranges.size()/2};//中心の位置調整
+    std::swap(cp[0],cp[1]);
+
+    // 目標角に一番近い要素番号を計算 0 radのときは特殊処理(要素サイズが偶数の場合))
+    if(angle==0) ti = cp[0];
+    else{
+        double min = DBL_MAX;
+        for(int i=0,ie=scan.ranges.size();i!=ie;++i){
+            double diff = std::abs(angle - (scan.angle_min + scan.angle_increment * i));
+            if(diff < min){
+                min = std::move(diff);
+                ti = i;
+            }
+        }
+    }
+
+    // その方向が安全であるかを見る
+
+    // ここでとりあえず正面の安全を確認(問題なければ正面に進ませる)
+    // int tPLUS = ti + FORWARD_ANGLE/scan.angle_increment;
+    // int tMINUS = ti - FORWARD_ANGLE/scan.angle_increment;
+    // int PLUS = tPLUS > scan.ranges.size() ? scan.ranges.size() : tPLUS;
+    // int MINUS = tMINUS < 0 ? 0 : tMINUS;
+        
+    ROS_INFO_STREAM("angle : " << angle << "ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
+
+    int count = 0;
+    double SAFETY_RANGE_THRESHOLD = 0.5;
+    double SAFETY_RATE_THRESHOLD = 0.1;
+
+    // ここでrateがthreshold以下になるまでずらして計算　// plusとminusに足したり引いたりすれば良い
+
+    int sw = 0;
+
+    // これtiを動かしていけばいいのでは
+    do{
+        ti += sw;
+        // tiをずらすごとにminusとplusを再計算
+        int tPLUS = ti + FORWARD_ANGLE/scan.angle_increment;
+        int tMINUS = ti - FORWARD_ANGLE/scan.angle_increment;
+        int PLUS = tPLUS > scan.ranges.size() ? scan.ranges.size() : tPLUS;
+        int MINUS = tMINUS < 0 ? 0 : tMINUS;
+
+        if(tMINUS >= scan.ranges.size() || tPLUS < 0){
+            ROS_INFO_STREAM("safety angle search is failed");
+            return DBL_MAX;
+        }
+
+        int c = 0;
+        for(int i=MINUS;i!=PLUS;++i) if(!std::isnan(scan.ranges[i])||scan.ranges[i]>SAFETY_THRESHOLD) ++c;
+        double rate = (double)c/(PLUS-MINUS);
+        ROS_INFO_STREAM("ti : " << ti << "PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
+        sw = sw > 0 ? -sw-1 : -sw+1;
+    }while(rate>SAFETY_RATE_THRESHOLD);
+
+    ROS_INFO_STREAM("ti : " << ti <<  "angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate);
+    ROS_INFO_STREAM("this angle is safety");
+    return scan.angle_min + ti * scan.angle_increment;
 }
 
 void Movement::vfhMovement(sensor_msgs::LaserScan& scan, bool straight, double angle){
@@ -573,7 +670,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 
         for(int i=MINUS;i!=PLUS;++i){
             // ROS_INFO_STREAM("range[" << i << "] : " << scan.ranges[i]);
-            if(!std::isnan(scan.ranges[i])||scan.ranges[i]>) ++count;
+            if(!std::isnan(scan.ranges[i])) ++count;
         }
 
         double rate = (double)count/(PLUS-MINUS);
