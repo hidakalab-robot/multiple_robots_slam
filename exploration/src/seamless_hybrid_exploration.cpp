@@ -34,7 +34,8 @@ int main(int argc, char* argv[]){
     if(!DEBUG && ROTATION) mv.oneRotation();
 
     while(ros::ok()){
-        branchTimer() && she.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
+        // branchTimer() && she.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
+        branchTimer() && she.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.testFunc();
         if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
     }
 

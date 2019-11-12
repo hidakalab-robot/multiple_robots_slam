@@ -177,6 +177,15 @@ void Movement::testFunc(void){
 
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
+    static bool ii = true;
+
+    // if(ii){
+    //      for(int i=0,ie=scan_.data.ranges.size();i!=ie;++i){
+    //         ROS_INFO_STREAM("ranges.size() : " << scan_.data.ranges.size() << ", i : " << i << ", rad : " << scan_.data.angle_min + i*scan_.data.angle_increment);
+    //     }
+    //     ii = false;
+    // }
+
     double angle;
     if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,false,std::move(angle));
     else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,true,0.0);
@@ -311,6 +320,7 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     // コストマップを更新
     while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
     ROS_INFO_STREAM("get global costmap");
+    ROS_INFO_STREAM("recieve goal : " << goal);
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> cmap(ExpLib::Utility::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
     // ROS_INFO_STREAM("create costmap array(2d)");
@@ -395,18 +405,22 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         for(int dw=0, dwe=DIV_X; dw!=dwe; ++dw){
             double risk = 0;
             for(int h=msw.top+dh*gh,he=msw.top+(dh+1)*gh;h!=he;++h){
-                for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h];
+                for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += std::abs(gMap[w][h]);
             }
             gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gw)/2,(msw.top*2+(2*dh+1)*gh)/2);
             gmm[dw][dh].pose.position = ExpLib::Utility::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_.data.info);
-            gmm[dw][dh].pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[dw][dh].pose.position.x-pose.pose.position.x,gmm[dw][dh].pose.position.y-pose.pose.position.y,0.0)));
+            // gmm[dw][dh].pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[dw][dh].pose.position.x-pose.pose.position.x,gmm[dw][dh].pose.position.y-pose.pose.position.y,0.0)));
             gmm[dw][dh].risk = risk / (gw*gh);
         }
     }
 
     Eigen::Vector2i mci(DIV_X/2,DIV_Y/2);
+    
     for(int y=DIV_Y-1;y!=-1;--y){
-        for(int x=0;x!=DIV_X;++x) gmm[x][y].grad = x!=mci.x()||y!=mci.y() ? gmm[x][y].risk - gmm[mci.x()][mci.y()].risk : 100;
+        for(int x=0;x!=DIV_X;++x){
+            gmm[x][y].grad = x!=mci.x()||y!=mci.y() ? gmm[x][y].risk - gmm[mci.x()][mci.y()].risk : 100;
+            gmm[x][y].pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[x][y].pose.position.x-gmm[mci.x()][mci.y()].pose.position.x,gmm[x][y].pose.position.y-gmm[mci.x()][mci.y()].pose.position.y,0.0))); 
+        } 
     }
     
     Eigen::Quaterniond cAng = ExpLib::Convert::geoQuaToEigenQua(pose.pose.orientation);
@@ -436,6 +450,36 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
 
     if(escIndex.x()==mci.x()&&escIndex.y()==mci.y()) ROS_WARN_STREAM("Can't avoid !!");
 
+    //図で出力してみる	
+    ROS_INFO_STREAM("position map");	
+    for(int y=DIV_Y-1;y!=-1;--y){	
+        std::cout << "|";	
+        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.position << "|";		
+        std::cout << std::endl;	
+    }	
+    
+    ROS_INFO_STREAM("orientation map");	
+    for(int y=DIV_Y-1;y!=-1;--y){	
+        std::cout << "|";	
+        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.orientation << "|";		
+        std::cout << std::endl;	
+    }	
+    
+    ROS_INFO_STREAM("risk map");	
+    for(int y=DIV_Y-1;y!=-1;--y){	
+        std::cout << "|";	
+        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";		
+        std::cout << std::endl;	
+    }	
+
+     //勾配が小さくなっている	
+    ROS_INFO_STREAM("grad map");	
+    for(int y=DIV_Y-1;y!=-1;--y){	
+        std::cout << "|";	
+        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
+        std::cout << std::endl;	
+    }
+
     ROS_INFO_STREAM("avoid angle map");
     std::cout << "y↑\n →\n  x" << std::endl;
     for(int y=DIV_Y-1;y!=-1;--y){
@@ -451,7 +495,12 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // どこかでコストマップを見直す処理かもういちどけいさんしなおすかしたほうが良さそう
 
     rotationFromTo(pose.pose.orientation,gmm[escIndex.x()][escIndex.y()].pose.orientation);
-    while(lookupCostmap() && ros::ok()) velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY,0));
+    while(lookupCostmap() && ros::ok()) {
+        ROS_INFO_STREAM("escape to forward");
+        velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY,0));
+        while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+        escapeFromCostmap(pose_.data);
+    }
     
 }
 
@@ -459,19 +508,21 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
     double rotation = ExpLib::Utility::shorterRotationAngle(from,to);
 
     ROS_INFO_STREAM("need rotation : " << rotation);
-    ROS_INFO_STREAM("from : " << ExpLib::Convert::qToYaw(from));
-    ROS_INFO_STREAM("to : " << ExpLib::Convert::qToYaw(to));
+    ROS_INFO_STREAM("from : " << ExpLib::Convert::qToYaw(from) << ", from(rad) : " << ExpLib::Convert::qToYaw(from)*180/M_PI);
+    ROS_INFO_STREAM("to : " << ExpLib::Convert::qToYaw(to) << ", to(rad) : " << ExpLib::Convert::qToYaw(to)*180/M_PI);
 
     if(rotation>=0){
         if(rotation+ExpLib::Convert::qToYaw(from)>M_PI){
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 && ros::ok()){
                 velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+                ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose1-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
             }
         }
         while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < ExpLib::Convert::qToYaw(to)&& ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose1-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
         }
     }
     else{
@@ -479,11 +530,13 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 && ros::ok()){
                 velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
                 while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+                ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose2-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
             }
         }
         while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > ExpLib::Convert::qToYaw(to)&& ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << "pose2-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI);
         }
     }
 }
@@ -516,7 +569,7 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
 
     int ti; //target i
     // 中心の要素番号設定
-    static Eigen::Vector2i cp = scan.ranges.size()%2==0 ? Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2-1) : Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2);//中心の位置調整
+    static Eigen::Vector2i cp = scan.ranges.size()%2==0 ? Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2-3) : Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2);//中心の位置調整
     std::swap(cp[0],cp[1]);
 
     // 目標角に一番近い要素番号を計算 0 radのときは特殊処理(要素サイズが偶数の場合))
@@ -540,7 +593,7 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     // int PLUS = tPLUS > scan.ranges.size() ? scan.ranges.size() : tPLUS;
     // int MINUS = tMINUS < 0 ? 0 : tMINUS;
         
-    ROS_INFO_STREAM("angle : " << angle << "ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
+    ROS_INFO_STREAM("angle : " << angle << ", ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
 
     int count = 0;
     double SAFETY_RANGE_THRESHOLD = 0.5;
@@ -566,7 +619,7 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
         }
 
         int c = 0;
-        for(int i=MINUS;i!=PLUS;++i) if(!std::isnan(scan.ranges[i])||scan.ranges[i]>SAFETY_RANGE_THRESHOLD) ++c;
+        for(int i=MINUS;i!=PLUS;++i) if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD) ++c;
         rate = (double)c/(PLUS-MINUS);
         ROS_INFO_STREAM("ti : " << ti << "PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
         sw = sw > 0 ? -sw-1 : -sw+1;
@@ -574,7 +627,7 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
 
     ROS_INFO_STREAM("ti : " << ti <<  "angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate);
     ROS_INFO_STREAM("this angle is safety");
-    return scan.angle_min + ti * scan.angle_increment;
+    return ti==cp[0] ? 0 : scan.angle_min + ti * scan.angle_increment;
 }
 
 void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, bool straight, double angle){
@@ -700,7 +753,7 @@ double Movement::vfhCalculation(sensor_msgs::LaserScan scan, bool isCenter, doub
 
     const int SAFE_NUM_lag = (asin((SAFE_SPACE)/(2*SAFE_DISTANCE))) / scan.angle_increment ;
 
-    const int SAFE_NUM = 2*atan(SAFE_SPACE/SAFE_DISTANCE) / scan.angle_increment ;    
+    const int SAFE_NUM = 2*atan(SAFE_SPACE/(2*SAFE_DISTANCE)) / scan.angle_increment ;    
     int start;
     int k;
     int count;

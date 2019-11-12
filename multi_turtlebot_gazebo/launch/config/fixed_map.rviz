@@ -8,7 +8,6 @@ Panels:
         - /Marker1
         - /Marker1/Namespaces1
         - /Pose1
-        - /Path1/Status1
         - /PointCloud21
         - /Map2
         - /Map3
@@ -420,11 +419,11 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Scale: 61.3039436
+      Scale: 13.2214918
       Target Frame: robot1/map
       Value: TopDownOrtho (rviz)
-      X: 0
-      Y: 0
+      X: 15.6981411
+      Y: 2.99908519
     Saved: ~
 Window Geometry:
   Displays:
@@ -442,5 +441,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 573
-  X: 1856
+  X: 2410
   Y: 402

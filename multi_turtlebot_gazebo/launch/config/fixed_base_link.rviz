@@ -225,7 +225,7 @@ Visualization Manager:
       Marker Topic: /robot1/visualization/goal
       Name: Marker
       Namespaces:
-        {}
+        "": true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -441,5 +441,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 573
-  X: 1484
-  Y: 574
+  X: 1855
+  Y: 402
