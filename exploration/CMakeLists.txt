@@ -232,6 +232,3 @@ target_link_libraries(simulator_input_support ${catkin_LIBRARIES})
 
 add_executable(legacy_hybrid_exploration src/legacy_hybrid_exploration.cpp)
 target_link_libraries(legacy_hybrid_exploration ${catkin_LIBRARIES})
-
-add_executable(movement_test src/movement_test.cpp)
-target_link_libraries(movement_test ${catkin_LIBRARIES})
