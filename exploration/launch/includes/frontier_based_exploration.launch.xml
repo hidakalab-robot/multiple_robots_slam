@@ -24,7 +24,7 @@
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
         <remap from="global_costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
 
-        <rosparam file="$(find exploration)/param/movement_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/movement_planner_params.yaml" command="load"/>
         <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
         <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
         

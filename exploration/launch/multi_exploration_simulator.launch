@@ -25,8 +25,8 @@
         <param name="output_parameters" value="$(arg output_last_parameters)"/>
         <param name="extra_parameter_namespace" value="$(arg extra_parameter_namespace)"/>
         <rosparam if="$(arg input_last_parameters)" file="$(arg parameter_file_path)" command="load"/>
-        <rosparam file="$(find exploration)/param/simulator_calc_path_planner_params.yaml" command="load"/>
-        <rosparam file="$(find exploration)/param/simulator_goal_path_planner_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/simulator_calc_planner_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/simulator_goal_planner_params.yaml" command="load"/>
     </node>
 
     <!-- extra parameter node -->

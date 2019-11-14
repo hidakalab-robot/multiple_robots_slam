@@ -63,7 +63,7 @@ public:
 SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_("robot_array", 1)
     ,frontier_("frontier", 1)
-    ,pp_("global_costmap","NavfnROS"){
+    ,pp_("seamless_costmap","seamless_planner"){
 
     ros::NodeHandle p("~");
     p.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);

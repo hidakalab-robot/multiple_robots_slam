@@ -30,7 +30,7 @@
         <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
         <param name="angle_bias" value="60"/>
 
-        <rosparam file="$(find exploration)/param/movement_params.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/movement_planner_params.yaml" command="load"/>
         <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
         <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
     </node>

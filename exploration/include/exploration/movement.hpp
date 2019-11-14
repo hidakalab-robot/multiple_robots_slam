@@ -67,11 +67,10 @@ private:
     int PATH_BACK_INTERVAL;
     double GOAL_RESET_RATE;
     double COSTMAP_MARGIN;
-    int DIV_X;
-    int DIV_Y;
-    double ESC_MAP_X;
-    double ESC_MAP_Y;
-
+    int ESC_MAP_DIV_X;
+    int ESC_MAP_DIV_Y;
+    double ESC_MAP_WIDTH_X;
+    double ESC_MAP_HEIGHT_Y;
     double SAFETY_RANGE_THRESHOLD;
     double SAFETY_RATE_THRESHOLD;
 
@@ -85,6 +84,8 @@ private:
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
 
     double previousOrientation_;
+
+    void loadParameter(void);
     
     bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
     bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
@@ -124,10 +125,16 @@ Movement::Movement()
     ,gCostmap_("global_costmap",1){
 
     ros::NodeHandle p("~");
+    p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
+    loadParameter();
+}
+
+void Movement::loadParameter(void){
+    ros::NodeHandle p("~");
     p.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
     p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
     p.param<double>("back_time", BACK_TIME, 1.0);
-    p.param<double>("forward_angle", FORWARD_ANGLE, 0.17);
+    p.param<double>("forward_angle", FORWARD_ANGLE, 0.35);
     p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
     p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.1);
     p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
@@ -135,8 +142,7 @@ Movement::Movement()
     p.param<double>("curve_gain", CURVE_GAIN, 2.0);
     p.param<double>("avoidance_gain", AVOIDANCE_GAIN, 0.4);
     p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
-    p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
-    p.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.17);
+    p.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.35);
     p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
     p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
     p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 0.5);
@@ -145,11 +151,11 @@ Movement::Movement()
     p.param<int>("path_back_interval", PATH_BACK_INTERVAL, 5);
     p.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
     p.param<double>("costmap_margin", COSTMAP_MARGIN, 0.4); // コストマップの検索窓の直径
-    p.param<int>("div_x", DIV_X, 3);
-    p.param<int>("div_y", DIV_Y, 3);
-    p.param<double>("esc_map_x", ESC_MAP_X, 0.9);
-    p.param<double>("esc_map_y", ESC_MAP_Y, 0.9);
-    p.param<double>("safty_range_threshold", SAFETY_RANGE_THRESHOLD, 1.25);
+    p.param<int>("esc_map_div_x", ESC_MAP_DIV_X, 3);
+    p.param<int>("esc_map_div_y", ESC_MAP_DIV_Y, 3);
+    p.param<double>("esc_map_width", ESC_MAP_WIDTH, 0.9);
+    p.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
+    p.param<double>("safty_range_threshold", SAFETY_RANGE_THRESHOLD, 1.5);
     p.param<double>("safty_rate_threshold", SAFETY_RATE_THRESHOLD, 0.1);
 }
 
@@ -332,10 +338,10 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     ROS_INFO_STREAM("get global costmap");
     std::vector<std::vector<int8_t>> gMap(ExpLib::Utility::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
 
-    ExpLib::Struct::mapSearchWindow msw(pose.pose.position,gCostmap_.data.info,ESC_MAP_X,ESC_MAP_Y);
+    ExpLib::Struct::mapSearchWindow msw(pose.pose.position,gCostmap_.data.info,ESC_MAP_WIDTH,ESC_MAP_HEIGHT);
 
-    const int gw = (msw.right-msw.left) / DIV_X;
-    const int gh = (msw.bottom-msw.top) / DIV_Y;
+    const int gw = (msw.right-msw.left) / ESC_MAP_DIV_X;
+    const int gh = (msw.bottom-msw.top) / ESC_MAP_DIV_Y;
 
     struct escMap{
         Eigen::Vector2i cIndex; //中心のいんでっくす
@@ -344,10 +350,10 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         double grad;
     };
 
-    std::vector<std::vector<escMap>> gmm(DIV_X,std::vector<escMap>(DIV_Y));
+    std::vector<std::vector<escMap>> gmm(ESC_MAP_DIV_X,std::vector<escMap>(ESC_MAP_DIV_Y));
 
-    for(int dh=0, dhe=DIV_Y; dh!=dhe; ++dh){
-        for(int dw=0, dwe=DIV_X; dw!=dwe; ++dw){
+    for(int dh=0, dhe=ESC_MAP_DIV_Y; dh!=dhe; ++dh){
+        for(int dw=0, dwe=ESC_MAP_DIV_X; dw!=dwe; ++dw){
             double risk = 0;
             for(int h=msw.top+dh*gh,he=msw.top+(dh+1)*gh;h!=he;++h){
                 // for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += std::abs(gMap[w][h]);
@@ -360,10 +366,10 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         }
     }
 
-    Eigen::Vector2i mci(DIV_X/2,DIV_Y/2);
+    Eigen::Vector2i mci(ESC_MAP_DIV_X/2,ESC_MAP_DIV_Y/2);
     
-    for(int y=DIV_Y-1;y!=-1;--y){
-        for(int x=0;x!=DIV_X;++x){
+    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
+        for(int x=0;x!=ESC_MAP_DIV_X;++x){
             gmm[x][y].grad = x!=mci.x()||y!=mci.y() ? gmm[x][y].risk - gmm[mci.x()][mci.y()].risk : 100;
             gmm[x][y].pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[x][y].pose.position.x-gmm[mci.x()][mci.y()].pose.position.x,gmm[x][y].pose.position.y-gmm[mci.x()][mci.y()].pose.position.y,0.0))); 
         } 
@@ -374,8 +380,8 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     double minad = DBL_MAX;
     double mingr = DBL_MAX;
     Eigen::Vector2i escIndex = mci; //回避する方向のインデックス
-    for(int y=DIV_Y-1;y!=-1;--y){
-        for(int x=0;x!=DIV_X;++x){
+    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
+        for(int x=0;x!=ESC_MAP_DIV_X;++x){
             if(gmm[x][y].grad <= mingr){
                 double tempad = cAng.angularDistance(ExpLib::Convert::geoQuaToEigenQua(gmm[x][y].pose.orientation));
                 if(gmm[x][y].grad == mingr){
@@ -399,42 +405,42 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     //図で出力してみる	
     ROS_INFO_STREAM("position map");
     std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=DIV_Y-1;y!=-1;--y){	
+    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
-        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.position << "|";		
+        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.position << "|";		
         std::cout << std::endl;	
     }	
     
     ROS_INFO_STREAM("orientation map");
     std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=DIV_Y-1;y!=-1;--y){	
+    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
-        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.orientation << "|";		
+        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.orientation << "|";		
         std::cout << std::endl;	
     }	
     
     ROS_INFO_STREAM("risk map");
     std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=DIV_Y-1;y!=-1;--y){	
+    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
-        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";		
+        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";		
         std::cout << std::endl;	
     }	
 
      //勾配が小さくなっている	
     ROS_INFO_STREAM("grad map");
     std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=DIV_Y-1;y!=-1;--y){	
+    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
         std::cout << "|";	
-        for(int x=0;x!=DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
+        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
         std::cout << std::endl;	
     }
 
     ROS_INFO_STREAM("avoid angle map");
     std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=DIV_Y-1;y!=-1;--y){
+    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
         std::cout << "|";
-        for(int x=0;x!=DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "*" : " ") << "|";
+        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "*" : " ") << "|";
         std::cout << std::endl;
     }
 
@@ -581,8 +587,8 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     do{
         ti += sw;
         // tiをずらすごとにminusとplusを再計算
-        int tPLUS = ti + FORWARD_ANGLE/scan.angle_increment;
-        int tMINUS = ti - FORWARD_ANGLE/scan.angle_increment;
+        int tPLUS = ti + *(FORWARD_ANGLE/2)/scan.angle_increment;
+        int tMINUS = ti - (FORWARD_ANGLE/2)/scan.angle_increment;
         int PLUS = tPLUS > scan.ranges.size() ? scan.ranges.size() : tPLUS;
         int MINUS = tMINUS < 0 ? 0 : tMINUS;
 
@@ -749,10 +755,10 @@ bool Movement::forwardWallDetection(const sensor_msgs::LaserScan& scan, double& 
     ROS_INFO_STREAM("forwardWallDetection");
 
     const int CENTER_SUBSCRIPT = scan.ranges.size()/2;
-    int PLUS = CENTER_SUBSCRIPT + (int)(WALL_FORWARD_ANGLE/scan.angle_increment);
-    int MINUS = CENTER_SUBSCRIPT - (int)(WALL_FORWARD_ANGLE/scan.angle_increment);
+    int PLUS = CENTER_SUBSCRIPT + (int)((WALL_FORWARD_ANGLE/2)/scan.angle_increment);
+    int MINUS = CENTER_SUBSCRIPT - (int)((WALL_FORWARD_ANGLE/2)/scan.angle_increment);
 
-    ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", CENTER_SUBSCRIPT : " << CENTER_SUBSCRIPT << ", calc : " << (int)(WALL_FORWARD_ANGLE/scan.angle_increment));
+    ROS_INFO_STREAM("ranges.size() : " << scan.ranges.size() << ", CENTER_SUBSCRIPT : " << CENTER_SUBSCRIPT << ", calc : " << (int)((WALL_FORWARD_ANGLE/2)/scan.angle_increment));
 
     int count = 0;
     double wallDistance = 0;
