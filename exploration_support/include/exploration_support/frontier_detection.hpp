@@ -11,6 +11,9 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <exploration_libraly/utility.hpp>
 
+#include <dynamic_reconfigure/server.h>
+#include <exploration_support/frontier_detection_parameter_reconfigureConfig.h>
+#include <fstream>
 
 // frontier を検出して座標をトピックに出す機能だけつける
 // 出力型 frontier pointarray posearray ?
@@ -69,6 +72,12 @@ private:
     ExpLib::Struct::subStructSimple map_;
     ExpLib::Struct::pubStruct<exploration_msgs::FrontierArray> frontier_;
     ExpLib::Struct::pubStruct<sensor_msgs::PointCloud2> horizon_;
+
+    dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig>::CallbackType cbt;
+    bool OUTPUT_FRONTIER_PARAMETERS;
+    std::string FRONTIER_PARAMETER_FILE_PATH;
+
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
     void horizonDetection(mapStruct& map);
     clusterStruct clusterDetection(const mapStruct& map);
@@ -77,9 +86,11 @@ private:
     void publishHorizon(const clusterStruct& cs, const std::string& frameId);
     void publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId);
     
-
+    void dynamicParamCallback(exploration_support::frontier_detection_parameter_reconfigureConfig &cfg, uint32_t level);
+    void outputParams(void);
 public:
     FrontierDetection();
+    ~FrontierDetection(){if(OUTPUT_FRONTIER_PARAMETERS) outputParams();};
 };
 
 FrontierDetection::FrontierDetection()
@@ -91,8 +102,35 @@ FrontierDetection::FrontierDetection()
     p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);
     p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
     p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 30);
-    p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000); 
+    p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
+
+    p.param<bool>("output_frontier_parameters",OUTPUT_FRONTIER_PARAMETERS,true);
+    p.param<std::string>("frontier_parameter_file_path",FRONTIER_PARAMETER_FILE_PATH,"frontier_last_parameters.yaml");
+    cbt = boost::bind(&FrontierDetection::dynamicParamCallback,this, _1, _2);
+    server.setCallback(cbt);
 }
+
+void FrontierDetection::dynamicParamCallback(exploration_support::frontier_detection_parameter_reconfigureConfig &cfg, uint32_t level){
+    FILTER_SQUARE_DIAMETER = cfg.filter_square_diameter;
+    CLUSTER_TOLERANCE = cfg.cluster_tolerance;
+    MIN_CLUSTER_SIZE = cfg.min_cluster_size;
+    MAX_CLUSTER_SIZE = cfg.max_cluster_size;
+}
+
+void FrontierDetection::outputParams(void){
+    std::cout << "writing last parameters ... ..." << std::endl;
+    std::ofstream ofs(FRONTIER_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "file open succeeded" << std::endl;
+    else {
+        std::cout << "file open failed" << std::endl;
+        return;
+    }
+    ofs << "filter_square_diameter: " << FILTER_SQUARE_DIAMETER << std::endl;
+    ofs << "cluster_tolerance: " << CLUSTER_TOLERANCE << std::endl;
+    ofs << "min_cluster_size: " << MIN_CLUSTER_SIZE << std::endl;
+    ofs << "max_cluster_size: " << MAX_CLUSTER_SIZE << std::endl;
+ }
 
 void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     // map の取り込み

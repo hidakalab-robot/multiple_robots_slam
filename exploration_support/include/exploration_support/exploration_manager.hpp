@@ -12,6 +12,10 @@
 #include <std_msgs/Int32.h>
 #include <thread>
 
+#include <dynamic_reconfigure/server.h>
+#include <exploration_support/exploration_manager_parameter_reconfigureConfig.h>
+#include <fstream>
+
 class ExplorationManager
 {
 private:
@@ -30,12 +34,21 @@ private:
     ExpLib::Struct::pubStruct<std_msgs::Int32> frontierVal_;
     ExpLib::Struct::pubStruct<std_msgs::Float64> timerVal_;
 
+    dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig>::CallbackType cbt;
+    bool OUTPUT_EXMNG_PARAMETERS;
+    std::string EXMNG_PARAMETER_FILE_PATH;
+
     void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
     void timer(void);
 
+    void dynamicParamCallback(exploration_support::exploration_manager_parameter_reconfigureConfig &cfg, uint32_t level);
+    void outputParams(void);
+
 public:
     ExplorationManager();
+    ~ExplorationManager(){if(OUTPUT_EXMNG_PARAMETERS) outputParams();};
     void multiThreadMain(void);
 };
 
@@ -52,13 +65,34 @@ ExplorationManager::ExplorationManager()
     ros::NodeHandle p("~");
     p.param<int>("end_frontier",END_FRONTIER,0);
     p.param<double>("end_time",END_TIME,1200);// second
-    p.param<double>("end_area",END_AREA,46.7*14-9.5*10-((4.1+2.7+7.5)*10-2.7*5.8)-8.0*10-7.5*10-0.9*10);//267.46
-    double AREA_RATE,AREA_TOLERANCE;
-    p.param<double>("area_rate",AREA_RATE,1.0);
-    p.param<double>("area_tolerance",AREA_TOLERANCE,0.9);
-    END_AREA *= AREA_RATE * AREA_TOLERANCE;
+    p.param<double>("end_area",END_AREA,267.46);// m^2
+
+    p.param<bool>("output_exmng_parameters",OUTPUT_EXMNG_PARAMETERS,true);
+    p.param<std::string>("exmng_parameter_file_path",EXMNG_PARAMETER_FILE_PATH,"exmng_last_parameters.yaml");
+
+    cbt = boost::bind(&ExplorationManager::dynamicParamCallback,this, _1, _2);
+    server.setCallback(cbt);
 };
 
+void ExplorationManager::dynamicParamCallback(exploration_support::exploration_manager_parameter_reconfigureConfig &cfg, uint32_t level){
+    END_FRONTIER = cfg.end_frontier;
+    END_TIME = cfg.end_time;
+    END_AREA = cfg.end_area;
+}
+
+void ExplorationManager::outputParams(void){
+    std::cout << "writing last parameters ... ..." << std::endl;
+    std::ofstream ofs(EXMNG_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "file open succeeded" << std::endl;
+    else {
+        std::cout << "file open failed" << std::endl;
+        return;
+    }
+    ofs << "end_frontier: " << END_FRONTIER << std::endl;
+    ofs << "end_time: " << END_TIME << std::endl;
+    ofs << "end_area: " << END_AREA << std::endl;
+ }
 
 void ExplorationManager::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     int free = 0;

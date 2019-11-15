@@ -8,11 +8,15 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <sensor_msgs/LaserScan.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <exploration_support/branch_detection_parameter_reconfigureConfig.h>
+#include <fstream>
+
 class BranchDetection
 {
 private:
     double OBSTACLE_CHECK_ANGLE;
-    double OBSTACLE_RANGE_MIX;
+    double OBSTACLE_RANGE_MIN;
     double SCAN_RANGE_THRESHOLD;
     double BRANCH_MAX_X;
 	double BRANCH_DIFF_X_MIN;
@@ -23,10 +27,18 @@ private:
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::pubStruct<exploration_msgs::PointArray> branch_;
 
+    dynamic_reconfigure::Server<exploration_support::branch_detection_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration_support::branch_detection_parameter_reconfigureConfig>::CallbackType cbt;
+    bool OUTPUT_BRANCH_PARAMETERS;
+    std::string BRANCH_PARAMETER_FILE_PATH;
+
     void scanCB(const sensor_msgs::LaserScan::ConstPtr& msg);
     void publishBranch(const std::vector<geometry_msgs::Point>& branches, const std::string& frameId);
+    void dynamicParamCallback(exploration_support::branch_detection_parameter_reconfigureConfig &cfg, uint32_t level);
+    void outputParams(void);
 public:
     BranchDetection();
+    ~BranchDetection(){if(OUTPUT_BRANCH_PARAMETERS) outputParams();};
 };
 
 BranchDetection::BranchDetection()
@@ -36,12 +48,41 @@ BranchDetection::BranchDetection()
 
     ros::NodeHandle p("~");
     p.param<double>("obstacle_check_angle", OBSTACLE_CHECK_ANGLE, 0.04);
-    p.param<double>("obstacle_range_mix", OBSTACLE_RANGE_MIX,2.5);
-
+    p.param<double>("obstacle_range_min", OBSTACLE_RANGE_MIN,2.5);
     p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
     p.param<double>("branch_max_x", BRANCH_MAX_X, 5.5);
 	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
+
+    p.param<bool>("output_branch_parameters",OUTPUT_BRANCH_PARAMETERS,true);
+    p.param<std::string>("branch_parameter_file_path",BRANCH_PARAMETER_FILE_PATH,"branch_last_parameters.yaml");
+
+    cbt = boost::bind(&BranchDetection::dynamicParamCallback,this, _1, _2);
+    server.setCallback(cbt);
 }
+
+void BranchDetection::dynamicParamCallback(exploration_support::branch_detection_parameter_reconfigureConfig &cfg, uint32_t level){
+    OBSTACLE_CHECK_ANGLE = cfg.obstacle_check_angle;
+    OBSTACLE_RANGE_MIN = cfg.obstacle_range_min;
+    SCAN_RANGE_THRESHOLD = cfg.scan_range_threshold;
+    BRANCH_MAX_X = cfg.branch_max_x;
+    BRANCH_DIFF_X_MIN = cfg.branch_diff_x_min;
+}
+
+void BranchDetection::outputParams(void){
+    std::cout << "writing last parameters ... ..." << std::endl;
+    std::ofstream ofs(BRANCH_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "file open succeeded" << std::endl;
+    else {
+        std::cout << "file open failed" << std::endl;
+        return;
+    }
+    ofs << "obstacle_check_angle: " << OBSTACLE_CHECK_ANGLE << std::endl;
+    ofs << "obstacle_range_mix: " << OBSTACLE_RANGE_MIN << std::endl;
+    ofs << "scan_range_threshold: " << SCAN_RANGE_THRESHOLD << std::endl;
+    ofs << "branch_max_x: " << BRANCH_MAX_X << std::endl;
+    ofs << "branch_diff_x_min: " << BRANCH_DIFF_X_MIN << std::endl;
+ }
 
 void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
     if(pose_.q.callOne(ros::WallDuration(1))){
@@ -58,7 +99,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
 
     // センサと障害物の距離が近い時は検出を行わない
     for(int t=OBSTACLE_CHECK_ANGLE/msg->angle_increment,i=(msg->ranges.size()/2)-1-t,ie=(msg->ranges.size()/2)+t;i!=ie;++i){
-		if(!std::isnan(msg->ranges[i]) && msg->ranges[i] < OBSTACLE_RANGE_MIX){
+		if(!std::isnan(msg->ranges[i]) && msg->ranges[i] < OBSTACLE_RANGE_MIN){
 			// ROS_ERROR_STREAM("May be close to obstacles");
             publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
             return;

@@ -4,6 +4,10 @@
 #include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
 
+#include <dynamic_reconfigure/server.h>
+#include <exploration_support/loop_closure_counter_parameter_reconfigureConfig.h>
+#include <fstream>
+
 // legacy loop counter
 
 int main(int argc, char* argv[]){
@@ -22,6 +26,19 @@ int main(int argc, char* argv[]){
     p.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
     p.param<double>("loop_closure_threshold",LOOP_CLOSURE_THRESHOLD,0.0);
     p.param<double>("publish_rate",PUBLISH_RATE,10.0);
+
+    dynamic_reconfigure::Server<exploration_support::loop_closure_counter_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration_support::loop_closure_counter_parameter_reconfigureConfig>::CallbackType cbt;
+    bool OUTPUT_LOOP_PARAMETERS;
+    std::string LOOP_PARAMETER_FILE_PATH;
+    p.param<bool>("output_loop_parameters",OUTPUT_LOOP_PARAMETERS,true);
+    p.param<std::string>("loop_parameter_file_path",LOOP_PARAMETER_FILE_PATH,"loop_last_parameters.yaml");
+
+    cbt = boost::bind(+[](exploration_support::loop_closure_counter_parameter_reconfigureConfig &config, uint32_t level, double* lct)->void{
+        *lct = config.loop_closure_threshold;
+    }, _1, _2, &LOOP_CLOSURE_THRESHOLD);
+
+    server.setCallback(cbt);
 
     tf::TransformListener listener;
     listener.waitForTransform(MAP_FRAME_ID, ODOM_FRAME_ID, ros::Time(), ros::Duration(1.0));
@@ -60,6 +77,19 @@ int main(int argc, char* argv[]){
         accumTemp.pub.publish(ExpLib::Construct::msgDouble(accumTrans));
         accumPerm.pub.publish(ExpLib::Construct::msgDouble(accumTransPerm));
         rate.sleep();
+        ros::spinOnce();
+    }
+
+    if(OUTPUT_LOOP_PARAMETERS){
+        std::cout << "writing last parameters ... ..." << std::endl;
+        std::ofstream ofs(LOOP_PARAMETER_FILE_PATH);
+
+        if(ofs) std::cout << "file open succeeded" << std::endl;
+        else {
+            std::cout << "file open failed" << std::endl;
+            return 0;
+        }
+        ofs << "loop_closure_threshold: " << LOOP_CLOSURE_THRESHOLD << std::endl;
     }
 
     return 0;

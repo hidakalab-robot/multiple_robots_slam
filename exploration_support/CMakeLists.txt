@@ -18,6 +18,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   pcl_ros
   visualization_msgs
+  dynamic_reconfigure
 )
 
 find_package(OpenCV REQUIRED)
@@ -97,14 +98,17 @@ find_package(OpenCV REQUIRED)
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/multi_exploration_simulator.cfg
-#   cfg/extra_parameter_reconfigure.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/branch_detection_parameter_reconfigure.cfg
+  cfg/exploration_manager_parameter_reconfigure.cfg
+  cfg/frontier_detection_parameter_reconfigure.cfg
+  cfg/loop_closure_counter_parameter_reconfigure.cfg
+  cfg/map_fill_parameter_reconfigure.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
-###################################
+##################b#################
 ## The catkin_package macro generates cmake config files for your package
 ## Declare things to be passed to dependent projects
 ## INCLUDE_DIRS: uncomment this if your package contains header files
@@ -114,7 +118,7 @@ find_package(OpenCV REQUIRED)
 catkin_package(
   INCLUDE_DIRS include
 #  LIBRARIES exploration_support
-  CATKIN_DEPENDS actionlib_msgs exploration_libraly exploration_msgs geometry_msgs kobuki_msgs nav_msgs roscpp sensor_msgs pcl_ros visualization_msgs
+  CATKIN_DEPENDS actionlib_msgs exploration_libraly exploration_msgs geometry_msgs kobuki_msgs nav_msgs roscpp sensor_msgs pcl_ros visualization_msgs dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
