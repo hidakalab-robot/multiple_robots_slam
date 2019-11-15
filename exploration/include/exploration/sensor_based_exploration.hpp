@@ -19,8 +19,6 @@ private:
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 
-    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig> server;
-    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_SBE_PARAMETERS;
     std::string SBE_PARAMETER_FILE_PATH;
 
@@ -36,6 +34,8 @@ protected:
     double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
     geometry_msgs::Point lastGoal_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
+    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>::CallbackType cbt;
 public:
     SensorBasedExploration();
     virtual ~SensorBasedExploration(){if(OUTPUT_SBE_PARAMETERS) outputParams();};

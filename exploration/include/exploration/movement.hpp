@@ -546,6 +546,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
 
 void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to){
     double rotation = ExpLib::Utility::shorterRotationAngle(from,to);
+    previousOrientation_ = rotation;
 
     ROS_INFO_STREAM("need rotation : " << rotation);
     ROS_INFO_STREAM("from : " << ExpLib::Convert::qToYaw(from) << ", from(rad) : " << ExpLib::Convert::qToYaw(from)*180/M_PI);
@@ -604,10 +605,10 @@ void Movement::moveToForward(void){
 
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
-    // double angle;
-    // if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,false,std::move(angle));
-    // else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,true,0.0);    
-    if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);    
+    double angle;
+    if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,std::move(angle));
+    else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);    
+    // if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);  
 }
 
 double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
@@ -640,6 +641,8 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     // ここでrateがthreshold以下になるまでずらして計算
     int sw = 0;
     double rate = DBL_MAX;
+    double rateMin = DBL_MAX;
+    int rateMinTi;
     do{
         ti += sw;
         // tiをずらすごとにminusとplusを再計算
@@ -650,12 +653,18 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
 
         if(tMINUS >= scan.ranges.size() || tPLUS < 0){
             ROS_INFO_STREAM("safety angle search is failed");
-            return DBL_MAX;
+            ROS_INFO_STREAM("emergency avoid");
+            return scan.angle_min + rateMinTi * scan.angle_increment;
+            // return DBL_MAX;
         }
 
         int c = 0;
         for(int i=MINUS;i!=PLUS;++i) if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD) ++c;
         rate = (double)c/(PLUS-MINUS);
+        if(rate < rateMin){
+            rateMin = rate;
+            rateMinTi = ti;
+        }
         ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
         sw = sw > 0 ? -sw-1 : -sw+1;
     }while(rate>SAFETY_RATE_THRESHOLD);
@@ -732,6 +741,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
+    previousOrientation_ = theta;
     return ExpLib::Construct::msgTwist(v,(CURVE_GAIN*theta)/t);
 }
 
