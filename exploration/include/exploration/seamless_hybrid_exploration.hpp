@@ -68,7 +68,7 @@ private:
     void outputParams(void);
 public:
     SeamlessHybridExploration();
-    ~SeamlessHybridExploration(){if(OUTPUT_SHE_PARAMETERS) outputParams()};
+    ~SeamlessHybridExploration(){if(OUTPUT_SHE_PARAMETERS) outputParams();};
     void simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f);
 };
 

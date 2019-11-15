@@ -15,11 +15,6 @@
 class SensorBasedExploration
 {
 private:
-    double LAST_GOAL_TOLERANCE;
-    double LOG_NEWER_LIMIT;//if 30 -> 30秒前までのログで重複検出
-    double DUPLICATE_TOLERANCE;
-    double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
-
     ExpLib::Struct::subStruct<exploration_msgs::PointArray> branch_;
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
@@ -31,14 +26,19 @@ private:
 
     void duplicateDetection(std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
     virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
-    virtual void dynamicParamCallback(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+    virtual void dynamicParamCallback(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
     virtual void outputParams(void);
+
 protected:
+    double LAST_GOAL_TOLERANCE;
+    double LOG_NEWER_LIMIT;//if 30 -> 30秒前までのログで重複検出
+    double DUPLICATE_TOLERANCE;
+    double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
     geometry_msgs::Point lastGoal_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
 public:
     SensorBasedExploration();
-    virtual ~SensorBasedExploration(){if(OUTPUT_SBE_PARAMETERS) outputParams()};
+    virtual ~SensorBasedExploration(){if(OUTPUT_SBE_PARAMETERS) outputParams();};
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
@@ -54,7 +54,7 @@ SensorBasedExploration::SensorBasedExploration()
     p.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
     
-    p.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,false);
+    p.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,true);
     p.param<std::string>("sbe_parameter_file_path",SBE_PARAMETER_FILE_PATH,"sbe_last_parameters.yaml");
 
     cbt = boost::bind(&SensorBasedExploration::dynamicParamCallback,this, _1, _2);

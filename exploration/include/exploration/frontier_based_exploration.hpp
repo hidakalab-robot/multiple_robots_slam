@@ -36,7 +36,7 @@ private:
     void outputParams(void);
 public:
     FrontierBasedExploration();
-    ~FrontierBasedExploration(){if(OUTPUT_FBE_PARAMETERS) outputParams()};
+    ~FrontierBasedExploration(){if(OUTPUT_FBE_PARAMETERS) outputParams();};
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
@@ -54,7 +54,7 @@ FrontierBasedExploration::FrontierBasedExploration()
     p.param<bool>("output_fbe_parameters",OUTPUT_FBE_PARAMETERS,true);
     p.param<std::string>("fbe_parameter_file_path",FBE_PARAMETER_FILE_PATH,"fbe_last_parameters.yaml");
 
-    cbt = boost::bind(&SeamlessHybridExploration::dynamicParamCallback,this, _1, _2);
+    cbt = boost::bind(&FrontierBasedExploration::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);
 }
 

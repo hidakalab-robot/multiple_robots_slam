@@ -51,6 +51,7 @@
         <param name="angle_bias" value="0"/>
         <param name="movement_parameter_file_path" value="$(find exploration)/param/movement_she_last_parameters.yaml"/>
         <rosparam file="$(find exploration)/param/movement_she_last_parameters.yaml" command="load"/>
+        <param name="output_sbe_parameters" value="false"/>
         <param name="she_parameter_file_path" value="$(find exploration)/param/she_last_parameters.yaml"/>
         <rosparam file="$(find exploration)/param/she_last_parameters.yaml" command="load"/>
     </node>
