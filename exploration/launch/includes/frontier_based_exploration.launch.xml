@@ -32,5 +32,10 @@
         <param name="rotation" value="$(arg rotation)"/>
         <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
         <param name="angle_bias" value="10"/>
+
+        <param name="movement_parameter_file_path" value="$(find exploration)/param/movement_fbe_last_parameters.yaml"/>
+        <rosparam file="$(find exploration)/param/movement_fbe_last_parameters.yaml" command="load"/>
+        <param name="fbe_parameter_file_path" value="$(find exploration)/param/fbe_last_parameters.yaml"/>
+        <rosparam file="$(find exploration)/param/fbe_last_parameters.yaml" command="load"/>
     </node>
 </launch>

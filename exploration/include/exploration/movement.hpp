@@ -74,6 +74,9 @@ private:
     double ESC_MAP_HEIGHT;
     double SAFETY_RANGE_THRESHOLD;
     double SAFETY_RATE_THRESHOLD;
+    int RESET_GOAL_PATH_LIMIT;
+    double RESET_GOAL_PATH_RATE;
+    double ROTATION_TOLERANCE;
 
     ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -162,6 +165,9 @@ Movement::Movement()
     p.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
     p.param<double>("safty_range_threshold", SAFETY_RANGE_THRESHOLD, 1.5);
     p.param<double>("safty_rate_threshold", SAFETY_RATE_THRESHOLD, 0.1);
+    p.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
+    p.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
+    p.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
 
     p.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
     p.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
@@ -197,6 +203,9 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     ESC_MAP_HEIGHT = cfg.esc_map_height;
     SAFETY_RANGE_THRESHOLD = cfg.safty_range_threshold;
     SAFETY_RATE_THRESHOLD = cfg.safty_rate_threshold;
+    RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
+    RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
+    ROTATION_TOLERANCE = cfg.rotation_tolerance;
 }
 
 void Movement::outputParams(void){
@@ -234,7 +243,10 @@ void Movement::outputParams(void){
     ofs << "esc_map_height: " << ESC_MAP_HEIGHT << std::endl;
     ofs << "safty_range_threshold: " << SAFETY_RANGE_THRESHOLD << std::endl;
     ofs << "safty_rate_threshold: " << SAFETY_RATE_THRESHOLD << std::endl;
-};
+    ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
+    ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
+    ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;
+}
 
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
@@ -357,13 +369,12 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal){
 
     std::vector<geometry_msgs::PoseStamped> path;
     int pc = 0;
-    int PATH_LIMIT = 30;
-    ros::Rate rate(0.5);
+    ros::Rate rate(RESET_GOAL_PATH_RATE);
     
     while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
     while(!pp_.createPath(pose_.data,goal,path) && ros::ok()){
         ROS_INFO_STREAM("Waiting path ..."); // 一生パスが作れない場合もあるので注意
-        if(++pc >= PATH_LIMIT){
+        if(++pc >= RESET_GOAL_PATH_LIMIT){
             ROS_WARN_STREAM("create path limit");
             return false;
         }
@@ -543,7 +554,6 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
     // ぴったり180度とかだと止まれなくなる  // 角度の差を積分して累計回転角度を求める方式に変更？
 
     // 命令遅延を考えて少しだけ
-    double ROTATION_TOLERANCE = 0.05;
     double sum = 0;
     double la = ExpLib::Convert::qToYaw(from);
 

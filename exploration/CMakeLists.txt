@@ -102,6 +102,9 @@ generate_dynamic_reconfigure_options(
   cfg/multi_exploration_simulator.cfg
   cfg/extra_parameter_reconfigure.cfg
   cfg/movement_parameter_reconfigure.cfg
+  cfg/seamless_hybrid_exploration_parameter_reconfigure.cfg
+  cfg/frontier_based_exploration_parameter_reconfigure.cfg
+  cfg/sensor_based_exploration_parameter_reconfigure.cfg
 )
 
 ###################################

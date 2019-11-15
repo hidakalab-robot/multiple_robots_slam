@@ -44,6 +44,13 @@
         <rosparam file="$(find exploration)/param/movement_planner_params.yaml" command="load"/>
         <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
         <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+
+        <param name="movement_parameter_file_path" value="$(find exploration)/param/movement_lhe_last_parameters.yaml"/>
+        <rosparam file="$(find exploration)/param/movement_lhe_last_parameters.yaml" command="load"/>
+        <param name="sbe_parameter_file_path" value="$(find exploration)/param/lhes_last_parameters.yaml"/>
+        <param name="fbe_parameter_file_path" value="$(find exploration)/param/lhef_last_parameters.yaml"/>
+        <rosparam file="$(find exploration)/param/lhes_last_parameters.yaml" command="load"/>
+        <rosparam file="$(find exploration)/param/lhef_last_parameters.yaml" command="load"/>
     </node>
 
     <node pkg="exploration_support" type="loop_closure_counter" name="loop_closure_counter">

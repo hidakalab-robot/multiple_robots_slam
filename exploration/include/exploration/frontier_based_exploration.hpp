@@ -7,6 +7,10 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <exploration/frontier_based_exploration_parameter_reconfigureConfig.h>
+#include <fstream>
+
 class FrontierBasedExploration
 {
 private:
@@ -21,10 +25,18 @@ private:
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
 
+    dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig>::CallbackType cbt;
+    bool OUTPUT_FBE_PARAMETERS;
+    std::string FBE_PARAMETER_FILE_PATH;
+
     void frontierFilter(std::vector<exploration_msgs::Frontier>& frontiers);
     bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<exploration_msgs::Frontier>& frontiers, const geometry_msgs::PoseStamped& pose);
+    void dynamicParamCallback(exploration::frontier_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+    void outputParams(void);
 public:
     FrontierBasedExploration();
+    ~FrontierBasedExploration(){if(OUTPUT_FBE_PARAMETERS) outputParams()};
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
@@ -38,7 +50,35 @@ FrontierBasedExploration::FrontierBasedExploration()
     p.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 0.5);
     p.param<double>("distance_weight", DISTANCE_WEIGHT, 1.0);
     p.param<double>("direction_weight", DIRECTION_WEIGHT, 0.0);
+
+    p.param<bool>("output_fbe_parameters",OUTPUT_FBE_PARAMETERS,true);
+    p.param<std::string>("fbe_parameter_file_path",FBE_PARAMETER_FILE_PATH,"fbe_last_parameters.yaml");
+
+    cbt = boost::bind(&SeamlessHybridExploration::dynamicParamCallback,this, _1, _2);
+    server.setCallback(cbt);
 }
+
+void FrontierBasedExploration::dynamicParamCallback(exploration::frontier_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_EFFECT = cfg.last_goal_effect;
+    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    DISTANCE_WEIGHT = cfg.distance_weight;
+    DIRECTION_WEIGHT = cfg.direction_weight;
+}
+
+void FrontierBasedExploration::outputParams(void){
+    std::cout << "writing last parameters ... ..." << std::endl;
+    std::ofstream ofs(FBE_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "file open succeeded" << std::endl;
+    else {
+        std::cout << "file open failed" << std::endl;
+        return;
+    }
+    ofs << "last_goal_effect: " << LAST_GOAL_EFFECT << std::endl;
+    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
+    ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
+ }
 
 bool FrontierBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // 分岐の読み込み

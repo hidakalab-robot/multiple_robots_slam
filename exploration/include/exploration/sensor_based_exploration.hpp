@@ -8,6 +8,10 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 
+#include <dynamic_reconfigure/server.h>
+#include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
+#include <fstream>
+
 class SensorBasedExploration
 {
 private:
@@ -20,13 +24,21 @@ private:
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 
+    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>::CallbackType cbt;
+    bool OUTPUT_SBE_PARAMETERS;
+    std::string SBE_PARAMETER_FILE_PATH;
+
     void duplicateDetection(std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
     virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+    virtual void dynamicParamCallback(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+    virtual void outputParams(void);
 protected:
     geometry_msgs::Point lastGoal_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
 public:
     SensorBasedExploration();
+    virtual ~SensorBasedExploration(){if(OUTPUT_SBE_PARAMETERS) outputParams()};
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
@@ -41,7 +53,35 @@ SensorBasedExploration::SensorBasedExploration()
     p.param<double>("log_newer_limit", LOG_NEWER_LIMIT, 10);
     p.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+    
+    p.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,false);
+    p.param<std::string>("sbe_parameter_file_path",SBE_PARAMETER_FILE_PATH,"sbe_last_parameters.yaml");
+
+    cbt = boost::bind(&SensorBasedExploration::dynamicParamCallback,this, _1, _2);
+    server.setCallback(cbt);
 }
+
+void SensorBasedExploration::dynamicParamCallback(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    LOG_NEWER_LIMIT = cfg.log_newer_limit;
+    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
+    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
+}
+
+void SensorBasedExploration::outputParams(void){
+    std::cout << "writing last parameters ... ..." << std::endl;
+    std::ofstream ofs(SBE_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "file open succeeded" << std::endl;
+    else {
+        std::cout << "file open failed" << std::endl;
+        return;
+    }
+    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "log_newer_limit: " << LOG_NEWER_LIMIT << std::endl;
+    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
+    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
+ }
 
 bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // 分岐の読み込み
