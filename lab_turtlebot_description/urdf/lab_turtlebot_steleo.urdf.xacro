@@ -13,5 +13,5 @@
   
   <kobuki/>
   <stack_hexagons parent="base_link"/>
-  <sensor_kinect  parent="base_link"/>
+  <sensor_steleo  parent="base_link"/>
 </robot>

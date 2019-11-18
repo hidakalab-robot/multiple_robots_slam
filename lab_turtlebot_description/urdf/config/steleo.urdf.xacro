@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
-<robot name="sensor_kinect" xmlns:xacro="http://ros.org/wiki/xacro">
+<robot name="sensor_steleo" xmlns:xacro="http://ros.org/wiki/xacro">
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_gazebo_steleo.urdf.xacro"/>
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_properties.urdf.xacro"/>
   
   <xacro:property name="kinect_cam_py" value="-0.0125"/>
   <!-- Parameterised in part by the values in turtlebot_properties.urdf.xacro -->
-  <xacro:macro name="sensor_kinect" params="parent">
+  <xacro:macro name="sensor_steleo" params="parent">
     <joint name="camera_rgb_joint" type="fixed">
       <origin xyz="${cam_px} ${kinect_cam_py} ${cam_pz}" rpy="${cam_or} ${cam_op} ${cam_oy}"/>
       <parent link="${parent}"/>
