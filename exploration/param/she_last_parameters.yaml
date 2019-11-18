@@ -1,7 +1,7 @@
 last_goal_tolerance: 1
 log_newer_limit: 10
-duplicate_tolerance: 1.5
-newer_duplication_threshold: 100
+duplicate_tolerance: 2.9
+newer_duplication_threshold: 1000
 covariance_threshold: 0.7
 variance_threshold: 1.5
 direction_weight: 1.5

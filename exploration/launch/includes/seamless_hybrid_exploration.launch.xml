@@ -51,7 +51,7 @@
         <param name="movement/angle_bias" value="0"/>
         <param name="movement/movement_parameter_file_path" value="$(find exploration)/param/movement_she_last_parameters.yaml"/>
         <rosparam file="$(find exploration)/param/movement_she_last_parameters.yaml" command="load" ns="movement"/>
-        <param name="sensor_based_exploration/output_sbe_parameters" value="false"/>
+        <param name="sensor_based_exploration/output_she_parameters" value="false"/>
         <param name="seamless_hybrid_exploration/she_parameter_file_path" value="$(find exploration)/param/she_last_parameters.yaml"/>
         <rosparam file="$(find exploration)/param/she_last_parameters.yaml" command="load" ns="seamless_hybrid_exploration"/>
     </node>
