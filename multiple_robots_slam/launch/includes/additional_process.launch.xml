@@ -91,7 +91,7 @@
 
     <!-- branch_detection -->
     <node if="$(arg branch_detection)" pkg="exploration_support" type="branch_detection" name="branch_detection">
-        <param name="branch_parameter_file_path" value="$(find exploration_support)/param/branch_last_parameters.yaml"/>
-        <rosparam file="$(find exploration_support)/param/branch_last_parameters.yaml" command="load"/>
+        <param name="branch/branch_parameter_file_path" value="$(find exploration_support)/param/branch_last_parameters.yaml"/>
+        <rosparam file="$(find exploration_support)/param/branch_last_parameters.yaml" command="load" ns="branch"/>
     </node>
 </launch>

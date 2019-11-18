@@ -87,6 +87,7 @@ private:
 
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
 
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_MOVEMENT_PARAMETERS;
@@ -135,42 +136,42 @@ Movement::Movement()
     ,previousOrientation_(1.0)
     ,pp_("movement_costmap","movement_planner") //クラス名
     ,goal_("goal", 1)
-    ,gCostmap_("global_costmap",1){
+    ,gCostmap_("global_costmap",1)
+    ,nh("~/movement")
+    ,server(nh){
 
-    ros::NodeHandle p("~");
-    p.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
-    p.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
-    p.param<double>("back_velocity", BACK_VELOCITY, -0.2);
-    p.param<double>("back_time", BACK_TIME, 1.0);
-    p.param<double>("forward_angle", FORWARD_ANGLE, 0.35);
-    p.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
-    p.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.1);
-    p.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
-    p.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
-    p.param<double>("curve_gain", CURVE_GAIN, 2.0);
-    p.param<double>("avoidance_gain", AVOIDANCE_GAIN, 0.4);
-    p.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
-    p.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.35);
-    p.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
-    p.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
-    p.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 0.5);
-    p.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.1);
-    p.param<double>("angle_bias", ANGLE_BIAS, 10.0);
-    p.param<int>("path_back_interval", PATH_BACK_INTERVAL, 5);
-    p.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
-    p.param<double>("costmap_margin", COSTMAP_MARGIN, 0.4); // コストマップの検索窓の直径
-    p.param<int>("esc_map_div_x", ESC_MAP_DIV_X, 3);
-    p.param<int>("esc_map_div_y", ESC_MAP_DIV_Y, 3);
-    p.param<double>("esc_map_width", ESC_MAP_WIDTH, 0.9);
-    p.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
-    p.param<double>("safty_range_threshold", SAFETY_RANGE_THRESHOLD, 1.5);
-    p.param<double>("safty_rate_threshold", SAFETY_RATE_THRESHOLD, 0.1);
-    p.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
-    p.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
-    p.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
-
-    p.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
-    p.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
+    nh.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
+    nh.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
+    nh.param<double>("back_velocity", BACK_VELOCITY, -0.2);
+    nh.param<double>("back_time", BACK_TIME, 1.0);
+    nh.param<double>("forward_angle", FORWARD_ANGLE, 0.35);
+    nh.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
+    nh.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.1);
+    nh.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
+    nh.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
+    nh.param<double>("curve_gain", CURVE_GAIN, 2.0);
+    nh.param<double>("avoidance_gain", AVOIDANCE_GAIN, 0.4);
+    nh.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
+    nh.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.35);
+    nh.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
+    nh.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
+    nh.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 0.5);
+    nh.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.1);
+    nh.param<double>("angle_bias", ANGLE_BIAS, 10.0);
+    nh.param<int>("path_back_interval", PATH_BACK_INTERVAL, 5);
+    nh.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
+    nh.param<double>("costmap_margin", COSTMAP_MARGIN, 0.4); // コストマップの検索窓の直径
+    nh.param<int>("esc_map_div_x", ESC_MAP_DIV_X, 3);
+    nh.param<int>("esc_map_div_y", ESC_MAP_DIV_Y, 3);
+    nh.param<double>("esc_map_width", ESC_MAP_WIDTH, 0.9);
+    nh.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
+    nh.param<double>("safty_range_threshold", SAFETY_RANGE_THRESHOLD, 1.5);
+    nh.param<double>("safty_rate_threshold", SAFETY_RATE_THRESHOLD, 0.1);
+    nh.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
+    nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
+    nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
+    nh.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
+    nh.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
 
     cbt = boost::bind(&Movement::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);

@@ -13,7 +13,8 @@
 int main(int argc, char* argv[]){
     ros::init(argc, argv, "loop_closure_counter");
 
-    ros::NodeHandle p("~");
+    // ros::NodeHandle p("~");
+    ros::NodeHandle nh("~/loop");
     std::string ODOM_FRAME_ID, MAP_FRAME_ID;
     double LOOP_CLOSURE_THRESHOLD, PUBLISH_RATE;
 
@@ -22,17 +23,17 @@ int main(int argc, char* argv[]){
     ExpLib::Struct::pubStruct<std_msgs::Float64> accumPerm("loop_closure_counter/perm_accumlate",1);
 
     
-    p.param<std::string>("odom_frame_id",ODOM_FRAME_ID,"odom");
-    p.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
-    p.param<double>("loop_closure_threshold",LOOP_CLOSURE_THRESHOLD,0.0);
-    p.param<double>("publish_rate",PUBLISH_RATE,10.0);
+    nh.param<std::string>("odom_frame_id",ODOM_FRAME_ID,"odom");
+    nh.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
+    nh.param<double>("loop_closure_threshold",LOOP_CLOSURE_THRESHOLD,0.0);
+    nh.param<double>("publish_rate",PUBLISH_RATE,10.0);
 
-    dynamic_reconfigure::Server<exploration_support::loop_closure_counter_parameter_reconfigureConfig> server;
+    dynamic_reconfigure::Server<exploration_support::loop_closure_counter_parameter_reconfigureConfig> server(nh);
     dynamic_reconfigure::Server<exploration_support::loop_closure_counter_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_LOOP_PARAMETERS;
     std::string LOOP_PARAMETER_FILE_PATH;
-    p.param<bool>("output_loop_parameters",OUTPUT_LOOP_PARAMETERS,true);
-    p.param<std::string>("loop_parameter_file_path",LOOP_PARAMETER_FILE_PATH,"loop_last_parameters.yaml");
+    nh.param<bool>("output_loop_parameters",OUTPUT_LOOP_PARAMETERS,true);
+    nh.param<std::string>("loop_parameter_file_path",LOOP_PARAMETER_FILE_PATH,"loop_last_parameters.yaml");
 
     cbt = boost::bind(+[](exploration_support::loop_closure_counter_parameter_reconfigureConfig &config, uint32_t level, double* lct)->void{
         *lct = config.loop_closure_threshold;

@@ -27,16 +27,16 @@
 
         <param name="debug" value="$(arg debug)"/>
         <param name="rotation" value="$(arg rotation)"/>
-        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <param name="angle_bias" value="60"/>
+        <param name="movement/movebase_name" value="/$(arg robot_name)/move_base"/>
+        <param name="movement/angle_bias" value="60"/>
 
         <rosparam file="$(find exploration)/param/movement_planner_params.yaml" command="load"/>
         <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
         <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
 
-        <param name="movement_parameter_file_path" value="$(find exploration)/param/movement_sbe_last_parameters.yaml"/>
-        <rosparam file="$(find exploration)/param/movement_sbe_last_parameters.yaml" command="load"/>
-        <param name="she_parameter_file_path" value="$(find exploration)/param/she_last_parameters.yaml"/>
-        <rosparam file="$(find exploration)/param/she_last_parameters.yaml" command="load"/>
+        <param name="movement/movement_parameter_file_path" value="$(find exploration)/param/movement_sbe_last_parameters.yaml"/>
+        <rosparam file="$(find exploration)/param/movement_sbe_last_parameters.yaml" command="load" ns="movement"/>
+        <param name="sensor_based_exploration/sbe_parameter_file_path" value="$(find exploration)/param/sbe_last_parameters.yaml"/>
+        <rosparam file="$(find exploration)/param/sbe_last_parameters.yaml" command="load" ns="sensor_based_exploration"/>
     </node>
 </launch>

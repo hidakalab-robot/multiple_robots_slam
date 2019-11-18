@@ -73,6 +73,7 @@ private:
     ExpLib::Struct::pubStruct<exploration_msgs::FrontierArray> frontier_;
     ExpLib::Struct::pubStruct<sensor_msgs::PointCloud2> horizon_;
 
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_FRONTIER_PARAMETERS;
@@ -96,16 +97,16 @@ public:
 FrontierDetection::FrontierDetection()
     :map_("map", 1, &FrontierDetection::mapCB, this)
     ,frontier_("frontier",1,true)
-    ,horizon_("horizon",1,true){
+    ,horizon_("horizon",1,true)
+    ,nh("~/frontier")
+    ,server(nh){
     
-    ros::NodeHandle p("~");
-    p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);
-    p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
-    p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 30);
-    p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
-
-    p.param<bool>("output_frontier_parameters",OUTPUT_FRONTIER_PARAMETERS,true);
-    p.param<std::string>("frontier_parameter_file_path",FRONTIER_PARAMETER_FILE_PATH,"frontier_last_parameters.yaml");
+    nh.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);
+    nh.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
+    nh.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 30);
+    nh.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
+    nh.param<bool>("output_frontier_parameters",OUTPUT_FRONTIER_PARAMETERS,true);
+    nh.param<std::string>("frontier_parameter_file_path",FRONTIER_PARAMETER_FILE_PATH,"frontier_last_parameters.yaml");
     cbt = boost::bind(&FrontierDetection::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);
 }

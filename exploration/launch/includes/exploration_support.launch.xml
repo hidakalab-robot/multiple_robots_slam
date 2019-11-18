@@ -17,30 +17,30 @@
         <remap if="$(eval arg('map_fill') and not arg('frontier_from_costmap'))" from="map" to="$(arg fill_map)"/>
         <remap if="$(eval not arg('map_fill') and not arg('frontier_from_costmap'))" from="map" to="$(arg orig_map)"/>
         <remap if="$(eval not arg('map_fill') and arg('frontier_from_costmap'))" from="map" to="$(arg orig_costmap)"/>
-        <param name="frontier_parameter_file_path" value="$(find exploration_support)/param/frontier_last_parameters.yaml"/>
-        <rosparam file="$(find exploration_support)/param/frontier_last_parameters.yaml" command="load"/>
+        <param name="frontier/frontier_parameter_file_path" value="$(find exploration_support)/param/frontier_last_parameters.yaml"/>
+        <rosparam file="$(find exploration_support)/param/frontier_last_parameters.yaml" command="load" nh="frontier"/>
     </node>
 
     <!-- branch_detection -->
     <node if="$(arg branch_detection)" pkg="exploration_support" type="branch_detection" name="branch_detection">
-        <param name="branch_parameter_file_path" value="$(find exploration_support)/param/branch_last_parameters.yaml"/>
-        <rosparam file="$(find exploration_support)/param/branch_last_parameters.yaml" command="load"/>
+        <param name="branch/branch_parameter_file_path" value="$(find exploration_support)/param/branch_last_parameters.yaml"/>
+        <rosparam file="$(find exploration_support)/param/branch_last_parameters.yaml" command="load" ns="branch"/>
     </node>
 
     <!-- map_fill -->
     <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="map_fill">
         <remap from="map" to="$(arg orig_map)"/>
         <remap from="fill_map" to="$(arg fill_map)"/>
-        <param name="fill_parameter_file_path" value="$(find exploration_support)/param/map_fill_last_parameters.yaml"/>
-        <rosparam file="$(find exploration_support)/param/map_fill_last_parameters.yaml" command="load"/>
+        <param name="map_fill/fill_parameter_file_path" value="$(find exploration_support)/param/map_fill_last_parameters.yaml"/>
+        <rosparam file="$(find exploration_support)/param/map_fill_last_parameters.yaml" command="load" ns="map_fill"/>
     </node>
 
     <!-- costmap_fill -->
     <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="costmap_fill">
         <remap from="map" to="$(arg orig_costmap)"/>
         <remap from="fill_map" to="$(arg fill_costmap)"/>
-        <param name="fill_parameter_file_path" value="$(find exploration_support)/param/costmap_fill_last_parameters.yaml"/>
-        <rosparam file="$(find exploration_support)/param/costmap_fill_last_parameters.yaml" command="load"/>
+        <param name="map_fill/fill_parameter_file_path" value="$(find exploration_support)/param/costmap_fill_last_parameters.yaml"/>
+        <rosparam file="$(find exploration_support)/param/costmap_fill_last_parameters.yaml" command="load" ns="map_fill"/>
     </node>
 
     <!-- exploration_manager -->
@@ -49,8 +49,8 @@
         <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
         <param name="area_rate" value="1.0"/>
         <param name="end_time" value="36000000"/>
-        <param name="exmng_parameter_file_path" value="$(find exploration_support)/param/exmng_last_parameters.yaml"/>
-        <rosparam file="$(find exploration_support)/param/exmng_last_parameters.yaml" command="load"/>
+        <param name="exmng/exmng_parameter_file_path" value="$(find exploration_support)/param/exmng_last_parameters.yaml"/>
+        <rosparam file="$(find exploration_support)/param/exmng_last_parameters.yaml" command="load" ns="exmng"/>
     </node>
 
     <!-- robot_manager -->

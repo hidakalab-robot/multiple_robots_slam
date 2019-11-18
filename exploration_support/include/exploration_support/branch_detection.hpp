@@ -27,6 +27,7 @@ private:
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::pubStruct<exploration_msgs::PointArray> branch_;
 
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration_support::branch_detection_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration_support::branch_detection_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_BRANCH_PARAMETERS;
@@ -44,17 +45,17 @@ public:
 BranchDetection::BranchDetection()
     :scan_("scan", 1, &BranchDetection::scanCB, this)
     ,pose_("pose", 1)
-    ,branch_("branch", 1){
-
-    ros::NodeHandle p("~");
-    p.param<double>("obstacle_check_angle", OBSTACLE_CHECK_ANGLE, 0.04);
-    p.param<double>("obstacle_range_min", OBSTACLE_RANGE_MIN,2.5);
-    p.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
-    p.param<double>("branch_max_x", BRANCH_MAX_X, 5.5);
-	p.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
-
-    p.param<bool>("output_branch_parameters",OUTPUT_BRANCH_PARAMETERS,true);
-    p.param<std::string>("branch_parameter_file_path",BRANCH_PARAMETER_FILE_PATH,"branch_last_parameters.yaml");
+    ,branch_("branch", 1)
+    ,nh("~/branch")
+    ,server(nh){
+    
+    nh.param<double>("obstacle_check_angle", OBSTACLE_CHECK_ANGLE, 0.04);
+    nh.param<double>("obstacle_range_min", OBSTACLE_RANGE_MIN,2.5);
+    nh.param<double>("scan_range_threshold", SCAN_RANGE_THRESHOLD, 6.0);
+    nh.param<double>("branch_max_x", BRANCH_MAX_X, 5.5);
+	nh.param<double>("branch_diff_x_min", BRANCH_DIFF_X_MIN, 1.0);
+    nh.param<bool>("output_branch_parameters",OUTPUT_BRANCH_PARAMETERS,true);
+    nh.param<std::string>("branch_parameter_file_path",BRANCH_PARAMETER_FILE_PATH,"branch_last_parameters.yaml");
 
     cbt = boost::bind(&BranchDetection::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);

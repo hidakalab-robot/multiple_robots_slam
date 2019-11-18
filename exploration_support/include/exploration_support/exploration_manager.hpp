@@ -34,6 +34,7 @@ private:
     ExpLib::Struct::pubStruct<std_msgs::Int32> frontierVal_;
     ExpLib::Struct::pubStruct<std_msgs::Float64> timerVal_;
 
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_EXMNG_PARAMETERS;
@@ -60,15 +61,15 @@ ExplorationManager::ExplorationManager()
     ,timerEnd_("end/timer",1,true)
     ,areaVal_("end/area/value",1,true)
     ,frontierVal_("end/frontier/value",1,true)
-    ,timerVal_("end/timer/value",1,true){
+    ,timerVal_("end/timer/value",1,true)
+    ,nh("~/exmng")
+    ,server(nh){
 
-    ros::NodeHandle p("~");
-    p.param<int>("end_frontier",END_FRONTIER,0);
-    p.param<double>("end_time",END_TIME,1200);// second
-    p.param<double>("end_area",END_AREA,267.46);// m^2
-
-    p.param<bool>("output_exmng_parameters",OUTPUT_EXMNG_PARAMETERS,true);
-    p.param<std::string>("exmng_parameter_file_path",EXMNG_PARAMETER_FILE_PATH,"exmng_last_parameters.yaml");
+    nh.param<int>("end_frontier",END_FRONTIER,0);
+    nh.param<double>("end_time",END_TIME,1200);// second
+    nh.param<double>("end_area",END_AREA,267.46);// m^2
+    nh.param<bool>("output_exmng_parameters",OUTPUT_EXMNG_PARAMETERS,true);
+    nh.param<std::string>("exmng_parameter_file_path",EXMNG_PARAMETER_FILE_PATH,"exmng_last_parameters.yaml");
 
     cbt = boost::bind(&ExplorationManager::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);

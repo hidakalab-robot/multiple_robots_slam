@@ -54,6 +54,7 @@ private:
     std::vector<preCalcResult> ownPreCalc_;
     std::vector<preCalcResult> otherPreCalc_;
 
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_SHE_PARAMETERS;
@@ -75,18 +76,18 @@ public:
 SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_("robot_array", 1)
     ,frontier_("frontier", 1)
-    ,pp_("seamless_costmap","seamless_planner"){
+    ,pp_("seamless_costmap","seamless_planner")
+    ,nh("~/seamless_hybrid_exploration")
+    ,server(nh){
 
-    ros::NodeHandle p("~");
-    p.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
-    p.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
-    p.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
-    p.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
-    p.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
-    p.param<std::string>("robot_name", ROBOT_NAME, "robot1");
-
-    p.param<bool>("output_she_parameters",OUTPUT_SHE_PARAMETERS,true);
-    p.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
+    nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
+    nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
+    nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
+    nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
+    nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
+    nh.param<std::string>("robot_name", ROBOT_NAME, "robot1");
+    nh.param<bool>("output_she_parameters",OUTPUT_SHE_PARAMETERS,true);
+    nh.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
 
     cbt = boost::bind(&SeamlessHybridExploration::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);

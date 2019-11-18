@@ -25,6 +25,7 @@ private:
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
 
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_FBE_PARAMETERS;
@@ -43,16 +44,16 @@ public:
 FrontierBasedExploration::FrontierBasedExploration()
     :frontier_("frontier", 1)
     ,pose_("pose", 1)
-    ,goal_("goal", 1){
+    ,goal_("goal", 1)
+    ,nh("~/frontier_based_exploration")
+    ,server(nh){
 
-    ros::NodeHandle p("~");
-    p.param<bool>("last_goal_effect", LAST_GOAL_EFFECT, true);
-    p.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 0.5);
-    p.param<double>("distance_weight", DISTANCE_WEIGHT, 1.0);
-    p.param<double>("direction_weight", DIRECTION_WEIGHT, 0.0);
-
-    p.param<bool>("output_fbe_parameters",OUTPUT_FBE_PARAMETERS,true);
-    p.param<std::string>("fbe_parameter_file_path",FBE_PARAMETER_FILE_PATH,"fbe_last_parameters.yaml");
+    nh.param<bool>("last_goal_effect", LAST_GOAL_EFFECT, true);
+    nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 0.5);
+    nh.param<double>("distance_weight", DISTANCE_WEIGHT, 1.0);
+    nh.param<double>("direction_weight", DIRECTION_WEIGHT, 0.0);
+    nh.param<bool>("output_fbe_parameters",OUTPUT_FBE_PARAMETERS,true);
+    nh.param<std::string>("fbe_parameter_file_path",FBE_PARAMETER_FILE_PATH,"fbe_last_parameters.yaml");
 
     cbt = boost::bind(&FrontierBasedExploration::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);

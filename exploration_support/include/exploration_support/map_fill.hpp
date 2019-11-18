@@ -21,6 +21,7 @@ private:
     double FILL_SIZE_MAX;
     double FILL_SIZE_MIN;
 
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration_support::map_fill_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration_support::map_fill_parameter_reconfigureConfig>::CallbackType cbt;
     bool OUTPUT_FILL_PARAMETERS;
@@ -31,13 +32,12 @@ private:
     void dynamicParamCallback(exploration_support::map_fill_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
 public:
-    MapFill():map_("map", 1, &MapFill::mapCB, this),mapImage_("fill_map",1){
-        ros::NodeHandle p("~");
-        p.param<double>("fill_size_max",FILL_SIZE_MAX,2000);//px
-        p.param<double>("fill_size_min",FILL_SIZE_MIN,5);//px
+    MapFill():map_("map", 1, &MapFill::mapCB, this),mapImage_("fill_map",1),nh("~/map_fill"),server(nh){
 
-        p.param<bool>("output_fill_parameters",OUTPUT_FILL_PARAMETERS,true);
-        p.param<std::string>("fill_parameter_file_path",FILL_PARAMETER_FILE_PATH,"fill_last_parameters.yaml");
+        nh.param<double>("fill_size_max",FILL_SIZE_MAX,2000);//px
+        nh.param<double>("fill_size_min",FILL_SIZE_MIN,5);//px
+        nh.param<bool>("output_fill_parameters",OUTPUT_FILL_PARAMETERS,true);
+        nh.param<std::string>("fill_parameter_file_path",FILL_PARAMETER_FILE_PATH,"fill_last_parameters.yaml");
 
         cbt = boost::bind(&MapFill::dynamicParamCallback,this, _1, _2);
         server.setCallback(cbt);

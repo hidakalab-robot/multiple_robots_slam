@@ -34,6 +34,7 @@ protected:
     double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
     geometry_msgs::Point lastGoal_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
+    ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig> server;
     dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>::CallbackType cbt;
 public:
@@ -46,16 +47,16 @@ SensorBasedExploration::SensorBasedExploration()
     :branch_("branch", 1)
     ,pose_("pose", 1)
     ,poseLog_("pose_log", 1)
-    ,goal_("goal", 1){
+    ,goal_("goal", 1)
+    ,nh("~/sensor_based_exploration")
+    ,server(nh){
 
-    ros::NodeHandle p("~");
-    p.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
-    p.param<double>("log_newer_limit", LOG_NEWER_LIMIT, 10);
-    p.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
-    p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
-    
-    p.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,true);
-    p.param<std::string>("sbe_parameter_file_path",SBE_PARAMETER_FILE_PATH,"sbe_last_parameters.yaml");
+    nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
+    nh.param<double>("log_newer_limit", LOG_NEWER_LIMIT, 10);
+    nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
+    nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+    nh.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,true);
+    nh.param<std::string>("sbe_parameter_file_path",SBE_PARAMETER_FILE_PATH,"sbe_last_parameters.yaml");
 
     cbt = boost::bind(&SensorBasedExploration::dynamicParamCallback,this, _1, _2);
     server.setCallback(cbt);
