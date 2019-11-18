@@ -487,44 +487,44 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     if(escIndex.x()==mci.x()&&escIndex.y()==mci.y()) ROS_WARN_STREAM("Can't avoid !!");
 
     //図で出力してみる	
-    ROS_INFO_STREAM("position map");
-    std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-        std::cout << "|";	
-        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.position << "|";		
-        std::cout << std::endl;	
-    }	
+    // ROS_INFO_STREAM("position map");
+    // std::cout << "y↑\n  →\n  x" << std::endl;
+    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
+    //     std::cout << "|";	
+    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.position << "|";		
+    //     std::cout << std::endl;	
+    // }	
     
-    ROS_INFO_STREAM("orientation map");
-    std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-        std::cout << "|";	
-        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.orientation << "|";		
-        std::cout << std::endl;	
-    }	
+    // ROS_INFO_STREAM("orientation map");
+    // std::cout << "y↑\n  →\n  x" << std::endl;
+    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
+    //     std::cout << "|";	
+    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.orientation << "|";		
+    //     std::cout << std::endl;	
+    // }	
     
-    ROS_INFO_STREAM("risk map");
-    std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-        std::cout << "|";	
-        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";		
-        std::cout << std::endl;	
-    }	
+    // ROS_INFO_STREAM("risk map");
+    // std::cout << "y↑\n  →\n  x" << std::endl;
+    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
+    //     std::cout << "|";	
+    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";		
+    //     std::cout << std::endl;	
+    // }	
 
      //勾配が小さくなっている	
-    ROS_INFO_STREAM("grad map");
-    std::cout << "y↑\n  →\n  x" << std::endl;
-    for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-        std::cout << "|";	
-        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
-        std::cout << std::endl;	
-    }
+    // ROS_INFO_STREAM("grad map");
+    // std::cout << "y↑\n  →\n  x" << std::endl;
+    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
+    //     std::cout << "|";	
+    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
+    //     std::cout << std::endl;	
+    // }
 
     ROS_INFO_STREAM("avoid angle map");
     std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
         std::cout << "|";
-        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "@" : gmm[x][y].grad == gmm[escIndex.x()][escIndex.y()].grad ? "*" : " ") << "|";
+        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "@" : x == mci.x() && y == mci.y() ? "R" : gmm[x][y].grad == gmm[escIndex.x()][escIndex.y()].grad ? "*" : " ") << "|";
         std::cout << std::endl;
     }
 
@@ -573,14 +573,14 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : ExpLib::Convert::qToYaw(pose_.data.pose.orientation) + M_PI;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : -M_PI;
-            ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
+            // ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
         while(sum < rotation - ROTATION_TOLERANCE && ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
-            ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
+            // ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
     }
     else{
@@ -589,14 +589,14 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : ExpLib::Convert::qToYaw(pose_.data.pose.orientation) - M_PI;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : M_PI;
-            ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
+            // ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
         while(sum > rotation + ROTATION_TOLERANCE && ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
-            ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
+            // ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
     }
 }
@@ -679,7 +679,7 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
             rateMin = rate;
             rateMinTi = ti;
         }
-        ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
+        // ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
         sw = sw > 0 ? -sw-1 : -sw+1;
     }while(rate>SAFETY_RATE_THRESHOLD);
 
