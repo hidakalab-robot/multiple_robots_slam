@@ -18,7 +18,7 @@
         <remap if="$(eval not arg('map_fill') and not arg('frontier_from_costmap'))" from="map" to="$(arg orig_map)"/>
         <remap if="$(eval not arg('map_fill') and arg('frontier_from_costmap'))" from="map" to="$(arg orig_costmap)"/>
         <param name="frontier/frontier_parameter_file_path" value="$(find exploration_support)/param/frontier_last_parameters.yaml"/>
-        <rosparam file="$(find exploration_support)/param/frontier_last_parameters.yaml" command="load" nh="frontier"/>
+        <rosparam file="$(find exploration_support)/param/frontier_last_parameters.yaml" command="load" ns="frontier"/>
     </node>
 
     <!-- branch_detection -->

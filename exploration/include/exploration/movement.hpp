@@ -77,6 +77,8 @@ private:
     int RESET_GOAL_PATH_LIMIT;
     double RESET_GOAL_PATH_RATE;
     double ROTATION_TOLERANCE;
+    bool APPROACH_WALL;
+    bool MOVE_RETURN_DBLMAX;
 
     ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -170,6 +172,8 @@ Movement::Movement()
     nh.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
     nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
     nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
+    nh.param<bool>("approach_wall", APPROACH_WALL, false);
+    nh.param<bool>("move_return_DBLMAX", MOVE_RETURN_DBLMAX, false);
     nh.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
     nh.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
 
@@ -207,6 +211,8 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
     RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
     ROTATION_TOLERANCE = cfg.rotation_tolerance;
+    APPROACH_WALL = cfg.approach_wall;
+    MOVE_RETURN_DBLMAX = cfg.move_return_DBLMAX;
 }
 
 void Movement::outputParams(void){
@@ -246,7 +252,9 @@ void Movement::outputParams(void){
     ofs << "safty_rate_threshold: " << SAFETY_RATE_THRESHOLD << std::endl;
     ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
     ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
-    ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;
+    ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
+    ofs << "approach_wall: " << APPROACH_WALL << std::endl;
+    ofs << "move_return_DBLMAX: " << MOVE_RETURN_DBLMAX << std::endl; 
 }
 
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){
@@ -516,7 +524,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
         std::cout << "|";
-        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "*" : " ") << "|";
+        for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "@" : gmm[x][y].grad == gmm[escIndex.x()][escIndex.y()].grad ? "*" : " ") << "|";
         std::cout << std::endl;
     }
 
@@ -606,10 +614,14 @@ void Movement::moveToForward(void){
 
     if(scan_.q.callOne(ros::WallDuration(1))) return;
 
-    double angle;
-    if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,std::move(angle));
-    else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);    
-    // if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);  
+    if(APPROACH_WALL){
+        double angle;
+        if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,std::move(angle));
+        else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);    
+    }
+    else {
+        if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);  
+    }
 }
 
 double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
@@ -655,7 +667,8 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
         if(tMINUS >= scan.ranges.size() || tPLUS < 0){
             ROS_INFO_STREAM("safety angle search is failed");
             ROS_INFO_STREAM("emergency avoid");
-            return scan.angle_min + rateMinTi * scan.angle_increment;
+            return MOVE_RETURN_DBLMAX ? DBL_MAX : scan.angle_min + rateMinTi * scan.angle_increment;
+            // return scan.angle_min + rateMinTi * scan.angle_increment;
             // return DBL_MAX;
         }
 
@@ -855,9 +868,7 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
             }
             if(temp > maxSpaceMinus) maxSpaceMinus = std::move(temp);
         }
-        else{
-            ++countNanMinus;
-        }
+        else ++countNanMinus;
     }
 
     //plus
@@ -876,9 +887,7 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
             }
             if(temp > maxSpacePlus) maxSpacePlus = std::move(temp);
         }
-        else{
-            ++countNanPlus;
-        }
+        else ++countNanPlus;
     }
 
     // ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
