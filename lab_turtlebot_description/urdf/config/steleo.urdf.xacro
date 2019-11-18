@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <robot name="sensor_kinect" xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_gazebo_kinect.urdf.xacro"/>
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_gazebo_steleo.urdf.xacro"/>
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_properties.urdf.xacro"/>
   
   <xacro:property name="kinect_cam_py" value="-0.0125"/>
@@ -23,9 +23,9 @@
     <joint name="camera_joint" type="fixed">
       <origin xyz="-0.031 ${-kinect_cam_py} -0.016" rpy="0 0 0"/>
       <parent link="camera_rgb_frame"/>
-      <child link="camera_link"/>
+      <child link="left_camera_frame"/>
     </joint>  
-      <link name="camera_link">
+      <link name="left_camera_frame">
       <visual>
        <origin xyz="0 0 0" rpy="0 0 ${M_PI/2}"/>
         <geometry>
