@@ -29,3 +29,4 @@ reset_goal_path_rate: 0.5
 rotation_tolerance: 0.025
 approach_wall: 0
 move_return_DBLMAX: 1
+use_angle_bias: 1

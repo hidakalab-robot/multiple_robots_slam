@@ -79,6 +79,7 @@ private:
     double ROTATION_TOLERANCE;
     bool APPROACH_WALL;
     bool MOVE_RETURN_DBLMAX;
+    bool USE_ANGLE_BIAS;
 
     ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
     ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
@@ -174,6 +175,7 @@ Movement::Movement()
     nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
     nh.param<bool>("approach_wall", APPROACH_WALL, false);
     nh.param<bool>("move_return_DBLMAX", MOVE_RETURN_DBLMAX, false);
+    nh.param<bool>("use_angle_bias", USE_ANGLE_BIAS, false);
     nh.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
     nh.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
 
@@ -213,6 +215,7 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     ROTATION_TOLERANCE = cfg.rotation_tolerance;
     APPROACH_WALL = cfg.approach_wall;
     MOVE_RETURN_DBLMAX = cfg.move_return_DBLMAX;
+    USE_ANGLE_BIAS = cfg.use_angle_bias;
 }
 
 void Movement::outputParams(void){
@@ -255,6 +258,7 @@ void Movement::outputParams(void){
     ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
     ofs << "approach_wall: " << APPROACH_WALL << std::endl;
     ofs << "move_return_DBLMAX: " << MOVE_RETURN_DBLMAX << std::endl; 
+    ofs << "use_angle_bias: " << USE_ANGLE_BIAS << std::endl; 
 }
 
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){
@@ -285,7 +289,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     // 目標での姿勢
     Eigen::Vector2d startToGoal;
-    if(!pp_.getVec(pose_.data,ExpLib::Convert::pointStampedToPoseStamped(goal),startToGoal)){
+    if(USE_ANGLE_BIAS || !pp_.getVec(pose_.data,ExpLib::Convert::pointStampedToPoseStamped(goal),startToGoal)){
         // pathが取得できなかった場合の回転角度の補正値
         double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
         Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
