@@ -215,12 +215,15 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_executable(sensor_based_exploration src/sensor_based_exploration.cpp)
+add_dependencies(sensor_based_exploration ${PROJECT_NAME}_gencfg)
 target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
 
 add_executable(frontier_based_exploration src/frontier_based_exploration.cpp)
+add_dependencies(frontier_based_exploration ${PROJECT_NAME}_gencfg)
 target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
 
 add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration.cpp)
+add_dependencies(seamless_hybrid_exploration ${PROJECT_NAME}_gencfg)
 target_link_libraries(seamless_hybrid_exploration ${catkin_LIBRARIES})
 
 add_executable(multi_exploration_simulator src/multi_exploration_simulator.cpp)
@@ -235,4 +238,5 @@ add_executable(simulator_input_support src/simulator_input_support.cpp)
 target_link_libraries(simulator_input_support ${catkin_LIBRARIES})
 
 add_executable(legacy_hybrid_exploration src/legacy_hybrid_exploration.cpp)
+add_dependencies(legacy_hybrid_exploration ${PROJECT_NAME}_gencfg)
 target_link_libraries(legacy_hybrid_exploration ${catkin_LIBRARIES})

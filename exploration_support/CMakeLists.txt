@@ -222,21 +222,26 @@ add_executable(movebase_canceller src/movebase_canceller.cpp)
 target_link_libraries(movebase_canceller ${catkin_LIBRARIES})
 
 add_executable(map_fill src/map_fill.cpp)
+add_dependencies(map_fill ${PROJECT_NAME}_gencfg)
 target_link_libraries(map_fill ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
 
 add_executable(exploration_manager src/exploration_manager.cpp)
+add_dependencies(exploration_manager ${PROJECT_NAME}_gencfg)
 target_link_libraries(exploration_manager ${catkin_LIBRARIES})
 
 add_executable(robot_manager src/robot_manager.cpp)
 target_link_libraries(robot_manager ${catkin_LIBRARIES})
 
 add_executable(frontier_detection src/frontier_detection.cpp)
+add_dependencies(frontier_detection ${PROJECT_NAME}_gencfg)
 target_link_libraries(frontier_detection ${catkin_LIBRARIES})
 
 add_executable(branch_detection src/branch_detection.cpp)
+add_dependencies(branch_detection ${PROJECT_NAME}_gencfg)
 target_link_libraries(branch_detection ${catkin_LIBRARIES})
 
 add_executable(loop_closure_counter src/loop_closure_counter.cpp)
+add_dependencies(loop_closure_counter ${PROJECT_NAME}_gencfg)
 target_link_libraries(loop_closure_counter ${catkin_LIBRARIES})
 
 add_executable(map_continuity src/map_continuity.cpp)
