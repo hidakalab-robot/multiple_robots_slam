@@ -749,7 +749,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
         if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation_ = aveP > aveM ? 1.0 : -1.0;
         ROS_INFO_STREAM((previousOrientation_ > 0 ? "Avoidance to Left" : "Avoidance to Right"));
-        velocity_.pub.publish(velocityGenerator(previousOrientation_*scan.angle_max/6, FORWARD_VELOCITY, AVOIDANCE_GAIN));
+        velocity_.pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY, AVOIDANCE_GAIN));
         return true;
     }
     else{
@@ -759,7 +759,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 }
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
-    previousOrientation_ = theta;
+    if(theta != 0) previousOrientation_ = theta;
     return ExpLib::Construct::msgTwist(v,(CURVE_GAIN*theta)/t);
 }
 
