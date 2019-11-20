@@ -765,13 +765,15 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t)
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     ROS_INFO_STREAM("roadCenterDetection");
-    ExpLib::Struct::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
+    // ExpLib::Struct::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
+    ExpLib::Struct::scanStruct scanRect(scan.ranges.size());
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             double tempAngle = scan.angle_min+(scan.angle_increment*i);
             if(scan.ranges[i]*cos(tempAngle) <= ROAD_CENTER_THRESHOLD){
                 scanRect.ranges.emplace_back(scan.ranges[i]);
+                scanRect.y.emplace_back(scan.ranges[i]*sin(tempAngle));
                 scanRect.angles.emplace_back(std::move(tempAngle));
             }
         }
@@ -780,7 +782,8 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     if(scanRect.ranges.size() < 2) return false;
 
     for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
-        if(std::abs(scanRect.ranges[i+1]*sin(scanRect.angles[i+1]) - scanRect.ranges[i]*sin(scanRect.angles[i])) >= ROAD_THRESHOLD){
+        // if(std::abs(scanRect.ranges[i+1]*sin(scanRect.angles[i+1]) - scanRect.ranges[i]*sin(scanRect.angles[i])) >= ROAD_THRESHOLD){
+        if(std::abs(scanRect.y[i+1] - scanRect.y[i]) >= ROAD_THRESHOLD){
             ROS_DEBUG_STREAM("Road Center Found");
             velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
             return true;

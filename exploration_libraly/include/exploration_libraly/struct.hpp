@@ -59,10 +59,18 @@ struct pubStructStd{
 struct scanStruct{
     std::vector<float> ranges;
     std::vector<float> angles;
-    float angleMax;
-    scanStruct(int size,float angle):angleMax(angle){
+    std::vector<double> x;
+    std::vector<double> y;
+    // float angleMax;
+    // scanStruct(int size,float angle):angleMax(angle){
+    //     ranges.reserve(size);
+    //     angles.reserve(size);
+    // };
+    scanStruct(int size){
         ranges.reserve(size);
         angles.reserve(size);
+        x.reserve(size);
+        y.reserve(size);
     };
 };
 
