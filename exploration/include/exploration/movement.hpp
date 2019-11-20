@@ -343,7 +343,7 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_m
     // 正確にはposeStampedの座標がコストマップに被ってるかを見る
     // true:被ってる, false:被ってない
     ROS_INFO_STREAM("lookup global costmap");
-    ROS_INFO_STREAM("recieve goal : " << goal);
+    // ROS_INFO_STREAM("recieve goal : " << goal);
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> lmap(ExpLib::Utility::mapArray1dTo2d(map.data,map.info));
     // ROS_INFO_STREAM("create costmap array(2d)");
