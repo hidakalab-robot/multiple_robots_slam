@@ -75,7 +75,7 @@ void FrontierBasedExploration::outputParams(void){
         std::cout << "file open failed" << std::endl;
         return;
     }
-    ofs << "last_goal_effect: " << LAST_GOAL_EFFECT << std::endl;
+    ofs << "last_goal_effect: " << (LAST_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
     ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
     ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;

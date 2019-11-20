@@ -21,19 +21,19 @@
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)"/>
     <!-- simurator main -->
     <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator">
-        <param name="parameter_file_path" value="$(arg parameter_file_path)"/>
-        <param name="output_parameters" value="$(arg output_last_parameters)"/>
-        <param name="extra_parameter_namespace" value="$(arg extra_parameter_namespace)"/>
         <rosparam if="$(arg input_last_parameters)" file="$(arg parameter_file_path)" command="load"/>
         <rosparam file="$(find exploration)/param/simulator_calc_planner_params.yaml" command="load"/>
         <rosparam file="$(find exploration)/param/simulator_goal_planner_params.yaml" command="load"/>
+        <param name="parameter_file_path" value="$(arg parameter_file_path)"/>
+        <param name="output_parameters" value="$(arg output_last_parameters)"/>
+        <param name="extra_parameter_namespace" value="$(arg extra_parameter_namespace)"/>
     </node>
 
     <!-- extra parameter node -->
     <node pkg="exploration" type="extra_parameter_reconfigure" name="$(arg extra_parameter_namespace)">
+        <rosparam if="$(arg input_last_extra_parameters)" file="$(arg extra_parameter_file_path)" command="load"/>
         <param name="extra_parameter_file_path" value="$(arg extra_parameter_file_path)"/>
         <param name="output_extra_parameters" value="$(arg output_last_extra_parameters)"/>
-        <rosparam if="$(arg input_last_extra_parameters)" file="$(arg extra_parameter_file_path)" command="load"/>
     </node>
 
     <node pkg="exploration" type="simulator_input_support" name="simulator_input_support" output="screen">

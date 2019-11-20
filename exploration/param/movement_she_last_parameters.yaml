@@ -14,7 +14,7 @@ wall_rate_threshold: 0.8
 wall_distance_upper_threshold: 5
 wall_distance_lower_threshold: 0.5
 emergency_diff_threshold: 0.1
-angle_bias: 0
+angle_bias: 30
 path_back_interval: 5
 goal_reset_rate: 1
 costmap_margin: 0.4
@@ -27,6 +27,6 @@ safty_rate_threshold: 0.1
 reset_goal_path_limit: 15
 reset_goal_path_rate: 0.5
 rotation_tolerance: 0.025
-approach_wall: 0
-move_return_DBLMAX: 1
-use_angle_bias: 1
+approach_wall: false
+move_return_DBLMAX: true
+use_angle_bias: true

@@ -256,9 +256,9 @@ void Movement::outputParams(void){
     ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
     ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
     ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
-    ofs << "approach_wall: " << APPROACH_WALL << std::endl;
-    ofs << "move_return_DBLMAX: " << MOVE_RETURN_DBLMAX << std::endl; 
-    ofs << "use_angle_bias: " << USE_ANGLE_BIAS << std::endl; 
+    ofs << "approach_wall: " << (APPROACH_WALL ? "true" : "false") << std::endl;
+    ofs << "move_return_DBLMAX: " << (MOVE_RETURN_DBLMAX ? "true" : "false") << std::endl; 
+    ofs << "use_angle_bias: " << (USE_ANGLE_BIAS ? "true" : "false") << std::endl; 
 }
 
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){
