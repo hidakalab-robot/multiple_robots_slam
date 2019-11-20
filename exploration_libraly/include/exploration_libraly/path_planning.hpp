@@ -97,6 +97,18 @@ public:
     }
 
     void getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec, std::vector<geometry_msgs::PoseStamped>& plan){
+        // 方法変更
+        for(int i=plan.size()-2,ie=-1;i!=ie;--i){
+            if(plan[i].pose.position.x != plan[plan.size()-1].pose.position.x || plan[i].pose.position.y != plan[plan.size()-1].pose.position.y){
+                vec = Eigen::Vector2d(plan[i].pose.position.x - plan[plan.size()-1].pose.position.x, plan[i].pose.position.y - plan[plan.size()-1].pose.position.y).normalized();
+                return;
+            }
+        }
+
+        // 新しい方法が無理だったとき
+        ROS_INFO_STREAM("new getVec is failed");
+        ROS_INFO_STREAM("switched to legacy");
+
         int b = plan.size() - 1;
         int a = b * PATH_TO_VECTOR_RATIO;
         //a-b間のベクトル
