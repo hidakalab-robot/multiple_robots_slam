@@ -11,6 +11,7 @@
             </geometry>
          </collision>
          <visual name="visual">
+            <cast_shadows>false</cast_shadows>
             <geometry>
                <box>
                   <size>0.65 0.45 1.4</size>
