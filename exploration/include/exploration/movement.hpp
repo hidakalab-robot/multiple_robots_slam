@@ -126,7 +126,6 @@ public:
     Movement();
     ~Movement(){if(OUTPUT_MOVEMENT_PARAMETERS) outputParams();};
 
-
     void moveToGoal(geometry_msgs::PointStamped goal);
     void moveToForward(void);
     void oneRotation(void);

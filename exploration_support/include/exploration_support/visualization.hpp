@@ -104,7 +104,7 @@ Visualization::Visualization()
     bm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
     fm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
     ufm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
-    rm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,s.5,0.5,0.5,1.0);
+    rm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
