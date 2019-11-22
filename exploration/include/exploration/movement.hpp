@@ -87,6 +87,7 @@ private:
     ExpLib::Struct::subStruct<nav_msgs::OccupancyGrid> gCostmap_;
     ExpLib::Struct::pubStruct<geometry_msgs::Twist> velocity_;
     ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
+    ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> road_;
 
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
 
@@ -132,14 +133,15 @@ public:
 };
 
 Movement::Movement()
-    :scan_("scan",1)
-    ,pose_("pose",1)
-    ,bumper_("bumper",1)
-    ,velocity_("velocity", 1)
+    :scan_("scan",1) // sub
+    ,pose_("pose",1) // sub
+    ,bumper_("bumper",1) // sub
+    ,velocity_("velocity", 1) //. pub
     ,previousOrientation_(1.0)
     ,pp_("movement_costmap","movement_planner") //クラス名
-    ,goal_("goal", 1)
-    ,gCostmap_("global_costmap",1)
+    ,goal_("goal", 1) // pub
+    ,road_("road_center", 1) // pub
+    ,gCostmap_("global_costmap",1) // pub
     ,nh("~/movement")
     ,server(nh){
 
@@ -766,6 +768,14 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t)
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     ROS_INFO_STREAM("roadCenterDetection");
     // ExpLib::Struct::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
+
+    static bool initialized = false;
+    static tf::TransformListener listener;
+    if(!initialized){
+        listener.waitForTransform(pose_.data.header.frame_id, scan.header.frame_id, ros::Time(), ros::Duration(1.0));
+        initialized = true;
+    }
+
     ExpLib::Struct::scanStruct scanRect(scan.ranges.size());
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
@@ -773,23 +783,30 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
             double tempAngle = scan.angle_min+(scan.angle_increment*i);
             if(scan.ranges[i]*cos(tempAngle) <= ROAD_CENTER_THRESHOLD){
                 scanRect.ranges.emplace_back(scan.ranges[i]);
+                scanRect.x.emplace_back(scan.ranges[i]*cos(tempAngle));
                 scanRect.y.emplace_back(scan.ranges[i]*sin(tempAngle));
                 scanRect.angles.emplace_back(std::move(tempAngle));
             }
         }
     }
 
-    if(scanRect.ranges.size() < 2) return false;
+    if(scanRect.ranges.size() < 2){
+        road_.pub.publish(geometry_msgs::PoseStamped()); // 空のpubをしたい
+        return false;
+    }
 
     for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
         // if(std::abs(scanRect.ranges[i+1]*sin(scanRect.angles[i+1]) - scanRect.ranges[i]*sin(scanRect.angles[i])) >= ROAD_THRESHOLD){
         if(std::abs(scanRect.y[i+1] - scanRect.y[i]) >= ROAD_THRESHOLD){
             ROS_DEBUG_STREAM("Road Center Found");
+            //  通路中心座標pub
+            road_.pub.publish(ExpLib::Convert::pointToPointStamped(ExpLib::Utility::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExpLib::Construct::msgPoint((scanRect.x[i+1] + scanRect.x[i])/2, (scanRect.y[i+1] + scanRect.y[i])/2))));
             velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
             return true;
         }
     }
     ROS_DEBUG_STREAM("Road Center Do Not Found");
+    road_.pub.publish(geometry_msgs::PoseStamped()); // 空のpubをしたい
     return false;
 }
 
