@@ -47,7 +47,7 @@ SensorBasedExploration::SensorBasedExploration()
     :branch_("branch", 1)
     ,pose_("pose", 1)
     ,poseLog_("pose_log", 1)
-    ,goal_("goal", 1)
+    ,goal_("goal", 1, true)
     ,nh("~/sensor_based_exploration")
     ,server(nh){
 

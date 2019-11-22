@@ -105,6 +105,13 @@ geometry_msgs::Quaternion msgGeoQuaternion(double x, double y, double z, double 
     return q;
 }
 
+template <typename T>
+std::vector<T> oneFactorVector(const T& factor){
+    std::vector<T> v;
+    v.push_back(factor);
+    return v;
+}
+
 }
 }
 #endif // CONSTRUCT_HPP

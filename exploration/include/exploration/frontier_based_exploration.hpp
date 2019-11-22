@@ -44,7 +44,7 @@ public:
 FrontierBasedExploration::FrontierBasedExploration()
     :frontier_("frontier", 1)
     ,pose_("pose", 1)
-    ,goal_("goal", 1)
+    ,goal_("goal", 1, true)
     ,nh("~/frontier_based_exploration")
     ,server(nh){
 
