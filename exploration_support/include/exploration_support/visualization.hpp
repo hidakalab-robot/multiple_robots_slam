@@ -100,60 +100,11 @@ Visualization::Visualization()
     p.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
     p.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);
 
-    //goalMarker // LISTにしないと空にできない？
     gm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
-    // gm_.header.frame_id = INIT_FRAME_ID;
-    // gm_.pose.orientation.w = 1.0;
-    // gm_.scale.x = gm_.scale.y = gm_.scale.z = 0.5;
-    // gm_.type = visualization_msgs::Marker::CUBE_LIST;
-    // gm_.action = visualization_msgs::Marker::ADD;
-    // gm_.lifetime = ros::Duration(0);
-    // gm_.color.r = 1.0f;
-    // gm_.color.g = 0.0f;
-    // gm_.color.b = 1.0f;
-    // gm_.color.a = 1.0f;
-
-    //branchMarker
     bm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
-    // bm_.header.frame_id = INIT_FRAME_ID;
-    // bm_.pose.orientation.w = 1.0;
-    // bm_.scale.x = bm_.scale.y = bm_.scale.z = 0.5;
-    // bm_.type = visualization_msgs::Marker::CUBE_LIST;
-    // bm_.action = visualization_msgs::Marker::ADD;
-    // bm_.lifetime = ros::Duration(0);
-    // bm_.color.r = 1.0f;
-    // bm_.color.g = 1.0f;
-    // bm_.color.b = 0.0f;
-    // bm_.color.a = 1.0f;
-
-    //frontierMarker
     fm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
-    // fm_.header.frame_id = INIT_FRAME_ID;
-    // fm_.pose.orientation.w = 1.0;
-    // fm_.scale.x = fm_.scale.y = fm_.scale.z = 0.5;
-    // fm_.type = visualization_msgs::Marker::CUBE_LIST;
-    // fm_.action = visualization_msgs::Marker::ADD;
-    // fm_.lifetime = ros::Duration(0);
-    // fm_.color.r = 0.0f;
-    // fm_.color.g = 1.0f;
-    // fm_.color.b = 1.0f;
-    // fm_.color.a = 1.0f;
-
-    //useFroMarker
     ufm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
-
-    //roadMarker // LISTにしないと空にできない？
-    rm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
-    // rm_.header.frame_id = INIT_FRAME_ID;
-    // rm_.pose.orientation.w = 1.0;
-    // rm_.scale.x = rm_.scale.y = rm_.scale.z = 0.5;
-    // rm_.type = visualization_msgs::Marker::CUBE_LIST;
-    // rm_.action = visualization_msgs::Marker::ADD;
-    // rm_.lifetime = ros::Duration(0);
-    // rm_.color.r = 0.5f;
-    // rm_.color.g = 0.5f;
-    // rm_.color.b = 1.0f;
-    // rm_.color.a = 1.0f;
+    rm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,s.5,0.5,0.5,1.0);
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
