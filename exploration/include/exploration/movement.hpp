@@ -72,7 +72,8 @@ private:
     int ESC_MAP_DIV_Y;
     double ESC_MAP_WIDTH;
     double ESC_MAP_HEIGHT;
-    double SAFETY_RANGE_THRESHOLD;
+    double SAFETY_RANGE_THRESHOLD_FAR;
+    double SAFETY_RANGE_THRESHOLD_NEAR;
     double SAFETY_RATE_THRESHOLD;
     int RESET_GOAL_PATH_LIMIT;
     double RESET_GOAL_PATH_RATE;
@@ -169,7 +170,8 @@ Movement::Movement()
     nh.param<int>("esc_map_div_y", ESC_MAP_DIV_Y, 3);
     nh.param<double>("esc_map_width", ESC_MAP_WIDTH, 0.9);
     nh.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
-    nh.param<double>("safty_range_threshold", SAFETY_RANGE_THRESHOLD, 1.5);
+    nh.param<double>("safty_range_threshold_near", SAFETY_RANGE_THRESHOLD_NEAR, 1.5);
+    nh.param<double>("safty_range_threshold_far", SAFETY_RANGE_THRESHOLD_FAR, 4.5);
     nh.param<double>("safty_rate_threshold", SAFETY_RATE_THRESHOLD, 0.1);
     nh.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
     nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
@@ -209,7 +211,8 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     ESC_MAP_DIV_Y = cfg.esc_map_div_y;
     ESC_MAP_WIDTH = cfg.esc_map_width;
     ESC_MAP_HEIGHT = cfg.esc_map_height;
-    SAFETY_RANGE_THRESHOLD = cfg.safty_range_threshold;
+    SAFETY_RANGE_THRESHOLD_NEAR = cfg.safty_range_threshold_near;
+    SAFETY_RANGE_THRESHOLD_FAR = cfg.safty_range_threshold_far;
     SAFETY_RATE_THRESHOLD = cfg.safty_rate_threshold;
     RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
     RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
@@ -252,7 +255,8 @@ void Movement::outputParams(void){
     ofs << "esc_map_div_y: " << ESC_MAP_DIV_Y << std::endl;
     ofs << "esc_map_width: " << ESC_MAP_WIDTH << std::endl;
     ofs << "esc_map_height: " << ESC_MAP_HEIGHT << std::endl;
-    ofs << "safty_range_threshold: " << SAFETY_RANGE_THRESHOLD << std::endl;
+    ofs << "safty_range_threshold_near: " << SAFETY_RANGE_THRESHOLD_NEAR << std::endl;
+    ofs << "safty_range_threshold_far: " << SAFETY_RANGE_THRESHOLD_FAR << std::endl;
     ofs << "safty_rate_threshold: " << SAFETY_RATE_THRESHOLD << std::endl;
     ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
     ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
@@ -658,9 +662,13 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     int count = 0;
     // ここでrateがthreshold以下になるまでずらして計算
     int sw = 0;
-    double rate = DBL_MAX;
-    double rateMin = DBL_MAX;
-    int rateMinTi;
+    double nRate = DBL_MAX;
+    double fRate = DBL_MAX;
+    double nRateMin = DBL_MAX;
+    double fRateMin = DBL_MAX;
+
+    int nRateMinTi;
+    int fRateMinTi;
     do{
         ti += sw;
         // tiをずらすごとにminusとplusを再計算
@@ -677,13 +685,25 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
             // return DBL_MAX;
         }
 
-        int c = 0;
-        for(int i=MINUS;i!=PLUS;++i) if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD) ++c;
-        rate = (double)c/(PLUS-MINUS);
-        if(rate < rateMin){
-            rateMin = rate;
-            rateMinTi = ti;
+        int nc = 0;
+        int fc = 0;
+        for(int i=MINUS;i!=PLUS;++i){
+            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_FAR) ++fc;
+            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_NEAR) ++nc;
         }
+        nRate = (double)nc/(PLUS-MINUS);
+        fRate = (double)fc/(PLUS-MINUS);
+        
+        if(nRate < nRateMin){
+            nRateMin = nRate;
+            nRateMinTi = ti;
+        }
+
+        if(fRate < fRateMin){
+            fRateMin = fRate;
+            fRateMinTi = ti;
+        }
+        
         // ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
         sw = sw > 0 ? -sw-1 : -sw+1;
     }while(rate>SAFETY_RATE_THRESHOLD);
