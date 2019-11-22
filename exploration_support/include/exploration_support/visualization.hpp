@@ -21,6 +21,7 @@ private:
     double GOAL_PUBLISH_RATE;
     double BRANCH_PUBLISH_RATE;
     double FRONTIER_PUBLISH_RATE;
+    double USEFUL_FRONTIER_PUBLISH_RATE;
     double ROAD_PUBLISH_RATE;
     std::string MAP_FRAME_ID;
 
@@ -34,7 +35,6 @@ private:
     ExpLib::Struct::pubStruct<visualization_msgs::Marker> goalMarker_;
     visualization_msgs::Marker gm_;
     ExpLib::Struct::subStructSimple goSt_;
-    actionlib_msgs::GoalStatusArray gsa_;
 
     // branch
     ExpLib::Struct::subStructSimple branch_;
@@ -46,6 +46,11 @@ private:
     ExpLib::Struct::pubStruct<visualization_msgs::Marker> frontierMarker_;
     visualization_msgs::Marker fm_;
 
+    // useful frontier
+    ExpLib::Struct::subStructSimple useFro_;
+    ExpLib::Struct::pubStruct<visualization_msgs::Marker> useFroMarker_;
+    visualization_msgs::Marker ufm_;
+
     // road
     ExpLib::Struct::subStructSimple road_;
     ExpLib::Struct::pubStruct<visualization_msgs::Marker> roadMarker_;
@@ -56,12 +61,14 @@ private:
     void goalStatusCB(const actionlib_msgs::GoalStatusArray::ConstPtr& msg);
     void branchCB(const exploration_msgs::PointArray::ConstPtr& msg);
     void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
+    void useFroCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
     void roadCB(const geometry_msgs::PointStamped::ConstPtr& msg);
 
     void posePathPublisher(void);
     void goalMarkerPublisher(void);
     void branchMarkerPublisher(void);
     void frontierMarkerPublisher(void);
+    void useFroMarkerPublisher(void);
     void roadMarkerPublisher(void);
 
 public:
@@ -79,6 +86,8 @@ Visualization::Visualization()
     ,branchMarker_("visualization/branch", 1, true)
     ,frontier_("frontier",1,&Visualization::frontierCB, this)
     ,frontierMarker_("visualization/frontier", 1, true)
+    ,useFro_("useful_frontier",1,&Visualization::useFroCB, this)
+    ,useFroMarker_("visualization/useful_frontier", 1, true)
     ,road_("road",1,&Visualization::roadCB, this)
     ,roadMarker_("visualization/road", 1, true){
 
@@ -88,56 +97,63 @@ Visualization::Visualization()
     p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 10.0);
     p.param<double>("branch_publish_rate", BRANCH_PUBLISH_RATE, 10.0);
     p.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
+    p.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
     p.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);
 
     //goalMarker // LISTにしないと空にできない？
-    gm_.header.frame_id = INIT_FRAME_ID;
-    gm_.pose.orientation.w = 1.0;
-    gm_.scale.x = gm_.scale.y = gm_.scale.z = 0.5;
-    // gm_.pose.position.z = 0;
-    gm_.type = visualization_msgs::Marker::CUBE_LIST;
-    gm_.action = visualization_msgs::Marker::ADD;
-    gm_.lifetime = ros::Duration(0);
-    gm_.color.r = 1.0f;
-    gm_.color.g = 0.0f;
-    gm_.color.b = 1.0f;
-    gm_.color.a = 1.0f;
+    gm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
+    // gm_.header.frame_id = INIT_FRAME_ID;
+    // gm_.pose.orientation.w = 1.0;
+    // gm_.scale.x = gm_.scale.y = gm_.scale.z = 0.5;
+    // gm_.type = visualization_msgs::Marker::CUBE_LIST;
+    // gm_.action = visualization_msgs::Marker::ADD;
+    // gm_.lifetime = ros::Duration(0);
+    // gm_.color.r = 1.0f;
+    // gm_.color.g = 0.0f;
+    // gm_.color.b = 1.0f;
+    // gm_.color.a = 1.0f;
 
     //branchMarker
-    bm_.header.frame_id = INIT_FRAME_ID;
-    bm_.pose.orientation.w = 1.0;
-    bm_.scale.x = bm_.scale.y = bm_.scale.z = 0.5;
-    bm_.type = visualization_msgs::Marker::CUBE_LIST;
-    bm_.action = visualization_msgs::Marker::ADD;
-    bm_.lifetime = ros::Duration(0);
-    bm_.color.r = 1.0f;
-    bm_.color.g = 1.0f;
-    bm_.color.b = 0.0f;
-    bm_.color.a = 1.0f;
+    bm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
+    // bm_.header.frame_id = INIT_FRAME_ID;
+    // bm_.pose.orientation.w = 1.0;
+    // bm_.scale.x = bm_.scale.y = bm_.scale.z = 0.5;
+    // bm_.type = visualization_msgs::Marker::CUBE_LIST;
+    // bm_.action = visualization_msgs::Marker::ADD;
+    // bm_.lifetime = ros::Duration(0);
+    // bm_.color.r = 1.0f;
+    // bm_.color.g = 1.0f;
+    // bm_.color.b = 0.0f;
+    // bm_.color.a = 1.0f;
 
     //frontierMarker
-    fm_.header.frame_id = INIT_FRAME_ID;
-    fm_.pose.orientation.w = 1.0;
-    fm_.scale.x = fm_.scale.y = fm_.scale.z = 0.5;
-    fm_.type = visualization_msgs::Marker::CUBE_LIST;
-    fm_.action = visualization_msgs::Marker::ADD;
-    fm_.lifetime = ros::Duration(0);
-    fm_.color.r = 0.0f;
-    fm_.color.g = 1.0f;
-    fm_.color.b = 1.0f;
-    fm_.color.a = 1.0f;
+    fm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
+    // fm_.header.frame_id = INIT_FRAME_ID;
+    // fm_.pose.orientation.w = 1.0;
+    // fm_.scale.x = fm_.scale.y = fm_.scale.z = 0.5;
+    // fm_.type = visualization_msgs::Marker::CUBE_LIST;
+    // fm_.action = visualization_msgs::Marker::ADD;
+    // fm_.lifetime = ros::Duration(0);
+    // fm_.color.r = 0.0f;
+    // fm_.color.g = 1.0f;
+    // fm_.color.b = 1.0f;
+    // fm_.color.a = 1.0f;
+
+    //useFroMarker
+    ufm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
 
     //roadMarker // LISTにしないと空にできない？
-    rm_.header.frame_id = INIT_FRAME_ID;
-    rm_.pose.orientation.w = 1.0;
-    rm_.scale.x = rm_.scale.y = rm_.scale.z = 0.5;
-    rm_.type = visualization_msgs::Marker::CUBE_LIST;
-    rm_.action = visualization_msgs::Marker::ADD;
-    rm_.lifetime = ros::Duration(0);
-    rm_.color.r = 0.5f;
-    rm_.color.g = 0.5f;
-    rm_.color.b = 1.0f;
-    rm_.color.a = 1.0f;
+    rm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
+    // rm_.header.frame_id = INIT_FRAME_ID;
+    // rm_.pose.orientation.w = 1.0;
+    // rm_.scale.x = rm_.scale.y = rm_.scale.z = 0.5;
+    // rm_.type = visualization_msgs::Marker::CUBE_LIST;
+    // rm_.action = visualization_msgs::Marker::ADD;
+    // rm_.lifetime = ros::Duration(0);
+    // rm_.color.r = 0.5f;
+    // rm_.color.g = 0.5f;
+    // rm_.color.b = 1.0f;
+    // rm_.color.a = 1.0f;
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
@@ -182,6 +198,18 @@ void Visualization::frontierCB(const exploration_msgs::FrontierArray::ConstPtr& 
     fm_.header.stamp = ros::Time::now();
 }
 
+void Visualization::useFroCB(const exploration_msgs::FrontierArray::ConstPtr& msg){
+    auto replace = [&msg]{
+        std::vector<geometry_msgs::Point> p;
+        p.reserve(msg->frontiers.size());
+        for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
+        return p;
+    };
+    ufm_.points = replace();
+    ufm_.header.frame_id = msg->header.frame_id;
+    ufm_.header.stamp = ros::Time::now();
+}
+
 // 本当に空になってるか確認
 void Visualization::roadCB(const geometry_msgs::PointStamped::ConstPtr& msg){
     rm_.points = msg->header.frame_id != "" ? ExpLib::Construct::oneFactorVector(msg->point) : std::vector<geometry_msgs::Point>();
@@ -221,6 +249,14 @@ void Visualization::frontierMarkerPublisher(void){
     }
 }
 
+void Visualization::useFroMarkerPublisher(void){
+    ros::Rate rate(USEFUL_FRONTIER_PUBLISH_RATE);
+    while(ros::ok()){
+        useFroMarker_.pub.publish(ufm_);
+        rate.sleep();
+    }
+}
+
 void Visualization::roadMarkerPublisher(void){
     ros::Rate rate(ROAD_PUBLISH_RATE);
     while(ros::ok()){
@@ -236,12 +272,14 @@ void Visualization::multiThreadMain(void){
     std::thread gmThread([this]() { goalMarkerPublisher(); });
     std::thread bmThread([this]() { branchMarkerPublisher(); });
     std::thread fmThread([this]() { frontierMarkerPublisher(); });
+    std::thread ufmThread([this]() { useFroMarkerPublisher(); });
     std::thread rmThread([this]() { roadMarkerPublisher(); });
     ros::spin();
     ppThread.join();//スレッドの終了を待つ
     gmThread.join();
     bmThread.join();
     fmThread.join();
+    ufmThread.join();
     rmThread.join();
     ROS_INFO_STREAM("end main loop\n");
 }

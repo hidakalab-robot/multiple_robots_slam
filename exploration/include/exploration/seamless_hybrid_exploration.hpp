@@ -50,6 +50,7 @@ private:
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
     ExpLib::Struct::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
     ExpLib::Struct::subStruct<exploration_msgs::FrontierArray> frontier_;
+    ExpLib::Struct::pubStruct<exploration_msgs::FrontierArray> useFro_;
 
     std::vector<preCalcResult> ownPreCalc_;
     std::vector<preCalcResult> otherPreCalc_;
@@ -76,6 +77,7 @@ public:
 SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_("robot_array", 1)
     ,frontier_("frontier", 1)
+    ,useFro_("useful_frontier", 1, true)
     ,pp_("seamless_costmap","seamless_planner")
     ,nh("~/seamless_hybrid_exploration")
     ,server(nh){
@@ -195,6 +197,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExpLib::Struct::listStruct>& 
 	fa.frontiers.erase(std::move(faRemove),fa.frontiers.end());
     ROS_INFO_STREAM("after frontiers size : " << fa.frontiers.size());
 
+    useFro_.pub.publish(fa);
     if(fa.frontiers.size()==0) return false;
 
     //ロボットリストのフィルタ
