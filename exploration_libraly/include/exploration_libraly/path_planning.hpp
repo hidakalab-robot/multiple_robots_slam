@@ -49,7 +49,7 @@ private:
 public:
     PathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
         ros::NodeHandle p("~");
-        p.param<double>("path_to_vector_ratio", PATH_TO_VECTOR_RATIO, 0.9);
+        p.param<double>("path_to_vector_ratio", PATH_TO_VECTOR_RATIO, 0.5);
         planner.initialize("path_planner",&gcr);
         ros::spinOnce();
     };
@@ -83,31 +83,31 @@ public:
     bool getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance){
         ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
-        ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");        // if(createPath(start,goal,plan)){
+        // ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");        // if(createPath(start,goal,plan)){
         if(planner.makePlan(start,goal,plan)){
             // plan に path が入ってるので長さを計算する
             // distance = 0;
             // for(int i=1,ie=plan.size();i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
             getDistance(start, goal, distance, plan);
-            ROS_INFO_STREAM("getDistance return: true");
+            // ROS_INFO_STREAM("getDistance return: true");
             return true;
         }
-        ROS_INFO_STREAM("getDistance return: false");
+        // ROS_INFO_STREAM("getDistance return: false");
         return false;
     }
 
     void getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec, std::vector<geometry_msgs::PoseStamped>& plan){
         // 方法変更
-        for(int i=plan.size()-2,ie=-1;i!=ie;--i){
-            if(plan[i].pose.position.x != plan[plan.size()-1].pose.position.x || plan[i].pose.position.y != plan[plan.size()-1].pose.position.y){
-                vec = Eigen::Vector2d(plan[i].pose.position.x - plan[plan.size()-1].pose.position.x, plan[i].pose.position.y - plan[plan.size()-1].pose.position.y).normalized();
-                return;
-            }
-        }
+        // for(int i=plan.size()-2,ie=-1;i!=ie;--i){
+        //     if(plan[i].pose.position.x != plan[plan.size()-1].pose.position.x || plan[i].pose.position.y != plan[plan.size()-1].pose.position.y){
+        //         vec = Eigen::Vector2d(plan[plan.size()-1].pose.position.x - plan[i].pose.position.x, plan[plan.size()-1].pose.position.y - plan[i].pose.position.y).normalized();
+        //         return;
+        //     }
+        // }
 
-        // 新しい方法が無理だったとき
-        ROS_INFO_STREAM("new getVec is failed");
-        ROS_INFO_STREAM("switched to legacy");
+        // // 新しい方法が無理だったとき
+        // ROS_INFO_STREAM("new getVec is failed");
+        // ROS_INFO_STREAM("switched to legacy");
 
         int b = plan.size() - 1;
         int a = b * PATH_TO_VECTOR_RATIO;
@@ -118,20 +118,20 @@ public:
     bool getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec){
         ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
-        ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");        // if(createPath(start,goal,plan)){
+        // ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");        // if(createPath(start,goal,plan)){
         if(planner.makePlan(start,goal,plan)){
             getVec(start,goal,vec,plan);
-            ROS_INFO_STREAM("getVec return: true");
+            // ROS_INFO_STREAM("getVec return: true");
             return true;
         }
-        ROS_INFO_STREAM("getVec return: false");
+        // ROS_INFO_STREAM("getVec return: false");
         return false;
     }
 
     bool getDistanceAndVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, Eigen::Vector2d& vec){
         ros::spinOnce();
         std::vector<geometry_msgs::PoseStamped> plan;
-        ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");
+        // ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");
         if(planner.makePlan(start,goal,plan)){
             getDistance(start,goal,distance,plan);
             getVec(start,goal,vec,plan);
@@ -143,10 +143,10 @@ public:
             // int a = b * PATH_TO_VECTOR_RATIO;
             //a-b間のベクトル
             // vec = Eigen::Vector2d(plan[b].pose.position.x - plan[a].pose.position.x, plan[b].pose.position.y - plan[a].pose.position.y).normalized();
-            ROS_INFO_STREAM("path function return: true");
+            // ROS_INFO_STREAM("path function return: true");
             return true;
         }
-        ROS_INFO_STREAM("path function return: false");
+        // ROS_INFO_STREAM("path function return: false");
         return false;
     }
 };
