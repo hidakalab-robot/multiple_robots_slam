@@ -321,6 +321,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     mbg.target_pose.pose = ExpLib::Construct::msgPose(goal.point,ExpLib::Convert::eigenQuaToGeoQua(q));
 
     ROS_DEBUG_STREAM("goal pose : " << mbg.target_pose.pose);
+    ROS_DEBUG_STREAM("goal yaw : " << ExpLib::Convert::qToYaw(mbg.target_pose.pose.orientation));
     ROS_INFO_STREAM("send goal to move_base");
     ac.sendGoal(mbg);
     ROS_INFO_STREAM("wait for result");
@@ -343,6 +344,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
             if(ac.getState().isDone()) break;
             // 大丈夫な目的地に変わっているので再設定
             ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
+            ROS_DEBUG_STREAM("new goal yaw : " << ExpLib::Convert::qToYaw(mbg.target_pose.pose.orientation));
             ROS_INFO_STREAM("send new goal to move_base");
             ac.sendGoal(mbg);
             // ゴールtopicに再出力
@@ -684,27 +686,12 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     // その方向が安全であるかを見る   
     ROS_INFO_STREAM("angle : " << angle << ", ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
 
-    int count = 0;
     // ここでrateがthreshold以下になるまでずらして計算
     int sw = 0;
-    double nRate = DBL_MAX;
-    double fRate = DBL_MAX;
-    double nRateMin = DBL_MAX;
-    double fRateMin = DBL_MAX;
-    double nRateLast;
-    double fRateLast;
-
-    // far : 旋回遅め(基本)
-    // near : 旋回早め(farが全滅したときのみ)
-    // 近いところから検索してるので一番最初にしきい値を満たしたのを採用すれば良い
-    // fが大丈夫ならnは大丈夫 nが大丈夫でもfはわかラナイ
-
-    // 基本的にfarで避ける、無理だったらnearの方で
-
-    int nRateMinTi;
-    int fRateMinTi;
-    
-
+    double rate;
+    double nRate;
+    double fRate;
+    double aveDist;
 
     do{
         ti += sw;
@@ -715,61 +702,155 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
         int MINUS = tMINUS < 0 ? 0 : tMINUS;
 
         if(tMINUS >= scan.ranges.size() || tPLUS < 0){
-            if(nRateMin == -DBL_MAX){
-                ti = nRateMinTi;
-                break;
-            }
-            ROS_INFO_STREAM("safety angle search is failed");
-            ROS_INFO_STREAM("emergency avoid");
-            if(!VFH_RETURN_FALSE){
-                velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN));
-                return true;
-            }
-            else return false;
-            // return VFH_RETURN_FALSE ? false : velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN))||true;
-            // return MOVE_RETURN_DBLMAX ? DBL_MAX : scan.angle_min + rateMinTi * scan.angle_increment;
-            // return scan.angle_min + rateMinTi * scan.angle_increment;
-            // return DBL_MAX;
+            ROS_INFO_STREAM("VFH search is failed");
+            return false;
         }
-
-        int nc = 0;
+        double dist = 0;
         int fc = 0;
+        int nc = 0;
 
-        
+        // これだと結局近いところの障害物しか見てないのと同じ？
+        // cosの距離だとどう？
+
         for(int i=MINUS;i!=PLUS;++i){
-            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_FAR) ++fc; // 遠くまで見てるので先に反応する
-            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_NEAR) ++nc; // 
+            // nan or over far
+            if(std::isnan(scan.ranges[i])||scan.ranges[i]>=SAFETY_RANGE_THRESHOLD_FAR){
+                dist += SAFETY_RANGE_THRESHOLD_FAR;
+                ++fc;
+            }
+            // far > range > near
+            else if(scan.ranges[i]>=SAFETY_RANGE_THRESHOLD_NEAR){
+                dist += scan.ranges[i];
+                ++nc;
+            }
         }
-        nRate = (double)nc/(PLUS-MINUS);
-        fRate = (double)fc/(PLUS-MINUS);
-        
-        if(nRate < nRateMin){ 
-            nRateMin = nRate < SAFETY_RATE_THRESHOLD_NEAR ? -DBL_MAX : nRate;
-            // nRateMin = nRate;
-            nRateMinTi = ti;
-            nRateLast = nRate;
-        }
-
-        if(fRate < fRateMin){
-            fRateMin = fRate < SAFETY_RATE_THRESHOLD_FAR ? -DBL_MAX : fRate;
-            // fRateMin = fRate;
-            fRateMinTi = ti;
-            fRateLast = fRate;
-        }
-        // ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
+        rate = (double)(fc+nc) / (PLUS-MINUS);
+        fRate = (double)fc / (PLUS-MINUS);
+        nRate = (double)nc / (PLUS-MINUS);
+        aveDist = dist / (fc+nc);
         sw = sw > 0 ? -sw-1 : -sw+1;
-    // }while(nRate>SAFETY_RATE_THRESHOLD_NEAR);
-    }while(fRateMin!=-DBL_MAX); // forの方が良いかも
-    // どちらで判定したかを返す必要がある // ここで速度を送れば解決
+    // }while(rate < 0.9);
+    }while(fRate < 0.9 && nRate < 0.9);
 
-    ROS_INFO_STREAM((fRateMin==-DBL_MAX ? "far avoidance" : "near avoidance"));
-    ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", fRate : " << fRateLast << ", nRate : " << nRateLast);
+    double gain = ti==cp[0] ? 0 : (aveDist - SAFETY_RANGE_THRESHOLD_NEAR) * (FAR_AVOIDANCE_GAIN - NEAR_AVOIDANCE_GAIN)/(SAFETY_RANGE_THRESHOLD_FAR - SAFETY_RANGE_THRESHOLD_NEAR) + NEAR_AVOIDANCE_GAIN;
+    ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate << ", fRate : " << fRate << ", nRate : " << nRate << ", gain : " << gain << ", aveDist : " << aveDist);
     ROS_INFO_STREAM("this angle is safety");
-    // velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
-    // return ti==cp[0] ? 0 : scan.angle_min + ti * scan.angle_increment;
-    ti==cp[0]?velocity_.pub.publish(velocityGenerator(0,FORWARD_VELOCITY,0)):velocity_.pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,fRateMin==-DBL_MAX?FAR_AVOIDANCE_GAIN:NEAR_AVOIDANCE_GAIN));
+    velocity_.pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,gain));
     return true;
 }
+
+// old
+// bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
+//     // 目標の周辺がNanになってればtrueでそのまま通す
+//     // 安全の確認ができなければその近くで安全になるアングルに行く
+//     // nan もしくは障害物距離がx以上であれば安全角度判定
+
+//     int ti; //target i
+//     // 中心の要素番号設定
+//     static Eigen::Vector2i cp = scan.ranges.size()%2==0 ? Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2-3) : Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2);//中心の位置調整
+//     std::swap(cp[0],cp[1]);
+
+//     // 目標角に一番近い要素番号を計算 0 radのときは特殊処理(要素サイズが偶数の場合))
+//     if(angle==0) ti = cp[0];
+//     else{
+//         double min = DBL_MAX;
+//         for(int i=0,ie=scan.ranges.size();i!=ie;++i){
+//             double diff = std::abs(angle - (scan.angle_min + scan.angle_increment * i));
+//             if(diff < min){
+//                 min = std::move(diff);
+//                 ti = i;
+//             }
+//         }
+//     }
+
+//     // その方向が安全であるかを見る   
+//     ROS_INFO_STREAM("angle : " << angle << ", ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
+
+//     int count = 0;
+//     // ここでrateがthreshold以下になるまでずらして計算
+//     int sw = 0;
+//     double nRate = DBL_MAX;
+//     double fRate = DBL_MAX;
+//     double nRateMin = DBL_MAX;
+//     double fRateMin = DBL_MAX;
+//     double nRateLast;
+//     double fRateLast;
+
+//     // far : 旋回遅め(基本)
+//     // near : 旋回早め(farが全滅したときのみ)
+//     // 近いところから検索してるので一番最初にしきい値を満たしたのを採用すれば良い
+//     // fが大丈夫ならnは大丈夫 nが大丈夫でもfはわかラナイ
+
+//     // 基本的にfarで避ける、無理だったらnearの方で
+
+//     int nRateMinTi;
+//     int fRateMinTi;
+//     double dist = 0;
+
+//     do{
+//         ti += sw;
+//         // tiをずらすごとにminusとplusを再計算
+//         int tPLUS = ti + (FORWARD_ANGLE/2)/scan.angle_increment;
+//         int tMINUS = ti - (FORWARD_ANGLE/2)/scan.angle_increment;
+//         int PLUS = tPLUS > scan.ranges.size() ? scan.ranges.size() : tPLUS;
+//         int MINUS = tMINUS < 0 ? 0 : tMINUS;
+
+//         if(tMINUS >= scan.ranges.size() || tPLUS < 0){
+//             if(nRateMin == -DBL_MAX){
+//                 ti = nRateMinTi;
+//                 break;
+//             }
+//             ROS_INFO_STREAM("safety angle search is failed");
+//             ROS_INFO_STREAM("emergency avoid");
+//             if(!VFH_RETURN_FALSE){
+//                 velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN));
+//                 return true;
+//             }
+//             else return false;
+//             // return VFH_RETURN_FALSE ? false : velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN))||true;
+//             // return MOVE_RETURN_DBLMAX ? DBL_MAX : scan.angle_min + rateMinTi * scan.angle_increment;
+//             // return scan.angle_min + rateMinTi * scan.angle_increment;
+//             // return DBL_MAX;
+//         }
+
+//         int nc = 0;
+//         int fc = 0;
+
+        
+//         for(int i=MINUS;i!=PLUS;++i){
+//             if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_FAR) ++fc; // 遠くまで見てるので先に反応する
+//             if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_NEAR) ++nc; // 
+//         }
+//         nRate = (double)nc/(PLUS-MINUS);
+//         fRate = (double)fc/(PLUS-MINUS);
+        
+//         if(nRate < nRateMin){ 
+//             nRateMin = nRate < SAFETY_RATE_THRESHOLD_NEAR ? -DBL_MAX : nRate;
+//             // nRateMin = nRate;
+//             nRateMinTi = ti;
+//             nRateLast = nRate;
+//         }
+
+//         if(fRate < fRateMin){
+//             fRateMin = fRate < SAFETY_RATE_THRESHOLD_FAR ? -DBL_MAX : fRate;
+//             // fRateMin = fRate;
+//             fRateMinTi = ti;
+//             fRateLast = fRate;
+//         }
+//         // ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
+//         sw = sw > 0 ? -sw-1 : -sw+1;
+//     // }while(nRate>SAFETY_RATE_THRESHOLD_NEAR);
+//     }while(fRateMin!=-DBL_MAX); // forの方が良いかも
+//     // どちらで判定したかを返す必要がある // ここで速度を送れば解決
+
+//     ROS_INFO_STREAM((fRateMin==-DBL_MAX ? "far avoidance" : "near avoidance"));
+//     ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", fRate : " << fRateLast << ", nRate : " << nRateLast);
+//     ROS_INFO_STREAM("this angle is safety");
+//     // velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
+//     // return ti==cp[0] ? 0 : scan.angle_min + ti * scan.angle_increment;
+//     ti==cp[0]?velocity_.pub.publish(velocityGenerator(0,FORWARD_VELOCITY,0)):velocity_.pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,fRateMin==-DBL_MAX?FAR_AVOIDANCE_GAIN:NEAR_AVOIDANCE_GAIN));
+//     return true;
+// }
 
 // void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, double angle){
 //     //vfhMovementの代わり

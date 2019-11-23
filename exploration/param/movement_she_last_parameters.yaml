@@ -8,8 +8,8 @@ road_center_threshold: 7
 road_threshold: 1.5
 curve_gain: 2
 far_avoidance_gain: 2
-near_avoidance_gain: 2.5
-emergency_avoidance_gain: 3
+near_avoidance_gain: 3
+emergency_avoidance_gain: 3.2
 road_center_gain: 1.25
 wall_forward_angle: 0.35
 wall_rate_threshold: 0.8
@@ -25,10 +25,10 @@ esc_map_div_y: 7
 esc_map_width: 0.9
 esc_map_height: 0.9
 safty_range_threshold_near: 1.5
-safty_range_threshold_far: 4.5
+safty_range_threshold_far: 5
 safty_rate_threshold_near: 0.1
 safty_rate_threshold_far: 0.1
-reset_goal_path_limit: 15
+reset_goal_path_limit: 5
 reset_goal_path_rate: 0.5
 rotation_tolerance: 0.025
 approach_wall: false
