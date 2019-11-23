@@ -56,7 +56,9 @@ private:
     double ROAD_CENTER_THRESHOLD;
     double ROAD_THRESHOLD;
     double CURVE_GAIN;
-    double AVOIDANCE_GAIN;
+    double FAR_AVOIDANCE_GAIN;
+    double NEAR_AVOIDANCE_GAIN;
+    double EMERGENCY_AVOIDANCE_GAIN;
     double ROAD_CENTER_GAIN;
     std::string MOVEBASE_NAME;
     double WALL_FORWARD_ANGLE;
@@ -74,7 +76,8 @@ private:
     double ESC_MAP_HEIGHT;
     double SAFETY_RANGE_THRESHOLD_FAR;
     double SAFETY_RANGE_THRESHOLD_NEAR;
-    double SAFETY_RATE_THRESHOLD;
+    double SAFETY_RATE_THRESHOLD_NEAR;
+    double SAFETY_RATE_THRESHOLD_FAR;
     int RESET_GOAL_PATH_LIMIT;
     double RESET_GOAL_PATH_RATE;
     double ROTATION_TOLERANCE;
@@ -104,7 +107,8 @@ private:
     
     bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
     bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
-    geometry_msgs::Twist velocityGenerator(double theta, double v, double t);
+    geometry_msgs::Twist velocityGenerator(double theta, double v, double gain);
+    // geometry_msgs::Twist velocityGenerator(double theta, double v, double t);
     bool roadCenterDetection(const sensor_msgs::LaserScan& scan);
     //moveToForwardのときの障害物回避で、前方に壁があったときの処理
     bool forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle);
@@ -118,7 +122,7 @@ private:
     void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
 
     void nonGoalMove(const sensor_msgs::LaserScan& scan, double angle);
-    double isMoveable(const sensor_msgs::LaserScan& scan, double angle);
+    bool VFHMove(const sensor_msgs::LaserScan& scan, double angle);
 
     void dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
@@ -155,8 +159,10 @@ Movement::Movement()
     nh.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
     nh.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
     nh.param<double>("curve_gain", CURVE_GAIN, 2.0);
-    nh.param<double>("avoidance_gain", AVOIDANCE_GAIN, 0.4);
-    nh.param<double>("road_center_gain", ROAD_CENTER_GAIN, 0.8);
+    nh.param<double>("near_avoidance_gain", NEAR_AVOIDANCE_GAIN, 2.5);
+    nh.param<double>("far_avoidance_gain", FAR_AVOIDANCE_GAIN, 2.5);
+    nh.param<double>("emergency_avoidance_gain", EMERGENCY_AVOIDANCE_GAIN, 2.5);
+    nh.param<double>("road_center_gain", ROAD_CENTER_GAIN, 1.25);
     nh.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.35);
     nh.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
     nh.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
@@ -172,7 +178,8 @@ Movement::Movement()
     nh.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
     nh.param<double>("safty_range_threshold_near", SAFETY_RANGE_THRESHOLD_NEAR, 1.5);
     nh.param<double>("safty_range_threshold_far", SAFETY_RANGE_THRESHOLD_FAR, 4.5);
-    nh.param<double>("safty_rate_threshold", SAFETY_RATE_THRESHOLD, 0.1);
+    nh.param<double>("safty_rate_threshold_near", SAFETY_RATE_THRESHOLD_NEAR, 0.1);
+    nh.param<double>("safty_rate_threshold_far", SAFETY_RATE_THRESHOLD_FAR, 0.1);
     nh.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
     nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
     nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
@@ -213,7 +220,8 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     ESC_MAP_HEIGHT = cfg.esc_map_height;
     SAFETY_RANGE_THRESHOLD_NEAR = cfg.safty_range_threshold_near;
     SAFETY_RANGE_THRESHOLD_FAR = cfg.safty_range_threshold_far;
-    SAFETY_RATE_THRESHOLD = cfg.safty_rate_threshold;
+    SAFETY_RATE_THRESHOLD_NEAR = cfg.safty_rate_threshold_near;
+    SAFETY_RATE_THRESHOLD_FAR = cfg.safty_rate_threshold_far;
     RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
     RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
     ROTATION_TOLERANCE = cfg.rotation_tolerance;
@@ -240,7 +248,9 @@ void Movement::outputParams(void){
     ofs << "road_center_threshold: " << ROAD_CENTER_THRESHOLD << std::endl;
     ofs << "road_threshold: " << ROAD_THRESHOLD << std::endl;
     ofs << "curve_gain: " << CURVE_GAIN << std::endl;
-    ofs << "avoidance_gain: " << AVOIDANCE_GAIN << std::endl;
+    ofs << "far_avoidance_gain: " << FAR_AVOIDANCE_GAIN << std::endl;
+    ofs << "near_avoidance_gain: " << NEAR_AVOIDANCE_GAIN << std::endl;
+    ofs << "emergency_avoidance_gain: " << EMERGENCY_AVOIDANCE_GAIN << std::endl;
     ofs << "road_center_gain: " << ROAD_CENTER_GAIN << std::endl;
     ofs << "wall_forward_angle: " << WALL_FORWARD_ANGLE << std::endl;
     ofs << "wall_rate_threshold: " << WALL_RATE_THRESHOLD << std::endl;
@@ -257,7 +267,8 @@ void Movement::outputParams(void){
     ofs << "esc_map_height: " << ESC_MAP_HEIGHT << std::endl;
     ofs << "safty_range_threshold_near: " << SAFETY_RANGE_THRESHOLD_NEAR << std::endl;
     ofs << "safty_range_threshold_far: " << SAFETY_RANGE_THRESHOLD_FAR << std::endl;
-    ofs << "safty_rate_threshold: " << SAFETY_RATE_THRESHOLD << std::endl;
+    ofs << "safty_rate_threshold_near: " << SAFETY_RATE_THRESHOLD_NEAR << std::endl;
+    ofs << "safty_rate_threshold_far: " << SAFETY_RATE_THRESHOLD_FAR << std::endl;
     ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
     ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
     ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
@@ -633,7 +644,7 @@ void Movement::moveToForward(void){
     }
 }
 
-double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
+bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle=0){
     // 目標の周辺がNanになってればtrueでそのまま通す
     // 安全の確認ができなければその近くで安全になるアングルに行く
     // nan もしくは障害物距離がx以上であれば安全角度判定
@@ -667,6 +678,11 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
     double nRateMin = DBL_MAX;
     double fRateMin = DBL_MAX;
 
+    // far : 旋回遅め(基本)
+    // near : 旋回早め(farが全滅したときのみ)
+    // 近いところから検索してるので一番最初にしきい値を満たしたのを採用すれば良い
+    // fが大丈夫ならnは大丈夫 nが大丈夫でもfはわかラナイ
+
     int nRateMinTi;
     int fRateMinTi;
     do{
@@ -688,8 +704,8 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
         int nc = 0;
         int fc = 0;
         for(int i=MINUS;i!=PLUS;++i){
-            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_FAR) ++fc;
-            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_NEAR) ++nc;
+            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_FAR) ++fc; // 遠くまで見てるので先に反応する
+            if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_NEAR) ++nc; // 
         }
         nRate = (double)nc/(PLUS-MINUS);
         fRate = (double)fc/(PLUS-MINUS);
@@ -703,10 +719,11 @@ double Movement::isMoveable(const sensor_msgs::LaserScan& scan, double angle=0){
             fRateMin = fRate;
             fRateMinTi = ti;
         }
-        
         // ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
         sw = sw > 0 ? -sw-1 : -sw+1;
-    }while(rate>SAFETY_RATE_THRESHOLD);
+    // }while(nRate>SAFETY_RATE_THRESHOLD_NEAR);
+    }while(fRateMin>SAFETY_RATE_THRESHOLD_FAR || nRateMin>SAFETY_RATE_THRESHOLD_NEAR);
+    // どちらで判定したかを返す必要がある
 
     ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate);
     ROS_INFO_STREAM("this angle is safety");
@@ -717,7 +734,8 @@ void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, double angle){
     //vfhMovementの代わり
     // 目標アングルの周辺が大丈夫そうか見る
     if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
-        double resultAngle = isMoveable(scan,angle);
+        // double resultAngle = isMoveable(scan,angle);
+        if(VFHMove(scan, angle)) 
         if(resultAngle == DBL_MAX) emergencyAvoidance(scan); // コストマップにかかってないけど障害物を避けられない場合、ある？？？
         else velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
     }
@@ -779,9 +797,10 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     }
 }
 
+// geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
     if(theta != 0) previousOrientation_ = theta;
-    return ExpLib::Construct::msgTwist(v,(CURVE_GAIN*theta)/t);
+    return ExpLib::Construct::msgTwist(v,gain*CURVE_GAIN*theta);
 }
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){

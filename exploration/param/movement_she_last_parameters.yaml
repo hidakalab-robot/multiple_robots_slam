@@ -1,14 +1,14 @@
 forward_velocity: 0.2
 back_velocity: -0.2
-back_time: 1
+back_time: 2
 forward_angle: 0.35
 rotation_velocity: 0.5
 emergency_threshold: 0.1
 road_center_threshold: 5
 road_threshold: 1.5
 curve_gain: 2
-avoidance_gain: 0.4
-road_center_gain: 0.8
+avoidance_gain: 2.5
+road_center_gain: 1.25
 wall_forward_angle: 0.35
 wall_rate_threshold: 0.8
 wall_distance_upper_threshold: 5
