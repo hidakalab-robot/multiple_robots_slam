@@ -74,15 +74,13 @@ private:
     int ESC_MAP_DIV_Y;
     double ESC_MAP_WIDTH;
     double ESC_MAP_HEIGHT;
-    double SAFETY_RANGE_THRESHOLD_FAR;
-    double SAFETY_RANGE_THRESHOLD_NEAR;
-    double SAFETY_RATE_THRESHOLD_NEAR;
-    double SAFETY_RATE_THRESHOLD_FAR;
+    double VFH_FAR_RANGE_THRESHOLD;
+    double VFH_NEAR_RANGE_THRESHOLD;
+    double VFH_RATE_THRESHOLD;
     int RESET_GOAL_PATH_LIMIT;
     double RESET_GOAL_PATH_RATE;
     double ROTATION_TOLERANCE;
     bool APPROACH_WALL;
-    bool VFH_RETURN_FALSE;
     bool USE_ANGLE_BIAS;
 
     ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
@@ -108,7 +106,6 @@ private:
     bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
     bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
     geometry_msgs::Twist velocityGenerator(double theta, double v, double gain);
-    // geometry_msgs::Twist velocityGenerator(double theta, double v, double t);
     bool roadCenterDetection(const sensor_msgs::LaserScan& scan);
     //moveToForwardのときの障害物回避で、前方に壁があったときの処理
     bool forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle);
@@ -121,7 +118,6 @@ private:
     bool resetGoal(geometry_msgs::PoseStamped& goal);
     void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
 
-    // void nonGoalMove(const sensor_msgs::LaserScan& scan, double angle);
     bool VFHMove(const sensor_msgs::LaserScan& scan, double angle=0);
 
     void dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level);
@@ -176,15 +172,13 @@ Movement::Movement()
     nh.param<int>("esc_map_div_y", ESC_MAP_DIV_Y, 3);
     nh.param<double>("esc_map_width", ESC_MAP_WIDTH, 0.9);
     nh.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
-    nh.param<double>("safty_range_threshold_near", SAFETY_RANGE_THRESHOLD_NEAR, 1.5);
-    nh.param<double>("safty_range_threshold_far", SAFETY_RANGE_THRESHOLD_FAR, 4.5);
-    nh.param<double>("safty_rate_threshold_near", SAFETY_RATE_THRESHOLD_NEAR, 0.1);
-    nh.param<double>("safty_rate_threshold_far", SAFETY_RATE_THRESHOLD_FAR, 0.1);
+    nh.param<double>("vfh_near_range_threshold", VFH_NEAR_RANGE_THRESHOLD, 1.5);
+    nh.param<double>("vfh_far_range_threshold", VFH_FAR_RANGE_THRESHOLD, 5.0);
+    nh.param<double>("vfh_rate_threshold", VFH_RATE_THRESHOLD, 0.9);
     nh.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
     nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
     nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
     nh.param<bool>("approach_wall", APPROACH_WALL, false);
-    nh.param<bool>("vfh_return_false", VFH_RETURN_FALSE, false);
     nh.param<bool>("use_angle_bias", USE_ANGLE_BIAS, false);
     nh.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
     nh.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
@@ -220,15 +214,13 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     ESC_MAP_DIV_Y = cfg.esc_map_div_y;
     ESC_MAP_WIDTH = cfg.esc_map_width;
     ESC_MAP_HEIGHT = cfg.esc_map_height;
-    SAFETY_RANGE_THRESHOLD_NEAR = cfg.safty_range_threshold_near;
-    SAFETY_RANGE_THRESHOLD_FAR = cfg.safty_range_threshold_far;
-    SAFETY_RATE_THRESHOLD_NEAR = cfg.safty_rate_threshold_near;
-    SAFETY_RATE_THRESHOLD_FAR = cfg.safty_rate_threshold_far;
+    VFH_NEAR_RANGE_THRESHOLD = cfg.vfh_near_range_threshold;
+    VFH_FAR_RANGE_THRESHOLD = cfg.vfh_far_range_threshold;
+    VFH_RATE_THRESHOLD = cfg.vfh_rate_threshold;
     RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
     RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
     ROTATION_TOLERANCE = cfg.rotation_tolerance;
     APPROACH_WALL = cfg.approach_wall;
-    VFH_RETURN_FALSE = cfg.vfh_return_false;
     USE_ANGLE_BIAS = cfg.use_angle_bias;
 }
 
@@ -267,15 +259,13 @@ void Movement::outputParams(void){
     ofs << "esc_map_div_y: " << ESC_MAP_DIV_Y << std::endl;
     ofs << "esc_map_width: " << ESC_MAP_WIDTH << std::endl;
     ofs << "esc_map_height: " << ESC_MAP_HEIGHT << std::endl;
-    ofs << "safty_range_threshold_near: " << SAFETY_RANGE_THRESHOLD_NEAR << std::endl;
-    ofs << "safty_range_threshold_far: " << SAFETY_RANGE_THRESHOLD_FAR << std::endl;
-    ofs << "safty_rate_threshold_near: " << SAFETY_RATE_THRESHOLD_NEAR << std::endl;
-    ofs << "safty_rate_threshold_far: " << SAFETY_RATE_THRESHOLD_FAR << std::endl;
+    ofs << "vfh_near_range_threshold: " << VFH_NEAR_RANGE_THRESHOLD << std::endl;
+    ofs << "vfh_far_range_threshold: " << VFH_FAR_RANGE_THRESHOLD << std::endl;
+    ofs << "vfh_rate_threshold: " << VFH_RATE_THRESHOLD << std::endl;
     ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
     ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
     ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
     ofs << "approach_wall: " << (APPROACH_WALL ? "true" : "false") << std::endl;
-    ofs << "vfh_return_false: " << (VFH_RETURN_FALSE ? "true" : "false") << std::endl; 
     ofs << "use_angle_bias: " << (USE_ANGLE_BIAS ? "true" : "false") << std::endl; 
 }
 
@@ -510,40 +500,6 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
 
     if(escIndex.x()==mci.x()&&escIndex.y()==mci.y()) ROS_WARN_STREAM("Can't avoid !!");
 
-    //図で出力してみる	
-    // ROS_INFO_STREAM("position map");
-    // std::cout << "y↑\n  →\n  x" << std::endl;
-    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-    //     std::cout << "|";	
-    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.position << "|";		
-    //     std::cout << std::endl;	
-    // }	
-    
-    // ROS_INFO_STREAM("orientation map");
-    // std::cout << "y↑\n  →\n  x" << std::endl;
-    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-    //     std::cout << "|";	
-    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].pose.orientation << "|";		
-    //     std::cout << std::endl;	
-    // }	
-    
-    // ROS_INFO_STREAM("risk map");
-    // std::cout << "y↑\n  →\n  x" << std::endl;
-    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-    //     std::cout << "|";	
-    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].risk  << "|";		
-    //     std::cout << std::endl;	
-    // }	
-
-     //勾配が小さくなっている	
-    // ROS_INFO_STREAM("grad map");
-    // std::cout << "y↑\n  →\n  x" << std::endl;
-    // for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){	
-    //     std::cout << "|";	
-    //     for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << std::fixed << std::setprecision(2) << gmm[x][y].grad << "|";
-    //     std::cout << std::endl;	
-    // }
-
     ROS_INFO_STREAM("avoid angle map");
     std::cout << "y↑\n  →\n  x" << std::endl;
     for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
@@ -551,12 +507,6 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         for(int x=0;x!=ESC_MAP_DIV_X;++x) std::cout << (x == escIndex.x() && y == escIndex.y() ? "@" : x == mci.x() && y == mci.y() ? "R" : gmm[x][y].grad == gmm[escIndex.x()][escIndex.y()].grad ? "*" : " ") << "|";
         std::cout << std::endl;
     }
-
-    // これの向きに合わせてから直進で抜けるまで
-    // 回転部分
-    // pose.pose.orientation // 現在向き
-    // 回避方向 escape:true && gmm[x][y].pose.orientation
-    // どこかでコストマップを見直す処理かもういちどけいさんしなおすかしたほうが良さそう
 
     static Eigen::Vector2i lastIndex(INT_MAX,INT_MAX);
     static bool loop = true;
@@ -585,9 +535,6 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
     ROS_INFO_STREAM("from : " << ExpLib::Convert::qToYaw(from) << ", from(rad) : " << ExpLib::Convert::qToYaw(from)*180/M_PI);
     ROS_INFO_STREAM("to : " << ExpLib::Convert::qToYaw(to) << ", to(rad) : " << ExpLib::Convert::qToYaw(to)*180/M_PI);
 
-    // ぴったり180度とかだと止まれなくなる  // 角度の差を積分して累計回転角度を求める方式に変更？
-
-    // 命令遅延を考えて少しだけ
     double sum = 0;
     double la = ExpLib::Convert::qToYaw(from);
 
@@ -597,14 +544,12 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : ExpLib::Convert::qToYaw(pose_.data.pose.orientation) + M_PI;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : -M_PI;
-            // ROS_DEBUG_STREAM("pose1-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
         while(sum < rotation - ROTATION_TOLERANCE && ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
-            // ROS_DEBUG_STREAM("pose1-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose1-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
     }
     else{
@@ -613,14 +558,12 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : ExpLib::Convert::qToYaw(pose_.data.pose.orientation) - M_PI;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : M_PI;
-            // ROS_DEBUG_STREAM("pose2-1 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-1(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
         while(sum > rotation + ROTATION_TOLERANCE && ros::ok()){
             velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
             la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
-            // ROS_DEBUG_STREAM("pose2-2 : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation) << ", pose2-2(rad) : " << ExpLib::Convert::qToYaw(pose_.data.pose.orientation)*180/M_PI << ", sum : " << sum << ", la : " << la);
         }
     }
 }
@@ -652,12 +595,6 @@ void Movement::moveToForward(void){
             if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
         }
     }
-
-// 道の中心 -> vfh -> emer
-            // double resultAngle = isMoveable(scan,angle);
-        // if(VFHMove(scan, angle)) 
-        // if(resultAngle == DBL_MAX) emergencyAvoidance(scan); // コストマップにかかってないけど障害物を避けられない場合、ある？？？
-        // else velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
 }
 
 bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
@@ -682,7 +619,6 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
             }
         }
     }
-
     // その方向が安全であるかを見る   
     ROS_INFO_STREAM("angle : " << angle << ", ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
 
@@ -692,7 +628,6 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     double nRate;
     double fRate;
     double aveDist;
-
     do{
         ti += sw;
         // tiをずらすごとにminusとplusを再計算
@@ -708,18 +643,16 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
         double dist = 0;
         int fc = 0;
         int nc = 0;
-
         // これだと結局近いところの障害物しか見てないのと同じ？
-        // cosの距離だとどう？
-
+        // cosの距離だと？
         for(int i=MINUS;i!=PLUS;++i){
             // nan or over far
-            if(std::isnan(scan.ranges[i])||scan.ranges[i]>=SAFETY_RANGE_THRESHOLD_FAR){
-                dist += SAFETY_RANGE_THRESHOLD_FAR;
+            if(std::isnan(scan.ranges[i])||scan.ranges[i]>=VFH_FAR_RANGE_THRESHOLD){
+                dist += VFH_FAR_RANGE_THRESHOLD;
                 ++fc;
             }
             // far > range > near
-            else if(scan.ranges[i]>=SAFETY_RANGE_THRESHOLD_NEAR){
+            else if(scan.ranges[i]>=VFH_NEAR_RANGE_THRESHOLD){
                 dist += scan.ranges[i];
                 ++nc;
             }
@@ -730,138 +663,14 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
         aveDist = dist / (fc+nc);
         sw = sw > 0 ? -sw-1 : -sw+1;
     // }while(rate < 0.9);
-    }while(fRate < 0.9 && nRate < 0.9);
+    }while(fRate < VFH_RATE_THRESHOLD && nRate < VFH_RATE_THRESHOLD);
 
-    double gain = ti==cp[0] ? 0 : (aveDist - SAFETY_RANGE_THRESHOLD_NEAR) * (FAR_AVOIDANCE_GAIN - NEAR_AVOIDANCE_GAIN)/(SAFETY_RANGE_THRESHOLD_FAR - SAFETY_RANGE_THRESHOLD_NEAR) + NEAR_AVOIDANCE_GAIN;
+    double gain = ti==cp[0] ? 0 : (aveDist - VFH_NEAR_RANGE_THRESHOLD) * (FAR_AVOIDANCE_GAIN - NEAR_AVOIDANCE_GAIN)/(VFH_FAR_RANGE_THRESHOLD - VFH_NEAR_RANGE_THRESHOLD) + NEAR_AVOIDANCE_GAIN;
     ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate << ", fRate : " << fRate << ", nRate : " << nRate << ", gain : " << gain << ", aveDist : " << aveDist);
     ROS_INFO_STREAM("this angle is safety");
     velocity_.pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,gain));
     return true;
 }
-
-// old
-// bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
-//     // 目標の周辺がNanになってればtrueでそのまま通す
-//     // 安全の確認ができなければその近くで安全になるアングルに行く
-//     // nan もしくは障害物距離がx以上であれば安全角度判定
-
-//     int ti; //target i
-//     // 中心の要素番号設定
-//     static Eigen::Vector2i cp = scan.ranges.size()%2==0 ? Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2-3) : Eigen::Vector2i(scan.ranges.size()/2,scan.ranges.size()/2);//中心の位置調整
-//     std::swap(cp[0],cp[1]);
-
-//     // 目標角に一番近い要素番号を計算 0 radのときは特殊処理(要素サイズが偶数の場合))
-//     if(angle==0) ti = cp[0];
-//     else{
-//         double min = DBL_MAX;
-//         for(int i=0,ie=scan.ranges.size();i!=ie;++i){
-//             double diff = std::abs(angle - (scan.angle_min + scan.angle_increment * i));
-//             if(diff < min){
-//                 min = std::move(diff);
-//                 ti = i;
-//             }
-//         }
-//     }
-
-//     // その方向が安全であるかを見る   
-//     ROS_INFO_STREAM("angle : " << angle << ", ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
-
-//     int count = 0;
-//     // ここでrateがthreshold以下になるまでずらして計算
-//     int sw = 0;
-//     double nRate = DBL_MAX;
-//     double fRate = DBL_MAX;
-//     double nRateMin = DBL_MAX;
-//     double fRateMin = DBL_MAX;
-//     double nRateLast;
-//     double fRateLast;
-
-//     // far : 旋回遅め(基本)
-//     // near : 旋回早め(farが全滅したときのみ)
-//     // 近いところから検索してるので一番最初にしきい値を満たしたのを採用すれば良い
-//     // fが大丈夫ならnは大丈夫 nが大丈夫でもfはわかラナイ
-
-//     // 基本的にfarで避ける、無理だったらnearの方で
-
-//     int nRateMinTi;
-//     int fRateMinTi;
-//     double dist = 0;
-
-//     do{
-//         ti += sw;
-//         // tiをずらすごとにminusとplusを再計算
-//         int tPLUS = ti + (FORWARD_ANGLE/2)/scan.angle_increment;
-//         int tMINUS = ti - (FORWARD_ANGLE/2)/scan.angle_increment;
-//         int PLUS = tPLUS > scan.ranges.size() ? scan.ranges.size() : tPLUS;
-//         int MINUS = tMINUS < 0 ? 0 : tMINUS;
-
-//         if(tMINUS >= scan.ranges.size() || tPLUS < 0){
-//             if(nRateMin == -DBL_MAX){
-//                 ti = nRateMinTi;
-//                 break;
-//             }
-//             ROS_INFO_STREAM("safety angle search is failed");
-//             ROS_INFO_STREAM("emergency avoid");
-//             if(!VFH_RETURN_FALSE){
-//                 velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN));
-//                 return true;
-//             }
-//             else return false;
-//             // return VFH_RETURN_FALSE ? false : velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN))||true;
-//             // return MOVE_RETURN_DBLMAX ? DBL_MAX : scan.angle_min + rateMinTi * scan.angle_increment;
-//             // return scan.angle_min + rateMinTi * scan.angle_increment;
-//             // return DBL_MAX;
-//         }
-
-//         int nc = 0;
-//         int fc = 0;
-
-        
-//         for(int i=MINUS;i!=PLUS;++i){
-//             if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_FAR) ++fc; // 遠くまで見てるので先に反応する
-//             if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_NEAR) ++nc; // 
-//         }
-//         nRate = (double)nc/(PLUS-MINUS);
-//         fRate = (double)fc/(PLUS-MINUS);
-        
-//         if(nRate < nRateMin){ 
-//             nRateMin = nRate < SAFETY_RATE_THRESHOLD_NEAR ? -DBL_MAX : nRate;
-//             // nRateMin = nRate;
-//             nRateMinTi = ti;
-//             nRateLast = nRate;
-//         }
-
-//         if(fRate < fRateMin){
-//             fRateMin = fRate < SAFETY_RATE_THRESHOLD_FAR ? -DBL_MAX : fRate;
-//             // fRateMin = fRate;
-//             fRateMinTi = ti;
-//             fRateLast = fRate;
-//         }
-//         // ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
-//         sw = sw > 0 ? -sw-1 : -sw+1;
-//     // }while(nRate>SAFETY_RATE_THRESHOLD_NEAR);
-//     }while(fRateMin!=-DBL_MAX); // forの方が良いかも
-//     // どちらで判定したかを返す必要がある // ここで速度を送れば解決
-
-//     ROS_INFO_STREAM((fRateMin==-DBL_MAX ? "far avoidance" : "near avoidance"));
-//     ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", fRate : " << fRateLast << ", nRate : " << nRateLast);
-//     ROS_INFO_STREAM("this angle is safety");
-//     // velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
-//     // return ti==cp[0] ? 0 : scan.angle_min + ti * scan.angle_increment;
-//     ti==cp[0]?velocity_.pub.publish(velocityGenerator(0,FORWARD_VELOCITY,0)):velocity_.pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,fRateMin==-DBL_MAX?FAR_AVOIDANCE_GAIN:NEAR_AVOIDANCE_GAIN));
-//     return true;
-// }
-
-// void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, double angle){
-//     //vfhMovementの代わり
-//     // 目標アングルの周辺が大丈夫そうか見る
-//     if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
-//         // double resultAngle = isMoveable(scan,angle);
-//         if(VFHMove(scan, angle)) 
-//         if(resultAngle == DBL_MAX) emergencyAvoidance(scan); // コストマップにかかってないけど障害物を避けられない場合、ある？？？
-//         else velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
-//     }
-// }
 
 bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     //壁に衝突してるかを確認して、してたらバック
@@ -875,7 +684,6 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
 }
 
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
-
     ROS_INFO_STREAM("emergencyAvoidance");
 
     //minus側の平均
@@ -886,7 +694,6 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         else ++nanM;
     }
     aveM = nanM > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveM / scan.ranges.size()/2;
-
     // aveM /= scan.ranges.size()/2;
 
     //plus側
@@ -919,7 +726,6 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     }
 }
 
-// geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double gain){
     if(theta != 0) previousOrientation_ = theta;
     return ExpLib::Construct::msgTwist(v,gain*CURVE_GAIN*theta);
@@ -927,7 +733,6 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double ga
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     ROS_INFO_STREAM("roadCenterDetection");
-    // ExpLib::Struct::scanStruct scanRect(scan.ranges.size(),scan.angle_max);
 
     static bool initialized = false;
     static tf::TransformListener listener;
@@ -951,12 +756,11 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     }
 
     if(scanRect.ranges.size() < 2){
-        road_.pub.publish(geometry_msgs::PointStamped()); // 空のpubをしたい
+        road_.pub.publish(geometry_msgs::PointStamped());
         return false;
     }
 
     for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
-        // if(std::abs(scanRect.ranges[i+1]*sin(scanRect.angles[i+1]) - scanRect.ranges[i]*sin(scanRect.angles[i])) >= ROAD_THRESHOLD){
         if(std::abs(scanRect.y[i+1] - scanRect.y[i]) >= ROAD_THRESHOLD){
             ROS_DEBUG_STREAM("Road Center Found");
             //  通路中心座標pub
@@ -966,7 +770,7 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
         }
     }
     ROS_DEBUG_STREAM("Road Center Do Not Found");
-    road_.pub.publish(geometry_msgs::PointStamped()); // 空のpubをしたい
+    road_.pub.publish(geometry_msgs::PointStamped());
     return false;
 }
 
@@ -1073,9 +877,6 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
         }
         else ++countNanPlus;
     }
-
-    // ROS_INFO_STREAM("minus : " << minus << ", sum range : " << sumMinus << ", ave range : " << sumMinus/(minus - countNanMinus) << ", Nan count : " << countNanMinus << ", true count : " << minus - countNanMinus << ", space : " << maxSpaceMinus << "\n");    
-    // ROS_INFO_STREAM("plus : " << plus << ", sum range : " << sumPlus << ", ave range : " << sumPlus/(scan.ranges.size() - plus - countNanPlus) << ", Nan count : " << countNanPlus << ", true count : " << scan.ranges.size() - plus - countNanPlus << ", space" << maxSpacePlus << "\n");
 
     aveMinus /= (minus - countNanMinus);
     avePlus /= (scan.ranges.size() - plus - countNanPlus);
