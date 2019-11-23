@@ -82,7 +82,7 @@ private:
     double RESET_GOAL_PATH_RATE;
     double ROTATION_TOLERANCE;
     bool APPROACH_WALL;
-    bool MOVE_RETURN_DBLMAX;
+    bool VFH_RETURN_FALSE;
     bool USE_ANGLE_BIAS;
 
     ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
@@ -121,8 +121,8 @@ private:
     bool resetGoal(geometry_msgs::PoseStamped& goal);
     void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
 
-    void nonGoalMove(const sensor_msgs::LaserScan& scan, double angle);
-    bool VFHMove(const sensor_msgs::LaserScan& scan, double angle);
+    // void nonGoalMove(const sensor_msgs::LaserScan& scan, double angle);
+    bool VFHMove(const sensor_msgs::LaserScan& scan, double angle=0);
 
     void dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
@@ -184,7 +184,7 @@ Movement::Movement()
     nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
     nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
     nh.param<bool>("approach_wall", APPROACH_WALL, false);
-    nh.param<bool>("move_return_DBLMAX", MOVE_RETURN_DBLMAX, false);
+    nh.param<bool>("vfh_return_false", VFH_RETURN_FALSE, false);
     nh.param<bool>("use_angle_bias", USE_ANGLE_BIAS, false);
     nh.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
     nh.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
@@ -203,7 +203,9 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     ROAD_CENTER_THRESHOLD = cfg.road_center_threshold;
     ROAD_THRESHOLD = cfg.road_threshold;
     CURVE_GAIN = cfg.curve_gain;
-    AVOIDANCE_GAIN = cfg.avoidance_gain;
+    EMERGENCY_AVOIDANCE_GAIN = cfg.emergency_avoidance_gain;
+    NEAR_AVOIDANCE_GAIN = cfg.near_avoidance_gain;
+    FAR_AVOIDANCE_GAIN = cfg.far_avoidance_gain;
     ROAD_CENTER_GAIN = cfg.road_center_gain;
     WALL_FORWARD_ANGLE = cfg.wall_forward_angle;
     WALL_RATE_THRESHOLD = cfg.wall_rate_threshold;
@@ -226,7 +228,7 @@ void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureC
     RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
     ROTATION_TOLERANCE = cfg.rotation_tolerance;
     APPROACH_WALL = cfg.approach_wall;
-    MOVE_RETURN_DBLMAX = cfg.move_return_DBLMAX;
+    VFH_RETURN_FALSE = cfg.vfh_return_false;
     USE_ANGLE_BIAS = cfg.use_angle_bias;
 }
 
@@ -273,7 +275,7 @@ void Movement::outputParams(void){
     ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
     ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
     ofs << "approach_wall: " << (APPROACH_WALL ? "true" : "false") << std::endl;
-    ofs << "move_return_DBLMAX: " << (MOVE_RETURN_DBLMAX ? "true" : "false") << std::endl; 
+    ofs << "vfh_return_false: " << (VFH_RETURN_FALSE ? "true" : "false") << std::endl; 
     ofs << "use_angle_bias: " << (USE_ANGLE_BIAS ? "true" : "false") << std::endl; 
 }
 
@@ -625,6 +627,8 @@ void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
     ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
 
+    if(!bumper_.q.callOne(ros::WallDuration(1)) && bumperCollision(bumper_.data)) return; // 障害物に接触してないか確認
+    
     if(pose_.q.callOne(ros::WallDuration(1))) return;
 
     if(lookupCostmap(pose_.data)){
@@ -636,15 +640,25 @@ void Movement::moveToForward(void){
 
     if(APPROACH_WALL){
         double angle;
-        if(forwardWallDetection(scan_.data, angle)) nonGoalMove(scan_.data,std::move(angle));
-        else if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);    
+        if(forwardWallDetection(scan_.data, angle)) VFHMove(scan_.data,std::move(angle));
+        else if(!roadCenterDetection(scan_.data)){
+            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+        }
     }
     else {
-        if(!roadCenterDetection(scan_.data)) nonGoalMove(scan_.data,0.0);  
+        if(!roadCenterDetection(scan_.data)){
+            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+        }
     }
+
+// 道の中心 -> vfh -> emer
+            // double resultAngle = isMoveable(scan,angle);
+        // if(VFHMove(scan, angle)) 
+        // if(resultAngle == DBL_MAX) emergencyAvoidance(scan); // コストマップにかかってないけど障害物を避けられない場合、ある？？？
+        // else velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
 }
 
-bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle=0){
+bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     // 目標の周辺がNanになってればtrueでそのまま通す
     // 安全の確認ができなければその近くで安全になるアングルに行く
     // nan もしくは障害物距離がx以上であれば安全角度判定
@@ -677,14 +691,21 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle=0){
     double fRate = DBL_MAX;
     double nRateMin = DBL_MAX;
     double fRateMin = DBL_MAX;
+    double nRateLast;
+    double fRateLast;
 
     // far : 旋回遅め(基本)
     // near : 旋回早め(farが全滅したときのみ)
     // 近いところから検索してるので一番最初にしきい値を満たしたのを採用すれば良い
     // fが大丈夫ならnは大丈夫 nが大丈夫でもfはわかラナイ
 
+    // 基本的にfarで避ける、無理だったらnearの方で
+
     int nRateMinTi;
     int fRateMinTi;
+    
+
+
     do{
         ti += sw;
         // tiをずらすごとにminusとplusを再計算
@@ -694,15 +715,27 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle=0){
         int MINUS = tMINUS < 0 ? 0 : tMINUS;
 
         if(tMINUS >= scan.ranges.size() || tPLUS < 0){
+            if(nRateMin == -DBL_MAX){
+                ti = nRateMinTi;
+                break;
+            }
             ROS_INFO_STREAM("safety angle search is failed");
             ROS_INFO_STREAM("emergency avoid");
-            return MOVE_RETURN_DBLMAX ? DBL_MAX : scan.angle_min + rateMinTi * scan.angle_increment;
+            if(!VFH_RETURN_FALSE){
+                velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN));
+                return true;
+            }
+            else return false;
+            // return VFH_RETURN_FALSE ? false : velocity_.pub.publish(velocityGenerator(scan.angle_min+nRateMinTi*scan.angle_increment,FORWARD_VELOCITY,NEAR_AVOIDANCE_GAIN))||true;
+            // return MOVE_RETURN_DBLMAX ? DBL_MAX : scan.angle_min + rateMinTi * scan.angle_increment;
             // return scan.angle_min + rateMinTi * scan.angle_increment;
             // return DBL_MAX;
         }
 
         int nc = 0;
         int fc = 0;
+
+        
         for(int i=MINUS;i!=PLUS;++i){
             if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_FAR) ++fc; // 遠くまで見てるので先に反応する
             if(!std::isnan(scan.ranges[i])&&scan.ranges[i]<SAFETY_RANGE_THRESHOLD_NEAR) ++nc; // 
@@ -710,36 +743,44 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle=0){
         nRate = (double)nc/(PLUS-MINUS);
         fRate = (double)fc/(PLUS-MINUS);
         
-        if(nRate < nRateMin){
-            nRateMin = nRate;
+        if(nRate < nRateMin){ 
+            nRateMin = nRate < SAFETY_RATE_THRESHOLD_NEAR ? -DBL_MAX : nRate;
+            // nRateMin = nRate;
             nRateMinTi = ti;
+            nRateLast = nRate;
         }
 
         if(fRate < fRateMin){
-            fRateMin = fRate;
+            fRateMin = fRate < SAFETY_RATE_THRESHOLD_FAR ? -DBL_MAX : fRate;
+            // fRateMin = fRate;
             fRateMinTi = ti;
+            fRateLast = fRate;
         }
         // ROS_INFO_STREAM("ti : " << ti << ", PLUS : " << PLUS << ", MINUS : " << MINUS  << ", rate : " << rate);
         sw = sw > 0 ? -sw-1 : -sw+1;
     // }while(nRate>SAFETY_RATE_THRESHOLD_NEAR);
-    }while(fRateMin>SAFETY_RATE_THRESHOLD_FAR || nRateMin>SAFETY_RATE_THRESHOLD_NEAR);
-    // どちらで判定したかを返す必要がある
+    }while(fRateMin!=-DBL_MAX); // forの方が良いかも
+    // どちらで判定したかを返す必要がある // ここで速度を送れば解決
 
-    ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate);
+    ROS_INFO_STREAM((fRateMin==-DBL_MAX ? "far avoidance" : "near avoidance"));
+    ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", fRate : " << fRateLast << ", nRate : " << nRateLast);
     ROS_INFO_STREAM("this angle is safety");
-    return ti==cp[0] ? 0 : scan.angle_min + ti * scan.angle_increment;
+    // velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
+    // return ti==cp[0] ? 0 : scan.angle_min + ti * scan.angle_increment;
+    ti==cp[0]?velocity_.pub.publish(velocityGenerator(0,FORWARD_VELOCITY,0)):velocity_.pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,fRateMin==-DBL_MAX?FAR_AVOIDANCE_GAIN:NEAR_AVOIDANCE_GAIN));
+    return true;
 }
 
-void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, double angle){
-    //vfhMovementの代わり
-    // 目標アングルの周辺が大丈夫そうか見る
-    if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
-        // double resultAngle = isMoveable(scan,angle);
-        if(VFHMove(scan, angle)) 
-        if(resultAngle == DBL_MAX) emergencyAvoidance(scan); // コストマップにかかってないけど障害物を避けられない場合、ある？？？
-        else velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
-    }
-}
+// void Movement::nonGoalMove(const sensor_msgs::LaserScan& scan, double angle){
+//     //vfhMovementの代わり
+//     // 目標アングルの周辺が大丈夫そうか見る
+//     if(!bumper_.q.callOne(ros::WallDuration(1)) && !bumperCollision(bumper_.data)){// 障害物に接触してないか確認
+//         // double resultAngle = isMoveable(scan,angle);
+//         if(VFHMove(scan, angle)) 
+//         if(resultAngle == DBL_MAX) emergencyAvoidance(scan); // コストマップにかかってないけど障害物を避けられない場合、ある？？？
+//         else velocity_.pub.publish(velocityGenerator(resultAngle, FORWARD_VELOCITY, AVOIDANCE_GAIN));
+//     }
+// }
 
 bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     //壁に衝突してるかを確認して、してたらバック
@@ -788,7 +829,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
         if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation_ = aveP > aveM ? 1.0 : -1.0;
         ROS_INFO_STREAM((previousOrientation_ > 0 ? "Avoidance to Left" : "Avoidance to Right"));
-        velocity_.pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY, AVOIDANCE_GAIN));
+        velocity_.pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY, EMERGENCY_AVOIDANCE_GAIN));
         return true;
     }
     else{
@@ -798,7 +839,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 }
 
 // geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
-geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double t){
+geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double gain){
     if(theta != 0) previousOrientation_ = theta;
     return ExpLib::Construct::msgTwist(v,gain*CURVE_GAIN*theta);
 }
