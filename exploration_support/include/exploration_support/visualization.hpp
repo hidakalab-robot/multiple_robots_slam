@@ -10,7 +10,8 @@
 #include <nav_msgs/Path.h>
 #include <ros/ros.h>
 #include <thread>
-#include<actionlib_msgs/GoalStatusArray.h>
+#include <mutex>
+#include <actionlib_msgs/GoalStatusArray.h>
 #include <visualization_msgs/Marker.h>
 
 class Visualization
@@ -25,6 +26,9 @@ private:
     double ROAD_PUBLISH_RATE;
     std::string MAP_FRAME_ID;
 
+    std::mutex rmMutex_;
+    std::mutex gmMutex_;
+    
     //pose
     ExpLib::Struct::subStructSimple pose_;
     ExpLib::Struct::pubStruct<nav_msgs::Path> posePath_;   
@@ -115,6 +119,7 @@ void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
 
 // goalに着いたのを検知してマーカーを消したい
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
+    std::lock_guard<std::mutex> lock(gmMutex_);
     gm_.points = ExpLib::Construct::oneFactorVector(msg->point);
     gm_.header.frame_id = msg->header.frame_id;
     gm_.header.stamp = ros::Time::now();
@@ -122,10 +127,12 @@ void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
 
 void Visualization::goalStatusCB(const actionlib_msgs::GoalStatusArray::ConstPtr& msg){
     if(!msg->status_list.empty() && (msg->status_list.back().status > 2)){
+        std::lock_guard<std::mutex> lock(gmMutex_);
         gm_.points = std::vector<geometry_msgs::Point>();
         gm_.header.stamp = ros::Time::now();
     }
     else{
+        std::lock_guard<std::mutex> lock(rmMutex_);
         rm_.points = std::vector<geometry_msgs::Point>();
         rm_.header.stamp = ros::Time::now();
     }
@@ -163,6 +170,7 @@ void Visualization::useFroCB(const exploration_msgs::FrontierArray::ConstPtr& ms
 
 // 本当に空になってるか確認
 void Visualization::roadCB(const geometry_msgs::PointStamped::ConstPtr& msg){
+    std::lock_guard<std::mutex> lock(rmMutex_);
     rm_.points = msg->header.frame_id != "" ? ExpLib::Construct::oneFactorVector(msg->point) : std::vector<geometry_msgs::Point>();
     rm_.header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
     rm_.header.stamp = ros::Time::now();
