@@ -11,6 +11,7 @@
 #include <exploration/frontier_based_exploration_parameter_reconfigureConfig.h>
 #include <fstream>
 
+namespace ExStc = ExpLib::Struct;
 class FrontierBasedExploration
 {
 private:
@@ -21,9 +22,9 @@ private:
 
     geometry_msgs::Point lastGoal_;
 
-    ExpLib::Struct::subStruct<exploration_msgs::FrontierArray> frontier_;
-    ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
+    ExStc::subStruct<exploration_msgs::FrontierArray> frontier_;
+    ExStc::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExStc::pubStruct<geometry_msgs::PointStamped> goal_;
 
     ros::NodeHandle nh;
     dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig> server;

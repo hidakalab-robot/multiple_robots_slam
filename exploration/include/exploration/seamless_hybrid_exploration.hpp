@@ -12,6 +12,8 @@
 #include <exploration/seamless_hybrid_exploration_parameter_reconfigureConfig.h>
 #include <fstream>
 
+namespace ExStc = ExpLib::Struct;
+namespace ExCov = ExpLib::Convert;
 class SeamlessHybridExploration :public SensorBasedExploration
 {
 private:
@@ -43,14 +45,14 @@ private:
     std::string ROBOT_NAME;
 
     geometry_msgs::PoseStamped ps_;
-    std::vector<ExpLib::Struct::listStruct> ls_;
+    std::vector<ExStc::listStruct> ls_;
     exploration_msgs::FrontierArray fa_;
     exploration_msgs::RobotInfoArray ria_;
 
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
-    ExpLib::Struct::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
-    ExpLib::Struct::subStruct<exploration_msgs::FrontierArray> frontier_;
-    ExpLib::Struct::pubStruct<exploration_msgs::FrontierArray> useFro_;
+    ExStc::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
+    ExStc::subStruct<exploration_msgs::FrontierArray> frontier_;
+    ExStc::pubStruct<exploration_msgs::FrontierArray> useFro_;
 
     std::vector<preCalcResult> ownPreCalc_;
     std::vector<preCalcResult> otherPreCalc_;
@@ -62,10 +64,10 @@ private:
     std::string SHE_PARAMETER_FILE_PATH;
 
     bool decideGoal(geometry_msgs::PointStamped& goal);
-    bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
-    bool filter(std::vector<ExpLib::Struct::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
+    bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+    bool filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
 
-    void preCalc(const std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
+    void preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
     void dynamicParamCallback(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
 public:
@@ -127,7 +129,7 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
  }
 
-bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
     if(robotArray_.q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read robot_array or don't find robot_array"); 
         return false;
@@ -180,10 +182,10 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     return true;
 }
 
-bool SeamlessHybridExploration::filter(std::vector<ExpLib::Struct::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
+bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
     //分岐領域のフィルタ
     ROS_INFO_STREAM("before branches size : " << ls.size());
-    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExpLib::Struct::listStruct& l){return l.duplication == ExpLib::Enum::DuplicationStatus::NEWER;});
+    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExStc::listStruct& l){return l.duplication == ExpLib::Enum::DuplicationStatus::NEWER;});
 	ls.erase(std::move(lsRemove),ls.end());
     ROS_INFO_STREAM("after branches size : " << ls.size());
 
@@ -210,7 +212,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExpLib::Struct::listStruct>& 
     return true;
 }
 
-void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
+void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
     ownPreCalc_ = std::vector<preCalcResult>();
     otherPreCalc_ = std::vector<preCalcResult>();
     mVal_ = maxValue();
@@ -218,15 +220,15 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listSt
     auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1){
         SeamlessHybridExploration::preCalcResult pcr;
         pcr.point = p;
-        // Eigen::Vector2d v1 = ExpLib::Convert::qToVector2d(ps.orientation);
+        // Eigen::Vector2d v1 = ExCov::qToVector2d(ps.orientation);
         pcr.values.reserve(fa.frontiers.size());
         for(const auto& f : fa.frontiers){
             // 目標地点での向きをpathの最後の方の移動で決めたい
             Eigen::Vector2d v2;
             double distance;
-            if(!pp_.getDistanceAndVec(ExpLib::Convert::pointToPoseStamped(p,pose.header.frame_id),ExpLib::Convert::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
+            if(!pp_.getDistanceAndVec(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
                 v2 = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).normalized();
-                if(!pp_.getDistance(ExpLib::Convert::pointToPoseStamped(p,pose.header.frame_id),ExpLib::Convert::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
+                if(!pp_.getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
                     //最終手段で直線距離を計算
                     distance = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).norm();
                 }                
@@ -247,7 +249,7 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listSt
     for(const auto& l : ls){
         double distance;
         Eigen::Vector2d v1;
-        if(!pp_.getDistanceAndVec(pose,ExpLib::Convert::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
+        if(!pp_.getDistanceAndVec(pose,ExCov::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
             v1 = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y);
             distance = v1.lpNorm<1>();
             v1.normalize();
@@ -258,11 +260,11 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listSt
     forward /= ls.size();
 
     // 直進時の計算
-    Eigen::Vector2d fwdV1 = ExpLib::Convert::qToVector2d(pose.pose.orientation);; 
-    ownPreCalc_.emplace_back(calc(ExpLib::Convert::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
+    Eigen::Vector2d fwdV1 = ExCov::qToVector2d(pose.pose.orientation);; 
+    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
 
     // 他のロボットに関する計算
-    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExpLib::Convert::qToVector2d(ri.pose.orientation)));
+    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation)));
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){
@@ -283,7 +285,7 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
 
     geometry_msgs::PoseStamped ps;
-    std::vector<ExpLib::Struct::listStruct> ls;
+    std::vector<ExStc::listStruct> ls;
     exploration_msgs::FrontierArray fa;
     exploration_msgs::RobotInfoArray ria;
 
@@ -314,7 +316,7 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
     geometry_msgs::PointStamped goal;
     decideGoal(goal);
 
-    pp.createPath(ps_,ExpLib::Convert::pointStampedToPoseStamped(goal));
+    pp.createPath(ps_,ExCov::pointStampedToPoseStamped(goal));
 }
 
 #endif // SEAMLESS_HYBRID_EXPLORATION_HPP

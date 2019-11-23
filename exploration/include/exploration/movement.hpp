@@ -43,6 +43,10 @@ In source file
         mv.oneRotation();
 */
 
+namespace ExStc = ExpLib::Struct;
+namespace ExUtl = ExpLib::Utility;
+namespace ExCos = ExpLib::Construct;
+namespace ExCov = ExpLib::Convert;
 class Movement 
 {
 private:
@@ -83,13 +87,13 @@ private:
     bool APPROACH_WALL;
     bool USE_ANGLE_BIAS;
 
-    ExpLib::Struct::subStruct<sensor_msgs::LaserScan> scan_;
-    ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExpLib::Struct::subStruct<kobuki_msgs::BumperEvent> bumper_;
-    ExpLib::Struct::subStruct<nav_msgs::OccupancyGrid> gCostmap_;
-    ExpLib::Struct::pubStruct<geometry_msgs::Twist> velocity_;
-    ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
-    ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> road_;
+    ExStc::subStruct<sensor_msgs::LaserScan> scan_;
+    ExStc::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExStc::subStruct<kobuki_msgs::BumperEvent> bumper_;
+    ExStc::subStruct<nav_msgs::OccupancyGrid> gCostmap_;
+    ExStc::pubStruct<geometry_msgs::Twist> velocity_;
+    ExStc::pubStruct<geometry_msgs::PointStamped> goal_;
+    ExStc::pubStruct<geometry_msgs::PointStamped> road_;
 
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
 
@@ -283,7 +287,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
             listener.waitForTransform(pose_.data.header.frame_id, goal.header.frame_id, ros::Time(), ros::Duration(1.0));
             initialized = true;
         }
-        ExpLib::Utility::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
+        ExUtl::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
     if(lookupCostmap(pose_.data)){
@@ -297,9 +301,9 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     // 目標での姿勢
     Eigen::Vector2d startToGoal;
-    if(USE_ANGLE_BIAS || !pp_.getVec(pose_.data,ExpLib::Convert::pointStampedToPoseStamped(goal),startToGoal)){
+    if(USE_ANGLE_BIAS || !pp_.getVec(pose_.data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
         // pathが取得できなかった場合の回転角度の補正値
-        double yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+        double yaw = ExCov::qToYaw(pose_.data.pose.orientation);
         Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
         double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
         Eigen::Matrix2d rotation;
@@ -308,10 +312,10 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     }
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
-    mbg.target_pose.pose = ExpLib::Construct::msgPose(goal.point,ExpLib::Convert::eigenQuaToGeoQua(q));
+    mbg.target_pose.pose = ExCos::msgPose(goal.point,ExCov::eigenQuaToGeoQua(q));
 
     ROS_DEBUG_STREAM("goal pose : " << mbg.target_pose.pose);
-    ROS_DEBUG_STREAM("goal yaw : " << ExpLib::Convert::qToYaw(mbg.target_pose.pose.orientation));
+    ROS_DEBUG_STREAM("goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
     ROS_INFO_STREAM("send goal to move_base");
     ac.sendGoal(mbg);
     ROS_INFO_STREAM("wait for result");
@@ -334,11 +338,11 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
             if(ac.getState().isDone()) break;
             // 大丈夫な目的地に変わっているので再設定
             ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
-            ROS_DEBUG_STREAM("new goal yaw : " << ExpLib::Convert::qToYaw(mbg.target_pose.pose.orientation));
+            ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
             ROS_INFO_STREAM("send new goal to move_base");
             ac.sendGoal(mbg);
             // ゴールtopicに再出力
-            goal_.pub.publish(ExpLib::Convert::poseStampedToPointStamped(mbg.target_pose));
+            goal_.pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
             ROS_INFO_STREAM("wait for result");
         }
         rate.sleep();
@@ -355,10 +359,10 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_m
     ROS_INFO_STREAM("lookup global costmap");
     // ROS_INFO_STREAM("recieve goal : " << goal);
     // コストマップの配列を二次元に変換
-    std::vector<std::vector<int8_t>> lmap(ExpLib::Utility::mapArray1dTo2d(map.data,map.info));
+    std::vector<std::vector<int8_t>> lmap(ExUtl::mapArray1dTo2d(map.data,map.info));
     // ROS_INFO_STREAM("create costmap array(2d)");
     // ゴールを中心としたマップの検索窓を作る
-    ExpLib::Struct::mapSearchWindow msw(goal.pose.position,map.info,COSTMAP_MARGIN);
+    ExStc::mapSearchWindow msw(goal.pose.position,map.info,COSTMAP_MARGIN);
     // ゴールにコストマップが被ってないか検索
     for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
         for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
@@ -417,7 +421,7 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal){
             goal = path[path.size() - PATH_BACK_INTERVAL*i];
             Eigen::Vector2d vec;
             pp_.getVec(pose_.data,goal,vec,path);
-            goal.pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(vec.x(),vec.y(),0.0)));
+            goal.pose.orientation = ExCov::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(vec.x(),vec.y(),0.0)));
             return true;
         }
     }
@@ -434,9 +438,9 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // // コストマップ
     while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
     ROS_INFO_STREAM("get global costmap");
-    std::vector<std::vector<int8_t>> gMap(ExpLib::Utility::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
+    std::vector<std::vector<int8_t>> gMap(ExUtl::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
 
-    ExpLib::Struct::mapSearchWindow msw(pose.pose.position,gCostmap_.data.info,ESC_MAP_WIDTH,ESC_MAP_HEIGHT);
+    ExStc::mapSearchWindow msw(pose.pose.position,gCostmap_.data.info,ESC_MAP_WIDTH,ESC_MAP_HEIGHT);
 
     const int gw = (msw.right-msw.left) / ESC_MAP_DIV_X;
     const int gh = (msw.bottom-msw.top) / ESC_MAP_DIV_Y;
@@ -454,12 +458,10 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         for(int dw=0, dwe=ESC_MAP_DIV_X; dw!=dwe; ++dw){
             double risk = 0;
             for(int h=msw.top+dh*gh,he=msw.top+(dh+1)*gh;h!=he;++h){
-                // for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += std::abs(gMap[w][h]);
                 for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h] > 0 ? gMap[w][h] : 0;
             }
             gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gw)/2,(msw.top*2+(2*dh+1)*gh)/2);
-            gmm[dw][dh].pose.position = ExpLib::Utility::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_.data.info);
-            // gmm[dw][dh].pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[dw][dh].pose.position.x-pose.pose.position.x,gmm[dw][dh].pose.position.y-pose.pose.position.y,0.0)));
+            gmm[dw][dh].pose.position = ExUtl::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_.data.info);
             gmm[dw][dh].risk = risk / (gw*gh);
         }
     }
@@ -469,11 +471,11 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
         for(int x=0;x!=ESC_MAP_DIV_X;++x){
             gmm[x][y].grad = x!=mci.x()||y!=mci.y() ? gmm[x][y].risk - gmm[mci.x()][mci.y()].risk : 100;
-            gmm[x][y].pose.orientation = ExpLib::Convert::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[x][y].pose.position.x-gmm[mci.x()][mci.y()].pose.position.x,gmm[x][y].pose.position.y-gmm[mci.x()][mci.y()].pose.position.y,0.0))); 
+            gmm[x][y].pose.orientation = ExCov::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(gmm[x][y].pose.position.x-gmm[mci.x()][mci.y()].pose.position.x,gmm[x][y].pose.position.y-gmm[mci.x()][mci.y()].pose.position.y,0.0))); 
         } 
     }
     
-    Eigen::Quaterniond cAng = ExpLib::Convert::geoQuaToEigenQua(pose.pose.orientation);
+    Eigen::Quaterniond cAng = ExCov::geoQuaToEigenQua(pose.pose.orientation);
 
     double minad = DBL_MAX;
     double mingr = DBL_MAX;
@@ -481,7 +483,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     for(int y=ESC_MAP_DIV_Y-1;y!=-1;--y){
         for(int x=0;x!=ESC_MAP_DIV_X;++x){
             if(gmm[x][y].grad <= mingr){
-                double tempad = cAng.angularDistance(ExpLib::Convert::geoQuaToEigenQua(gmm[x][y].pose.orientation));
+                double tempad = cAng.angularDistance(ExCov::geoQuaToEigenQua(gmm[x][y].pose.orientation));
                 if(gmm[x][y].grad == mingr){
                     if(tempad <= minad){
                         minad = tempad;
@@ -519,7 +521,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     
     while(loop && lookupCostmap() && ros::ok()) {
         ROS_INFO_STREAM("escape to forward");
-        velocity_.pub.publish(ExpLib::Construct::msgTwist(FORWARD_VELOCITY,0));
+        velocity_.pub.publish(ExCos::msgTwist(FORWARD_VELOCITY,0));
         while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
         escapeFromCostmap(pose_.data);
     }
@@ -528,42 +530,42 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
 }
 
 void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to){
-    double rotation = ExpLib::Utility::shorterRotationAngle(from,to);
+    double rotation = ExUtl::shorterRotationAngle(from,to);
     previousOrientation_ = rotation;
 
     ROS_INFO_STREAM("need rotation : " << rotation);
-    ROS_INFO_STREAM("from : " << ExpLib::Convert::qToYaw(from) << ", from(rad) : " << ExpLib::Convert::qToYaw(from)*180/M_PI);
-    ROS_INFO_STREAM("to : " << ExpLib::Convert::qToYaw(to) << ", to(rad) : " << ExpLib::Convert::qToYaw(to)*180/M_PI);
+    ROS_INFO_STREAM("from : " << ExCov::qToYaw(from) << ", from(rad) : " << ExCov::qToYaw(from)*180/M_PI);
+    ROS_INFO_STREAM("to : " << ExCov::qToYaw(to) << ", to(rad) : " << ExCov::qToYaw(to)*180/M_PI);
 
     double sum = 0;
-    double la = ExpLib::Convert::qToYaw(from);
+    double la = ExCov::qToYaw(from);
 
     if(rotation>=0){    
-        while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 && sum < rotation - ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
+        while(ExCov::qToYaw(pose_.data.pose.orientation) > 0 && sum < rotation - ROTATION_TOLERANCE && ros::ok()){
+            velocity_.pub.publish(ExCos::msgTwist(0,ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : ExpLib::Convert::qToYaw(pose_.data.pose.orientation) + M_PI;
-            la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) > 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : -M_PI;
+            sum += ExCov::qToYaw(pose_.data.pose.orientation) > 0 ? ExCov::qToYaw(pose_.data.pose.orientation)-la : ExCov::qToYaw(pose_.data.pose.orientation) + M_PI;
+            la = ExCov::qToYaw(pose_.data.pose.orientation) > 0 ? ExCov::qToYaw(pose_.data.pose.orientation) : -M_PI;
         }
         while(sum < rotation - ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,ROTATION_VELOCITY));
+            velocity_.pub.publish(ExCos::msgTwist(0,ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
-            la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+            sum += ExCov::qToYaw(pose_.data.pose.orientation)-la;
+            la = ExCov::qToYaw(pose_.data.pose.orientation);
         }
     }
     else{
-        while(ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 && sum > rotation + ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
+        while(ExCov::qToYaw(pose_.data.pose.orientation) < 0 && sum > rotation + ROTATION_TOLERANCE && ros::ok()){
+            velocity_.pub.publish(ExCos::msgTwist(0,-ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la : ExpLib::Convert::qToYaw(pose_.data.pose.orientation) - M_PI;
-            la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation) < 0 ? ExpLib::Convert::qToYaw(pose_.data.pose.orientation) : M_PI;
+            sum += ExCov::qToYaw(pose_.data.pose.orientation) < 0 ? ExCov::qToYaw(pose_.data.pose.orientation)-la : ExCov::qToYaw(pose_.data.pose.orientation) - M_PI;
+            la = ExCov::qToYaw(pose_.data.pose.orientation) < 0 ? ExCov::qToYaw(pose_.data.pose.orientation) : M_PI;
         }
         while(sum > rotation + ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExpLib::Construct::msgTwist(0,-ROTATION_VELOCITY));
+            velocity_.pub.publish(ExCos::msgTwist(0,-ROTATION_VELOCITY));
             while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExpLib::Convert::qToYaw(pose_.data.pose.orientation)-la;
-            la = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+            sum += ExCov::qToYaw(pose_.data.pose.orientation)-la;
+            la = ExCov::qToYaw(pose_.data.pose.orientation);
         }
     }
 }
@@ -677,7 +679,7 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     if(bumper.state){
         ROS_WARN_STREAM("Bumper Hit !!");
         ros::Time setTime = ros::Time::now();
-        while(ros::Time::now()-setTime < ros::Duration(BACK_TIME)) velocity_.pub.publish(ExpLib::Construct::msgTwist(BACK_VELOCITY,0));
+        while(ros::Time::now()-setTime < ros::Duration(BACK_TIME)) velocity_.pub.publish(ExCos::msgTwist(BACK_VELOCITY,0));
         return true;
     }
     return false;
@@ -728,7 +730,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
 
 geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double gain){
     if(theta != 0) previousOrientation_ = theta;
-    return ExpLib::Construct::msgTwist(v,gain*CURVE_GAIN*theta);
+    return ExCos::msgTwist(v,gain*CURVE_GAIN*theta);
 }
 
 bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
@@ -741,7 +743,7 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
         initialized = true;
     }
 
-    ExpLib::Struct::scanStruct scanRect(scan.ranges.size());
+    ExStc::scanStruct scanRect(scan.ranges.size());
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
@@ -764,7 +766,7 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
         if(std::abs(scanRect.y[i+1] - scanRect.y[i]) >= ROAD_THRESHOLD){
             ROS_DEBUG_STREAM("Road Center Found");
             //  通路中心座標pub
-            road_.pub.publish(ExpLib::Convert::pointToPointStamped(ExpLib::Utility::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExpLib::Construct::msgPoint((scanRect.x[i+1] + scanRect.x[i])/2, (scanRect.y[i+1] + scanRect.y[i])/2)),pose_.data.header.frame_id));
+            road_.pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((scanRect.x[i+1] + scanRect.x[i])/2, (scanRect.y[i+1] + scanRect.y[i])/2)),pose_.data.header.frame_id));
             velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
             return true;
         }
@@ -780,20 +782,20 @@ void Movement::oneRotation(void){
 
     if(pose_.q.callOne(ros::WallDuration(1))) return;
 
-    double initYaw,yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+    double initYaw,yaw = ExCov::qToYaw(pose_.data.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
 
     if(std::isnan(initSign)) initSign = 1.0;
 
     //initYawが+の時は+回転
     //initYawが-の時は-回転
-    geometry_msgs::Twist vel = ExpLib::Construct::msgTwist(0,initSign * ROTATION_VELOCITY);
+    geometry_msgs::Twist vel = ExCos::msgTwist(0,initSign * ROTATION_VELOCITY);
     
     for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
         double yawOld = yaw;
         velocity_.pub.publish(vel);
         pose_.q.callOne(ros::WallDuration(1));
-        yaw = ExpLib::Convert::qToYaw(pose_.data.pose.orientation);
+        yaw = ExCov::qToYaw(pose_.data.pose.orientation);
         if(yawOld * yaw < 0) ++count;
     }
 }
