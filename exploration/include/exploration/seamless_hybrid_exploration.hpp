@@ -14,6 +14,7 @@
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
+namespace ExEnm = ExpLib::Enum;
 class SeamlessHybridExploration :public SensorBasedExploration
 {
 private:
@@ -185,7 +186,7 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
 bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
     //分岐領域のフィルタ
     ROS_INFO_STREAM("before branches size : " << ls.size());
-    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExStc::listStruct& l){return l.duplication == ExpLib::Enum::DuplicationStatus::NEWER;});
+    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExStc::listStruct& l){return l.duplication == ExEnm::DuplicationStatus::NEWER;});
 	ls.erase(std::move(lsRemove),ls.end());
     ROS_INFO_STREAM("after branches size : " << ls.size());
 

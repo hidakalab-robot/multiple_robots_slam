@@ -105,25 +105,23 @@ private:
 
     double previousOrientation_;
 
-    void loadParameter(void);
-    
+    bool lookupCostmap(void);
+    bool lookupCostmap(const geometry_msgs::PoseStamped& goal);
+    bool lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_msgs::OccupancyGrid& cmap);
+    void escapeFromCostmap(const geometry_msgs::PoseStamped& pose);
+    void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
+    bool resetGoal(geometry_msgs::PoseStamped& goal);
+
     bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
-    bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
-    geometry_msgs::Twist velocityGenerator(double theta, double v, double gain);
     bool roadCenterDetection(const sensor_msgs::LaserScan& scan);
-    //moveToForwardのときの障害物回避で、前方に壁があったときの処理
+    bool VFHMove(const sensor_msgs::LaserScan& scan, double angle=0);
+    bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
     bool forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle);
     double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
 
-    bool lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_msgs::OccupancyGrid& cmap);
-    bool lookupCostmap(const geometry_msgs::PoseStamped& goal);
-    bool lookupCostmap(void);
-    void escapeFromCostmap(const geometry_msgs::PoseStamped& pose);
-    bool resetGoal(geometry_msgs::PoseStamped& goal);
-    void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
-
-    bool VFHMove(const sensor_msgs::LaserScan& scan, double angle=0);
-
+    // general
+    void loadParameters(void);
+    geometry_msgs::Twist velocityGenerator(double theta, double v, double gain);
     void dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
 
@@ -191,88 +189,6 @@ Movement::Movement()
     server.setCallback(cbt);
 }
 
-void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level){
-    FORWARD_VELOCITY = cfg.forward_velocity;
-    BACK_VELOCITY = cfg.back_velocity;
-    BACK_TIME = cfg.back_time;
-    FORWARD_ANGLE = cfg.forward_angle;
-    ROTATION_VELOCITY = cfg.rotation_velocity;
-    EMERGENCY_THRESHOLD = cfg.emergency_threshold;
-    ROAD_CENTER_THRESHOLD = cfg.road_center_threshold;
-    ROAD_THRESHOLD = cfg.road_threshold;
-    CURVE_GAIN = cfg.curve_gain;
-    EMERGENCY_AVOIDANCE_GAIN = cfg.emergency_avoidance_gain;
-    NEAR_AVOIDANCE_GAIN = cfg.near_avoidance_gain;
-    FAR_AVOIDANCE_GAIN = cfg.far_avoidance_gain;
-    ROAD_CENTER_GAIN = cfg.road_center_gain;
-    WALL_FORWARD_ANGLE = cfg.wall_forward_angle;
-    WALL_RATE_THRESHOLD = cfg.wall_rate_threshold;
-    WALL_DISTANCE_UPPER_THRESHOLD = cfg.wall_distance_upper_threshold;
-    WALL_DISTANCE_LOWER_THRESHOLD = cfg.wall_distance_lower_threshold;
-    EMERGENCY_DIFF_THRESHOLD = cfg.emergency_diff_threshold;
-    ANGLE_BIAS = cfg.angle_bias;
-    PATH_BACK_INTERVAL = cfg.path_back_interval;
-    GOAL_RESET_RATE = cfg.goal_reset_rate;
-    COSTMAP_MARGIN = cfg.costmap_margin;
-    ESC_MAP_DIV_X = cfg.esc_map_div_x;
-    ESC_MAP_DIV_Y = cfg.esc_map_div_y;
-    ESC_MAP_WIDTH = cfg.esc_map_width;
-    ESC_MAP_HEIGHT = cfg.esc_map_height;
-    VFH_NEAR_RANGE_THRESHOLD = cfg.vfh_near_range_threshold;
-    VFH_FAR_RANGE_THRESHOLD = cfg.vfh_far_range_threshold;
-    VFH_RATE_THRESHOLD = cfg.vfh_rate_threshold;
-    RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
-    RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
-    ROTATION_TOLERANCE = cfg.rotation_tolerance;
-    APPROACH_WALL = cfg.approach_wall;
-    USE_ANGLE_BIAS = cfg.use_angle_bias;
-}
-
-void Movement::outputParams(void){
-    std::cout << "writing last parameters ... ..." << std::endl;
-    std::ofstream ofs(MOVEMENT_PARAMETER_FILE_PATH);
-
-    if(ofs) std::cout << "file open succeeded" << std::endl;
-    else {
-        std::cout << "file open failed" << std::endl;
-        return;
-    }
-    ofs << "forward_velocity: " << FORWARD_VELOCITY << std::endl;
-    ofs << "back_velocity: " << BACK_VELOCITY << std::endl;
-    ofs << "back_time: " << BACK_TIME << std::endl;
-    ofs << "forward_angle: " << FORWARD_ANGLE << std::endl;
-    ofs << "rotation_velocity: " << ROTATION_VELOCITY << std::endl;
-    ofs << "emergency_threshold: " << EMERGENCY_THRESHOLD << std::endl;
-    ofs << "road_center_threshold: " << ROAD_CENTER_THRESHOLD << std::endl;
-    ofs << "road_threshold: " << ROAD_THRESHOLD << std::endl;
-    ofs << "curve_gain: " << CURVE_GAIN << std::endl;
-    ofs << "far_avoidance_gain: " << FAR_AVOIDANCE_GAIN << std::endl;
-    ofs << "near_avoidance_gain: " << NEAR_AVOIDANCE_GAIN << std::endl;
-    ofs << "emergency_avoidance_gain: " << EMERGENCY_AVOIDANCE_GAIN << std::endl;
-    ofs << "road_center_gain: " << ROAD_CENTER_GAIN << std::endl;
-    ofs << "wall_forward_angle: " << WALL_FORWARD_ANGLE << std::endl;
-    ofs << "wall_rate_threshold: " << WALL_RATE_THRESHOLD << std::endl;
-    ofs << "wall_distance_upper_threshold: " << WALL_DISTANCE_UPPER_THRESHOLD << std::endl;
-    ofs << "wall_distance_lower_threshold: " << WALL_DISTANCE_LOWER_THRESHOLD << std::endl;
-    ofs << "emergency_diff_threshold: " << EMERGENCY_DIFF_THRESHOLD << std::endl;
-    ofs << "angle_bias: " << ANGLE_BIAS << std::endl;
-    ofs << "path_back_interval: " << PATH_BACK_INTERVAL << std::endl;
-    ofs << "goal_reset_rate: " << GOAL_RESET_RATE << std::endl;
-    ofs << "costmap_margin: " << COSTMAP_MARGIN << std::endl;
-    ofs << "esc_map_div_x: " << ESC_MAP_DIV_X << std::endl;
-    ofs << "esc_map_div_y: " << ESC_MAP_DIV_Y << std::endl;
-    ofs << "esc_map_width: " << ESC_MAP_WIDTH << std::endl;
-    ofs << "esc_map_height: " << ESC_MAP_HEIGHT << std::endl;
-    ofs << "vfh_near_range_threshold: " << VFH_NEAR_RANGE_THRESHOLD << std::endl;
-    ofs << "vfh_far_range_threshold: " << VFH_FAR_RANGE_THRESHOLD << std::endl;
-    ofs << "vfh_rate_threshold: " << VFH_RATE_THRESHOLD << std::endl;
-    ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
-    ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
-    ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
-    ofs << "approach_wall: " << (APPROACH_WALL ? "true" : "false") << std::endl;
-    ofs << "use_angle_bias: " << (USE_ANGLE_BIAS ? "true" : "false") << std::endl; 
-}
-
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
     
@@ -325,16 +241,12 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     while(!ac.getState().isDone() && ros::ok()){
         if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
             // 目的地を再設定
-            // do{
-                // while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-                if(!resetGoal(mbg.target_pose)){ 
-                    ROS_INFO_STREAM("current goal is canceled");
-                    ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
-                    ac.waitForResult();
-                    break;
-                }
-            // }while(lookupCostmap(mbg.target_pose) && ros::ok()); // 大丈夫な位置になるまでゴールを再設定したくないからwhile
-                
+            if(!resetGoal(mbg.target_pose)){ 
+                ROS_INFO_STREAM("current goal is canceled");
+                ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
+                ac.waitForResult();
+                break;
+            }
             if(ac.getState().isDone()) break;
             // 大丈夫な目的地に変わっているので再設定
             ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
@@ -350,6 +262,71 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     ROS_INFO_STREAM("move_base was finished");
     ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
+}
+
+void Movement::moveToForward(void){
+    ROS_INFO_STREAM("Moving Straight");
+    ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
+
+    if(!bumper_.q.callOne(ros::WallDuration(1)) && bumperCollision(bumper_.data)) return; // 障害物に接触してないか確認
+    
+    if(pose_.q.callOne(ros::WallDuration(1))) return;
+
+    if(lookupCostmap(pose_.data)){
+        escapeFromCostmap(pose_.data);
+        pose_.q.callOne(ros::WallDuration(1.0));
+    } 
+
+    if(scan_.q.callOne(ros::WallDuration(1))) return;
+
+    if(APPROACH_WALL){
+        double angle;
+        if(forwardWallDetection(scan_.data, angle)) VFHMove(scan_.data,std::move(angle));
+        else if(!roadCenterDetection(scan_.data)){
+            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+        }
+    }
+    else {
+        if(!roadCenterDetection(scan_.data)){
+            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+        }
+    }
+}
+
+void Movement::oneRotation(void){
+    //ロボットがz軸周りに一回転する
+    ROS_DEBUG_STREAM("rotation");
+
+    if(pose_.q.callOne(ros::WallDuration(1))) return;
+
+    double initYaw,yaw = ExCov::qToYaw(pose_.data.pose.orientation);
+    double initSign = initYaw / std::abs(initYaw);
+
+    if(std::isnan(initSign)) initSign = 1.0;
+
+    //initYawが+の時は+回転
+    //initYawが-の時は-回転
+    geometry_msgs::Twist vel = ExCos::msgTwist(0,initSign * ROTATION_VELOCITY);
+    
+    for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
+        double yawOld = yaw;
+        velocity_.pub.publish(vel);
+        pose_.q.callOne(ros::WallDuration(1));
+        yaw = ExCov::qToYaw(pose_.data.pose.orientation);
+        if(yawOld * yaw < 0) ++count;
+    }
+}
+
+bool Movement::lookupCostmap(void){
+    while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+    return lookupCostmap(pose_.data);
+}
+
+bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
+    // コストマップを更新
+    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
+    ROS_INFO_STREAM("get global costmap");
+    return lookupCostmap(goal,gCostmap_.data);
 }
 
 bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_msgs::OccupancyGrid& map){
@@ -373,60 +350,6 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_m
         }
     }
     ROS_INFO_STREAM("this goal is ok");
-    return false;
-}
-
-bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
-    // コストマップを更新
-    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
-    ROS_INFO_STREAM("get global costmap");
-    return lookupCostmap(goal,gCostmap_.data);
-}
-
-bool Movement::lookupCostmap(void){
-    while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-    return lookupCostmap(pose_.data);
-}
-
-bool Movement::resetGoal(geometry_msgs::PoseStamped& goal){
-    // 現在のゴール地点までのパスを一定間隔だけ遡って新たな目的地にする
-    // true:リセっと可能, false:リセット不可能
-    //現在のパスを取
-    ROS_INFO_STREAM("reset goal");
-
-    std::vector<geometry_msgs::PoseStamped> path;
-    int pc = 0;
-    ros::Rate rate(RESET_GOAL_PATH_RATE);
-    
-    while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-    while(!pp_.createPath(pose_.data,goal,path) && ros::ok()){
-        ROS_INFO_STREAM("Waiting path ..."); // 一生パスが作れない場合もあるので注意
-        if(++pc >= RESET_GOAL_PATH_LIMIT){
-            ROS_WARN_STREAM("create path limit");
-            return false;
-        }
-        rate.sleep();
-    }
-    ROS_INFO_STREAM("get path");
-    // パスを少し遡ったところを目的地にする
-    ROS_INFO_STREAM("path size: " << path.size());
-    ROS_INFO_STREAM("PATH_BACK_INTERVAL: " << PATH_BACK_INTERVAL);
-    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
-
-    // ここの中でこすとまっぷにかからなくなるまで再計算
-    for(int i=1;PATH_BACK_INTERVAL*i < path.size() && ros::ok();++i){
-        ROS_INFO_STREAM("goal reset try : " << i);
-        if(!lookupCostmap(path[path.size() - PATH_BACK_INTERVAL*i],gCostmap_.data)){
-            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            goal = path[path.size() - PATH_BACK_INTERVAL*i];
-            Eigen::Vector2d vec;
-            pp_.getVec(pose_.data,goal,vec,path);
-            goal.pose.orientation = ExCov::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(vec.x(),vec.y(),0.0)));
-            return true;
-        }
-    }
-        
-    ROS_INFO_STREAM("Can't reset goal");
     return false;
 }
 
@@ -570,33 +493,100 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
     }
 }
 
-void Movement::moveToForward(void){
-    ROS_INFO_STREAM("Moving Straight");
-    ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
+bool Movement::resetGoal(geometry_msgs::PoseStamped& goal){
+    // 現在のゴール地点までのパスを一定間隔だけ遡って新たな目的地にする
+    // true:リセっと可能, false:リセット不可能
+    //現在のパスを取
+    ROS_INFO_STREAM("reset goal");
 
-    if(!bumper_.q.callOne(ros::WallDuration(1)) && bumperCollision(bumper_.data)) return; // 障害物に接触してないか確認
+    std::vector<geometry_msgs::PoseStamped> path;
+    int pc = 0;
+    ros::Rate rate(RESET_GOAL_PATH_RATE);
     
-    if(pose_.q.callOne(ros::WallDuration(1))) return;
+    while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+    while(!pp_.createPath(pose_.data,goal,path) && ros::ok()){
+        ROS_INFO_STREAM("Waiting path ..."); // 一生パスが作れない場合もあるので注意
+        if(++pc >= RESET_GOAL_PATH_LIMIT){
+            ROS_WARN_STREAM("create path limit");
+            return false;
+        }
+        rate.sleep();
+    }
+    ROS_INFO_STREAM("get path");
+    // パスを少し遡ったところを目的地にする
+    ROS_INFO_STREAM("path size: " << path.size());
+    ROS_INFO_STREAM("PATH_BACK_INTERVAL: " << PATH_BACK_INTERVAL);
+    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
 
-    if(lookupCostmap(pose_.data)){
-        escapeFromCostmap(pose_.data);
-        pose_.q.callOne(ros::WallDuration(1.0));
-    } 
-
-    if(scan_.q.callOne(ros::WallDuration(1))) return;
-
-    if(APPROACH_WALL){
-        double angle;
-        if(forwardWallDetection(scan_.data, angle)) VFHMove(scan_.data,std::move(angle));
-        else if(!roadCenterDetection(scan_.data)){
-            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+    // ここの中でこすとまっぷにかからなくなるまで再計算
+    for(int i=1;PATH_BACK_INTERVAL*i < path.size() && ros::ok();++i){
+        ROS_INFO_STREAM("goal reset try : " << i);
+        if(!lookupCostmap(path[path.size() - PATH_BACK_INTERVAL*i],gCostmap_.data)){
+            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            goal = path[path.size() - PATH_BACK_INTERVAL*i];
+            Eigen::Vector2d vec;
+            pp_.getVec(pose_.data,goal,vec,path);
+            goal.pose.orientation = ExCov::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(vec.x(),vec.y(),0.0)));
+            return true;
         }
     }
-    else {
-        if(!roadCenterDetection(scan_.data)){
-            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+        
+    ROS_INFO_STREAM("Can't reset goal");
+    return false;
+}
+
+bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
+    //壁に衝突してるかを確認して、してたらバック
+    if(bumper.state){
+        ROS_WARN_STREAM("Bumper Hit !!");
+        ros::Time setTime = ros::Time::now();
+        while(ros::Time::now()-setTime < ros::Duration(BACK_TIME)) velocity_.pub.publish(ExCos::msgTwist(BACK_VELOCITY,0));
+        return true;
+    }
+    return false;
+}
+
+bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
+    ROS_INFO_STREAM("roadCenterDetection");
+
+    static bool initialized = false;
+    static tf::TransformListener listener;
+    if(!initialized){
+        listener.waitForTransform(pose_.data.header.frame_id, scan.header.frame_id, ros::Time(), ros::Duration(1.0));
+        initialized = true;
+    }
+
+    ExStc::scanStruct scanRect(scan.ranges.size());
+
+    for(int i=0,e=scan.ranges.size();i!=e;++i){
+        if(!std::isnan(scan.ranges[i])){
+            double tempAngle = scan.angle_min+(scan.angle_increment*i);
+            if(scan.ranges[i]*cos(tempAngle) <= ROAD_CENTER_THRESHOLD){
+                scanRect.ranges.emplace_back(scan.ranges[i]);
+                scanRect.x.emplace_back(scan.ranges[i]*cos(tempAngle));
+                scanRect.y.emplace_back(scan.ranges[i]*sin(tempAngle));
+                scanRect.angles.emplace_back(std::move(tempAngle));
+            }
         }
     }
+
+    if(scanRect.ranges.size() < 2){
+        road_.pub.publish(geometry_msgs::PointStamped());
+        return false;
+    }
+
+    for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
+        if(std::abs(scanRect.y[i+1] - scanRect.y[i]) >= ROAD_THRESHOLD){
+            ROS_DEBUG_STREAM("Road Center Found");
+            //  通路中心座標pub
+            road_.pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((scanRect.x[i+1] + scanRect.x[i])/2, (scanRect.y[i+1] + scanRect.y[i])/2)),pose_.data.header.frame_id));
+            velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
+            return true;
+        }
+    }
+    ROS_DEBUG_STREAM("Road Center Do Not Found");
+    road_.pub.publish(geometry_msgs::PointStamped());
+    return false;
 }
 
 bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
@@ -674,17 +664,6 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     return true;
 }
 
-bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
-    //壁に衝突してるかを確認して、してたらバック
-    if(bumper.state){
-        ROS_WARN_STREAM("Bumper Hit !!");
-        ros::Time setTime = ros::Time::now();
-        while(ros::Time::now()-setTime < ros::Duration(BACK_TIME)) velocity_.pub.publish(ExCos::msgTwist(BACK_VELOCITY,0));
-        return true;
-    }
-    return false;
-}
-
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     ROS_INFO_STREAM("emergencyAvoidance");
 
@@ -725,78 +704,6 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     else{
         ROS_WARN_STREAM("I can not avoid it");
         return false;
-    }
-}
-
-geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double gain){
-    if(theta != 0) previousOrientation_ = theta;
-    return ExCos::msgTwist(v,gain*CURVE_GAIN*theta);
-}
-
-bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
-    ROS_INFO_STREAM("roadCenterDetection");
-
-    static bool initialized = false;
-    static tf::TransformListener listener;
-    if(!initialized){
-        listener.waitForTransform(pose_.data.header.frame_id, scan.header.frame_id, ros::Time(), ros::Duration(1.0));
-        initialized = true;
-    }
-
-    ExStc::scanStruct scanRect(scan.ranges.size());
-
-    for(int i=0,e=scan.ranges.size();i!=e;++i){
-        if(!std::isnan(scan.ranges[i])){
-            double tempAngle = scan.angle_min+(scan.angle_increment*i);
-            if(scan.ranges[i]*cos(tempAngle) <= ROAD_CENTER_THRESHOLD){
-                scanRect.ranges.emplace_back(scan.ranges[i]);
-                scanRect.x.emplace_back(scan.ranges[i]*cos(tempAngle));
-                scanRect.y.emplace_back(scan.ranges[i]*sin(tempAngle));
-                scanRect.angles.emplace_back(std::move(tempAngle));
-            }
-        }
-    }
-
-    if(scanRect.ranges.size() < 2){
-        road_.pub.publish(geometry_msgs::PointStamped());
-        return false;
-    }
-
-    for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
-        if(std::abs(scanRect.y[i+1] - scanRect.y[i]) >= ROAD_THRESHOLD){
-            ROS_DEBUG_STREAM("Road Center Found");
-            //  通路中心座標pub
-            road_.pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((scanRect.x[i+1] + scanRect.x[i])/2, (scanRect.y[i+1] + scanRect.y[i])/2)),pose_.data.header.frame_id));
-            velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
-            return true;
-        }
-    }
-    ROS_DEBUG_STREAM("Road Center Do Not Found");
-    road_.pub.publish(geometry_msgs::PointStamped());
-    return false;
-}
-
-void Movement::oneRotation(void){
-    //ロボットがz軸周りに一回転する
-    ROS_DEBUG_STREAM("rotation");
-
-    if(pose_.q.callOne(ros::WallDuration(1))) return;
-
-    double initYaw,yaw = ExCov::qToYaw(pose_.data.pose.orientation);
-    double initSign = initYaw / std::abs(initYaw);
-
-    if(std::isnan(initSign)) initSign = 1.0;
-
-    //initYawが+の時は+回転
-    //initYawが-の時は-回転
-    geometry_msgs::Twist vel = ExCos::msgTwist(0,initSign * ROTATION_VELOCITY);
-    
-    for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
-        double yawOld = yaw;
-        velocity_.pub.publish(vel);
-        pose_.q.callOne(ros::WallDuration(1));
-        yaw = ExCov::qToYaw(pose_.data.pose.orientation);
-        if(yawOld * yaw < 0) ++count;
     }
 }
 
@@ -896,5 +803,94 @@ double Movement::sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus
         ROS_INFO_STREAM("Not Found Space");
         return 0;
     }
+}
+
+geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double gain){
+    if(theta != 0) previousOrientation_ = theta;
+    return ExCos::msgTwist(v,gain*CURVE_GAIN*theta);
+}
+
+void 
+
+void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level){
+    FORWARD_VELOCITY = cfg.forward_velocity;
+    BACK_VELOCITY = cfg.back_velocity;
+    BACK_TIME = cfg.back_time;
+    FORWARD_ANGLE = cfg.forward_angle;
+    ROTATION_VELOCITY = cfg.rotation_velocity;
+    EMERGENCY_THRESHOLD = cfg.emergency_threshold;
+    ROAD_CENTER_THRESHOLD = cfg.road_center_threshold;
+    ROAD_THRESHOLD = cfg.road_threshold;
+    CURVE_GAIN = cfg.curve_gain;
+    EMERGENCY_AVOIDANCE_GAIN = cfg.emergency_avoidance_gain;
+    NEAR_AVOIDANCE_GAIN = cfg.near_avoidance_gain;
+    FAR_AVOIDANCE_GAIN = cfg.far_avoidance_gain;
+    ROAD_CENTER_GAIN = cfg.road_center_gain;
+    WALL_FORWARD_ANGLE = cfg.wall_forward_angle;
+    WALL_RATE_THRESHOLD = cfg.wall_rate_threshold;
+    WALL_DISTANCE_UPPER_THRESHOLD = cfg.wall_distance_upper_threshold;
+    WALL_DISTANCE_LOWER_THRESHOLD = cfg.wall_distance_lower_threshold;
+    EMERGENCY_DIFF_THRESHOLD = cfg.emergency_diff_threshold;
+    ANGLE_BIAS = cfg.angle_bias;
+    PATH_BACK_INTERVAL = cfg.path_back_interval;
+    GOAL_RESET_RATE = cfg.goal_reset_rate;
+    COSTMAP_MARGIN = cfg.costmap_margin;
+    ESC_MAP_DIV_X = cfg.esc_map_div_x;
+    ESC_MAP_DIV_Y = cfg.esc_map_div_y;
+    ESC_MAP_WIDTH = cfg.esc_map_width;
+    ESC_MAP_HEIGHT = cfg.esc_map_height;
+    VFH_NEAR_RANGE_THRESHOLD = cfg.vfh_near_range_threshold;
+    VFH_FAR_RANGE_THRESHOLD = cfg.vfh_far_range_threshold;
+    VFH_RATE_THRESHOLD = cfg.vfh_rate_threshold;
+    RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
+    RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
+    ROTATION_TOLERANCE = cfg.rotation_tolerance;
+    APPROACH_WALL = cfg.approach_wall;
+    USE_ANGLE_BIAS = cfg.use_angle_bias;
+}
+
+void Movement::outputParams(void){
+    std::cout << "writing movement last parameters ... ..." << std::endl;
+    std::ofstream ofs(MOVEMENT_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "file open succeeded" << std::endl;
+    else {
+        std::cout << "file open failed" << std::endl;
+        return;
+    }
+    ofs << "forward_velocity: " << FORWARD_VELOCITY << std::endl;
+    ofs << "back_velocity: " << BACK_VELOCITY << std::endl;
+    ofs << "back_time: " << BACK_TIME << std::endl;
+    ofs << "forward_angle: " << FORWARD_ANGLE << std::endl;
+    ofs << "rotation_velocity: " << ROTATION_VELOCITY << std::endl;
+    ofs << "emergency_threshold: " << EMERGENCY_THRESHOLD << std::endl;
+    ofs << "road_center_threshold: " << ROAD_CENTER_THRESHOLD << std::endl;
+    ofs << "road_threshold: " << ROAD_THRESHOLD << std::endl;
+    ofs << "curve_gain: " << CURVE_GAIN << std::endl;
+    ofs << "far_avoidance_gain: " << FAR_AVOIDANCE_GAIN << std::endl;
+    ofs << "near_avoidance_gain: " << NEAR_AVOIDANCE_GAIN << std::endl;
+    ofs << "emergency_avoidance_gain: " << EMERGENCY_AVOIDANCE_GAIN << std::endl;
+    ofs << "road_center_gain: " << ROAD_CENTER_GAIN << std::endl;
+    ofs << "wall_forward_angle: " << WALL_FORWARD_ANGLE << std::endl;
+    ofs << "wall_rate_threshold: " << WALL_RATE_THRESHOLD << std::endl;
+    ofs << "wall_distance_upper_threshold: " << WALL_DISTANCE_UPPER_THRESHOLD << std::endl;
+    ofs << "wall_distance_lower_threshold: " << WALL_DISTANCE_LOWER_THRESHOLD << std::endl;
+    ofs << "emergency_diff_threshold: " << EMERGENCY_DIFF_THRESHOLD << std::endl;
+    ofs << "angle_bias: " << ANGLE_BIAS << std::endl;
+    ofs << "path_back_interval: " << PATH_BACK_INTERVAL << std::endl;
+    ofs << "goal_reset_rate: " << GOAL_RESET_RATE << std::endl;
+    ofs << "costmap_margin: " << COSTMAP_MARGIN << std::endl;
+    ofs << "esc_map_div_x: " << ESC_MAP_DIV_X << std::endl;
+    ofs << "esc_map_div_y: " << ESC_MAP_DIV_Y << std::endl;
+    ofs << "esc_map_width: " << ESC_MAP_WIDTH << std::endl;
+    ofs << "esc_map_height: " << ESC_MAP_HEIGHT << std::endl;
+    ofs << "vfh_near_range_threshold: " << VFH_NEAR_RANGE_THRESHOLD << std::endl;
+    ofs << "vfh_far_range_threshold: " << VFH_FAR_RANGE_THRESHOLD << std::endl;
+    ofs << "vfh_rate_threshold: " << VFH_RATE_THRESHOLD << std::endl;
+    ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
+    ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
+    ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
+    ofs << "approach_wall: " << (APPROACH_WALL ? "true" : "false") << std::endl;
+    ofs << "use_angle_bias: " << (USE_ANGLE_BIAS ? "true" : "false") << std::endl; 
 }
 #endif //MOVEMENT_HPP

@@ -29,6 +29,6 @@ vfh_far_range_threshold: 5
 vfh_rate_threshold: 0.9
 reset_goal_path_limit: 5
 reset_goal_path_rate: 0.5
-rotation_tolerance: 0.025
+rotation_tolerance: 0.035
 approach_wall: false
 use_angle_bias: false

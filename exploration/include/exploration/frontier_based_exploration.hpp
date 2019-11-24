@@ -12,6 +12,7 @@
 #include <fstream>
 
 namespace ExStc = ExpLib::Struct;
+namespace ExCov = ExpLib::Convert;
 class FrontierBasedExploration
 {
 private:
@@ -119,7 +120,7 @@ bool FrontierBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, con
     //現在位置からそれぞれのフロンティア座標に対して距離とベクトルを計算し、評価関数によって目標を決定
 
     //ロボットの向きのベクトル(大きさ1)を計算
-    Eigen::Vector2d directionVec = ExpLib::Convert::qToVector2d(pose.pose.orientation);
+    Eigen::Vector2d directionVec = ExCov::qToVector2d(pose.pose.orientation);
 
     double max = -DBL_MAX;
     for(auto& f : frontiers){
