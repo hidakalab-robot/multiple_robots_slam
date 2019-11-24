@@ -145,7 +145,7 @@ Movement::Movement()
     ,road_("road", 1) // pub
     ,gCostmap_("global_costmap",1) // pub
     ,nh("~/movement")
-    ,server(nh){
+    ,server(ros::NodeHandle("~/movement")){
 
     nh.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
     nh.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
