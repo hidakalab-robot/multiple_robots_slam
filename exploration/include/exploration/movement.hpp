@@ -810,8 +810,6 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double ga
     return ExCos::msgTwist(v,gain*CURVE_GAIN*theta);
 }
 
-void 
-
 void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level){
     FORWARD_VELOCITY = cfg.forward_velocity;
     BACK_VELOCITY = cfg.back_velocity;
