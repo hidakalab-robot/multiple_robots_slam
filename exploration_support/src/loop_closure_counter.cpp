@@ -3,54 +3,56 @@
 #include <std_msgs/Float64.h>
 #include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/construct.hpp>
-
 #include <dynamic_reconfigure/server.h>
 #include <exploration_support/loop_closure_counter_parameter_reconfigureConfig.h>
 #include <fstream>
 
 // legacy loop counter
+namespace ExStc = ExpLib::Struct;
+namespace ExCos = ExpLib::Construct;
 
 int main(int argc, char* argv[]){
     ros::init(argc, argv, "loop_closure_counter");
 
-    // ros::NodeHandle p("~");
+    // dynamic parameters
+    double LOOP_CLOSURE_THRESHOLD;
+
+    // static parameters
+    std::string ODOM_FRAME_ID;
+    std::string MAP_FRAME_ID;
+    double PUBLISH_RATE;
+    std::string LOOP_PARAMETER_FILE_PATH;
+    bool OUTPUT_LOOP_PARAMETERS;
+
+    // loac params
     ros::NodeHandle nh("~/loop");
-    std::string ODOM_FRAME_ID, MAP_FRAME_ID;
-    double LOOP_CLOSURE_THRESHOLD, PUBLISH_RATE;
-
-    ExpLib::Struct::pubStruct<std_msgs::Int8> count("loop_closure_counter/count",1);
-    ExpLib::Struct::pubStruct<std_msgs::Float64> accumTemp("loop_closure_counter/temp_accumlate",1);
-    ExpLib::Struct::pubStruct<std_msgs::Float64> accumPerm("loop_closure_counter/perm_accumlate",1);
-
-    
+    // dynamic parameters
+    nh.param<double>("loop_closure_threshold",LOOP_CLOSURE_THRESHOLD,0.0);
+    // static parameters
     nh.param<std::string>("odom_frame_id",ODOM_FRAME_ID,"odom");
     nh.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
-    nh.param<double>("loop_closure_threshold",LOOP_CLOSURE_THRESHOLD,0.0);
     nh.param<double>("publish_rate",PUBLISH_RATE,10.0);
-
-    dynamic_reconfigure::Server<exploration_support::loop_closure_counter_parameter_reconfigureConfig> server(nh);
-    dynamic_reconfigure::Server<exploration_support::loop_closure_counter_parameter_reconfigureConfig>::CallbackType cbt;
-    bool OUTPUT_LOOP_PARAMETERS;
-    std::string LOOP_PARAMETER_FILE_PATH;
-    nh.param<bool>("output_loop_parameters",OUTPUT_LOOP_PARAMETERS,true);
     nh.param<std::string>("loop_parameter_file_path",LOOP_PARAMETER_FILE_PATH,"loop_last_parameters.yaml");
+    nh.param<bool>("output_loop_parameters",OUTPUT_LOOP_PARAMETERS,true);
 
-    cbt = boost::bind(+[](exploration_support::loop_closure_counter_parameter_reconfigureConfig &config, uint32_t level, double* lct)->void{
+    ExStc::pubStruct<std_msgs::Int8> count("loop_closure_counter/count",1);
+    ExStc::pubStruct<std_msgs::Float64> accumTemp("loop_closure_counter/temp_accumlate",1);
+    ExStc::pubStruct<std_msgs::Float64> accumPerm("loop_closure_counter/perm_accumlate",1);
+    dynamic_reconfigure::Server<exploration_support ::loop_closure_counter_parameter_reconfigureConfig> drs(nh);
+
+    drs.setCallback(boost::bind(+[](exploration_support::loop_closure_counter_parameter_reconfigureConfig &config, uint32_t level, double* lct)->void{
         *lct = config.loop_closure_threshold;
-    }, _1, _2, &LOOP_CLOSURE_THRESHOLD);
-
-    server.setCallback(cbt);
+    }, _1, _2, &LOOP_CLOSURE_THRESHOLD));
 
     tf::TransformListener listener;
     listener.waitForTransform(MAP_FRAME_ID, ODOM_FRAME_ID, ros::Time(), ros::Duration(1.0));
 
     Eigen::Vector2d lastTrans(0,0);
+    int loopCount = 0;
     double accumTrans = 0;
     double accumTransPerm = 0;
-    int loopCount = 0;
 
     ros::Rate rate(PUBLISH_RATE);
-
     while(ros::ok()){
         tf::StampedTransform transform;
         try{
@@ -74,22 +76,23 @@ int main(int argc, char* argv[]){
             }
             lastTrans << transX, transY; 
         }
-        count.pub.publish(ExpLib::Construct::msgInt8(loopCount));
-        accumTemp.pub.publish(ExpLib::Construct::msgDouble(accumTrans));
-        accumPerm.pub.publish(ExpLib::Construct::msgDouble(accumTransPerm));
+        count.pub.publish(ExCos::msgInt8(loopCount));
+        accumTemp.pub.publish(ExCos::msgDouble(accumTrans));
+        accumPerm.pub.publish(ExCos::msgDouble(accumTransPerm));
         rate.sleep();
         ros::spinOnce();
     }
 
     if(OUTPUT_LOOP_PARAMETERS){
-        std::cout << "writing last parameters ... ..." << std::endl;
+        std::cout << "writing loop last parameters ... ..." << std::endl;
         std::ofstream ofs(LOOP_PARAMETER_FILE_PATH);
 
-        if(ofs) std::cout << "file open succeeded" << std::endl;
+        if(ofs) std::cout << "loop param file open succeeded" << std::endl;
         else {
-            std::cout << "file open failed" << std::endl;
+            std::cout << "loop param file open failed" << std::endl;
             return 0;
         }
+
         ofs << "loop_closure_threshold: " << LOOP_CLOSURE_THRESHOLD << std::endl;
     }
 

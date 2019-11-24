@@ -8,7 +8,6 @@
     <arg name="rtabmap" default="true"/>
     <arg name="gmapping" default="false"/>
     <arg name="multi" default="false"/>
-    <arg name="rosbag" default="false"/>
 
     <!-- ロボットを追加するときはarg部とgroup部をコピペして書き換えてください -->
 
@@ -49,13 +48,6 @@
 
         <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
-        </include>
-        
-        <include if="$(arg rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
-            <param name="ropics" value="/$(arg robot1_name)/map
-                                        /$(arg robot1_name)/fill_map
-                                        /tf
-                                        /tf_static"/>
         </include>
     </group>
 

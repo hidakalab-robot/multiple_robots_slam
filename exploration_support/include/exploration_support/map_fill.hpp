@@ -7,61 +7,46 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <ros/ros.h>
-
 #include <dynamic_reconfigure/server.h>
 #include <exploration_support/map_fill_parameter_reconfigureConfig.h>
 #include <fstream>
 
+namespace ExStc = ExpLib::Struct;
+
 class MapFill
 {
 private:
-    ExpLib::Struct::subStructSimple map_;
-    ExpLib::Struct::pubStruct<nav_msgs::OccupancyGrid> mapImage_;
-
-    double FILL_SIZE_MAX;
+    // dynamic parameters
     double FILL_SIZE_MIN;
+    double FILL_SIZE_MAX;
 
-    ros::NodeHandle nh;
-    dynamic_reconfigure::Server<exploration_support::map_fill_parameter_reconfigureConfig> server;
-    dynamic_reconfigure::Server<exploration_support::map_fill_parameter_reconfigureConfig>::CallbackType cbt;
-    bool OUTPUT_FILL_PARAMETERS;
+    // static parameters
     std::string FILL_PARAMETER_FILE_PATH;
+    bool OUTPUT_FILL_PARAMETERS;
 
+    // variables
+    ExStc::subStructSimple map_;
+    ExStc::pubStruct<nav_msgs::OccupancyGrid> fillMap_;
+    dynamic_reconfigure::Server<exploration_support::map_fill_parameter_reconfigureConfig> drs_;
+
+    // functions
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-
-    void dynamicParamCallback(exploration_support::map_fill_parameter_reconfigureConfig &cfg, uint32_t level);
+    void loadParams(void);
+    void dynamicParamsCB(exploration_support::map_fill_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
+
 public:
-    MapFill():map_("map", 1, &MapFill::mapCB, this),mapImage_("fill_map",1),nh("~/map_fill"),server(nh){
-
-        nh.param<double>("fill_size_max",FILL_SIZE_MAX,2000);//px
-        nh.param<double>("fill_size_min",FILL_SIZE_MIN,5);//px
-        nh.param<bool>("output_fill_parameters",OUTPUT_FILL_PARAMETERS,true);
-        nh.param<std::string>("fill_parameter_file_path",FILL_PARAMETER_FILE_PATH,"fill_last_parameters.yaml");
-
-        cbt = boost::bind(&MapFill::dynamicParamCallback,this, _1, _2);
-        server.setCallback(cbt);
-    };
+    MapFill();
     ~MapFill(){if(OUTPUT_FILL_PARAMETERS) outputParams();};
 };
 
-void MapFill::dynamicParamCallback(exploration_support::map_fill_parameter_reconfigureConfig &cfg, uint32_t level){
-    FILL_SIZE_MAX = cfg.fill_size_max;
-    FILL_SIZE_MIN = cfg.fill_size_min;
-}
-
-void MapFill::outputParams(void){
-    std::cout << "writing last parameters ... ..." << std::endl;
-    std::ofstream ofs(FILL_PARAMETER_FILE_PATH);
-
-    if(ofs) std::cout << "file open succeeded" << std::endl;
-    else {
-        std::cout << "file open failed" << std::endl;
-        return;
-    }
-    ofs << "fill_size_max: " << FILL_SIZE_MAX << std::endl;
-    ofs << "fill_size_min: " << FILL_SIZE_MIN << std::endl;
- }
+MapFill::MapFill()
+    :map_("map", 1, &MapFill::mapCB, this)
+    ,fillMap_("fill_map",1)
+    ,drs_(ros::NodeHandle("~/map_fill")){
+    loadParams();
+    drs_.setCallback(boost::bind(&MapFill::dynamicParamsCB,this, _1, _2));
+};
 
 void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     ROS_INFO_STREAM("map input");
@@ -101,7 +86,35 @@ void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     std::replace(map.data.begin(),map.data.end(),127,-1);
 
     ROS_INFO_STREAM("map_image publish");
-    mapImage_.pub.publish(map);
+    fillMap_.pub.publish(map);
 }
 
+void MapFill::loadParams(void){
+    ros::NodeHandle nh("~/map_fill");
+    // dynamic parameters
+    nh.param<double>("fill_size_min",FILL_SIZE_MIN,5);//px
+    nh.param<double>("fill_size_max",FILL_SIZE_MAX,2000);//px
+    // static parameters
+    nh.param<std::string>("fill_parameter_file_path",FILL_PARAMETER_FILE_PATH,"fill_last_parameters.yaml");
+    nh.param<bool>("output_fill_parameters",OUTPUT_FILL_PARAMETERS,true);
+}
+
+void MapFill::dynamicParamsCB(exploration_support::map_fill_parameter_reconfigureConfig &cfg, uint32_t level){
+    FILL_SIZE_MIN = cfg.fill_size_min;
+    FILL_SIZE_MAX = cfg.fill_size_max;
+}
+
+void MapFill::outputParams(void){
+    std::cout << "writing fill last parameters ... ..." << std::endl;
+    std::ofstream ofs(FILL_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "fill param file open succeeded" << std::endl;
+    else {
+        std::cout << "fill param file open failed" << std::endl;
+        return;
+    }
+
+    ofs << "fill_size_min: " << FILL_SIZE_MIN << std::endl;
+    ofs << "fill_size_max: " << FILL_SIZE_MAX << std::endl;
+ }
 #endif //MAP_FILL_HPP

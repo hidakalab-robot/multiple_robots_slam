@@ -1,8 +1,5 @@
 #include <exploration/multi_exploration_simulator.hpp> // 必須
-// #include <exploration/seamless_hybrid.hpp> // SeamlessHybrid sh(pp);　用
 #include <exploration/seamless_hybrid_exploration.hpp> // SeamlessHybrid sh(pp);　用
-// #include <exploration_libraly/path_planning.hpp> // PathPlanning<navfn::NavfnROS> pp("global_costmap","NavfnROS"); 用
-// #include <navfn/navfn_ros.h>
 
 int main(int argc, char* argv[]){
     // 見づらいのでusingしておく
@@ -31,8 +28,6 @@ int main(int argc, char* argv[]){
      */
 
     // 使用例
-
-    // PathPlanning<navfn::NavfnROS> pp("simulator_calc_costmap","simulator_calc_path");
     SeamlessHybridExploration sbe;
 
     // 渡す関数のオブジェクトを作成
@@ -42,6 +37,5 @@ int main(int argc, char* argv[]){
         ros::spinOnce(); // 必須
         mes.updateParameters(fn); // 必須 <- 引数に上で作った渡したい関数のオブジェクトを入れる
     }
-    mes.writeParameters();
     return 0;
 }

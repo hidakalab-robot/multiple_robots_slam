@@ -10,13 +10,16 @@ ns = namespace of move_base topic
 
 int main(int argc, char *argv[]){
     ros::init(argc, argv, "movebase_breaker");
-    ros::NodeHandle nh;
-    ros::NodeHandle p("~");
+    // ros::NodeHandle nh;
+    // ros::NodeHandle p("~");
     std::string ns;
-    p.getParam("ns",ns);
+    // p.getParam("ns",ns);
+    ros::NodeHandle("~").getParam("ns",ns);
 
-    ros::Publisher pub = nh.advertise<actionlib_msgs::GoalID>(ros::names::append(ns,"move_base/cancel"),1,true);
-    ros::Subscriber sub = nh.subscribe<actionlib_msgs::GoalStatusArray>(ros::names::append(ns,"move_base/status"),1,[&pub](const actionlib_msgs::GoalStatusArray::ConstPtr& msg){
+    // ros::Publisher pub = nh.advertise<actionlib_msgs::GoalID>(ros::names::append(ns,"move_base/cancel"),1,true);
+    // ros::Subscriber sub = nh.subscribe<actionlib_msgs::GoalStatusArray>(ros::names::append(ns,"move_base/status"),1,[&pub](const actionlib_msgs::GoalStatusArray::ConstPtr& msg){
+    ros::Publisher pub = ros::NodeHandle().advertise<actionlib_msgs::GoalID>(ros::names::append(ns,"move_base/cancel"),1,true);
+    ros::Subscriber sub = ros::NodeHandle().subscribe<actionlib_msgs::GoalStatusArray>(ros::names::append(ns,"move_base/status"),1,[&pub](const actionlib_msgs::GoalStatusArray::ConstPtr& msg){
         static actionlib_msgs::GoalID lastId;
         static bool repeat = false;
         if(msg->status_list.empty()) return;

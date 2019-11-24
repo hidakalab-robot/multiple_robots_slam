@@ -14,9 +14,13 @@
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <visualization_msgs/Marker.h>
 
+namespace ExStc = ExpLib::Struct;
+namespace ExCos = ExpLib::Construct;
+
 class Visualization
 {
 private:
+    // static parameters
     std::string INIT_FRAME_ID;
     double POSE_PUBLISH_RATE;
     double GOAL_PUBLISH_RATE;
@@ -24,42 +28,42 @@ private:
     double FRONTIER_PUBLISH_RATE;
     double USEFUL_FRONTIER_PUBLISH_RATE;
     double ROAD_PUBLISH_RATE;
-    std::string MAP_FRAME_ID;
-
-    std::mutex rmMutex_;
-    std::mutex gmMutex_;
     
-    //pose
-    ExpLib::Struct::subStructSimple pose_;
-    ExpLib::Struct::pubStruct<nav_msgs::Path> posePath_;   
+    // variables
+    // pose
+    ExStc::subStructSimple pose_;
+    ExStc::pubStruct<nav_msgs::Path> posePath_;   
     nav_msgs::Path pp_;
 
-    //goal
-    ExpLib::Struct::subStructSimple goal_;
-    ExpLib::Struct::pubStruct<visualization_msgs::Marker> goalMarker_;
+    // goal
+    ExStc::subStructSimple goal_;
+    ExStc::pubStruct<visualization_msgs::Marker> goalMarker_;
     visualization_msgs::Marker gm_;
-    ExpLib::Struct::subStructSimple goSt_;
+    ExStc::subStructSimple goSt_;
+    std::mutex gmMutex_;
 
     // branch
-    ExpLib::Struct::subStructSimple branch_;
-    ExpLib::Struct::pubStruct<visualization_msgs::Marker> branchMarker_;
+    ExStc::subStructSimple branch_;
+    ExStc::pubStruct<visualization_msgs::Marker> branchMarker_;
     visualization_msgs::Marker bm_;
 
     // frontier
-    ExpLib::Struct::subStructSimple frontier_;
-    ExpLib::Struct::pubStruct<visualization_msgs::Marker> frontierMarker_;
+    ExStc::subStructSimple frontier_;
+    ExStc::pubStruct<visualization_msgs::Marker> frontierMarker_;
     visualization_msgs::Marker fm_;
 
     // useful frontier
-    ExpLib::Struct::subStructSimple useFro_;
-    ExpLib::Struct::pubStruct<visualization_msgs::Marker> useFroMarker_;
+    ExStc::subStructSimple useFro_;
+    ExStc::pubStruct<visualization_msgs::Marker> useFroMarker_;
     visualization_msgs::Marker ufm_;
 
     // road
-    ExpLib::Struct::subStructSimple road_;
-    ExpLib::Struct::pubStruct<visualization_msgs::Marker> roadMarker_;
+    ExStc::subStructSimple road_;
+    ExStc::pubStruct<visualization_msgs::Marker> roadMarker_;
     visualization_msgs::Marker rm_;
+    std::mutex rmMutex_;
     
+    // functions
     void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
     void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
     void goalStatusCB(const actionlib_msgs::GoalStatusArray::ConstPtr& msg);
@@ -67,13 +71,13 @@ private:
     void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
     void useFroCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
     void roadCB(const geometry_msgs::PointStamped::ConstPtr& msg);
-
     void posePathPublisher(void);
     void goalMarkerPublisher(void);
     void branchMarkerPublisher(void);
     void frontierMarkerPublisher(void);
     void useFroMarkerPublisher(void);
     void roadMarkerPublisher(void);
+    void loadParams(void);
 
 public:
     Visualization();
@@ -94,21 +98,11 @@ Visualization::Visualization()
     ,useFroMarker_("visualization/useful_frontier", 1, true)
     ,road_("road",1,&Visualization::roadCB, this)
     ,roadMarker_("visualization/road", 1, true){
-
-    ros::NodeHandle p("~");
-    p.param<std::string>("init_frame_id", INIT_FRAME_ID, "robot1/map");
-    p.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 10.0);
-    p.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 10.0);
-    p.param<double>("branch_publish_rate", BRANCH_PUBLISH_RATE, 10.0);
-    p.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
-    p.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
-    p.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);
-
-    gm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
-    bm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
-    fm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
-    ufm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
-    rm_ = ExpLib::Construct::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
+    gm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
+    bm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
+    fm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
+    ufm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
+    rm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
 }
 
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
@@ -120,7 +114,7 @@ void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
 // goalに着いたのを検知してマーカーを消したい
 void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
     std::lock_guard<std::mutex> lock(gmMutex_);
-    gm_.points = ExpLib::Construct::oneFactorVector(msg->point);
+    gm_.points = ExCos::oneFactorVector(msg->point);
     gm_.header.frame_id = msg->header.frame_id;
     gm_.header.stamp = ros::Time::now();
 }
@@ -171,7 +165,7 @@ void Visualization::useFroCB(const exploration_msgs::FrontierArray::ConstPtr& ms
 // 本当に空になってるか確認
 void Visualization::roadCB(const geometry_msgs::PointStamped::ConstPtr& msg){
     std::lock_guard<std::mutex> lock(rmMutex_);
-    rm_.points = msg->header.frame_id != "" ? ExpLib::Construct::oneFactorVector(msg->point) : std::vector<geometry_msgs::Point>();
+    rm_.points = msg->header.frame_id != "" ? ExCos::oneFactorVector(msg->point) : std::vector<geometry_msgs::Point>();
     rm_.header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
     rm_.header.stamp = ros::Time::now();
 }
@@ -241,6 +235,18 @@ void Visualization::multiThreadMain(void){
     ufmThread.join();
     rmThread.join();
     ROS_INFO_STREAM("end main loop\n");
+}
+
+void Visualization::loadParams(void){
+    ros::NodeHandle nh("~");
+    // static parameters
+    nh.param<std::string>("init_frame_id", INIT_FRAME_ID, "robot1/map");
+    nh.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 10.0);
+    nh.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 10.0);
+    nh.param<double>("branch_publish_rate", BRANCH_PUBLISH_RATE, 10.0);
+    nh.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
+    nh.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
+    nh.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);
 }
 
 #endif //VISUALIZATION_HPP

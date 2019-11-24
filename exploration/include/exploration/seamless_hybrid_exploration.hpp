@@ -7,7 +7,6 @@
 #include <exploration_msgs/FrontierArray.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <navfn/navfn_ros.h>
-
 #include <dynamic_reconfigure/server.h>
 #include <exploration/seamless_hybrid_exploration_parameter_reconfigureConfig.h>
 #include <fstream>
@@ -15,15 +14,28 @@
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
+
 class SeamlessHybridExploration :public SensorBasedExploration
 {
 private:
+    // dynamic parameters
+    double DISTANCE_WEIGHT;
+    double DIRECTION_WEIGHT;
+    double VARIANCE_THRESHOLD;
+    double COVARIANCE_THRESHOLD;
+    double OTHER_ROBOT_WEIGHT;
+
+    // static parameters
+    std::string ROBOT_NAME;
+    std::string SHE_PARAMETER_FILE_PATH;
+    bool OUTPUT_SHE_PARAMETERS;
+
+    // struct
     struct maxValue{
         double distance;
         double angle;
         maxValue():distance(-DBL_MAX),angle(-DBL_MAX){};
     };
-
     struct preCalcResult{
         struct value{
             double distance;
@@ -36,41 +48,29 @@ private:
         preCalcResult(){};
     };
 
-    maxValue mVal_;
-
-    double COVARIANCE_THRESHOLD;
-    double VARIANCE_THRESHOLD;
-    double DIRECTION_WEIGHT;
-    double DISTANCE_WEIGHT;
-    double OTHER_ROBOT_WEIGHT;
-    std::string ROBOT_NAME;
-
-    geometry_msgs::PoseStamped ps_;
-    std::vector<ExStc::listStruct> ls_;
-    exploration_msgs::FrontierArray fa_;
-    exploration_msgs::RobotInfoArray ria_;
-
-    ExpLib::PathPlanning<navfn::NavfnROS> pp_;
+    // variables
     ExStc::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
     ExStc::subStruct<exploration_msgs::FrontierArray> frontier_;
     ExStc::pubStruct<exploration_msgs::FrontierArray> useFro_;
-
+    ExpLib::PathPlanning<navfn::NavfnROS> pp_;
+    dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig> drs_;
+    std::vector<ExStc::listStruct> ls_;
+    exploration_msgs::FrontierArray fa_;
+    exploration_msgs::RobotInfoArray ria_;
     std::vector<preCalcResult> ownPreCalc_;
     std::vector<preCalcResult> otherPreCalc_;
+    geometry_msgs::PoseStamped ps_;
+    maxValue mVal_;
 
-    ros::NodeHandle nh;
-    dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig> server;
-    dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>::CallbackType cbt;
-    bool OUTPUT_SHE_PARAMETERS;
-    std::string SHE_PARAMETER_FILE_PATH;
-
+    // functions
     bool decideGoal(geometry_msgs::PointStamped& goal);
     bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
     bool filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
-
     void preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
-    void dynamicParamCallback(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+    void loadParams(void);
+    void dynamicParamsCB(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
+
 public:
     SeamlessHybridExploration();
     ~SeamlessHybridExploration(){if(OUTPUT_SHE_PARAMETERS) outputParams();};
@@ -82,53 +82,10 @@ SeamlessHybridExploration::SeamlessHybridExploration()
     ,frontier_("frontier", 1)
     ,useFro_("useful_frontier", 1, true)
     ,pp_("seamless_costmap","seamless_planner")
-    ,nh("~/seamless_hybrid_exploration")
-    ,server(nh){
-
-    nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
-    nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
-    nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
-    nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
-    nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
-    nh.param<std::string>("robot_name", ROBOT_NAME, "robot1");
-    nh.param<bool>("output_she_parameters",OUTPUT_SHE_PARAMETERS,true);
-    nh.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
-
-    cbt = boost::bind(&SeamlessHybridExploration::dynamicParamCallback,this, _1, _2);
-    server.setCallback(cbt);
+    ,drs_(ros::NodeHandle("~/seamless_hybrid_exploration")){
+    loadParams();
+    drs_.setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
 }
-
-void SeamlessHybridExploration::dynamicParamCallback(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
-    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
-    LOG_NEWER_LIMIT = cfg.log_newer_limit;
-    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
-    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
-    COVARIANCE_THRESHOLD = cfg.covariance_threshold;
-    VARIANCE_THRESHOLD = cfg.variance_threshold;
-    DIRECTION_WEIGHT = cfg.direction_weight;
-    DISTANCE_WEIGHT = cfg.distance_weight;
-    OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
-}
-
-void SeamlessHybridExploration::outputParams(void){
-    std::cout << "writing last parameters ... ..." << std::endl;
-    std::ofstream ofs(SHE_PARAMETER_FILE_PATH);
-
-    if(ofs) std::cout << "file open succeeded" << std::endl;
-    else {
-        std::cout << "file open failed" << std::endl;
-        return;
-    }
-    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
-    ofs << "log_newer_limit: " << LOG_NEWER_LIMIT << std::endl;
-    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
-    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
-    ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
-    ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
-    ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
-    ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
-    ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
- }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
     if(robotArray_.q.callOne(ros::WallDuration(1))){
@@ -319,5 +276,52 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
 
     pp.createPath(ps_,ExCov::pointStampedToPoseStamped(goal));
 }
+
+void SeamlessHybridExploration::loadParams(void){
+    ros::NodeHandle nh("~/seamless_hybrid_exploration");
+    // dynamic parameters
+    nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
+    nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
+    nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
+    nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
+    nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
+    // static parameters
+    nh.param<std::string>("robot_name", ROBOT_NAME, "robot1");
+    nh.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
+    nh.param<bool>("output_she_parameters",OUTPUT_SHE_PARAMETERS,true);
+}
+
+void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
+    LOG_CURRENT_TIME = cfg.log_current_time;
+    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
+    DISTANCE_WEIGHT = cfg.distance_weight;
+    DIRECTION_WEIGHT = cfg.direction_weight;
+    VARIANCE_THRESHOLD = cfg.variance_threshold;
+    COVARIANCE_THRESHOLD = cfg.covariance_threshold;
+    OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
+}
+
+void SeamlessHybridExploration::outputParams(void){
+    std::cout << "writing she last parameters ... ..." << std::endl;
+    std::ofstream ofs(SHE_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "she param file open succeeded" << std::endl;
+    else {
+        std::cout << "she param file open failed" << std::endl;
+        return;
+    }
+
+    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
+    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
+    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
+    ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
+    ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
+    ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
+    ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
+    ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
+ }
 
 #endif // SEAMLESS_HYBRID_EXPLORATION_HPP

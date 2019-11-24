@@ -7,7 +7,6 @@
 #include <Eigen/Geometry>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
-
 #include <dynamic_reconfigure/server.h>
 #include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
 #include <fstream>
@@ -15,31 +14,38 @@
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
+
 class SensorBasedExploration
 {
 private:
+    // static parameters
+    bool OUTPUT_SBE_PARAMETERS;
+    std::string SBE_PARAMETER_FILE_PATH;
+
+    // variables
     ExStc::subStruct<exploration_msgs::PointArray> branch_;
     ExStc::subStruct<geometry_msgs::PoseStamped> pose_;
     ExStc::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 
-    bool OUTPUT_SBE_PARAMETERS;
-    std::string SBE_PARAMETER_FILE_PATH;
-
+    // functions
     void duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
     virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
-    virtual void dynamicParamCallback(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+    virtual void loadParams(void);
+    virtual void dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
     virtual void outputParams(void);
 
 protected:
+    // dynamic parameters
     double LAST_GOAL_TOLERANCE;
-    double LOG_NEWER_LIMIT;//if 30 -> 30秒前までのログで重複検出
     double DUPLICATE_TOLERANCE;
+    double LOG_CURRENT_TIME;//if 30 -> 30秒前までのログで重複検出
     double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
-    geometry_msgs::Point lastGoal_;
+    
+    // variables
     ExStc::pubStruct<geometry_msgs::PointStamped> goal_;
-    ros::NodeHandle nh;
-    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig> server;
-    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>::CallbackType cbt;
+    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig> drs_;
+    geometry_msgs::Point lastGoal_;
+
 public:
     SensorBasedExploration();
     virtual ~SensorBasedExploration(){if(OUTPUT_SBE_PARAMETERS) outputParams();};
@@ -51,41 +57,10 @@ SensorBasedExploration::SensorBasedExploration()
     ,pose_("pose", 1)
     ,poseLog_("pose_log", 1)
     ,goal_("goal", 1, true)
-    ,nh("~/sensor_based_exploration")
-    ,server(nh){
-
-    nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
-    nh.param<double>("log_newer_limit", LOG_NEWER_LIMIT, 10);
-    nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
-    nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
-    nh.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,true);
-    nh.param<std::string>("sbe_parameter_file_path",SBE_PARAMETER_FILE_PATH,"sbe_last_parameters.yaml");
-
-    cbt = boost::bind(&SensorBasedExploration::dynamicParamCallback,this, _1, _2);
-    server.setCallback(cbt);
+    ,drs_(ros::NodeHandle("~/sensor_based_exploration")){
+    loadParams();
+    drs_.setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
 }
-
-void SensorBasedExploration::dynamicParamCallback(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
-    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
-    LOG_NEWER_LIMIT = cfg.log_newer_limit;
-    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
-    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
-}
-
-void SensorBasedExploration::outputParams(void){
-    std::cout << "writing last parameters ... ..." << std::endl;
-    std::ofstream ofs(SBE_PARAMETER_FILE_PATH);
-
-    if(ofs) std::cout << "file open succeeded" << std::endl;
-    else {
-        std::cout << "file open failed" << std::endl;
-        return;
-    }
-    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
-    ofs << "log_newer_limit: " << LOG_NEWER_LIMIT << std::endl;
-    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
-    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
- }
 
 bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // 分岐の読み込み
@@ -134,7 +109,7 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& 
 	//重複探査を考慮する時間の上限から参照する配列の最大値を設定
 	int ARRAY_MAX = log.poses.size();
 	for(int i=log.poses.size()-2;i!=0;--i){
-		if(ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > LOG_NEWER_LIMIT){
+		if(ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > LOG_CURRENT_TIME){
 			ARRAY_MAX = i;
 			break;
 		}
@@ -174,5 +149,40 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
     }
     return false;
 }
+
+void SensorBasedExploration::loadParams(void){
+    ros::NodeHandle nh("~/sensor_based_exploration");
+    // dynamic parameters
+    nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
+    nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
+    nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
+    nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+    // static parameters
+    nh.param<std::string>("sbe_parameter_file_path",SBE_PARAMETER_FILE_PATH,"sbe_last_parameters.yaml");
+    nh.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,true);
+}
+
+void SensorBasedExploration::dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
+    LOG_CURRENT_TIME = cfg.log_current_time;
+    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
+}
+
+void SensorBasedExploration::outputParams(void){
+    std::cout << "writing sbe last parameters ... ..." << std::endl;
+    std::ofstream ofs(SBE_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "sbe param file open succeeded" << std::endl;
+    else {
+        std::cout << "sbe param file open failed" << std::endl;
+        return;
+    }
+    
+    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
+    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
+    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
+ }
 
 #endif // SENSOR_BASED_EXPLORATION_HPP

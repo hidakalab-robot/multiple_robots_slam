@@ -5,12 +5,13 @@
 #include <exploration_libraly/struct.hpp>
 #include <ros/ros.h>
 
+namespace ExStc = ExpLib::Struct;
 template<typename T>
 class Continuity
 {
 private:
-    ExpLib::Struct::subStruct<T> sub_;
-    ExpLib::Struct::pubStruct<T> pub_;
+    ExStc::subStruct<T> sub_;
+    ExStc::pubStruct<T> pub_;
 
 public:
     Continuity(const std::string& sub_topic, const std::string& pub_topic):sub_(sub_topic,1),pub_(pub_topic,1){};

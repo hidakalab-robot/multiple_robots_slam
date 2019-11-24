@@ -16,7 +16,6 @@
 #include <sensor_msgs/LaserScan.h>
 #include <exploration_libraly/path_planning.hpp>
 #include <navfn/navfn_ros.h>
-
 #include <dynamic_reconfigure/server.h>
 #include <exploration/movement_parameter_reconfigureConfig.h>
 #include <fstream>
@@ -47,46 +46,52 @@ namespace ExStc = ExpLib::Struct;
 namespace ExUtl = ExpLib::Utility;
 namespace ExCos = ExpLib::Construct;
 namespace ExCov = ExpLib::Convert;
+
 class Movement 
 {
 private:
-    //parameters
+    // dynamic parameters
     double FORWARD_VELOCITY;
-    double BACK_VELOCITY;
-    double BACK_TIME;
-    double FORWARD_ANGLE;
     double ROTATION_VELOCITY;
-    double EMERGENCY_THRESHOLD;
-    double ROAD_CENTER_THRESHOLD;
-    double ROAD_THRESHOLD;
     double CURVE_GAIN;
-    double FAR_AVOIDANCE_GAIN;
-    double NEAR_AVOIDANCE_GAIN;
-    double EMERGENCY_AVOIDANCE_GAIN;
-    double ROAD_CENTER_GAIN;
-    std::string MOVEBASE_NAME;
-    double WALL_FORWARD_ANGLE;
-    double WALL_RATE_THRESHOLD;
-    double WALL_DISTANCE_UPPER_THRESHOLD;
-    double WALL_DISTANCE_LOWER_THRESHOLD;
-    double EMERGENCY_DIFF_THRESHOLD;
+    bool USE_ANGLE_BIAS;
     double ANGLE_BIAS;
-    int PATH_BACK_INTERVAL;
-    double GOAL_RESET_RATE;
     double COSTMAP_MARGIN;
     int ESC_MAP_DIV_X;
     int ESC_MAP_DIV_Y;
     double ESC_MAP_WIDTH;
     double ESC_MAP_HEIGHT;
+    double ROTATION_TOLERANCE;
+    double GOAL_RESET_RATE;
+    int PATH_BACK_INTERVAL;
+    int RESET_GOAL_PATH_LIMIT;
+    double RESET_GOAL_PATH_RATE;
+    double BACK_VELOCITY;
+    double BACK_TIME;
+    double ROAD_CENTER_THRESHOLD;
+    double ROAD_THRESHOLD;
+    double ROAD_CENTER_GAIN;
+    double FORWARD_ANGLE;
     double VFH_FAR_RANGE_THRESHOLD;
     double VFH_NEAR_RANGE_THRESHOLD;
     double VFH_RATE_THRESHOLD;
-    int RESET_GOAL_PATH_LIMIT;
-    double RESET_GOAL_PATH_RATE;
-    double ROTATION_TOLERANCE;
+    double FAR_AVOIDANCE_GAIN;
+    double NEAR_AVOIDANCE_GAIN;
+    double EMERGENCY_THRESHOLD;
+    double EMERGENCY_DIFF_THRESHOLD;
+    double EMERGENCY_AVOIDANCE_GAIN;
     bool APPROACH_WALL;
-    bool USE_ANGLE_BIAS;
+    double WALL_FORWARD_ANGLE;
+    double WALL_RATE_THRESHOLD;
+    double WALL_DISTANCE_UPPER_THRESHOLD;
+    double WALL_DISTANCE_LOWER_THRESHOLD;
 
+    // static parameters
+    std::string MOVEBASE_NAME;
+    std::string MOVEMENT_PARAMETER_FILE_PATH;
+    bool OUTPUT_MOVEMENT_PARAMETERS;
+
+    // variables
     ExStc::subStruct<sensor_msgs::LaserScan> scan_;
     ExStc::subStruct<geometry_msgs::PoseStamped> pose_;
     ExStc::subStruct<kobuki_msgs::BumperEvent> bumper_;
@@ -94,41 +99,31 @@ private:
     ExStc::pubStruct<geometry_msgs::Twist> velocity_;
     ExStc::pubStruct<geometry_msgs::PointStamped> goal_;
     ExStc::pubStruct<geometry_msgs::PointStamped> road_;
-
     ExpLib::PathPlanning<navfn::NavfnROS> pp_;
-
-    ros::NodeHandle nh;
-    dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig> server;
-    dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig>::CallbackType cbt;
-    bool OUTPUT_MOVEMENT_PARAMETERS;
-    std::string MOVEMENT_PARAMETER_FILE_PATH;
-
+    dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig> drs_;
     double previousOrientation_;
 
+    // functions
     bool lookupCostmap(void);
     bool lookupCostmap(const geometry_msgs::PoseStamped& goal);
     bool lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_msgs::OccupancyGrid& cmap);
     void escapeFromCostmap(const geometry_msgs::PoseStamped& pose);
     void rotationFromTo(const geometry_msgs::Quaternion& from, const geometry_msgs::Quaternion& to);
     bool resetGoal(geometry_msgs::PoseStamped& goal);
-
     bool bumperCollision(const kobuki_msgs::BumperEvent& bumper);
     bool roadCenterDetection(const sensor_msgs::LaserScan& scan);
     bool VFHMove(const sensor_msgs::LaserScan& scan, double angle=0);
     bool emergencyAvoidance(const sensor_msgs::LaserScan& scan);
     bool forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle);
     double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
-
-    // general
-    void loadParameters(void);
     geometry_msgs::Twist velocityGenerator(double theta, double v, double gain);
-    void dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level);
+    void loadParams(void);
+    void dynamicParamsCB(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
 
 public:
     Movement();
     ~Movement(){if(OUTPUT_MOVEMENT_PARAMETERS) outputParams();};
-
     void moveToGoal(geometry_msgs::PointStamped goal);
     void moveToForward(void);
     void oneRotation(void);
@@ -144,49 +139,9 @@ Movement::Movement()
     ,goal_("goal", 1, true) // pub
     ,road_("road", 1) // pub
     ,gCostmap_("global_costmap",1) // pub
-    ,nh("~/movement")
-    ,server(ros::NodeHandle("~/movement")){
-
-    nh.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
-    nh.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
-    nh.param<double>("back_velocity", BACK_VELOCITY, -0.2);
-    nh.param<double>("back_time", BACK_TIME, 1.0);
-    nh.param<double>("forward_angle", FORWARD_ANGLE, 0.35);
-    nh.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
-    nh.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.1);
-    nh.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
-    nh.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
-    nh.param<double>("curve_gain", CURVE_GAIN, 2.0);
-    nh.param<double>("near_avoidance_gain", NEAR_AVOIDANCE_GAIN, 2.5);
-    nh.param<double>("far_avoidance_gain", FAR_AVOIDANCE_GAIN, 2.5);
-    nh.param<double>("emergency_avoidance_gain", EMERGENCY_AVOIDANCE_GAIN, 2.5);
-    nh.param<double>("road_center_gain", ROAD_CENTER_GAIN, 1.25);
-    nh.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.35);
-    nh.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
-    nh.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
-    nh.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 0.5);
-    nh.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.1);
-    nh.param<double>("angle_bias", ANGLE_BIAS, 10.0);
-    nh.param<int>("path_back_interval", PATH_BACK_INTERVAL, 5);
-    nh.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
-    nh.param<double>("costmap_margin", COSTMAP_MARGIN, 0.4); // コストマップの検索窓の直径
-    nh.param<int>("esc_map_div_x", ESC_MAP_DIV_X, 3);
-    nh.param<int>("esc_map_div_y", ESC_MAP_DIV_Y, 3);
-    nh.param<double>("esc_map_width", ESC_MAP_WIDTH, 0.9);
-    nh.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
-    nh.param<double>("vfh_near_range_threshold", VFH_NEAR_RANGE_THRESHOLD, 1.5);
-    nh.param<double>("vfh_far_range_threshold", VFH_FAR_RANGE_THRESHOLD, 5.0);
-    nh.param<double>("vfh_rate_threshold", VFH_RATE_THRESHOLD, 0.9);
-    nh.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
-    nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
-    nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
-    nh.param<bool>("approach_wall", APPROACH_WALL, false);
-    nh.param<bool>("use_angle_bias", USE_ANGLE_BIAS, false);
-    nh.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
-    nh.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
-
-    cbt = boost::bind(&Movement::dynamicParamCallback,this, _1, _2);
-    server.setCallback(cbt);
+    ,drs_(ros::NodeHandle("~/movement")){
+    loadParams();
+    drs_.setCallback(boost::bind(&Movement::dynamicParamsCB,this, _1, _2));
 }
 
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){
@@ -330,17 +285,11 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
 }
 
 bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_msgs::OccupancyGrid& map){
-    // 現在設定されているゴールがコストマップに被っているかだけを見る関数
-    // 正確にはposeStampedの座標がコストマップに被ってるかを見る
     // true:被ってる, false:被ってない
     ROS_INFO_STREAM("lookup global costmap");
-    // ROS_INFO_STREAM("recieve goal : " << goal);
     // コストマップの配列を二次元に変換
     std::vector<std::vector<int8_t>> lmap(ExUtl::mapArray1dTo2d(map.data,map.info));
-    // ROS_INFO_STREAM("create costmap array(2d)");
-    // ゴールを中心としたマップの検索窓を作る
     ExStc::mapSearchWindow msw(goal.pose.position,map.info,COSTMAP_MARGIN);
-    // ゴールにコストマップが被ってないか検索
     for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
         for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
             if(lmap[x][y] > 0){
@@ -810,85 +759,130 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double ga
     return ExCos::msgTwist(v,gain*CURVE_GAIN*theta);
 }
 
-void Movement::dynamicParamCallback(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level){
+void Movement::loadParams(void){
+    ros::NodeHandle nh("~/movement");
+    // dynamic parameters
+    nh.param<double>("forward_velocity", FORWARD_VELOCITY, 0.2);
+    nh.param<double>("rotation_velocity", ROTATION_VELOCITY, 0.5);
+    nh.param<double>("curve_gain", CURVE_GAIN, 2.0);
+    nh.param<bool>("use_angle_bias", USE_ANGLE_BIAS, false);
+    nh.param<double>("angle_bias", ANGLE_BIAS, 10.0);
+    nh.param<double>("costmap_margin", COSTMAP_MARGIN, 0.4);
+    nh.param<int>("esc_map_div_x", ESC_MAP_DIV_X, 3);
+    nh.param<int>("esc_map_div_y", ESC_MAP_DIV_Y, 3);
+    nh.param<double>("esc_map_width", ESC_MAP_WIDTH, 0.9);
+    nh.param<double>("esc_map_height", ESC_MAP_HEIGHT, 0.9);
+    nh.param<double>("rotation_tolerance", ROTATION_TOLERANCE, 0.05);
+    nh.param<double>("goal_reset_rate", GOAL_RESET_RATE, 1);
+    nh.param<int>("path_back_interval", PATH_BACK_INTERVAL, 5);
+    nh.param<int>("reset_goal_path_limit", RESET_GOAL_PATH_LIMIT, 30);
+    nh.param<double>("reset_goal_path_rate", RESET_GOAL_PATH_RATE, 0.5);
+    nh.param<double>("back_velocity", BACK_VELOCITY, -0.2);
+    nh.param<double>("back_time", BACK_TIME, 1.0);
+    nh.param<double>("road_center_threshold", ROAD_CENTER_THRESHOLD, 5.0);
+    nh.param<double>("road_threshold", ROAD_THRESHOLD, 1.5);
+    nh.param<double>("road_center_gain", ROAD_CENTER_GAIN, 1.25);
+    nh.param<double>("forward_angle", FORWARD_ANGLE, 0.35);
+    nh.param<double>("vfh_far_range_threshold", VFH_FAR_RANGE_THRESHOLD, 5.0);
+    nh.param<double>("vfh_near_range_threshold", VFH_NEAR_RANGE_THRESHOLD, 1.5);
+    nh.param<double>("vfh_rate_threshold", VFH_RATE_THRESHOLD, 0.9);
+    nh.param<double>("far_avoidance_gain", FAR_AVOIDANCE_GAIN, 2.5);
+    nh.param<double>("near_avoidance_gain", NEAR_AVOIDANCE_GAIN, 2.5);
+    nh.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.1);
+    nh.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.1);
+    nh.param<double>("emergency_avoidance_gain", EMERGENCY_AVOIDANCE_GAIN, 2.5);
+    nh.param<bool>("approach_wall", APPROACH_WALL, false);
+    nh.param<double>("wall_forward_angle", WALL_FORWARD_ANGLE, 0.35);
+    nh.param<double>("wall_rate_threshold", WALL_RATE_THRESHOLD, 0.8);
+    nh.param<double>("wall_distance_upper_threshold", WALL_DISTANCE_UPPER_THRESHOLD, 5.0);
+    nh.param<double>("wall_distance_lower_threshold", WALL_DISTANCE_LOWER_THRESHOLD, 0.5);
+    // static parameters
+    nh.param<std::string>("movebase_name", MOVEBASE_NAME, "move_base");
+    nh.param<std::string>("movement_parameter_file_path",MOVEMENT_PARAMETER_FILE_PATH,"movement_last_parameters.yaml");
+    nh.param<bool>("output_movement_parameters",OUTPUT_MOVEMENT_PARAMETERS,true);
+}
+
+void Movement::dynamicParamsCB(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level){
     FORWARD_VELOCITY = cfg.forward_velocity;
-    BACK_VELOCITY = cfg.back_velocity;
-    BACK_TIME = cfg.back_time;
-    FORWARD_ANGLE = cfg.forward_angle;
     ROTATION_VELOCITY = cfg.rotation_velocity;
-    EMERGENCY_THRESHOLD = cfg.emergency_threshold;
-    ROAD_CENTER_THRESHOLD = cfg.road_center_threshold;
-    ROAD_THRESHOLD = cfg.road_threshold;
     CURVE_GAIN = cfg.curve_gain;
-    EMERGENCY_AVOIDANCE_GAIN = cfg.emergency_avoidance_gain;
-    NEAR_AVOIDANCE_GAIN = cfg.near_avoidance_gain;
-    FAR_AVOIDANCE_GAIN = cfg.far_avoidance_gain;
-    ROAD_CENTER_GAIN = cfg.road_center_gain;
-    WALL_FORWARD_ANGLE = cfg.wall_forward_angle;
-    WALL_RATE_THRESHOLD = cfg.wall_rate_threshold;
-    WALL_DISTANCE_UPPER_THRESHOLD = cfg.wall_distance_upper_threshold;
-    WALL_DISTANCE_LOWER_THRESHOLD = cfg.wall_distance_lower_threshold;
-    EMERGENCY_DIFF_THRESHOLD = cfg.emergency_diff_threshold;
+    USE_ANGLE_BIAS = cfg.use_angle_bias;
     ANGLE_BIAS = cfg.angle_bias;
-    PATH_BACK_INTERVAL = cfg.path_back_interval;
-    GOAL_RESET_RATE = cfg.goal_reset_rate;
     COSTMAP_MARGIN = cfg.costmap_margin;
     ESC_MAP_DIV_X = cfg.esc_map_div_x;
     ESC_MAP_DIV_Y = cfg.esc_map_div_y;
     ESC_MAP_WIDTH = cfg.esc_map_width;
     ESC_MAP_HEIGHT = cfg.esc_map_height;
-    VFH_NEAR_RANGE_THRESHOLD = cfg.vfh_near_range_threshold;
-    VFH_FAR_RANGE_THRESHOLD = cfg.vfh_far_range_threshold;
-    VFH_RATE_THRESHOLD = cfg.vfh_rate_threshold;
+    ROTATION_TOLERANCE = cfg.rotation_tolerance;
+    GOAL_RESET_RATE = cfg.goal_reset_rate;
+    PATH_BACK_INTERVAL = cfg.path_back_interval;
     RESET_GOAL_PATH_LIMIT = cfg.reset_goal_path_limit;
     RESET_GOAL_PATH_RATE = cfg.reset_goal_path_rate;
-    ROTATION_TOLERANCE = cfg.rotation_tolerance;
+    BACK_VELOCITY = cfg.back_velocity;
+    BACK_TIME = cfg.back_time;
+    ROAD_CENTER_THRESHOLD = cfg.road_center_threshold;
+    ROAD_THRESHOLD = cfg.road_threshold;
+    ROAD_CENTER_GAIN = cfg.road_center_gain;
+    FORWARD_ANGLE = cfg.forward_angle;
+    VFH_FAR_RANGE_THRESHOLD = cfg.vfh_far_range_threshold;
+    VFH_NEAR_RANGE_THRESHOLD = cfg.vfh_near_range_threshold;
+    VFH_RATE_THRESHOLD = cfg.vfh_rate_threshold;
+    FAR_AVOIDANCE_GAIN = cfg.far_avoidance_gain;
+    NEAR_AVOIDANCE_GAIN = cfg.near_avoidance_gain;
+    EMERGENCY_THRESHOLD = cfg.emergency_threshold;
+    EMERGENCY_DIFF_THRESHOLD = cfg.emergency_diff_threshold;
+    EMERGENCY_AVOIDANCE_GAIN = cfg.emergency_avoidance_gain;
     APPROACH_WALL = cfg.approach_wall;
-    USE_ANGLE_BIAS = cfg.use_angle_bias;
+    WALL_FORWARD_ANGLE = cfg.wall_forward_angle;
+    WALL_RATE_THRESHOLD = cfg.wall_rate_threshold;
+    WALL_DISTANCE_UPPER_THRESHOLD = cfg.wall_distance_upper_threshold;
+    WALL_DISTANCE_LOWER_THRESHOLD = cfg.wall_distance_lower_threshold;
 }
 
 void Movement::outputParams(void){
     std::cout << "writing movement last parameters ... ..." << std::endl;
     std::ofstream ofs(MOVEMENT_PARAMETER_FILE_PATH);
 
-    if(ofs) std::cout << "file open succeeded" << std::endl;
+    if(ofs) std::cout << "momement param file open succeeded" << std::endl;
     else {
-        std::cout << "file open failed" << std::endl;
+        std::cout << "momement param file open failed" << std::endl;
         return;
     }
+
     ofs << "forward_velocity: " << FORWARD_VELOCITY << std::endl;
-    ofs << "back_velocity: " << BACK_VELOCITY << std::endl;
-    ofs << "back_time: " << BACK_TIME << std::endl;
-    ofs << "forward_angle: " << FORWARD_ANGLE << std::endl;
     ofs << "rotation_velocity: " << ROTATION_VELOCITY << std::endl;
-    ofs << "emergency_threshold: " << EMERGENCY_THRESHOLD << std::endl;
-    ofs << "road_center_threshold: " << ROAD_CENTER_THRESHOLD << std::endl;
-    ofs << "road_threshold: " << ROAD_THRESHOLD << std::endl;
     ofs << "curve_gain: " << CURVE_GAIN << std::endl;
-    ofs << "far_avoidance_gain: " << FAR_AVOIDANCE_GAIN << std::endl;
-    ofs << "near_avoidance_gain: " << NEAR_AVOIDANCE_GAIN << std::endl;
-    ofs << "emergency_avoidance_gain: " << EMERGENCY_AVOIDANCE_GAIN << std::endl;
-    ofs << "road_center_gain: " << ROAD_CENTER_GAIN << std::endl;
-    ofs << "wall_forward_angle: " << WALL_FORWARD_ANGLE << std::endl;
-    ofs << "wall_rate_threshold: " << WALL_RATE_THRESHOLD << std::endl;
-    ofs << "wall_distance_upper_threshold: " << WALL_DISTANCE_UPPER_THRESHOLD << std::endl;
-    ofs << "wall_distance_lower_threshold: " << WALL_DISTANCE_LOWER_THRESHOLD << std::endl;
-    ofs << "emergency_diff_threshold: " << EMERGENCY_DIFF_THRESHOLD << std::endl;
+    ofs << "use_angle_bias: " << (USE_ANGLE_BIAS ? "true" : "false") << std::endl; 
     ofs << "angle_bias: " << ANGLE_BIAS << std::endl;
-    ofs << "path_back_interval: " << PATH_BACK_INTERVAL << std::endl;
-    ofs << "goal_reset_rate: " << GOAL_RESET_RATE << std::endl;
     ofs << "costmap_margin: " << COSTMAP_MARGIN << std::endl;
     ofs << "esc_map_div_x: " << ESC_MAP_DIV_X << std::endl;
     ofs << "esc_map_div_y: " << ESC_MAP_DIV_Y << std::endl;
     ofs << "esc_map_width: " << ESC_MAP_WIDTH << std::endl;
     ofs << "esc_map_height: " << ESC_MAP_HEIGHT << std::endl;
-    ofs << "vfh_near_range_threshold: " << VFH_NEAR_RANGE_THRESHOLD << std::endl;
-    ofs << "vfh_far_range_threshold: " << VFH_FAR_RANGE_THRESHOLD << std::endl;
-    ofs << "vfh_rate_threshold: " << VFH_RATE_THRESHOLD << std::endl;
+    ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
+    ofs << "goal_reset_rate: " << GOAL_RESET_RATE << std::endl;
+    ofs << "path_back_interval: " << PATH_BACK_INTERVAL << std::endl;
     ofs << "reset_goal_path_limit: " << RESET_GOAL_PATH_LIMIT << std::endl;
     ofs << "reset_goal_path_rate: " << RESET_GOAL_PATH_RATE << std::endl;
-    ofs << "rotation_tolerance: " << ROTATION_TOLERANCE << std::endl;    
+    ofs << "back_velocity: " << BACK_VELOCITY << std::endl;
+    ofs << "back_time: " << BACK_TIME << std::endl;
+    ofs << "road_center_threshold: " << ROAD_CENTER_THRESHOLD << std::endl;
+    ofs << "road_threshold: " << ROAD_THRESHOLD << std::endl;
+    ofs << "road_center_gain: " << ROAD_CENTER_GAIN << std::endl;
+    ofs << "forward_angle: " << FORWARD_ANGLE << std::endl;
+    ofs << "vfh_far_range_threshold: " << VFH_FAR_RANGE_THRESHOLD << std::endl;
+    ofs << "vfh_near_range_threshold: " << VFH_NEAR_RANGE_THRESHOLD << std::endl;
+    ofs << "vfh_rate_threshold: " << VFH_RATE_THRESHOLD << std::endl;
+    ofs << "far_avoidance_gain: " << FAR_AVOIDANCE_GAIN << std::endl;
+    ofs << "near_avoidance_gain: " << NEAR_AVOIDANCE_GAIN << std::endl;
+    ofs << "emergency_threshold: " << EMERGENCY_THRESHOLD << std::endl;
+    ofs << "emergency_diff_threshold: " << EMERGENCY_DIFF_THRESHOLD << std::endl;
+    ofs << "emergency_avoidance_gain: " << EMERGENCY_AVOIDANCE_GAIN << std::endl;
     ofs << "approach_wall: " << (APPROACH_WALL ? "true" : "false") << std::endl;
-    ofs << "use_angle_bias: " << (USE_ANGLE_BIAS ? "true" : "false") << std::endl; 
+    ofs << "wall_forward_angle: " << WALL_FORWARD_ANGLE << std::endl;
+    ofs << "wall_rate_threshold: " << WALL_RATE_THRESHOLD << std::endl;
+    ofs << "wall_distance_upper_threshold: " << WALL_DISTANCE_UPPER_THRESHOLD << std::endl;
+    ofs << "wall_distance_lower_threshold: " << WALL_DISTANCE_LOWER_THRESHOLD << std::endl;
 }
+
 #endif //MOVEMENT_HPP

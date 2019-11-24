@@ -20,6 +20,7 @@
 namespace ExStc = ExpLib::Struct;
 namespace ExCos = ExpLib::Construct;
 namespace ExCov = ExpLib::Convert;
+
 class MultiExplorationSimulator
 {
 private:
@@ -38,12 +39,13 @@ private:
     ExStc::pubStruct<geometry_msgs::PoseArray> poses_;
     ExStc::pubStruct<visualization_msgs::Marker> branches_;
     ExStc::pubStruct<visualization_msgs::Marker> frontiers_;
-
+    void outputParams(void);
 public:
     MultiExplorationSimulator();
+    ~MultiExplorationSimulator(){if(OUTPUT_PARAMETERS) outputParams();};
     void callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level);
     void updateParameters(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
-    void writeParameters(void);
+
 };
 
 MultiExplorationSimulator::MultiExplorationSimulator()
@@ -64,7 +66,6 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     nh_.param<double>("frontier_scale", FRONTIER_SCALE, 0.5);
 
     // for branch parameter
-    branchCoordinates_.ns = "branch_array";
     branchCoordinates_.scale.x = branchCoordinates_.scale.y = branchCoordinates_.scale.z = BRANCH_SCALE;
     branchCoordinates_.color.r = 1.0f;
     branchCoordinates_.color.g = 1.0f;
@@ -72,7 +73,6 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     branchCoordinates_.color.a = 1.0f;
 
     // for frontier parameter
-    frontierCoordinates_.ns = "frontier_array";
     frontierCoordinates_.scale.x = frontierCoordinates_.scale.y = frontierCoordinates_.scale.z = FRONTIER_SCALE;
     frontierCoordinates_.color.r = 0.0f;
     frontierCoordinates_.color.g = 1.0f;
@@ -133,16 +133,14 @@ void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<
     fn(robotPoses_.poses,branchCoordinates_.points,frontierCoordinates_.points);
 }
 
-void MultiExplorationSimulator::writeParameters(void){
+void MultiExplorationSimulator::outputParams(void){
     //保存している最新のパラメータをyamlに書き出す
-    if(!OUTPUT_PARAMETERS) return;
-
-    std::cout << "writing last parameters ... ..." << std::endl;
+    std::cout << "writing mulsim last parameters ... ..." << std::endl;
     std::ofstream ofs(PARAMETER_FILE_PATH);
     
-    if(ofs) std::cout << "file open succeeded" << std::endl;
+    if(ofs) std::cout << "mulsim param file open succeeded" << std::endl;
     else {
-        std::cout << "file open failed" << std::endl;
+        std::cout << "mulsim param file open failed" << std::endl;
         return;
     }
 

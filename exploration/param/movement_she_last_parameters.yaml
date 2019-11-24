@@ -19,7 +19,7 @@ emergency_diff_threshold: 0.1
 angle_bias: 0
 path_back_interval: 5
 goal_reset_rate: 1
-costmap_margin: 0.4
+costmap_margin: 0.45
 esc_map_div_x: 7
 esc_map_div_y: 7
 esc_map_width: 0.9
