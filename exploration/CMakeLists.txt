@@ -230,12 +230,12 @@ add_executable(multi_exploration_simulator src/multi_exploration_simulator.cpp)
 add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
 target_link_libraries(multi_exploration_simulator ${catkin_LIBRARIES})
 
-add_executable(extra_parameter_reconfigure src/extra_parameter_reconfigure.cpp)
-add_dependencies(extra_parameter_reconfigure ${PROJECT_NAME}_gencfg)
-target_link_libraries(extra_parameter_reconfigure ${catkin_LIBRARIES})
+# add_executable(extra_parameter_reconfigure src/extra_parameter_reconfigure.cpp)
+# add_dependencies(extra_parameter_reconfigure ${PROJECT_NAME}_gencfg)
+# target_link_libraries(extra_parameter_reconfigure ${catkin_LIBRARIES})
 
-add_executable(simulator_input_support src/simulator_input_support.cpp)
-target_link_libraries(simulator_input_support ${catkin_LIBRARIES})
+add_executable(multi_exploration_simulator_input_support src/multi_exploration_simulator_input_support.cpp)
+target_link_libraries(multi_exploration_simulator_input_support ${catkin_LIBRARIES})
 
 add_executable(legacy_hybrid_exploration src/legacy_hybrid_exploration.cpp)
 add_dependencies(legacy_hybrid_exploration ${PROJECT_NAME}_gencfg)

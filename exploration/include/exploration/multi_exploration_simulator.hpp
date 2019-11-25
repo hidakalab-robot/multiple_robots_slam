@@ -24,81 +24,53 @@ namespace ExCov = ExpLib::Convert;
 class MultiExplorationSimulator
 {
 private:
-    ros::NodeHandle nh_;
-    std::string PARAMETER_FILE_PATH;
-    bool OUTPUT_PARAMETERS;
-
+    // dynamic parameters
     int ROBOT_NUMBER;
     int BRANCH_NUMBER;
-    int FRONTIER_NUMBER;    
-    
+    int FRONTIER_NUMBER;
+
+    // static parameters
+    std::string MAP_FRAME_ID;
+    double BRANCH_SCALE;
+    double FRONTIER_SCALE;
+    std::string MULSIM_PARAMETER_FILE_PATH;
+    bool OUTPUT_MULSIM_PARAMETERS;
+
+    // variables
+    ExStc::pubStruct<geometry_msgs::PoseArray> poses_;
+    ExStc::pubStruct<visualization_msgs::Marker> branches_;
+    ExStc::pubStruct<visualization_msgs::Marker> frontiers_;
+    ros::NodeHandle nh_;
+    dynamic_reconfigure::Server<exploration::multi_exploration_simulatorConfig> drs_;
     geometry_msgs::PoseArray robotPoses_;
     visualization_msgs::Marker branchCoordinates_;
     visualization_msgs::Marker frontierCoordinates_;
 
-    ExStc::pubStruct<geometry_msgs::PoseArray> poses_;
-    ExStc::pubStruct<visualization_msgs::Marker> branches_;
-    ExStc::pubStruct<visualization_msgs::Marker> frontiers_;
+    // functions
+    void loadParams(void);
+    void dynamicParamsCB(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level);
     void outputParams(void);
+
 public:
     MultiExplorationSimulator();
-    ~MultiExplorationSimulator(){if(OUTPUT_PARAMETERS) outputParams();};
-    void callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level);
-    void updateParameters(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
-
+    virtual ~MultiExplorationSimulator(){if(OUTPUT_MULSIM_PARAMETERS) outputParams();};
+    void updateParams(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
 };
 
 MultiExplorationSimulator::MultiExplorationSimulator()
-    :nh_("~")
+    :nh_("~/mumsim")
     ,poses_("pose_array",1,true)
     ,branches_("branch_array",1,true)
-    ,frontiers_("frontier_array",1,true){
-
-    nh_.param<std::string>("parameter_file_path",PARAMETER_FILE_PATH,"simulator_last_parameters.yaml");
-    nh_.param<bool>("output_parameters",OUTPUT_PARAMETERS,true);
-
-    std::string MAP_FRAME_ID;
-    nh_.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
-    robotPoses_.header.frame_id = branchCoordinates_.header.frame_id = frontierCoordinates_.header.frame_id = MAP_FRAME_ID;
-
-    double BRANCH_SCALE,FRONTIER_SCALE;
-    nh_.param<double>("branch_scale", BRANCH_SCALE, 0.5);
-    nh_.param<double>("frontier_scale", FRONTIER_SCALE, 0.5);
-
-    // for branch parameter
-    branchCoordinates_.scale.x = branchCoordinates_.scale.y = branchCoordinates_.scale.z = BRANCH_SCALE;
-    branchCoordinates_.color.r = 1.0f;
-    branchCoordinates_.color.g = 1.0f;
-    branchCoordinates_.color.b = 0.0f;
-    branchCoordinates_.color.a = 1.0f;
-
-    // for frontier parameter
-    frontierCoordinates_.scale.x = frontierCoordinates_.scale.y = frontierCoordinates_.scale.z = FRONTIER_SCALE;
-    frontierCoordinates_.color.r = 0.0f;
-    frontierCoordinates_.color.g = 1.0f;
-    frontierCoordinates_.color.b = 1.0f;
-    frontierCoordinates_.color.a = 1.0f;
-
-    // common parameter
-    branchCoordinates_.pose.orientation.w = frontierCoordinates_.pose.orientation.w = 1.0;
-    branchCoordinates_.type = frontierCoordinates_.type = visualization_msgs::Marker::CUBE_LIST;
-    branchCoordinates_.action = frontierCoordinates_.action = visualization_msgs::Marker::ADD;
-    branchCoordinates_.lifetime = frontierCoordinates_.lifetime = ros::Duration(0);
-    branchCoordinates_.id = frontierCoordinates_.id =  0;
+    ,frontiers_("frontier_array",1,true)
+    ,drs_(ros::NodeHandle("~/mulsim"){
+    loadParams();
+    drs_.setCallback(boost::bind(&MultiExplorationSimulator::dynamicParamsCB,this, _1, _2));
+    robotPoses_.header.frame_id = MAP_FRAME_ID;
+    branchCoordinates_ = ExCos::msgCubeListMarker(MAP_FRAME_ID,BRANCH_SCALE,1.0,1.0,0.0);
+    frontierCoordinates_ = ExCos::msgCubeListMarker(MAP_FRAME_ID,FRONTIER_SCALE,0.0,1.0,1.0);
 }
 
-void MultiExplorationSimulator::callback(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level){
-    // resize array
-    ROBOT_NUMBER = cfg.robot_number;
-    BRANCH_NUMBER = cfg.branch_number;
-    FRONTIER_NUMBER = cfg.frontier_number;
-
-    robotPoses_.poses.resize(ROBOT_NUMBER);
-    branchCoordinates_.points.resize(BRANCH_NUMBER);
-    frontierCoordinates_.points.resize(FRONTIER_NUMBER);
-}
-
-void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn){
+void MultiExplorationSimulator::updateParams(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn){
     // update robot parameters
     for(int i=1;i<=ROBOT_NUMBER;++i){
         double x,y,yaw;
@@ -133,10 +105,34 @@ void MultiExplorationSimulator::updateParameters(std::function<void(std::vector<
     fn(robotPoses_.poses,branchCoordinates_.points,frontierCoordinates_.points);
 }
 
+void MultiExplorationSimulator::loadParams(void){
+    // dynamic parameters
+    nh_.param<int>("robot_number",ROBOT_NUMBER,2);
+    nh_.param<int>("branch_number",BRANCH_NUMBER,1);
+    nh_.param<int>("frontier_number",FRONTIER_NUMBER,1);
+    // static parameters
+    nh_.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
+    nh_.param<double>("branch_scale", BRANCH_SCALE, 0.5);
+    nh_.param<double>("frontier_scale", FRONTIER_SCALE, 0.5);
+    nh_.param<std::string>("mulsim_parameter_file_path",MULSIM_PARAMETER_FILE_PATH,"simulator_last_parameters.yaml");
+    nh_.param<bool>("output_mulsim_parameters",OUTPUT_MULSIM_PARAMETERS,true);
+}
+
+void MultiExplorationSimulator::dynamicParamsCB(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level){
+    // resize array
+    ROBOT_NUMBER = cfg.robot_number;
+    BRANCH_NUMBER = cfg.branch_number;
+    FRONTIER_NUMBER = cfg.frontier_number;
+
+    robotPoses_.poses.resize(ROBOT_NUMBER);
+    branchCoordinates_.points.resize(BRANCH_NUMBER);
+    frontierCoordinates_.points.resize(FRONTIER_NUMBER);
+}
+
 void MultiExplorationSimulator::outputParams(void){
     //保存している最新のパラメータをyamlに書き出す
     std::cout << "writing mulsim last parameters ... ..." << std::endl;
-    std::ofstream ofs(PARAMETER_FILE_PATH);
+    std::ofstream ofs(MULSIM_PARAMETER_FILE_PATH);
     
     if(ofs) std::cout << "mulsim param file open succeeded" << std::endl;
     else {

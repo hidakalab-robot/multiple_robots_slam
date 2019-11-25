@@ -226,19 +226,17 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){
-    static ExpLib::PathPlanning<navfn::NavfnROS> pp("simulator_goal_costmap","simulator_goal_path");
+    static ExpLib::PathPlanning<navfn::NavfnROS> pp("seamsim_goal_costmap","seamsim_goal_path");
 
-    ros::NodeHandle p("~");
+    ros::NodeHandle nh("~/mulsim");
     std::string FRAME_ID;
-    std::string EXTRA_PARAMETER_NAMESPACE;
+    // std::string EXTRA_PARAMETER_NAMESPACE;
     int SIMULATE_ROBOT_INDEX;
 
-    p.param<std::string>("frame_id", FRAME_ID, "map");
-    p.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "extra_parameter");
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/direction_weight", DIRECTION_WEIGHT, 1.5);
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/distance_weight", DISTANCE_WEIGHT, 2.5);
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0); 
-    p.param<int>("/"+EXTRA_PARAMETER_NAMESPACE+"/simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
+    nh.param<std::string>("frame_id", FRAME_ID, "map");
+    // p.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "extra_parameter");
+    // p.param<int>("/"+EXTRA_PARAMETER_NAMESPACE+"/simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
+    nh.param<int>("simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
 
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
 

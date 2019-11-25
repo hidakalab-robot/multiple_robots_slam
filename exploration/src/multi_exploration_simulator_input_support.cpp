@@ -3,7 +3,7 @@
 
 // clicked point の座標でrosparam を更新する
 int main(int argc, char** argv){
-    ros::init(argc, argv, "simulator_input_support");
+    ros::init(argc, argv, "multi_exploration_simulator_input_support");
     ros::NodeHandle nh("~");
 
     std::string PARAMETER_NAMESPACE;
