@@ -69,6 +69,15 @@ ExplorationManager::ExplorationManager()
     drs_.setCallback(boost::bind(&ExplorationManager::dynamicParamsCB,this, _1, _2));
 };
 
+void ExplorationManager::multiThreadMain(void){
+    ROS_INFO_STREAM("start threads");
+    ros::spinOnce();
+    std::thread timerThread([this]{timer();});
+    ros::spin();
+    timerThread.join();
+    ROS_INFO_STREAM("end main loop");
+}
+
 void ExplorationManager::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     int free = 0;
     for(const auto& m : msg->data){
@@ -96,15 +105,6 @@ void ExplorationManager::timer(void){
         timerEnd_.pub.publish(ExCos::msgBool(elapsedTime >= END_TIME ? true : false));
         rate.sleep();
     }
-}
-
-void ExplorationManager::multiThreadMain(void){
-    ROS_INFO_STREAM("start threads\n");
-    ros::spinOnce();
-    std::thread timerThread([this]{timer();});
-    ros::spin();
-    timerThread.join();
-    ROS_INFO_STREAM("end main loop\n");
 }
 
 void ExplorationManager::loadParams(void){

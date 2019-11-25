@@ -1,3 +1,7 @@
+#ifndef LOOP_CLOSURE_COUNTER_HPP
+#define LOOP_CLOSURE_COUNTER_HPP
+
+#include <ros/ros.h>
 #include <tf/transform_listener.h>
 #include <std_msgs/Int8.h>
 #include <std_msgs/Float64.h>
@@ -6,6 +10,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <exploration_support/loop_closure_counter_parameter_reconfigureConfig.h>
 #include <fstream>
+#include <thread>
 
 // legacy loop counter
 namespace ExStc = ExpLib::Struct;
@@ -30,8 +35,8 @@ private:
     ExStc::pubStruct<std_msgs::Float64> accumPerm;
     dynamic_reconfigure::Server<exploration_support ::loop_closure_counter_parameter_reconfigureConfig> drs_;
 
-    
-
+    // functions
+    void loopDetection(void);
     void loadParams(void);
     void dynamicParamsCB(exploration_support::loop_closure_counter_parameter_reconfigureConfig &cfg, uint32_t level);
     void outputParams(void);
@@ -39,7 +44,7 @@ private:
 public:
     LoopClosureCounter();
     ~LoopClosureCounter(){if(OUTPUT_LOOP_PARAMETERS) outputParams();};
-    void loopClosureDetection(void);
+    void loopDetectionLoop(void);
 };
 
 LoopClosureCounter::LoopClosureCounter()
@@ -48,11 +53,53 @@ LoopClosureCounter::LoopClosureCounter()
     ,accumPerm("loop_closure_counter/perm_accumlate",1)
     ,drs_(ros::NodeHandle("~/loop")){
     loadParams();
-    drs_.setCallback(boost::bind(&LoopClosureCounter::dynamicParamsCB,this, _1, _2));{
+    drs_.setCallback(boost::bind(&LoopClosureCounter::dynamicParamsCB,this, _1, _2));
 }
 
-void LoopClosureCounter::loopClosureDetection(void){
+void LoopClosureCounter::loopDetectionLoop(void){
+    ros::spinOnce();
+    std::thread loopThread([this]{loopDetection();});
+    ros::spin();
+    loopThread.join();
+}
 
+void LoopClosureCounter::loopDetection(void){
+    tf::TransformListener listener;
+    listener.waitForTransform(MAP_FRAME_ID, ODOM_FRAME_ID, ros::Time(), ros::Duration(1.0));
+    Eigen::Vector2d lastTrans(0,0);
+    int loopCount = 0;
+    double accumTrans = 0;
+    double accumTransPerm = 0;
+
+    ros::Rate rate(PUBLISH_RATE);
+    while(ros::ok()){
+        tf::StampedTransform transform;
+        try{
+            listener.lookupTransform(MAP_FRAME_ID, ODOM_FRAME_ID, ros::Time(0), transform);
+        }
+        catch (tf::TransformException &ex) {
+            ROS_ERROR("%s",ex.what());
+            ros::Duration(1.0).sleep();
+            continue;
+        }
+        double transX = transform.getOrigin().getX();
+        double transY = transform.getOrigin().getY();
+
+        if(transX != lastTrans.x() || transY != lastTrans.y()){
+            double trans = Eigen::Vector2d(Eigen::Vector2d(transX, transY) - lastTrans).norm();
+            accumTrans += trans;
+            accumTransPerm += trans;
+            if(accumTrans > LOOP_CLOSURE_THRESHOLD){
+                ++loopCount;
+                accumTrans = 0;
+            }
+            lastTrans << transX, transY; 
+        }
+        count.pub.publish(ExCos::msgInt8(loopCount));
+        accumTemp.pub.publish(ExCos::msgDouble(accumTrans));
+        accumPerm.pub.publish(ExCos::msgDouble(accumTransPerm));
+        rate.sleep();
+    }
 }
 
 void LoopClosureCounter::loadParams(void){
@@ -83,3 +130,5 @@ void LoopClosureCounter::outputParams(void){
 
     ofs << "loop_closure_threshold: " << LOOP_CLOSURE_THRESHOLD << std::endl;
 }
+
+#endif // LOOP_CLOSURE_COUNTER_HPP
