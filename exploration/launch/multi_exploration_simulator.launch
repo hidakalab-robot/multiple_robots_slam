@@ -1,12 +1,6 @@
 <launch>
     <arg name="map_path" default="$(find exploration)/fig/edit_map.yaml"/>
 
-    <!-- extra parameter -->
-    <!-- <arg name="extra_parameter_namespace" default="extra_parameter"/>
-    <arg name="extra_parameter_file_path" default="$(find exploration)/param/simulator_last_extra_parameters.yaml"/>
-    <arg name="input_last_extra_parameters" default="true"/>
-    <arg name="output_last_extra_parameters" default="true"/> -->
-
     <!-- create tf -->
     <node pkg="tf" type="static_transform_publisher" name="odom_to_map_tf_broadcaster" args="0 0 0 0 0 0 map odom 100"/>
     <node pkg="tf" type="static_transform_publisher" name="base_footprint_to_odom_tf_broadcaster" args="0 0 0 0 0 0 odom base_footprint 100"/>
@@ -16,7 +10,7 @@
     <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)"/>
     
     <!-- simurator main -->
-    <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator">
+    <node pkg="exploration" type="multi_exploration_simulator" name="multi_exploration_simulator" output="screen">
         <rosparam file="$(find exploration)/param/mulsim_last_parameters.yaml" command="load" ns="mulsim"/>
         <param name="mulsim/mulsim_parameter_file_path" value="$(find exploration)/param/mulsim_last_parameters.yaml"/>
 
@@ -26,15 +20,7 @@
         <param name="sensor_based_exploration/output_sbe_parameters" value="false"/>
         
         <rosparam file="$(find exploration)/param/seamsim_goal_planner_params.yaml" command="load"/>
-        <!-- <param name="extra_parameter_namespace" value="$(arg extra_parameter_namespace)"/> -->
     </node>
-
-    <!-- extra parameter node -->
-    <!-- <node pkg="exploration" type="extra_parameter_reconfigure" name="$(arg extra_parameter_namespace)">
-        <rosparam if="$(arg input_last_extra_parameters)" file="$(arg extra_parameter_file_path)" command="load"/>
-        <param name="extra_parameter_file_path" value="$(arg extra_parameter_file_path)"/>
-        <param name="output_extra_parameters" value="$(arg output_last_extra_parameters)"/>
-    </node> -->
 
     <node pkg="exploration" type="multi_exploration_simulator_input_support" name="multi_exploration_simulator_input_support" output="screen">
         <param name="parameter_namespace" value="multi_exploration_simulator/mulsim"/>

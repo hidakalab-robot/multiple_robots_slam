@@ -53,16 +53,16 @@ private:
 
 public:
     MultiExplorationSimulator();
-    virtual ~MultiExplorationSimulator(){if(OUTPUT_MULSIM_PARAMETERS) outputParams();};
+    ~MultiExplorationSimulator(){if(OUTPUT_MULSIM_PARAMETERS) outputParams();};
     void updateParams(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
 };
 
 MultiExplorationSimulator::MultiExplorationSimulator()
-    :nh_("~/mumsim")
+    :nh_("~/mulsim")
     ,poses_("pose_array",1,true)
     ,branches_("branch_array",1,true)
     ,frontiers_("frontier_array",1,true)
-    ,drs_(ros::NodeHandle("~/mulsim"){
+    ,drs_(ros::NodeHandle("~/mulsim")){
     loadParams();
     drs_.setCallback(boost::bind(&MultiExplorationSimulator::dynamicParamsCB,this, _1, _2));
     robotPoses_.header.frame_id = MAP_FRAME_ID;
@@ -71,6 +71,11 @@ MultiExplorationSimulator::MultiExplorationSimulator()
 }
 
 void MultiExplorationSimulator::updateParams(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn){
+    // resize array
+    robotPoses_.poses.resize(ROBOT_NUMBER);
+    branchCoordinates_.points.resize(BRANCH_NUMBER);
+    frontierCoordinates_.points.resize(FRONTIER_NUMBER);
+
     // update robot parameters
     for(int i=1;i<=ROBOT_NUMBER;++i){
         double x,y,yaw;
@@ -114,19 +119,14 @@ void MultiExplorationSimulator::loadParams(void){
     nh_.param<std::string>("map_frame_id",MAP_FRAME_ID,"map");
     nh_.param<double>("branch_scale", BRANCH_SCALE, 0.5);
     nh_.param<double>("frontier_scale", FRONTIER_SCALE, 0.5);
-    nh_.param<std::string>("mulsim_parameter_file_path",MULSIM_PARAMETER_FILE_PATH,"simulator_last_parameters.yaml");
+    nh_.param<std::string>("mulsim_parameter_file_path",MULSIM_PARAMETER_FILE_PATH,"mulsim_last_parameters.yaml");
     nh_.param<bool>("output_mulsim_parameters",OUTPUT_MULSIM_PARAMETERS,true);
 }
 
 void MultiExplorationSimulator::dynamicParamsCB(exploration::multi_exploration_simulatorConfig &cfg, uint32_t level){
-    // resize array
     ROBOT_NUMBER = cfg.robot_number;
     BRANCH_NUMBER = cfg.branch_number;
     FRONTIER_NUMBER = cfg.frontier_number;
-
-    robotPoses_.poses.resize(ROBOT_NUMBER);
-    branchCoordinates_.points.resize(BRANCH_NUMBER);
-    frontierCoordinates_.points.resize(FRONTIER_NUMBER);
 }
 
 void MultiExplorationSimulator::outputParams(void){
