@@ -3,13 +3,12 @@
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/turtlebot_gazebo.urdf.xacro"/>
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/turtlebot_properties.urdf.xacro"/>
   
-  <xacro:property name="steleo_cam_py" value="-0.0125"/>
   <xacro:macro name="sensor_steleo" params="parent">
     <!-- Camera Center -->
     <joint name="camera_center_joint" type="fixed">
         <parent link="${parent}"/>
         <child link="camera_center_frame"/>
-        <origin xyz="${cam_px} ${steleo_cam_py} ${cam_pz}" rpy="${cam_or} ${cam_op} ${cam_oy}"/>
+        <origin xyz="${cam_px} ${cam_py} ${cam_pz}" rpy="${cam_or} ${cam_op} ${cam_oy}"/>
     </joint>
     <link name="camera_center_frame">
         <visual>

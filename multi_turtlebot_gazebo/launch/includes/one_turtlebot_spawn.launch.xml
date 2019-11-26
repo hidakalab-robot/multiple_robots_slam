@@ -33,7 +33,9 @@
     </node>
 
     <!-- steleo cameta depth -->
-    <node if="$(eval arg('sensor')=='steleo')" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" ns="camera"/>
+    <node if="$(eval arg('sensor')=='steleo')" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" ns="camera">
+        <remap from="points2" to="points"/>
+    </node>
 
     <!-- Fake laser -->
     <node pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
