@@ -22,7 +22,7 @@
      Note: REP needs to be updated with the information below 
      (currently in development and awaiting feedback)
    -->
-   <xacro:include filename="$(find turtlebot_description)/urdf/common_properties.urdf.xacro"/>
+   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/common_properties.urdf.xacro"/>
   <!-- <xacro:property name="cam_px" value="-0.035" /> -->
   <xacro:property name="cam_px" value="0.07" />
   <!-- <xacro:property name="cam_px" value="0.00" /> -->

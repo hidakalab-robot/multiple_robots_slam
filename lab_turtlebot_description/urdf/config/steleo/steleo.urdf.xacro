@@ -3,68 +3,58 @@
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/turtlebot_gazebo.urdf.xacro"/>
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/turtlebot_properties.urdf.xacro"/>
   
-  <xacro:property name="kinect_cam_py" value="-0.0125"/>
-  <!-- Parameterised in part by the values in turtlebot_properties.urdf.xacro -->
+  <xacro:property name="steleo_cam_py" value="-0.0125"/>
   <xacro:macro name="sensor_steleo" params="parent">
-    <joint name="camera_rgb_joint" type="fixed">
-      <origin xyz="${cam_px} ${kinect_cam_py} ${cam_pz}" rpy="${cam_or} ${cam_op} ${cam_oy}"/>
-      <parent link="${parent}"/>
-      <child link="camera_rgb_frame" />
+    <!-- Camera Center -->
+    <joint name="camera_center_joint" type="fixed">
+        <parent link="${parent}"/>
+        <child link="camera_center_frame"/>
+        <origin xyz="${cam_px} ${steleo_cam_py} ${cam_pz}" rpy="${cam_or} ${cam_op} ${cam_oy}"/>
     </joint>
-    <link name="camera_rgb_frame"/>
-
-    <joint name="camera_rgb_optical_joint" type="fixed">
-      <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
-      <parent link="camera_rgb_frame" />
-      <child link="camera_rgb_optical_frame" />
-    </joint>
-    <link name="camera_rgb_optical_frame"/>
-
-    <joint name="camera_joint" type="fixed">
-      <origin xyz="-0.031 ${-kinect_cam_py} -0.016" rpy="0 0 0"/>
-      <parent link="camera_rgb_frame"/>
-      <child link="left_camera_frame"/>
-    </joint>  
-      <link name="left_camera_frame">
-      <visual>
-       <origin xyz="0 0 0" rpy="0 0 ${M_PI/2}"/>
-        <geometry>
-         <mesh filename="package://turtlebot_description/meshes/sensors/kinect.dae"/>
-        </geometry>
-      </visual>
-  	  <collision>
-        <origin xyz="0.0 0.0 0.0" rpy="0 0 0"/>
-  	    <geometry>
-  	      <box size="0.07271 0.27794 0.073"/>
-  	    </geometry>
-  	  </collision>
-      <inertial>
-        <mass value="0.564" />
-        <origin xyz="0 0 0" />
-        <inertia ixx="0.003881243" ixy="0.0" ixz="0.0"
-                 iyy="0.000498940" iyz="0.0"
-                 izz="0.003879257" />
-      </inertial>
+    <link name="camera_center_frame">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="package://lab_turtlebot_description/urdf/config/steleo/steleo.stl" />
+            </geometry>
+            <material name="light_grey">
+                <color rgba="0.8 0.8 0.8 0.8"/>
+            </material>
+        </visual>
     </link>
 
-    <!-- The fixed joints & links below are usually published by static_transformers launched by the OpenNi launch 
-         files. However, for Gazebo simulation we need them, so we add them here.
-         (Hence, don't publish them additionally!) -->
-	<joint name="camera_depth_joint" type="fixed">
-	  <origin xyz="0 ${2 * -kinect_cam_py} 0" rpy="0 0 0" />
-	  <parent link="camera_rgb_frame" />
-	  <child link="camera_depth_frame" />
-	</joint>
-	<link name="camera_depth_frame"/>
+  <!-- Left Camera -->
+    <joint name="left_camera_joint" type="fixed">
+        <parent link="camera_center_frame"/>
+        <child link="left_camera_frame"/>
+        <origin xyz="0 0.06 0" rpy="0 0 0" />
+    </joint>
+    <link name="left_camera_frame" />
 
-	<joint name="camera_depth_optical_joint" type="fixed">
-	  <origin xyz="0 0 0" rpy="${-M_PI/2} 0 ${-M_PI/2}" />
-	  <parent link="camera_depth_frame" />
-	  <child link="camera_depth_optical_frame" />
-	</joint>
-	<link name="camera_depth_optical_frame"/>
+    <joint name="left_camera_optical_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="-1.57079632679 0.0 -1.57079632679"/>
+        <parent link="left_camera_frame"/>
+        <child link="left_camera_optical_frame"/>
+    </joint>
+    <link name="left_camera_optical_frame"/>
+
+  <!-- Right Camera -->
+    <joint name="right_camera_joint" type="fixed">
+        <parent link="camera_center_frame"/>
+        <child link="right_camera_frame"/>
+        <origin xyz="0 -0.06 0" rpy="0 0 0" />
+    </joint>
+    <link name="right_camera_frame" />
+
+    <joint name="right_camera_optical_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="-1.57079632679 0.0 -1.57079632679"/>
+        <parent link="right_camera_frame"/>
+        <child link="right_camera_optical_frame"/>
+    </joint>
+    <link name="right_camera_optical_frame"/>
 	
-	<!-- Kinect sensor for simulation -->
-	<turtlebot_sim_3dsensor/>
+	<!-- steleo sensor for simulation -->
+    <turtlebot_sim_steleo_left/>
+    <turtlebot_sim_steleo_right/>
   </xacro:macro>
 </robot>

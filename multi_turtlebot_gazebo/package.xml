@@ -69,6 +69,7 @@
   <exec_depend>yocs_cmd_vel_mux</exec_depend>
   <exec_depend>yocs_velocity_smoother</exec_depend>
   <exec_depend>map_server</exec_depend>
+  <exec_depend>stereo_image_proc</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

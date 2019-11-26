@@ -32,6 +32,9 @@
         <param name="tf_prefix" type="string" value="/$(arg robot_name)"/>
     </node>
 
+    <!-- steleo cameta depth -->
+    <node if="$(eval arg('sensor')=='steleo')" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" ns="camera"/>
+
     <!-- Fake laser -->
     <node pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
     <node pkg="nodelet" type="nodelet" name="depthimage_to_laserscan"
