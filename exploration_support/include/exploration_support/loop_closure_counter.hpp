@@ -52,7 +52,7 @@ LoopClosureCounter::LoopClosureCounter()
     ,accumTemp("loop_closure_counter/temp_accumlate",1)
     ,accumPerm("loop_closure_counter/perm_accumlate",1)
     ,drs_(ros::NodeHandle("~/loop")){
-    loadParams();
+    loadParams(); 
     drs_.setCallback(boost::bind(&LoopClosureCounter::dynamicParamsCB,this, _1, _2));
 }
 
@@ -120,12 +120,12 @@ void LoopClosureCounter::dynamicParamsCB(exploration_support::loop_closure_count
 
 void LoopClosureCounter::outputParams(void){
     std::cout << "writing loop last parameters ... ..." << std::endl;
-    std::ofstream ofs(LOOP_CLOSURE_THRESHOLD);
+    std::ofstream ofs(LOOP_PARAMETER_FILE_PATH);
 
     if(ofs) std::cout << "loop param file open succeeded" << std::endl;
     else {
         std::cout << "loop param file open failed" << std::endl;
-        return 0;
+        return;
     }
 
     ofs << "loop_closure_threshold: " << LOOP_CLOSURE_THRESHOLD << std::endl;
