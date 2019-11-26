@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <robot name="sensor_kinect" xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_gazebo_kinect.urdf.xacro"/>
-  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_properties.urdf.xacro"/>
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/kinect/turtlebot_gazebo.urdf.xacro"/>
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/urg_plus_kinect/turtlebot_properties.urdf.xacro"/>
   
   <xacro:property name="kinect_cam_py" value="-0.0125"/>
   <!-- Parameterised in part by the values in turtlebot_properties.urdf.xacro -->

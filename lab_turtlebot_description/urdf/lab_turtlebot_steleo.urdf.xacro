@@ -6,10 +6,10 @@
 -->    
 <robot name="turtlebot" xmlns:xacro="http://ros.org/wiki/xacro">
 
-  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/turtlebot_common_library.urdf.xacro" />
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/turtlebot_common_library.urdf.xacro" />
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/kobuki.urdf.xacro" />
   <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/hexagons.urdf.xacro"/>
-  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo.urdf.xacro"/>
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/steleo.urdf.xacro"/>
   
   <kobuki/>
   <stack_hexagons parent="base_link"/>

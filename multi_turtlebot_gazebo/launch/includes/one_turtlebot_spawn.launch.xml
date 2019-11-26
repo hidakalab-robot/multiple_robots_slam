@@ -4,9 +4,10 @@
     <arg name="init_x"/>
     <arg name="init_y"/>
     <arg name="init_yaw"/>
+    <arg name="sensor" default="kinect"/> <!-- kinect, steleo, urg_plus_kinect -->
 
 
-    <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find lab_turtlebot_description)/urdf/lab_turtlebot.urdf.xacro'" />
+    <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find lab_turtlebot_description)/urdf/lab_turtlebot_$(arg sensor).urdf.xacro'" />
     <param name="robot_description" command="$(arg urdf_file)" />
   
     <!-- Gazebo model spawner -->
