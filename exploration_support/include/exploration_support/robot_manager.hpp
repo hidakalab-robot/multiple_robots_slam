@@ -63,17 +63,7 @@ public:
 RobotManager::RobotManager()
     :robotArray_("robot_array",1,true)
     ,poseArray_("pose_log/merge",1,true){
-}
-
-void RobotManager::multiThreadMain(void){
-    ROS_INFO_STREAM("start threads\n");
-    ros::spinOnce();
-    std::thread registrationThread([this]{registrationLoop();});
-    std::thread convertThread([this]{convertLoop();});
-    ros::spin();
-    registrationThread.join();
-    convertThread.join();//スレッドの終了を待つ??
-    ROS_INFO_STREAM("end main loop\n");
+    loadParams();
 }
 
 void RobotManager::robotRegistration(void){
@@ -171,6 +161,17 @@ void RobotManager::convertLoop(void){
         convertPoseToRobotInfo();
         rate.sleep();
     }
+}
+
+void RobotManager::multiThreadMain(void){
+    ROS_INFO_STREAM("start threads\n");
+    ros::spinOnce();
+    std::thread registrationThread([this]{registrationLoop();});
+    std::thread convertThread([this]{convertLoop();});
+    ros::spin();
+    registrationThread.join();
+    convertThread.join();//スレッドの終了を待つ??
+    ROS_INFO_STREAM("end main loop\n");
 }
 
 void RobotManager::loadParams(void){

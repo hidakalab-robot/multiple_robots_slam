@@ -38,7 +38,7 @@
 
         <!-- rosbag -->
         <include if="$(arg rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
-            <param name="ropics" value="/$(arg robot_name)/map_continuity 
+            <arg name="topics" value="/$(arg robot_name)/map_continuity 
                                         /$(arg robot_name)/pose
                                         /$(arg robot_name)/scan
                                         /$(arg robot_name)/move_base/global_costmap/costmap
