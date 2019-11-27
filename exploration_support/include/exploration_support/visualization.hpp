@@ -98,6 +98,7 @@ Visualization::Visualization()
     ,useFroMarker_("visualization/useful_frontier", 1, true)
     ,road_("road",1,&Visualization::roadCB, this)
     ,roadMarker_("visualization/road", 1, true){
+    loadParams();
     gm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
     bm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
     fm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
