@@ -505,31 +505,31 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
         initialized = true;
     }
 
-    ExStc::scanStruct scanRect(scan.ranges.size());
+    ExStc::scanStruct ss(scan.ranges.size());
 
     for(int i=0,e=scan.ranges.size();i!=e;++i){
         if(!std::isnan(scan.ranges[i])){
             double tempAngle = scan.angle_min+(scan.angle_increment*i);
             if(scan.ranges[i]*cos(tempAngle) <= ROAD_CENTER_THRESHOLD){
-                scanRect.ranges.emplace_back(scan.ranges[i]);
-                scanRect.x.emplace_back(scan.ranges[i]*cos(tempAngle));
-                scanRect.y.emplace_back(scan.ranges[i]*sin(tempAngle));
-                scanRect.angles.emplace_back(std::move(tempAngle));
+                ss.ranges.emplace_back(scan.ranges[i]);
+                ss.x.emplace_back(scan.ranges[i]*cos(tempAngle));
+                ss.y.emplace_back(scan.ranges[i]*sin(tempAngle));
+                ss.angles.emplace_back(std::move(tempAngle));
             }
         }
     }
 
-    if(scanRect.ranges.size() < 2){
+    if(ss.ranges.size() < 2){
         road_.pub.publish(geometry_msgs::PointStamped());
         return false;
     }
 
-    for(int i=0,e=scanRect.ranges.size()-1;i!=e;++i){
-        if(std::abs(scanRect.y[i+1] - scanRect.y[i]) >= ROAD_THRESHOLD){
+    for(int i=0,e=ss.ranges.size()-1;i!=e;++i){
+        if(std::abs(ss.y[i+1] - ss.y[i]) >= ROAD_THRESHOLD){
             ROS_DEBUG_STREAM("Road Center Found");
             //  通路中心座標pub
-            road_.pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((scanRect.x[i+1] + scanRect.x[i])/2, (scanRect.y[i+1] + scanRect.y[i])/2)),pose_.data.header.frame_id));
-            velocity_.pub.publish(velocityGenerator((scanRect.angles[i]+scanRect.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
+            road_.pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((ss.x[i+1] + ss.x[i])/2, (ss.y[i+1] + ss.y[i])/2)),pose_.data.header.frame_id));
+            velocity_.pub.publish(velocityGenerator((ss.angles[i]+ss.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
             return true;
         }
     }
@@ -563,6 +563,12 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     // その方向が安全であるかを見る   
     ROS_INFO_STREAM("angle : " << angle << ", ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
 
+    ExStc::scanStruct ss(scan.ranges.size());
+    for(int i=0,e=scan.ranges.size();i!=e;++i){
+        if(std::isnan(scan.ranges[i])) ss.x.emplace_back(scan.ranges[i]);
+        else ss.x.emplace_back(scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)));
+    }
+
     // ここでrateがthreshold以下になるまでずらして計算
     int sw = 0;
     double rate;
@@ -587,14 +593,25 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
         // これだと結局近いところの障害物しか見てないのと同じ？
         // cosの距離だと？
         for(int i=MINUS;i!=PLUS;++i){
-            // nan or over far
-            if(std::isnan(scan.ranges[i])||scan.ranges[i]>=VFH_FAR_RANGE_THRESHOLD){
+            // // nan or over far
+            // if(std::isnan(scan.ranges[i])||scan.ranges[i]>=VFH_FAR_RANGE_THRESHOLD){
+            //     dist += VFH_FAR_RANGE_THRESHOLD;
+            //     ++fc;
+            // }
+            // // far > range > near
+            // else if(scan.ranges[i]>=VFH_NEAR_RANGE_THRESHOLD){
+            //     dist += scan.ranges[i];
+            //     ++nc;
+            // }
+
+            // cos nan or over far
+            if(std::isnan(ss.x[i])||ss.x[i]>=VFH_FAR_RANGE_THRESHOLD){
                 dist += VFH_FAR_RANGE_THRESHOLD;
                 ++fc;
             }
             // far > range > near
-            else if(scan.ranges[i]>=VFH_NEAR_RANGE_THRESHOLD){
-                dist += scan.ranges[i];
+            else if(ss.x[i]>=VFH_NEAR_RANGE_THRESHOLD){
+                dist += ss.x[i];
                 ++nc;
             }
         }
@@ -616,11 +633,19 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     ROS_INFO_STREAM("emergencyAvoidance");
 
+    ExStc::scanStruct ss(scan.ranges.size());
+    for(int i=0,e=scan.ranges.size();i!=e;++i){
+        if(std::isnan(scan.ranges[i])) ss.x.emplace_back(scan.ranges[i]);
+        else ss.x.emplace_back(scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)));
+    }
+
     //minus側の平均
     double aveM=0;
     int nanM = 0;
     for(int i=0,e=scan.ranges.size()/2;i!=e;++i){
-        if(!std::isnan(scan.ranges[i])) aveM += scan.ranges[i];
+        // if(!std::isnan(scan.ranges[i])) aveM += scan.ranges[i];
+        // else ++nanM;
+        if(!std::isnan(ss.x[i])) aveM += ss.x[i];
         else ++nanM;
     }
     aveM = nanM > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveM / scan.ranges.size()/2;
@@ -630,7 +655,9 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     double aveP=0;
     int nanP = 0;
     for(int i=scan.ranges.size()/2,e=scan.ranges.size();i!=e;++i){
-        if(!std::isnan(scan.ranges[i])) aveP += scan.ranges[i];
+        // if(!std::isnan(scan.ranges[i])) aveP += scan.ranges[i];
+        // else ++nanP;
+        if(!std::isnan(ss.x[i])) aveP += ss.x[i];
         else ++nanP;
     }
     aveP = nanP > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveP / scan.ranges.size()/2;
