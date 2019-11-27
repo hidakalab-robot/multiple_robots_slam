@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
-<robot name="sensor_steleo" xmlns:xacro="http://ros.org/wiki/xacro">
-  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/turtlebot_gazebo.urdf.xacro"/>
-  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/steleo/turtlebot_properties.urdf.xacro"/>
+<robot name="sensor_stereo" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/stereo/turtlebot_gazebo.urdf.xacro"/>
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/stereo/turtlebot_properties.urdf.xacro"/>
   
-  <xacro:macro name="sensor_steleo" params="parent">
+  <xacro:macro name="sensor_stereo" params="parent">
     <!-- Camera Center -->
     <joint name="camera_center_joint" type="fixed">
         <parent link="${parent}"/>
@@ -14,7 +14,7 @@
         <visual>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://lab_turtlebot_description/urdf/config/steleo/steleo.stl" />
+                <mesh filename="package://lab_turtlebot_description/urdf/config/stereo/stereo.stl" />
             </geometry>
             <material name="light_grey">
                 <color rgba="0.8 0.8 0.8 0.8"/>
@@ -52,8 +52,8 @@
     </joint>
     <link name="right_camera_optical_frame"/>
 	
-	<!-- steleo sensor for simulation -->
-    <turtlebot_sim_steleo_left/>
-    <turtlebot_sim_steleo_right/>
+	<!-- stereo sensor for simulation -->
+    <turtlebot_sim_stereo_left/>
+    <turtlebot_sim_stereo_right/>
   </xacro:macro>
 </robot>

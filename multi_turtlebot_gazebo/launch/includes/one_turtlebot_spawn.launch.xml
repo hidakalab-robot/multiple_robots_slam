@@ -12,7 +12,6 @@
     <!-- Gazebo model spawner -->
     <node name="spawn_turtlebot_model" pkg="gazebo_ros" type="spawn_model"
             args="$(optenv ROBOT_INITIAL_POSE) -unpause -urdf -param robot_description -model $(arg robot_name) -x $(arg init_x) -y $(arg init_y) -Y $(arg init_yaw)">
-        <remap if="$(eval arg('sensor')=='urg_plus_kinect')" from="scan" to="urg_scan"/>
     </node>
   
     <!-- Velocity muxer -->
@@ -33,10 +32,14 @@
         <param name="tf_prefix" type="string" value="/$(arg robot_name)"/>
     </node>
 
-    <!-- steleo cameta depth -->
-    <node if="$(eval arg('sensor')=='steleo')" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" ns="camera">
-        <remap from="points2" to="depth/points"/>
-        <remap from="image_disparity" to="depth/image"/>
+    <!-- stereo cameta depth -->
+    <node if="$(eval arg('sensor')=='stereo')" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" ns="camera">
+        <remap from="points2" to="points"/>
+    </node>
+
+    <!-- stereo cameta disparity -->
+    <node if="$(eval arg('sensor')=='stereo')" pkg="multi_turtlebot_gazebo" type="publish_disparity_image" name="publish_disparity_image" ns="camera">
+        <remap from="disparity_data" to="disparity"/>
     </node>
 
     <!-- urg_plus_kinect -->
@@ -48,8 +51,8 @@
     </include>
 
     <!-- Fake laser -->
-    <node pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
-    <node pkg="nodelet" type="nodelet" name="depthimage_to_laserscan"
+    <node unless="$(eval arg('sensor')=='stereo')" pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
+    <node unless="$(eval arg('sensor')=='stereo')" pkg="nodelet" type="nodelet" name="depthimage_to_laserscan"
             args="load depthimage_to_laserscan/DepthImageToLaserScanNodelet laserscan_nodelet_manager">
         <param name="scan_height" value="10"/>
         <param name="output_frame_id" value="/$(arg robot_name)/camera_depth_frame"/>

@@ -14,7 +14,7 @@
       <visual>
           <origin xyz="0 0 0" rpy="0 0 0"/>
           <geometry>
-              <mesh filename="package://lab_turtlebot_description/urdf/config/steleo/steleo.stl" />
+              <mesh filename="package://lab_turtlebot_description/urdf/config/stereo/stereo.stl" />
           </geometry>
       </visual>
     </link>

@@ -9,7 +9,7 @@
   <xacro:property name="CLIP_FAR" value="300" /> 
   <xacro:property name="HACK_BASE_LINE" value="0.07" />
 
-  <xacro:macro name="turtlebot_sim_steleo_left">
+  <xacro:macro name="turtlebot_sim_stereo_left">
     <gazebo reference="left_camera_frame">
     <sensor type="camera" name="stereo_camera_left">
       <update_rate>${UPDATE_RATE}</update_rate>
@@ -48,7 +48,7 @@
   </gazebo>
   </xacro:macro>
 
-  <xacro:macro name="turtlebot_sim_steleo_right">
+  <xacro:macro name="turtlebot_sim_stereo_right">
     <gazebo reference="right_camera_frame">
     <sensor type="camera" name="stereo_camera_right">
       <update_rate>${UPDATE_RATE}</update_rate>

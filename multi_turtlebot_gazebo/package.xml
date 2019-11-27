@@ -50,6 +50,14 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
 
+  <build_depend>stereo_msgs</build_depend>
+  <build_depend>roscpp</build_depend>
+
+  <build_export_depend>stereo_msgs</build_export_depend>
+  <build_export_depend>roscpp</build_export_depend>
+
+  <exec_depend>stereo_msgs</exec_depend>
+  <exec_depend>roscpp</exec_depend>
   <exec_depend>costmap_2d</exec_depend>
   <exec_depend>depthimage_to_laserscan</exec_depend>
   <exec_depend>dwa_local_planner</exec_depend>

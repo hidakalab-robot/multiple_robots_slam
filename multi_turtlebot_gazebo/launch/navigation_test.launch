@@ -3,7 +3,7 @@
     <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/virtual_factory.world"/>
 
     <arg name="gui" default="true"/>
-    <arg name="sensor" default="kinect"/> <!-- kinect, steleo, urg_plus_kinect -->
+    <arg name="sensor" default="kinect"/> <!-- kinect, stereo, urg_plus_kinect -->
 
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="use_sim_time" value="true"/>

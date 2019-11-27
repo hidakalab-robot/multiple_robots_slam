@@ -3,7 +3,7 @@
     <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/tdu_1-13_corridor_marker.world"/>
 
     <arg name="gui" default="true"/>
-    <arg name="sensor" default="kinect"/> <!-- kinect, steleo, urg_plus_kinect -->
+    <arg name="sensor" default="kinect"/> <!-- kinect, stereo, urg_plus_kinect -->
     <arg if="$(eval arg('sensor')=='kinect')" name="mapping" default="true"/>
     <arg unless="$(eval arg('sensor')=='kinect')" name="mapping" default="false"/>
     <arg name="rtabmap" default="true"/>
