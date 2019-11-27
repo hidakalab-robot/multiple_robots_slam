@@ -4,15 +4,16 @@
     <arg name="init_x"/>
     <arg name="init_y"/>
     <arg name="init_yaw"/>
-    <arg name="sensor" default="kinect"/> <!-- kinect, steleo, urg_plus_kinect -->
-
+    <arg name="sensor"/>
 
     <arg name="urdf_file" default="$(find xacro)/xacro.py '$(find lab_turtlebot_description)/urdf/lab_turtlebot_$(arg sensor).urdf.xacro'" />
     <param name="robot_description" command="$(arg urdf_file)" />
   
     <!-- Gazebo model spawner -->
     <node name="spawn_turtlebot_model" pkg="gazebo_ros" type="spawn_model"
-            args="$(optenv ROBOT_INITIAL_POSE) -unpause -urdf -param robot_description -model $(arg robot_name) -x $(arg init_x) -y $(arg init_y) -Y $(arg init_yaw)"/>
+            args="$(optenv ROBOT_INITIAL_POSE) -unpause -urdf -param robot_description -model $(arg robot_name) -x $(arg init_x) -y $(arg init_y) -Y $(arg init_yaw)">
+        <remap if="$(eval arg('sensor')=='urg_plus_kinect')" from="scan" to="urg_scan"/>
+    </node>
   
     <!-- Velocity muxer -->
     <node pkg="nodelet" type="nodelet" name="mobile_base_nodelet_manager" args="manager"/>
@@ -34,8 +35,17 @@
 
     <!-- steleo cameta depth -->
     <node if="$(eval arg('sensor')=='steleo')" pkg="stereo_image_proc" type="stereo_image_proc" name="stereo_image_proc" ns="camera">
-        <remap from="points2" to="points"/>
+        <remap from="points2" to="depth/points"/>
+        <remap from="image_disparity" to="depth/image"/>
     </node>
+
+    <!-- urg_plus_kinect -->
+    <include if="$(eval arg('sensor')=='urg_plus_kinect')" file="$(find laser_merge)/launch/laser_merge.launch">
+      <arg name="robot_name" value="$(arg robot_name)"/>
+      <arg name="merge_scan_topic" value="scan"/>
+      <arg name="kinect_scan_topic" value="kinect_scan"/>
+      <arg name="urg_scan_topic" value="urg_scan"/>
+    </include>
 
     <!-- Fake laser -->
     <node pkg="nodelet" type="nodelet" name="laserscan_nodelet_manager" args="manager"/>
@@ -46,7 +56,8 @@
         <param name="range_min" value="0.45"/>
         <param name="range_max" value="10.0"/>
         <remap from="image" to="/$(arg robot_name)/camera/depth/image_raw"/>
-        <remap from="scan" to="/$(arg robot_name)/scan"/>
+        <remap unless="$(eval arg('sensor')=='urg_plus_kinect')" from="scan" to="/$(arg robot_name)/scan"/>
+        <remap if="$(eval arg('sensor')=='urg_plus_kinect')" from="scan" to="/$(arg robot_name)/kinect_scan"/>
     </node>
 
 </launch>

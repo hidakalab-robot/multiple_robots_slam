@@ -65,8 +65,7 @@
       <child link="merge_laser_link"/>
       <origin xyz="-0.10 0 0.38" rpy="0 0 0"/>
     </joint>
-    <link name="merge_laser_link">
-    </link>
+    <link name="merge_laser_link"/>
 
     <joint name="wheel_left_joint" type="continuous">
       <parent link="base_link"/>

@@ -3,11 +3,19 @@
     <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/tdu_1-13_corridor_marker.world"/>
 
     <arg name="gui" default="true"/>
-
-    <arg name="mapping" default="true"/>
+    <arg name="sensor" default="kinect"/> <!-- kinect, steleo, urg_plus_kinect -->
+    <arg if="$(eval arg('sensor')=='kinect')" name="mapping" default="true"/>
+    <arg unless="$(eval arg('sensor')=='kinect')" name="mapping" default="false"/>
     <arg name="rtabmap" default="true"/>
     <arg name="gmapping" default="false"/>
     <arg name="multi" default="false"/>
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="use_sim_time" value="true"/>
+        <arg name="debug" value="false"/>
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="world_name" value="$(arg world_file)"/>
+    </include>
 
     <!-- ロボットを追加するときはarg部とgroup部をコピペして書き換えてください -->
 
@@ -19,21 +27,9 @@
     <arg name="robot1_init_yaw" default="0.0"/>
     <!-- <arg name="robot1_init_yaw" default="3.14"/> -->
 
-    <arg name="robot2_name" default="robot2"/>
-    <arg name="robot2_init_x" default="39.3"/>
-    <arg name="robot2_init_y" default="12.0"/>
-    <arg name="robot2_init_yaw" default="3.14"/>
-
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="use_sim_time" value="true"/>
-        <arg name="debug" value="false"/>
-        <arg name="gui" value="$(arg gui)" />
-        <arg name="world_name" value="$(arg world_file)"/>
-    </include>
-
     <group ns="$(arg robot1_name)">
         <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
-            <arg name="sensor" value="kinect"/>
+            <arg name="sensor" value="$(arg sensor)"/>
             <arg name="robot_name" value="$(arg robot1_name)"/>
             <arg name="init_x" value="$(arg robot1_init_x)"/>
             <arg name="init_y" value="$(arg robot1_init_y)"/>
@@ -50,8 +46,14 @@
         </include>
     </group>
 
-    <!-- <group ns="$(arg robot2_name)">
+    <!-- <arg name="robot2_name" default="robot2"/>
+    <arg name="robot2_init_x" default="39.3"/>
+    <arg name="robot2_init_y" default="12.0"/>
+    <arg name="robot2_init_yaw" default="3.14"/>
+        
+    <group ns="$(arg robot2_name)">
         <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
+            <arg name="sensor" value="$(arg sensor)"/>
             <arg name="robot_name" value="$(arg robot2_name)"/>
             <arg name="init_x" value="$(arg robot2_init_x)"/>
             <arg name="init_y" value="$(arg robot2_init_y)"/>

@@ -24,6 +24,4 @@
         <param name="range_min" value="0.0"/>
         <param name="range_max" value="10.0"/>
     </node> 
-
-    
 </launch>
