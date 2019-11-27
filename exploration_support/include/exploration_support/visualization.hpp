@@ -140,7 +140,7 @@ void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
 }
 
 void Visualization::goalStatusCB(const actionlib_msgs::GoalStatusArray::ConstPtr& msg){
-    if(!msg->status_list.empty() && (msg->status_list.back().status > 2)){
+    if(msg->status_list.empty()||(!msg->status_list.empty() && (msg->status_list.back().status > 2))){
         std::lock_guard<std::mutex> lock(gmMutex_);
         gm_.points = std::vector<geometry_msgs::Point>();
         gm_.header.stamp = ros::Time::now();
