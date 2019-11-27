@@ -8,6 +8,8 @@
   <arg name="multi"/>
   <arg name="merge_map_frame"/>
   <arg name="merge_map_topic"/>
+  <arg name="map_frame"/>
+  <arg name="map_topic"/>
 
   <arg name="database_path" default="$(arg robot_name)_rtabmap.db"/>
   <arg name="rgbd_odometry" default="false"/>
@@ -19,8 +21,10 @@
 
   <include file="$(find multi_turtlebot_mapping)/launch/includes/move_base.launch.xml">
     <arg name="robot_name" value="$(arg robot_name)"/>
-    <arg if="$(arg multi)" name="global_frame_id" default="$(arg merge_map_frame)"/>
+    <arg if="$(arg multi)" name="global_frame_id" value="$(arg merge_map_frame)"/>
+    <arg unless="$(arg multi)" name="global_frame_id" value="$(arg map_frame)"/>
     <arg if="$(arg multi)" name="map_topic" default="$(arg merge_map_topic)"/>
+    <arg unless="$(arg multi)" name="map_topic" default="$(arg map_topic)"/>
   </include>
 
 <!-- Mapping -->

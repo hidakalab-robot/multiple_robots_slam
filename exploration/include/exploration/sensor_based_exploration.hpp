@@ -7,26 +7,48 @@
 #include <Eigen/Geometry>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <dynamic_reconfigure/server.h>
+#include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
+#include <fstream>
+
+namespace ExStc = ExpLib::Struct;
+namespace ExCov = ExpLib::Convert;
+namespace ExEnm = ExpLib::Enum;
 
 class SensorBasedExploration
 {
 private:
-    double LAST_GOAL_TOLERANCE;
-    double LOG_NEWER_LIMIT;//if 30 -> 30秒前までのログで重複検出
-    double DUPLICATE_TOLERANCE;
-    double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
+    // static parameters
+    bool OUTPUT_SBE_PARAMETERS;
+    std::string SBE_PARAMETER_FILE_PATH;
 
-    ExpLib::Struct::subStruct<exploration_msgs::PointArray> branch_;
-    ExpLib::Struct::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExpLib::Struct::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
+    // variables
+    ExStc::subStruct<exploration_msgs::PointArray> branch_;
+    ExStc::subStruct<geometry_msgs::PoseStamped> pose_;
+    ExStc::subStruct<exploration_msgs::PoseStampedArray> poseLog_;
 
-    void duplicateDetection(std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
-    virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+    // functions
+    void duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
+    virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+    virtual void loadParams(void);
+    virtual void dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+    virtual void outputParams(void);
+
 protected:
+    // dynamic parameters
+    double LAST_GOAL_TOLERANCE;
+    double DUPLICATE_TOLERANCE;
+    double LOG_CURRENT_TIME;//if 30 -> 30秒前までのログで重複検出
+    double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
+    
+    // variables
+    ExStc::pubStruct<geometry_msgs::PointStamped> goal_;
+    dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig> drs_;
     geometry_msgs::Point lastGoal_;
-    ExpLib::Struct::pubStruct<geometry_msgs::PointStamped> goal_;
+
 public:
     SensorBasedExploration();
+    virtual ~SensorBasedExploration(){if(OUTPUT_SBE_PARAMETERS) outputParams();};
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
@@ -34,13 +56,10 @@ SensorBasedExploration::SensorBasedExploration()
     :branch_("branch", 1)
     ,pose_("pose", 1)
     ,poseLog_("pose_log", 1)
-    ,goal_("goal", 1){
-
-    ros::NodeHandle p("~");
-    p.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
-    p.param<double>("log_newer_limit", LOG_NEWER_LIMIT, 10);
-    p.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
-    p.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+    ,goal_("goal", 1, true)
+    ,drs_(ros::NodeHandle("~/sensor_based_exploration")){
+    loadParams();
+    drs_.setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
 }
 
 bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
@@ -62,7 +81,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
         return false;
     }
 
-    std::vector<ExpLib::Struct::listStruct> ls;
+    std::vector<ExStc::listStruct> ls;
     ls.reserve(branch_.data.points.size());
 
     // 別形式 // 直前の目標と近い分岐は無視したい
@@ -83,14 +102,14 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 }
 
 
-void SensorBasedExploration::duplicateDetection(std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
+void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
 	
 	//重複探査を考慮する時間の上限から参照する配列の最大値を設定
 	int ARRAY_MAX = log.poses.size();
 	for(int i=log.poses.size()-2;i!=0;--i){
-		if(ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > LOG_NEWER_LIMIT){
+		if(ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > LOG_CURRENT_TIME){
 			ARRAY_MAX = i;
 			break;
 		}
@@ -101,19 +120,19 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExpLib::Struct::list
             //過去のオドメトリが重複判定の範囲内に入っているか//
             if(Eigen::Vector2d(l.point.x - log.poses[i].pose.position.x, l.point.y - log.poses[i].pose.position.y).norm() < DUPLICATE_TOLERANCE){
                 ROS_DEBUG_STREAM("This Branch is Duplicated");
-                l.duplication = ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? ExpLib::Enum::DuplicationStatus::OLDER : ExpLib::Enum::DuplicationStatus::NEWER;
+                l.duplication = ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > NEWER_DUPLICATION_THRESHOLD ? ExEnm::DuplicationStatus::OLDER : ExEnm::DuplicationStatus::NEWER;
                 break;
             }
         }
 	}
 }
 
-bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
     // 重複していない中で距離が一番近いやつ
     double dist = DBL_MAX;
 
     for(const auto& l : ls){
-        if(l.duplication != ExpLib::Enum::DuplicationStatus::NOT_DUPLECATION) continue;
+        if(l.duplication != ExEnm::DuplicationStatus::NOT_DUPLECATION) continue;
         double temp = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y).norm();
         if(temp <= dist){
             dist = std::move(temp);
@@ -130,5 +149,40 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
     }
     return false;
 }
+
+void SensorBasedExploration::loadParams(void){
+    ros::NodeHandle nh("~/sensor_based_exploration");
+    // dynamic parameters
+    nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
+    nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
+    nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
+    nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+    // static parameters
+    nh.param<std::string>("sbe_parameter_file_path",SBE_PARAMETER_FILE_PATH,"sbe_last_parameters.yaml");
+    nh.param<bool>("output_sbe_parameters",OUTPUT_SBE_PARAMETERS,true);
+}
+
+void SensorBasedExploration::dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
+    LOG_CURRENT_TIME = cfg.log_current_time;
+    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
+}
+
+void SensorBasedExploration::outputParams(void){
+    std::cout << "writing sbe last parameters ... ..." << std::endl;
+    std::ofstream ofs(SBE_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "sbe param file open succeeded" << std::endl;
+    else {
+        std::cout << "sbe param file open failed" << std::endl;
+        return;
+    }
+    
+    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
+    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
+    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
+ }
 
 #endif // SENSOR_BASED_EXPLORATION_HPP

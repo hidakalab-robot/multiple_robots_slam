@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<robot name="sensor_stereo" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/stereo/turtlebot_gazebo.urdf.xacro"/>
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/stereo/turtlebot_properties.urdf.xacro"/>
+  
+  <xacro:macro name="sensor_stereo" params="parent">
+    <!-- Camera Center -->
+    <joint name="camera_center_joint" type="fixed">
+        <parent link="${parent}"/>
+        <child link="camera_center_frame"/>
+        <origin xyz="${cam_px} ${cam_py} ${cam_pz}" rpy="${cam_or} ${cam_op} ${cam_oy}"/>
+    </joint>
+    <link name="camera_center_frame">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <mesh filename="package://lab_turtlebot_description/urdf/config/stereo/stereo.stl" />
+            </geometry>
+            <material name="light_grey">
+                <color rgba="0.8 0.8 0.8 0.8"/>
+            </material>
+        </visual>
+    </link>
+
+  <!-- Left Camera -->
+    <joint name="left_camera_joint" type="fixed">
+        <parent link="camera_center_frame"/>
+        <child link="left_camera_frame"/>
+        <origin xyz="0 0.06 0" rpy="0 0 0" />
+    </joint>
+    <link name="left_camera_frame" />
+
+    <joint name="left_camera_optical_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="-1.57079632679 0.0 -1.57079632679"/>
+        <parent link="left_camera_frame"/>
+        <child link="left_camera_optical_frame"/>
+    </joint>
+    <link name="left_camera_optical_frame"/>
+
+  <!-- Right Camera -->
+    <joint name="right_camera_joint" type="fixed">
+        <parent link="camera_center_frame"/>
+        <child link="right_camera_frame"/>
+        <origin xyz="0 -0.06 0" rpy="0 0 0" />
+    </joint>
+    <link name="right_camera_frame" />
+
+    <joint name="right_camera_optical_joint" type="fixed">
+        <origin xyz="0 0 0" rpy="-1.57079632679 0.0 -1.57079632679"/>
+        <parent link="right_camera_frame"/>
+        <child link="right_camera_optical_frame"/>
+    </joint>
+    <link name="right_camera_optical_frame"/>
+	
+	<!-- stereo sensor for simulation -->
+    <turtlebot_sim_stereo_left/>
+    <turtlebot_sim_stereo_right/>
+  </xacro:macro>
+</robot>

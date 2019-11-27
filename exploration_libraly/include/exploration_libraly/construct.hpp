@@ -10,6 +10,7 @@
 #include <std_msgs/Float64.h>
 #include <std_msgs/Int32.h>
 #include <std_msgs/Int8.h>
+#include <visualization_msgs/Marker.h>
 
 namespace ExpLib
 {
@@ -103,6 +104,28 @@ geometry_msgs::Quaternion msgGeoQuaternion(double x, double y, double z, double 
     q.z = z;
     q.w = w;
     return q;
+}
+
+template <typename T>
+std::vector<T> oneFactorVector(const T& factor){
+    std::vector<T> v;
+    v.push_back(factor);
+    return v;
+}
+
+visualization_msgs::Marker msgCubeListMarker(const std::string& frame_id, const double scale=0.5, const float r=1.0, const float g=0.0, const float b=0.0, const float a=1.0){
+    visualization_msgs::Marker m;
+    m.header.frame_id = frame_id;
+    m.pose.orientation.w = 1.0;
+    m.scale.x = m.scale.y = m.scale.z = scale;
+    m.type = visualization_msgs::Marker::CUBE_LIST;
+    m.action = visualization_msgs::Marker::ADD;
+    m.lifetime = ros::Duration(0);
+    m.color.r = r;
+    m.color.g = g;
+    m.color.b = b;
+    m.color.a = a;
+    return m;
 }
 
 }

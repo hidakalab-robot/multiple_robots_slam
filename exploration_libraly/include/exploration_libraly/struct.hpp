@@ -2,6 +2,7 @@
 #define STRUCT_HPP
 
 #include <exploration_libraly/enum.hpp>
+#include <exploration_libraly/utility.hpp>
 #include <geometry_msgs/Point.h>
 #include <ros/callback_queue.h>
 #include <ros/ros.h>
@@ -58,10 +59,18 @@ struct pubStructStd{
 struct scanStruct{
     std::vector<float> ranges;
     std::vector<float> angles;
-    float angleMax;
-    scanStruct(int size,float angle):angleMax(angle){
+    std::vector<double> x;
+    std::vector<double> y;
+    // float angleMax;
+    // scanStruct(int size,float angle):angleMax(angle){
+    //     ranges.reserve(size);
+    //     angles.reserve(size);
+    // };
+    scanStruct(int size){
         ranges.reserve(size);
         angles.reserve(size);
+        x.reserve(size);
+        y.reserve(size);
     };
 };
 
@@ -70,6 +79,37 @@ struct listStruct{
     Enum::DuplicationStatus duplication;
     listStruct():duplication(Enum::DuplicationStatus::NOT_DUPLECATION){};
     listStruct(const geometry_msgs::Point& p):point(p),duplication(Enum::DuplicationStatus::NOT_DUPLECATION){};
+};
+
+struct mapSearchWindow{// 中心の座標, マップの大きさ, 窓の大きさを引数に取って　窓の上下左右の要素番号を返す
+    int top;
+    int bottom;
+    int left;
+    int right;
+    mapSearchWindow(const geometry_msgs::Point& cc, const nav_msgs::MapMetaData& info, double lx, double ly=0.0){ // cc : 検索窓の中心座標, info : 地図のメタデータ, lx,ly : 検索窓の辺の長さ(m)
+        if(lx < info.resolution) lx = info.resolution;
+        if(ly ==  0.0) ly = lx;
+        else if(ly < info.resolution) ly = info.resolution;
+        Eigen::Vector2i index(ExpLib::Utility::coordinateToMapIndex(cc,info));
+        calcWindowSize(index.x(),index.y(),info.width, info.height, lx/info.resolution, ly/info.resolution);
+    }
+    mapSearchWindow(const int cx, const int cy, const int mx, const int my, int lx, int ly=0){ // cx,cy : 検索窓の中心の二次元配列インデックス, mx,my : 地図の辺の長さ(cell), lx,ly : 検索窓の辺の長さ(cell)
+        if(lx < 1) lx = 1;
+        if(ly == 0) ly = lx;
+        else if(ly<  1) ly = 1;
+        calcWindowSize(cx,cy,mx,my,lx,ly);
+    }
+
+    void calcWindowSize(const int cx, const int cy, const int mx, const int my, const int lx, const int ly){
+        int hx1 = lx/2;
+        int hx2 = lx%2 == 1 ? lx/2 : lx/2-1; 
+        int hy1 = ly/2;
+        int hy2 = ly%2 == 1 ? ly/2 : ly/2-1;
+        top = cy < hy1 ? 0 : cy-hy1;
+        bottom = cy+hy2 > my-1 ? my-1 : cy+hy2;
+        left = cx < hx1 ? 0 : cx-hx1; 
+        right = cx+hx2 > mx-1 ? mx-1 : cx+hx2;
+    }
 };
 
 }

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<robot name="sensor_urg" xmlns:xacro="http://ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/urg_plus_kinect/turtlebot_gazebo.urdf.xacro"/>
+  <xacro:include filename="$(find lab_turtlebot_description)/urdf/config/urg_plus_kinect/turtlebot_properties.urdf.xacro"/>
+  
+  <xacro:macro name="sensor_urg" params="parent">
+    <joint name="urg_joint" type="fixed">
+      <origin xyz="${urg_px} ${urg_py} ${urg_pz}" rpy="${urg_or} ${urg_op} ${urg_oy}" />
+      <parent link="${parent}" />
+      <child link="urg_frame" />
+    </joint>
+    <link name="urg_frame">
+      <visual>
+          <origin xyz="0 0 0" rpy="0 0 0"/>
+          <geometry>
+              <mesh filename="package://lab_turtlebot_description/urdf/config/stereo/stereo.stl" />
+          </geometry>
+      </visual>
+    </link>
+
+    <turtlebot_sim_urg/>
+  </xacro:macro>
+</robot>

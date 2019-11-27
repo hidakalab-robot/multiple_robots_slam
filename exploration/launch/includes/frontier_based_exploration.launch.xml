@@ -12,6 +12,7 @@
     <!-- <arg name="bumper"/> sub topic -->
     <!-- <arg name="velocity"/> pub topic -->
     <!-- <arg name="pose"/> sub topic -->
+    <arg name="map_frame_id"/> <!-- param -->
 
     <!-- launch -->
     <!-- <arg name="debug" default="false"/> -->
@@ -21,10 +22,21 @@
         <remap from="frontier" to="$(arg frontier)"/>
         <remap from="end" to="$(arg end)"/>
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
+        <remap from="global_costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
+
+        <rosparam file="$(find exploration)/param/movement_planner_params.yaml" command="load"/>
+        <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
+        <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
         
         <param name="debug" value="$(arg debug)"/>
         <param name="rotation" value="$(arg rotation)"/>
-        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <param name="angle_bias" value="10"/>
+
+        <rosparam file="$(find exploration)/param/movement_fbe_last_parameters.yaml" command="load" ns="movement"/>
+        <param name="movement/movement_parameter_file_path" value="$(find exploration)/param/movement_fbe_last_parameters.yaml"/>
+        <param name="movement/movebase_name" value="/$(arg robot_name)/move_base"/>
+        <param name="movement/angle_bias" value="10"/>
+
+        <rosparam file="$(find exploration)/param/fbe_last_parameters.yaml" command="load" ns="frontier_based_exploration"/>
+        <param name="frontier_based_exploration/fbe_parameter_file_path" value="$(find exploration)/param/fbe_last_parameters.yaml"/>
     </node>
 </launch>

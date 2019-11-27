@@ -2,15 +2,15 @@
   <!-- Turtlebot -->
   <arg name="base"              default="$(env TURTLEBOT_BASE)"         doc="mobile base type [create, roomba]"/>
   <arg name="serialport"        default="$(env TURTLEBOT_SERIAL_PORT)"  doc="used by create to configure the port it is connected on [/dev/ttyUSB0, /dev/ttyS0]"/>
-  <arg name="urg"               default="false"/>
   <arg name="robot_name"        default="robot1"/>
+  <arg name="sensor"            default="kinect"/> <!-- kinect, stereo, urg_plus_kinect -->
 
   <arg name="kinect_scan_topic" default="kinect_scan"/>
   <arg name="urg_scan_topic" default="urg_scan"/>
 
   <group ns="$(arg robot_name)">
     <include file="$(find multi_turtlebot_bringup)/launch/includes/robot.launch.xml">
-      <arg name="urg" value="$(arg urg)"/>
+      <arg name="sensor" value="$(arg sensor)"/>
       <arg name="robot_name" value="$(arg robot_name)"/>
     </include>
 
@@ -21,15 +21,15 @@
 
     <include file="$(find multi_turtlebot_bringup)/launch/includes/kinect.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
-      <arg if="$(arg urg)" name="scan_topic" value="$(arg kinect_scan_topic)"/>
+      <arg if="$(eval arg('sensor')=='urg_plus_kinect')" name="scan_topic" value="$(arg kinect_scan_topic)"/>
     </include>
 
-    <include if="$(arg urg)" file="$(find multi_turtlebot_bringup)/launch/includes/urg.launch.xml">
+    <include if="$(eval arg('sensor')=='urg_plus_kinect')" file="$(find multi_turtlebot_bringup)/launch/includes/urg.launch.xml">
       <arg name="robot_name" value="$(arg robot_name)"/>
       <arg name="scan_topic" value="$(arg urg_scan_topic)"/>
     </include>
 
-    <include if="$(arg urg)" file="$(find laser_merge)/launch/laser_merge.launch">
+    <include if="$(eval arg('sensor')=='urg_plus_kinect')" file="$(find laser_merge)/launch/laser_merge.launch">
       <arg name="robot_name" value="$(arg robot_name)"/>
       <arg name="merge_scan_topic" value="scan"/>
       <arg name="kinect_scan_topic" value="$(arg kinect_scan_topic)"/>

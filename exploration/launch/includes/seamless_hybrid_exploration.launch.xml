@@ -34,15 +34,27 @@
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
         <remap from="map" to="$(arg map)"/>
         <remap from="mobile_base/sensors/bumper_pointcloud" to="/$(arg robot_name)/mobile_base/sensors/bumper_pointcloud"/>
+        <remap from="global_costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
 
-        <rosparam file="$(find exploration)/param/path_planner_params.yaml" command="load"/>
-        <param name="global_costmap/global_frame" value="$(arg map_frame_id)"/>
-        <param name="global_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+        <rosparam file="$(find exploration)/param/seamless_planner_params.yaml" command="load"/>
+        <param name="seamless_costmap/global_frame" value="$(arg map_frame_id)"/>
+        <param name="seamless_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+
+        <rosparam file="$(find exploration)/param/movement_planner_params.yaml" command="load"/>
+        <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
+        <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
         
-        <param name="robot_name" value="$(arg robot_name)"/>
         <param name="rotation" value="$(arg rotation)"/>
         <param name="debug" value="$(arg debug)"/>
-        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <param name="angle_bias" value="60"/>
+
+        <rosparam file="$(find exploration)/param/movement_she_last_parameters.yaml" command="load" ns="movement"/>
+        <param name="movement/movement_parameter_file_path" value="$(find exploration)/param/movement_she_last_parameters.yaml"/>
+        <param name="movement/movebase_name" value="/$(arg robot_name)/move_base"/>
+        
+        <rosparam file="$(find exploration)/param/she_last_parameters.yaml" command="load" ns="seamless_hybrid_exploration"/>
+        <param name="seamless_hybrid_exploration/she_parameter_file_path" value="$(find exploration)/param/she_last_parameters.yaml"/>
+        <param name="seamless_hybrid_exploration/robot_name" value="$(arg robot_name)"/>
+        
+        <param name="sensor_based_exploration/output_sbe_parameters" value="false"/>
     </node>
 </launch>

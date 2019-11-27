@@ -4,6 +4,7 @@
 #include <exploration_libraly/construct.hpp>
 #include <exploration_libraly/convert.hpp>
 #include <tf/transform_listener.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 namespace ExpLib
 {
@@ -61,6 +62,38 @@ template<> void coordinateConverter2d(const tf::TransformListener& l, const std:
     geometry_msgs::Pose ps = Convert::pointToPose(Convert::pclPointXYZToPoint(p));
     coordinateConverter2d<void>(l,destFrame,origFrame,ps);
     p = Convert::pointToPclPointXYZ(ps.position);
+}
+
+geometry_msgs::Point mapIndexToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
+    return ExpLib::Construct::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
+}
+
+Eigen::Vector2i coordinateToMapIndex(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info){
+    return Eigen::Vector2i((coordinate.x()-info.origin.position.x)/info.resolution,(coordinate.y()-info.origin.position.y)/info.resolution);
+}
+
+Eigen::Vector2i coordinateToMapIndex(const geometry_msgs::Point& coordinate,const nav_msgs::MapMetaData& info){
+    return Eigen::Vector2i((coordinate.x-info.origin.position.x)/info.resolution,(coordinate.y-info.origin.position.y)/info.resolution);
+}
+
+std::vector<std::vector<int8_t>> mapArray1dTo2d(const std::vector<int8_t>& data, const nav_msgs::MapMetaData& info){
+    std::vector<std::vector<int8_t>> map2d(info.width,std::vector<int8_t>(info.height));
+    
+    for(int y=0,k=0,ey=info.height;y!=ey;++y){
+        for(int x=0,ex=info.width;x!=ex;++x,++k){
+            map2d[x][y] = data[k];
+        }
+    }
+    return map2d;
+}
+
+double shorterRotationAngle(const double orig, const double dest){
+    double diff = dest - orig;
+    return diff > M_PI ? diff-2*M_PI : diff < -M_PI ? diff+2*M_PI : diff;
+}
+
+double shorterRotationAngle(const geometry_msgs::Quaternion& orig, const geometry_msgs::Quaternion& dest){
+    return shorterRotationAngle(Convert::qToYaw(orig), Convert::qToYaw(dest));
 }
 
 }

@@ -2,8 +2,12 @@
 <launch>
   <arg name="robot_name" default="robot1"/>
   <arg name="multi" default="false"/>
+
   <arg name="merge_map_frame" default="/server/merge_map"/>
   <arg name="merge_map_topic" default="/server/merge_map/grid"/>
+
+  <arg name="map_frame" default="$(arg robot_name)/map"/>
+  <arg name="map_topic" default="/$(arg robot_name)/map_continuity"/>
 
   <group ns="$(arg robot_name)">
     <include file="$(find multi_turtlebot_mapping)/launch/includes/rtabmap.launch.xml">
@@ -11,6 +15,8 @@
       <arg name="multi" value="$(arg multi)"/>
       <arg name="merge_map_frame" value="$(arg merge_map_frame)"/>
       <arg name="merge_map_topic" value="$(arg merge_map_topic)"/>
+      <arg name="map_frame" value="$(arg map_frame)"/>
+      <arg name="map_topic" value="$(arg map_topic)"/>
     </include>
   </group>
 </launch>

@@ -12,6 +12,7 @@
         <pose frame=''>0 0 3 0 -0 0</pose>
       </collision>
       <visual name='Wall_0_Visual'>
+        <cast_shadows>false</cast_shadows>
         <pose frame=''>0 0 3 0 -0 0</pose>
         <geometry>
           <box>
@@ -38,6 +39,7 @@
         <pose frame=''>0 0 3 0 -0 0</pose>
       </collision>
       <visual name='Wall_1_Visual'>
+        <cast_shadows>false</cast_shadows>
         <pose frame=''>0 0 3 0 -0 0</pose>
         <geometry>
           <box>
@@ -64,6 +66,7 @@
         <pose frame=''>0 0 3 0 -0 0</pose>
       </collision>
       <visual name='Wall_2_Visual'>
+        <cast_shadows>false</cast_shadows>
         <pose frame=''>0 0 3 0 -0 0</pose>
         <geometry>
           <box>
@@ -90,6 +93,7 @@
         <pose frame=''>0 0 3 0 -0 0</pose>
       </collision>
       <visual name='Wall_3_Visual'>
+        <cast_shadows>false</cast_shadows>
         <pose frame=''>0 0 3 0 -0 0</pose>
         <geometry>
           <box>

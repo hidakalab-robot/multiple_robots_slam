@@ -7,16 +7,35 @@
 #include <exploration_msgs/FrontierArray.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <navfn/navfn_ros.h>
+#include <dynamic_reconfigure/server.h>
+#include <exploration/seamless_hybrid_exploration_parameter_reconfigureConfig.h>
+#include <fstream>
+
+namespace ExStc = ExpLib::Struct;
+namespace ExCov = ExpLib::Convert;
+namespace ExEnm = ExpLib::Enum;
 
 class SeamlessHybridExploration :public SensorBasedExploration
 {
 private:
+    // dynamic parameters
+    double DISTANCE_WEIGHT;
+    double DIRECTION_WEIGHT;
+    double VARIANCE_THRESHOLD;
+    double COVARIANCE_THRESHOLD;
+    double OTHER_ROBOT_WEIGHT;
+
+    // static parameters
+    std::string ROBOT_NAME;
+    std::string SHE_PARAMETER_FILE_PATH;
+    bool OUTPUT_SHE_PARAMETERS;
+
+    // struct
     struct maxValue{
         double distance;
         double angle;
         maxValue():distance(-DBL_MAX),angle(-DBL_MAX){};
     };
-
     struct preCalcResult{
         struct value{
             double distance;
@@ -29,52 +48,46 @@ private:
         preCalcResult(){};
     };
 
-    maxValue mVal_;
-
-    double COVARIANCE_THRESHOLD;
-    double VARIANCE_THRESHOLD;
-    double DIRECTION_WEIGHT;
-    double DISTANCE_WEIGHT;
-    double OTHER_ROBOT_WEIGHT;
-    std::string ROBOT_NAME;
-
-    geometry_msgs::PoseStamped ps_;
-    std::vector<ExpLib::Struct::listStruct> ls_;
+    // variables
+    ExStc::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
+    ExStc::subStruct<exploration_msgs::FrontierArray> frontier_;
+    ExStc::pubStruct<exploration_msgs::FrontierArray> useFro_;
+    ExpLib::PathPlanning<navfn::NavfnROS> pp_;
+    dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig> drs_;
+    std::vector<ExStc::listStruct> ls_;
     exploration_msgs::FrontierArray fa_;
     exploration_msgs::RobotInfoArray ria_;
-
-    ExpLib::PathPlanning<navfn::NavfnROS> pp_;
-    ExpLib::Struct::subStruct<exploration_msgs::RobotInfoArray> robotArray_;
-    ExpLib::Struct::subStruct<exploration_msgs::FrontierArray> frontier_;
-
     std::vector<preCalcResult> ownPreCalc_;
     std::vector<preCalcResult> otherPreCalc_;
+    geometry_msgs::PoseStamped ps_;
+    maxValue mVal_;
 
+    // functions
     bool decideGoal(geometry_msgs::PointStamped& goal);
-    bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
-    bool filter(std::vector<ExpLib::Struct::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
+    bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+    bool filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
+    void preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
+    void loadParams(void);
+    void dynamicParamsCB(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+    void outputParams(void);
 
-    void preCalc(const std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
 public:
     SeamlessHybridExploration();
+    ~SeamlessHybridExploration(){if(OUTPUT_SHE_PARAMETERS) outputParams();};
     void simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f);
 };
 
 SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_("robot_array", 1)
     ,frontier_("frontier", 1)
-    ,pp_("global_costmap","NavfnROS"){
-
-    ros::NodeHandle p("~");
-    p.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
-    p.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
-    p.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
-    p.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
-    p.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
-    p.param<std::string>("robot_name", ROBOT_NAME, "robot1");
+    ,useFro_("useful_frontier", 1, true)
+    ,pp_("seamless_costmap","seamless_planner")
+    ,drs_(ros::NodeHandle("~/seamless_hybrid_exploration")){
+    loadParams();
+    drs_.setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
 }
 
-bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExpLib::Struct::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
     if(robotArray_.q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read robot_array or don't find robot_array"); 
         return false;
@@ -127,10 +140,10 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     return true;
 }
 
-bool SeamlessHybridExploration::filter(std::vector<ExpLib::Struct::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
+bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
     //分岐領域のフィルタ
     ROS_INFO_STREAM("before branches size : " << ls.size());
-    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExpLib::Struct::listStruct& l){return l.duplication == ExpLib::Enum::DuplicationStatus::NEWER;});
+    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExStc::listStruct& l){return l.duplication == ExEnm::DuplicationStatus::NEWER;});
 	ls.erase(std::move(lsRemove),ls.end());
     ROS_INFO_STREAM("after branches size : " << ls.size());
 
@@ -144,6 +157,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExpLib::Struct::listStruct>& 
 	fa.frontiers.erase(std::move(faRemove),fa.frontiers.end());
     ROS_INFO_STREAM("after frontiers size : " << fa.frontiers.size());
 
+    useFro_.pub.publish(fa);
     if(fa.frontiers.size()==0) return false;
 
     //ロボットリストのフィルタ
@@ -156,7 +170,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExpLib::Struct::listStruct>& 
     return true;
 }
 
-void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
+void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
     ownPreCalc_ = std::vector<preCalcResult>();
     otherPreCalc_ = std::vector<preCalcResult>();
     mVal_ = maxValue();
@@ -164,15 +178,15 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listSt
     auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1){
         SeamlessHybridExploration::preCalcResult pcr;
         pcr.point = p;
-        // Eigen::Vector2d v1 = ExpLib::Convert::qToVector2d(ps.orientation);
+        // Eigen::Vector2d v1 = ExCov::qToVector2d(ps.orientation);
         pcr.values.reserve(fa.frontiers.size());
         for(const auto& f : fa.frontiers){
             // 目標地点での向きをpathの最後の方の移動で決めたい
             Eigen::Vector2d v2;
             double distance;
-            if(!pp_.getDistanceAndVec(ExpLib::Convert::pointToPoseStamped(p,pose.header.frame_id),ExpLib::Convert::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
+            if(!pp_.getDistanceAndVec(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
                 v2 = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).normalized();
-                if(!pp_.getDistance(ExpLib::Convert::pointToPoseStamped(p,pose.header.frame_id),ExpLib::Convert::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
+                if(!pp_.getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
                     //最終手段で直線距離を計算
                     distance = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).norm();
                 }                
@@ -193,7 +207,7 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listSt
     for(const auto& l : ls){
         double distance;
         Eigen::Vector2d v1;
-        if(!pp_.getDistanceAndVec(pose,ExpLib::Convert::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
+        if(!pp_.getDistanceAndVec(pose,ExCov::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
             v1 = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y);
             distance = v1.lpNorm<1>();
             v1.normalize();
@@ -204,32 +218,30 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExpLib::Struct::listSt
     forward /= ls.size();
 
     // 直進時の計算
-    Eigen::Vector2d fwdV1 = ExpLib::Convert::qToVector2d(pose.pose.orientation);; 
-    ownPreCalc_.emplace_back(calc(ExpLib::Convert::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
+    Eigen::Vector2d fwdV1 = ExCov::qToVector2d(pose.pose.orientation);; 
+    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
 
     // 他のロボットに関する計算
-    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExpLib::Convert::qToVector2d(ri.pose.orientation)));
+    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation)));
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){
-    static ExpLib::PathPlanning<navfn::NavfnROS> pp("simulator_goal_costmap","simulator_goal_path");
+    static ExpLib::PathPlanning<navfn::NavfnROS> pp("seamsim_goal_costmap","seamsim_goal_path");
 
-    ros::NodeHandle p("~");
+    ros::NodeHandle nh("~/mulsim");
     std::string FRAME_ID;
-    std::string EXTRA_PARAMETER_NAMESPACE;
+    // std::string EXTRA_PARAMETER_NAMESPACE;
     int SIMULATE_ROBOT_INDEX;
 
-    p.param<std::string>("frame_id", FRAME_ID, "map");
-    p.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "extra_parameter");
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/direction_weight", DIRECTION_WEIGHT, 1.5);
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/distance_weight", DISTANCE_WEIGHT, 2.5);
-    p.param<double>("/"+EXTRA_PARAMETER_NAMESPACE+"/other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0); 
-    p.param<int>("/"+EXTRA_PARAMETER_NAMESPACE+"/simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
+    nh.param<std::string>("frame_id", FRAME_ID, "map");
+    // p.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "extra_parameter");
+    // p.param<int>("/"+EXTRA_PARAMETER_NAMESPACE+"/simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
+    nh.param<int>("simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
 
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
 
     geometry_msgs::PoseStamped ps;
-    std::vector<ExpLib::Struct::listStruct> ls;
+    std::vector<ExStc::listStruct> ls;
     exploration_msgs::FrontierArray fa;
     exploration_msgs::RobotInfoArray ria;
 
@@ -260,7 +272,54 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
     geometry_msgs::PointStamped goal;
     decideGoal(goal);
 
-    pp.createPath(ps_,ExpLib::Convert::pointStampedToPoseStamped(goal));
+    pp.createPath(ps_,ExCov::pointStampedToPoseStamped(goal));
 }
+
+void SeamlessHybridExploration::loadParams(void){
+    ros::NodeHandle nh("~/seamless_hybrid_exploration");
+    // dynamic parameters
+    nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
+    nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
+    nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
+    nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
+    nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
+    // static parameters
+    nh.param<std::string>("robot_name", ROBOT_NAME, "robot1");
+    nh.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
+    nh.param<bool>("output_she_parameters",OUTPUT_SHE_PARAMETERS,true);
+}
+
+void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
+    LOG_CURRENT_TIME = cfg.log_current_time;
+    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
+    DISTANCE_WEIGHT = cfg.distance_weight;
+    DIRECTION_WEIGHT = cfg.direction_weight;
+    VARIANCE_THRESHOLD = cfg.variance_threshold;
+    COVARIANCE_THRESHOLD = cfg.covariance_threshold;
+    OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
+}
+
+void SeamlessHybridExploration::outputParams(void){
+    std::cout << "writing she last parameters ... ..." << std::endl;
+    std::ofstream ofs(SHE_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "she param file open succeeded" << std::endl;
+    else {
+        std::cout << "she param file open failed" << std::endl;
+        return;
+    }
+
+    ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
+    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
+    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
+    ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
+    ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
+    ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
+    ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
+    ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
+ }
 
 #endif // SEAMLESS_HYBRID_EXPLORATION_HPP

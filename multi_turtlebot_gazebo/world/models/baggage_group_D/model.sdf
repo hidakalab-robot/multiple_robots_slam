@@ -385,256 +385,256 @@
           <pose>12.6198 -2.9794 0.7496 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_B_0.2_0'>
+      <model name='baggage_B_0.6_0'>
         <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>3.69007 0.538933 0.099921 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_11'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>12.3409 11.1335 0.100217 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_12'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>6.30994 -3.16878 0.099848 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_14'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>10.8468 9.15923 0.099527 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_2'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>5.18338 10.0566 0.099706 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_21'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>4.55676 3.02236 0.099808 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_22'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>0.901034 -0.122514 0.100338 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_26'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>15.6719 7.62413 0.100295 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_35'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>13.7177 7.54429 0.100181 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_36'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>1.64019 10.7664 0.099628 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_39'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>2.39021 8.93044 0.099926 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_4'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>14.1904 -1.6285 0.099919 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_40'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>1.33626 3.70292 0.100157 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_44'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>11.6676 11.3337 0.100134 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_46'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>13.1865 8.71899 0.099559 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_47'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>0.767607 3.03085 0.100015 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_49'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>0.722521 4.83538 0.099504 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_5'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>14.8374 -2.67746 0.100371 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.2_9'>
-        <include>
-          <uri>model://baggage_B_0.2</uri>
-          <pose>6.88017 9.54866 0.099864 0 -0 0</pose>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>3.69007 0.538933 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_11'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>12.5764 8.62506 0.300378 0 -0 0</pose>
+          <pose>12.3409 11.1335 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_B_0.6_13'>
+      <model name='baggage_B_0.6_12'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>0.198422 -0.168142 0.299642 0 -0 0</pose>
+          <pose>6.30994 -3.16878 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_14'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>8.10158 8.58616 0.29962 0 -0 0</pose>
+          <pose>10.8468 9.15923 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_B_0.6_15'>
+      <model name='baggage_B_0.6_2'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>3.04885 -1.00915 0.300175 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.6_19'>
-        <include>
-          <uri>model://baggage_B_0.6</uri>
-          <pose>8.07114 11.0295 0.300407 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.6_20'>
-        <include>
-          <uri>model://baggage_B_0.6</uri>
-          <pose>5.04667 8.68218 0.299619 0 -0 0</pose>
+          <pose>5.18338 10.0566 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_21'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>6.9676 -2.94811 0.300016 0 -0 0</pose>
+          <pose>4.55676 3.02236 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_22'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>15.4346 -2.02199 0.300057 0 -0 0</pose>
+          <pose>0.901034 -0.122514 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_B_0.6_27'>
+      <model name='baggage_B_0.6_26'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>11.3573 -2.26727 0.300325 0 -0 0</pose>
+          <pose>15.6719 7.62413 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_B_0.6_29'>
+      <model name='baggage_B_0.6_35'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>15.5288 8.74782 0.299695 0 -0 0</pose>
+          <pose>13.7177 7.54429 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_B_0.6_3'>
+      <model name='baggage_B_0.6_36'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>0.308524 -0.839967 0.299547 0 -0 0</pose>
+          <pose>1.64019 10.7664 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_B_0.6_30'>
+      <model name='baggage_B_0.6_39'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>2.12523 3.80475 0.300116 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.6_32'>
-        <include>
-          <uri>model://baggage_B_0.6</uri>
-          <pose>5.55622 -2.53883 0.299956 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.6_33'>
-        <include>
-          <uri>model://baggage_B_0.6</uri>
-          <pose>3.86494 -1.36281 0.299703 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.6_37'>
-        <include>
-          <uri>model://baggage_B_0.6</uri>
-          <pose>0.271629 8.88692 0.300487 0 -0 0</pose>
+          <pose>2.39021 8.93044 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_4'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>1.21165 0.481628 0.299541 0 -0 0</pose>
+          <pose>14.1904 -1.6285 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_40'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>9.00772 9.80732 0.299643 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.6_41'>
-        <include>
-          <uri>model://baggage_B_0.6</uri>
-          <pose>14.7447 -0.224482 0.299907 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_B_0.6_42'>
-        <include>
-          <uri>model://baggage_B_0.6</uri>
-          <pose>1.13132 -0.723509 0.29999 0 -0 0</pose>
+          <pose>1.33626 3.70292 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_44'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>12.163 7.62812 0.299703 0 -0 0</pose>
+          <pose>11.6676 11.3337 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_46'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>8.97728 9.22323 0.30034 0 -0 0</pose>
+          <pose>13.1865 8.71899 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_47'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>0.767607 3.03085 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_49'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>0.722521 4.83538 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_5'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>14.8374 -2.67746 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_9'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>6.88017 9.54866 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_11'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>12.5764 8.62506 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_13'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>0.198422 -0.168142 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_14'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>8.10158 8.58616 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_15'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>3.04885 -1.00915 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_19'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>8.07114 11.0295 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_20'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>5.04667 8.68218 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_21'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>6.9676 -2.94811 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_22'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>15.4346 -2.02199 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_27'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>11.3573 -2.26727 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_29'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>15.5288 8.74782 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_3'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>0.308524 -0.839967 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_30'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>2.12523 3.80475 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_32'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>5.55622 -2.53883 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_33'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>3.86494 -1.36281 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_37'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>0.271629 8.88692 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_4'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>1.21165 0.481628 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_40'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>9.00772 9.80732 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_41'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>14.7447 -0.224482 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_42'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>1.13132 -0.723509 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_44'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>12.163 7.62812 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_B_0.6_46'>
+        <include>
+          <uri>model://baggage_B_0.6</uri>
+          <pose>8.97728 9.22323 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_6'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>3.1779 2.80451 0.29976 0 -0 0</pose>
+          <pose>3.1779 2.80451 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_0.6_7'>
         <include>
           <uri>model://baggage_B_0.6</uri>
-          <pose>3.8292 3.98197 0.299785 0 -0 0</pose>
+          <pose>3.8292 3.98197 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_B_1.0_0'>
@@ -745,262 +745,262 @@
           <pose>7.82622 8.01382 0.500055 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.4_0'>
+      <model name='baggage_C_0.8_0'>
         <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>0.67024 9.97166 0.199519 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_11'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>7.1931 10.8223 0.199589 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_12'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>1.83663 2.37332 0.199895 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_13'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>2.18545 -2.1151 0.200014 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_16'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>13.1817 10.6982 0.199534 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_19'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>12.687 -0.817467 0.199788 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_23'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>12.1658 9.06728 0.200294 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_26'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>11.3432 -2.91135 0.200181 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_27'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>4.44483 11.2187 0.200216 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_3'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>4.38771 8.94769 0.200449 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_31'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>13.8104 -1.1755 0.199826 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_32'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>7.82062 10.5494 0.200393 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_34'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>4.59136 -3.50974 0.200428 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_37'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>0.721212 10.9146 0.199671 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_39'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>3.69611 8.5958 0.200462 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_4'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>12.8194 -2.02279 0.20014 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_43'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>5.15866 -0.59211 0.199723 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_44'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>5.02547 3.40263 0.199954 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_46'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>4.6947 2.49389 0.200389 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_6'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>2.5571 8.00022 0.200219 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_7'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>4.22993 10.6812 0.200395 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.4_8'>
-        <include>
-          <uri>model://baggage_C_0.4</uri>
-          <pose>1.0985 -1.26565 0.200424 0 -0 0</pose>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>0.67024 9.97166 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_11'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>5.09871 0.27381 0.399961 0 -0 0</pose>
+          <pose>7.1931 10.8223 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_12'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>1.49957 8.77355 0.400255 0 -0 0</pose>
+          <pose>1.83663 2.37332 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_13'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>8.38068 -0.123605 0.399764 0 -0 0</pose>
+          <pose>2.18545 -2.1151 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_16'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>3.04707 8.63248 0.400328 0 -0 0</pose>
+          <pose>13.1817 10.6982 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_17'>
+      <model name='baggage_C_0.8_19'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>2.98237 -2.35114 0.399738 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.8_2'>
-        <include>
-          <uri>model://baggage_C_0.8</uri>
-          <pose>0.251174 -2.13466 0.399809 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.8_22'>
-        <include>
-          <uri>model://baggage_C_0.8</uri>
-          <pose>5.79786 10.6121 0.400058 0 -0 0</pose>
+          <pose>12.687 -0.817467 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_23'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>3.48413 -0.650264 0.399701 0 -0 0</pose>
+          <pose>12.1658 9.06728 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_24'>
+      <model name='baggage_C_0.8_26'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>0.458139 8.24668 0.400286 0 -0 0</pose>
+          <pose>11.3432 -2.91135 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_27'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>4.44483 11.2187 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_3'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>14.5319 -1.9921 0.399594 0 -0 0</pose>
+          <pose>4.38771 8.94769 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_30'>
+      <model name='baggage_C_0.8_31'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>11.5021 9.09537 0.400131 0 -0 0</pose>
+          <pose>13.8104 -1.1755 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_35'>
+      <model name='baggage_C_0.8_32'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>2.34677 7.21517 0.400317 0 -0 0</pose>
+          <pose>7.82062 10.5494 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_34'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>4.59136 -3.50974 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_37'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>0.639687 9.54214 0.39974 0 -0 0</pose>
+          <pose>0.721212 10.9146 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_38'>
+      <model name='baggage_C_0.8_39'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>7.35564 9.08985 0.400355 0 -0 0</pose>
+          <pose>3.69611 8.5958 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_4'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>14.4851 10.4356 0.400043 0 -0 0</pose>
+          <pose>12.8194 -2.02279 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_40'>
+      <model name='baggage_C_0.8_43'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>5.93377 9.54354 0.399757 0 -0 0</pose>
+          <pose>5.15866 -0.59211 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_41'>
+      <model name='baggage_C_0.8_44'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>4.39698 7.69332 0.399892 0 -0 0</pose>
+          <pose>5.02547 3.40263 0.4 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_C_0.8_47'>
+      <model name='baggage_C_0.8_46'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>4.48116 -0.075645 0.399805 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_C_0.8_48'>
-        <include>
-          <uri>model://baggage_C_0.8</uri>
-          <pose>3.94324 2.70346 0.39978 0 -0 0</pose>
+          <pose>4.6947 2.49389 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_6'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>4.43262 3.71279 0.400264 0 -0 0</pose>
+          <pose>2.5571 8.00022 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_7'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>4.22993 10.6812 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_0.8_8'>
         <include>
           <uri>model://baggage_C_0.8</uri>
-          <pose>5.02203 8.05738 0.400342 0 -0 0</pose>
+          <pose>1.0985 -1.26565 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_11'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>5.09871 0.27381 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_12'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>1.49957 8.77355 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_13'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>8.38068 -0.123605 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_16'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>3.04707 8.63248 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_17'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>2.98237 -2.35114 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_2'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>0.251174 -2.13466 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_22'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>5.79786 10.6121 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_23'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>3.48413 -0.650264 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_24'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>0.458139 8.24668 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_3'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>14.5319 -1.9921 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_30'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>11.5021 9.09537 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_35'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>2.34677 7.21517 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_37'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>0.639687 9.54214 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_38'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>7.35564 9.08985 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_4'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>14.4851 10.4356 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_40'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>5.93377 9.54354 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_41'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>4.39698 7.69332 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_47'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>4.48116 -0.075645 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_48'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>3.94324 2.70346 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_6'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>4.43262 3.71279 0.4 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_C_0.8_8'>
+        <include>
+          <uri>model://baggage_C_0.8</uri>
+          <pose>5.02203 8.05738 0.4 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_C_1.2_0'>
@@ -1111,226 +1111,226 @@
           <pose>0.076079 10.4911 0.599693 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_D_0.2_0'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>5.66705 9.14027 0.100375 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_14'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>1.5681 5.09902 0.100451 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_17'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>7.52064 -1.39829 0.10043 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_19'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>4.20957 9.48197 0.100262 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_21'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>4.78388 -2.56624 0.099559 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_22'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>4.44588 -0.761704 0.100003 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_25'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>2.8609 3.46273 0.100219 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_27'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>13.4598 -2.05495 0.100484 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_30'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>6.01113 -0.668914 0.100323 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_35'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>1.95729 -1.6682 0.100359 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_36'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>12.6639 -0.244234 0.0996 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_37'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>15.9971 -1.28407 0.099552 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_42'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>3.16733 4.00028 0.100411 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_46'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>2.60264 0.825864 0.100323 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_48'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>12.2063 9.59457 0.10011 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_5'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>11.6362 10.8191 0.099978 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_6'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>5.60831 7.95334 0.099958 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.2_8'>
-        <include>
-          <uri>model://baggage_D_0.2</uri>
-          <pose>3.57898 10.6701 0.099856 0 -0 0</pose>
-        </include>
-      </model>
       <model name='baggage_D_0.6_0'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>8.99784 10.4889 0.299775 0 -0 0</pose>
+          <pose>5.66705 9.14027 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_D_0.6_13'>
+      <model name='baggage_D_0.6_14'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>13.7269 9.24225 0.299662 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.6_15'>
-        <include>
-          <uri>model://baggage_D_0.6</uri>
-          <pose>15.9252 -0.833163 0.300212 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.6_16'>
-        <include>
-          <uri>model://baggage_D_0.6</uri>
-          <pose>11.6849 10.1892 0.299607 0 -0 0</pose>
+          <pose>1.5681 5.09902 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_0.6_17'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>13.3317 -3.19474 0.300314 0 -0 0</pose>
+          <pose>7.52064 -1.39829 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_D_0.6_18'>
+      <model name='baggage_D_0.6_19'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>6.64758 8.91608 0.300092 0 -0 0</pose>
+          <pose>4.20957 9.48197 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_0.6_21'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>13.2627 7.96183 0.300099 0 -0 0</pose>
+          <pose>4.78388 -2.56624 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_0.6_22'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>14.4676 7.61269 0.299868 0 -0 0</pose>
+          <pose>4.44588 -0.761704 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_D_0.6_23'>
+      <model name='baggage_D_0.6_25'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>0.349058 -1.61401 0.29984 0 -0 0</pose>
+          <pose>2.8609 3.46273 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_D_0.6_24'>
+      <model name='baggage_D_0.6_27'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>2.58241 -0.388441 0.300023 0 -0 0</pose>
+          <pose>13.4598 -2.05495 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_D_0.6_33'>
+      <model name='baggage_D_0.6_30'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>2.10819 -2.70419 0.300221 0 -0 0</pose>
+          <pose>6.01113 -0.668914 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_35'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>1.95729 -1.6682 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_0.6_36'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>11.949 7.57628 0.300152 0 -0 0</pose>
+          <pose>12.6639 -0.244234 0.3 0 -0 0</pose>
         </include>
       </model>
-      <model name='baggage_D_0.6_38'>
+      <model name='baggage_D_0.6_37'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>13.3282 -2.64765 0.30021 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.6_40'>
-        <include>
-          <uri>model://baggage_D_0.6</uri>
-          <pose>13.4 -0.667796 0.300278 0 -0 0</pose>
+          <pose>15.9971 -1.28407 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_0.6_42'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>15.3391 9.23297 0.299526 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.6_43'>
-        <include>
-          <uri>model://baggage_D_0.6</uri>
-          <pose>15.7547 8.27735 0.299717 0 -0 0</pose>
-        </include>
-      </model>
-      <model name='baggage_D_0.6_45'>
-        <include>
-          <uri>model://baggage_D_0.6</uri>
-          <pose>15.094 -1.36219 0.300219 0 -0 0</pose>
+          <pose>3.16733 4.00028 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_0.6_46'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>3.47383 -1.98751 0.300335 0 -0 0</pose>
+          <pose>2.60264 0.825864 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_48'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>12.2063 9.59457 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_5'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>11.6362 10.8191 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_6'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>5.60831 7.95334 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_8'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>3.57898 10.6701 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_0'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>8.99784 10.4889 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_13'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>13.7269 9.24225 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_15'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>15.9252 -0.833163 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_16'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>11.6849 10.1892 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_17'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>13.3317 -3.19474 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_18'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>6.64758 8.91608 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_21'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>13.2627 7.96183 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_22'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>14.4676 7.61269 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_23'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>0.349058 -1.61401 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_24'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>2.58241 -0.388441 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_33'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>2.10819 -2.70419 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_36'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>11.949 7.57628 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_38'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>13.3282 -2.64765 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_40'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>13.4 -0.667796 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_42'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>15.3391 9.23297 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_43'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>15.7547 8.27735 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_45'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>15.094 -1.36219 0.3 0 -0 0</pose>
+        </include>
+      </model>
+      <model name='baggage_D_0.6_46'>
+        <include>
+          <uri>model://baggage_D_0.6</uri>
+          <pose>3.47383 -1.98751 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_0.6_7'>
         <include>
           <uri>model://baggage_D_0.6</uri>
-          <pose>5.98966 9.936 0.300101 0 -0 0</pose>
+          <pose>5.98966 9.936 0.3 0 -0 0</pose>
         </include>
       </model>
       <model name='baggage_D_1.0_1'>

@@ -6,14 +6,15 @@
          <collision name="collision">
             <geometry>
                <box>
-                  <size>2 2.5 1.5</size>
+                  <size>2 2.5 0.75</size>
                </box>
             </geometry>
          </collision>
          <visual name="visual">
+            <cast_shadows>false</cast_shadows>
             <geometry>
                <box>
-                  <size>2 2.5 1.5</size>
+                  <size>2 2.5 0.75</size>
                </box>
             </geometry>
             <material>

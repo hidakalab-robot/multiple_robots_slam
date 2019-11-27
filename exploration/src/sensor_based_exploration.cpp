@@ -36,6 +36,7 @@ int main(int argc, char *argv[]){
     while(ros::ok()){
         branchTimer() && sbe.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
         if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
+        ros::spinOnce();
     }
 
     ROS_INFO_STREAM("exploration finish !! -> time : " << ros::Duration(ros::Time::now()-start).toSec() << " [s]");

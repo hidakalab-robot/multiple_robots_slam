@@ -9,36 +9,44 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <exploration_libraly/utility.hpp>
+#include <dynamic_reconfigure/server.h>
+#include <exploration_support/frontier_detection_parameter_reconfigureConfig.h>
+#include <fstream>
 
+namespace ExStc = ExpLib::Struct;
+namespace ExUtl = ExpLib::Utility;
+namespace ExCos = ExpLib::Construct;
 
-// frontier を検出して座標をトピックに出す機能だけつける
-// 出力型 frontier pointarray posearray ?
-// frontier 型 だけだして convert で変換を任せる ?
-// map を読んでコールバックするだけ
 class FrontierDetection
 {
 private:
+    // dynamic parameters
+    double CLUSTER_TOLERANCE;
+    int MIN_CLUSTER_SIZE;
+    int MAX_CLUSTER_SIZE;
+    float FILTER_SQUARE_DIAMETER;
+
+    // static parameters
+    std::string FRONTIER_PARAMETER_FILE_PATH;
+    bool OUTPUT_FRONTIER_PARAMETERS;
+
+    // struct
     struct mapStruct{
         nav_msgs::MapMetaData info;
         std::vector<std::vector<int8_t>> source;
         std::vector<std::vector<int8_t>> horizon;
         std::vector<std::vector<int8_t>> frontierMap;
         mapStruct(const nav_msgs::OccupancyGrid& m)
-            :source(m.info.width,std::vector<int8_t>(m.info.height))
+            :source(ExUtl::mapArray1dTo2d(m.data,m.info))
             ,horizon(m.info.width,std::vector<int8_t>(m.info.height,0))
             ,frontierMap(m.info.width,std::vector<int8_t>(m.info.height,0)){
-                
             info = m.info;
-            for(int y=0,k=0,ey=info.height;y!=ey;++y){
-                for(int x=0,ex=info.width;x!=ex;++x,++k){
-                    source[x][y] = m.data[k];
-                }
-            }
         };
     };
-
     struct clusterStruct{
-        std::vector<Eigen::Vector3i> index;
+        std::vector<Eigen::Vector2i> index;
+        std::vector<int> isObstacle;
         std::vector<double> areas;
         std::vector<Eigen::Vector2d> variances;
         std::vector<double> covariance;
@@ -46,9 +54,9 @@ private:
         pcl::PointCloud<pcl::PointXYZ>::Ptr pc;
 
         clusterStruct():pc(new pcl::PointCloud<pcl::PointXYZ>){};
-
         clusterStruct(const clusterStruct& cs)
             :index(cs.index)
+            ,isObstacle(cs.isObstacle)
             ,areas(cs.areas)
             ,variances(cs.variances)
             ,covariance(cs.covariance)
@@ -57,46 +65,44 @@ private:
         
         void reserve(int size){
             index.reserve(size);
+            isObstacle.reserve(size);
             areas.reserve(size);
             variances.reserve(size);
             covariance.reserve(size);
         }
     };
 
-    float FILTER_SQUARE_DIAMETER;
-    double CLUSTER_TOLERANCE;
-    int MIN_CLUSTER_SIZE;
-    int MAX_CLUSTER_SIZE;
+    // variables
+    ExStc::subStructSimple map_;
+    ExStc::pubStruct<exploration_msgs::FrontierArray> frontier_;
+    ExStc::pubStruct<sensor_msgs::PointCloud2> horizon_;
+    dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig> drs_;
 
-    ExpLib::Struct::subStructSimple map_;
-    ExpLib::Struct::pubStruct<exploration_msgs::FrontierArray> frontier_;
-    ExpLib::Struct::pubStruct<sensor_msgs::PointCloud2> horizon_;
+    // functions
     void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
     void horizonDetection(mapStruct& map);
     clusterStruct clusterDetection(const mapStruct& map);
-    void obstacleFilter(mapStruct& map,std::vector<Eigen::Vector3i>& index);
-    Eigen::Vector3i coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info);
-    geometry_msgs::Point arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info);
-
+    void obstacleFilter(mapStruct& map,clusterStruct& cs);
     void publishHorizon(const clusterStruct& cs, const std::string& frameId);
     void publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId);
-    
+    void loadParams(void);
+    void dynamicParamsCB(exploration_support::frontier_detection_parameter_reconfigureConfig &cfg, uint32_t level);
+    void outputParams(void);
 
 public:
     FrontierDetection();
+    ~FrontierDetection(){if(OUTPUT_FRONTIER_PARAMETERS) outputParams();};
 };
 
 FrontierDetection::FrontierDetection()
     :map_("map", 1, &FrontierDetection::mapCB, this)
-    ,frontier_("frontier",1)
-    ,horizon_("horizon",1){
-    
-    ros::NodeHandle p("~");
-    p.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);
-    p.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
-    p.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 30);
-    p.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000); 
+    ,frontier_("frontier",1,true)
+    ,horizon_("horizon",1,true)
+    ,drs_(ros::NodeHandle("~/frontier")){
+    loadParams();
+    drs_.setCallback(boost::bind(&FrontierDetection::dynamicParamsCB,this, _1, _2));
 }
+
 
 void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     // map の取り込み
@@ -104,7 +110,7 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     horizonDetection(map);
 
     clusterStruct cluster(clusterDetection(map));
-    obstacleFilter(map,cluster.index);
+    obstacleFilter(map,cluster);
 
     if(cluster.index.size() == 0){
         ROS_INFO_STREAM("Frontier Do Not Found");
@@ -117,8 +123,9 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     frontiers.reserve(cluster.index.size());
 
     for(int i=0,e=cluster.index.size();i!=e;++i){
-        if(cluster.index[i].z() == 0) continue;
-        frontiers.emplace_back(ExpLib::Construct::msgFrontier(arrayToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExpLib::Construct::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
+        // if(cluster.index[i].z() == 0) continue;
+        if(cluster.isObstacle[i] == 0) continue;
+        frontiers.emplace_back(ExCos::msgFrontier(ExUtl::mapIndexToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExCos::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
     }
 
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
@@ -154,7 +161,7 @@ FrontierDetection::clusterStruct FrontierDetection::clusterDetection(const mapSt
     points.reserve(map.info.height*map.info.width);
     for(int y=0,ey=map.info.height;y!=ey;++y){
         for(int x=0,ex=map.info.width;x!=ex;++x){
-            if(map.horizon[x][y] == 1) points.emplace_back(arrayToCoordinate(x,y,map.info));
+            if(map.horizon[x][y] == 1) points.emplace_back(ExUtl::mapIndexToCoordinate(x,y,map.info));
         }
     }
 
@@ -210,7 +217,8 @@ FrontierDetection::clusterStruct FrontierDetection::clusterDetection(const mapSt
 
         cs.variances.emplace_back(variance);
         cs.covariance.emplace_back(covariance/sqrt(variance.x())/sqrt(variance.y()));
-        cs.index.emplace_back(coordinateToArray(std::move(centroid),map.info));
+        cs.index.emplace_back(ExUtl::coordinateToMapIndex(std::move(centroid),map.info));
+        cs.isObstacle.emplace_back(1);
         Eigen::Vector2d diff(max-min);
         cs.areas.emplace_back(std::abs(diff.x()*diff.y()));
     }
@@ -218,7 +226,7 @@ FrontierDetection::clusterStruct FrontierDetection::clusterDetection(const mapSt
     return cs;
 }
 
-void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,std::vector<Eigen::Vector3i>& index){
+void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,clusterStruct& cs){
     ROS_INFO_STREAM("Obstacle Filter");
     
     //add obstacle cell
@@ -228,29 +236,17 @@ void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,std::ve
         }
     }
 
-    int FILTER_HALF_CELL = (FILTER_SQUARE_DIAMETER / map.info.resolution) / 2.0;
-
-    if(FILTER_HALF_CELL < 1){
-        ROS_ERROR_STREAM("FILTER_SQUARE_DIAMETER is Bad");
-        return;
-    }
-
-    for(auto&& i : index){
-        if(map.frontierMap[i.x()][i.y()] == 100){
-            i.z() = 0;
+    for(int i=0,ie=cs.index.size();i!=ie;++i){
+        if(map.frontierMap[cs.index[i].x()][cs.index[i].y()] == 100){
+            cs.isObstacle[i] = 0;
             continue;
         }
-
-        int LEFT = i.x()-FILTER_HALF_CELL < 0 ? i.x() : FILTER_HALF_CELL;
-        int RIGHT = i.x()+FILTER_HALF_CELL > map.info.width-1 ? (map.info.width-1)-i.x() : FILTER_HALF_CELL;
-        int TOP = i.y()-FILTER_HALF_CELL < 0 ? i.y() : FILTER_HALF_CELL;
-        int BOTTOM = i.y()+FILTER_HALF_CELL > map.info.height-1 ? (map.info.height-1)-i.y() : FILTER_HALF_CELL;
-
-        for(int y=i.y()-TOP,ey=i.y()+BOTTOM+1;y!=ey;++y){
-            for(int x=i.x()-LEFT,ex=i.x()+RIGHT+1;x!=ex;++x){
+        ExStc::mapSearchWindow msw(cs.index[i].x(),cs.index[i].y(),map.info.width,map.info.height,FILTER_SQUARE_DIAMETER);
+        for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+            for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
                 if(map.frontierMap[x][y] == 100){//障害部があったら終了
-                    map.frontierMap[i.x()][i.y()] = 0;
-                    i.z() = 0;
+                    map.frontierMap[cs.index[i].x()][cs.index[i].y()] = 0;
+                    cs.isObstacle[i] = 0;
                     x = ex -1;//ラムダで関数作ってreturnで終わっても良いかも
                     y = ey -1;
                 }
@@ -260,24 +256,17 @@ void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,std::ve
     ROS_INFO_STREAM("Obstacle Filter complete");
 }
 
-geometry_msgs::Point FrontierDetection::arrayToCoordinate(int indexX,int indexY,const nav_msgs::MapMetaData& info){
-    return ExpLib::Construct::msgPoint(info.resolution * indexX + info.origin.position.x,info.resolution * indexY + info.origin.position.y);
-}
-
-Eigen::Vector3i FrontierDetection::coordinateToArray(const Eigen::Vector2d& coordinate,const nav_msgs::MapMetaData& info){
-    return Eigen::Vector3i((coordinate.x()-info.origin.position.x)/info.resolution,(coordinate.y()-info.origin.position.y)/info.resolution,1);
-}
-
 void FrontierDetection::publishHorizon(const clusterStruct& cs, const std::string& frameId){
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr colorCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     colorCloud->points.reserve(cs.pc->points.size());
     float colors[12][3] ={{255,0,0},{0,255,0},{0,0,255},{255,255,0},{0,255,255},{255,0,255},{127,255,0},{0,127,255},{127,0,255},{255,127,0},{0,255,127},{255,0,127}};
     int i=0;
     for (std::vector<pcl::PointIndices>::const_iterator it = cs.indices.begin (); it != cs.indices.end (); ++it,++i){
-        if(cs.index[i].z()==0) continue;
+        // if(cs.index[i].z()==0) continue;
+        if(cs.isObstacle[i]==0) continue;
         int c = i%12;
         for (std::vector<int>::const_iterator pit = it->indices.begin (); pit != it->indices.end (); ++pit){
-            colorCloud -> points.emplace_back(ExpLib::Construct::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
+            colorCloud -> points.emplace_back(ExCos::pclXYZRGB(cs.pc->points[*pit].x,cs.pc->points[*pit].y,0.0f,colors[c][0],colors[c][1],colors[c][2]));
         }
     }
     colorCloud -> width = colorCloud -> points.size();
@@ -300,4 +289,39 @@ void FrontierDetection::publishFrontier(const std::vector<exploration_msgs::Fron
     frontier_.pub.publish(msg);
     ROS_INFO_STREAM("Publish frontier");
 }
+
+void FrontierDetection::loadParams(void){
+    ros::NodeHandle nh("~/frontier");
+    // dynamic parameters
+    nh.param<double>("cluster_tolerance", CLUSTER_TOLERANCE, 0.15);
+    nh.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 30);
+    nh.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
+    nh.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);
+    // static parameters
+    nh.param<std::string>("frontier_parameter_file_path",FRONTIER_PARAMETER_FILE_PATH,"frontier_last_parameters.yaml");
+    nh.param<bool>("output_frontier_parameters",OUTPUT_FRONTIER_PARAMETERS,true);
+}
+
+void FrontierDetection::dynamicParamsCB(exploration_support::frontier_detection_parameter_reconfigureConfig &cfg, uint32_t level){
+    CLUSTER_TOLERANCE = cfg.cluster_tolerance;
+    MIN_CLUSTER_SIZE = cfg.min_cluster_size;
+    MAX_CLUSTER_SIZE = cfg.max_cluster_size;
+    FILTER_SQUARE_DIAMETER = cfg.filter_square_diameter;
+}
+
+void FrontierDetection::outputParams(void){
+    std::cout << "writing frontier last parameters ... ..." << std::endl;
+    std::ofstream ofs(FRONTIER_PARAMETER_FILE_PATH);
+
+    if(ofs) std::cout << "frontier param file open succeeded" << std::endl;
+    else {
+        std::cout << "frontier param file open failed" << std::endl;
+        return;
+    }
+
+    ofs << "cluster_tolerance: " << CLUSTER_TOLERANCE << std::endl;
+    ofs << "min_cluster_size: " << MIN_CLUSTER_SIZE << std::endl;
+    ofs << "max_cluster_size: " << MAX_CLUSTER_SIZE << std::endl;
+    ofs << "filter_square_diameter: " << FILTER_SQUARE_DIAMETER << std::endl;
+ }
 #endif //FRONTIER_DETECTION_HPP

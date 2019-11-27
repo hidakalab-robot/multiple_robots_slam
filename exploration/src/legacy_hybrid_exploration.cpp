@@ -47,6 +47,7 @@ int main(int argc, char* argv[]){
             if(!loop.q.callOne(ros::WallDuration(0.5)) && loop.data.data >= LOOP_COUNT_THRESHOLD) break;
             branchTimer() && sbe.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : mv.moveToForward();
             if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
+            ros::spinOnce();
         }
     }
 
@@ -58,6 +59,7 @@ int main(int argc, char* argv[]){
         while(ros::ok()){
             if(fbe.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
             if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
+            ros::spinOnce();
         }
     }
 

@@ -14,10 +14,21 @@
 #include <thread>
 
 //複数台のロボットの情報を管理する
-//
+namespace ExStc = ExpLib::Struct;
+namespace ExCos = ExpLib::Construct;
+namespace ExCov = ExpLib::Convert;
+
 class RobotManager
 {
 private:
+    // static parameters
+    std::string ROBOT_TOPIC;
+    double RAGISTRATION_RATE;
+    double CONVERT_RATE;
+    double POSE_LOG_INTERVAL;
+    std::string INDIVISUAL_POSE_LOG_TOPIC;
+
+    // struct
     struct robotStruct{
         std::mutex mutex;
         std::string name;
@@ -27,43 +38,42 @@ private:
         ros::Publisher pub;
     };
 
-    ros::NodeHandle nhs_;
+    // variables
+    ExStc::pubStruct<exploration_msgs::RobotInfoArray> robotArray_;
+    ExStc::pubStruct<exploration_msgs::PoseStampedArray> poseArray_; 
+    // ros::NodeHandle nhs_;
     boost::shared_mutex robotListMutex_;
     std::forward_list<robotStruct> robotList_;
-
-    std::string ROBOT_TOPIC;
-    double RAGISTRATION_RATE;
-    double CONVERT_RATE;
-    double POSE_LOG_INTERVAL;
-    std::string INDIVISUAL_POSE_LOG_TOPIC;
-
-    ExpLib::Struct::pubStruct<exploration_msgs::RobotInfoArray> robotArray_;
-    ExpLib::Struct::pubStruct<exploration_msgs::PoseStampedArray> poseArray_; 
-
     exploration_msgs::PoseStampedArray allPoseLog_;
 
+    // functions
     void robotRegistration(void);//ロボットの情報を登録
     void update(const geometry_msgs::PoseStamped::ConstPtr& msg, RobotManager::robotStruct& robot); // データの更新
     bool isRobotTopic(const ros::master::TopicInfo& topic);
     void convertPoseToRobotInfo(void);//publish用のデータに整形
     void registrationLoop(void);
     void convertLoop(void);
+    void loadParams(void);
+
 public:
     RobotManager();
     void multiThreadMain(void);
 };
 
-RobotManager::RobotManager():robotArray_("robot_array",1,true),poseArray_("pose_log/merge",1,true){
-    ros::NodeHandle p("~");
-    p.param<std::string>("robot_topic",ROBOT_TOPIC,"pose");//globalのポーズを撮ってこないと厳しい
-    p.param<double>("ragistration_rate", RAGISTRATION_RATE, 0.5);
-    p.param<double>("convert_rate", CONVERT_RATE, 1.0);
+RobotManager::RobotManager()
+    :robotArray_("robot_array",1,true)
+    ,poseArray_("pose_log/merge",1,true){
+}
 
-    double POSE_LOG_RATE;
-    p.param<double>("pose_log_rate",POSE_LOG_RATE,10.0);
-    POSE_LOG_INTERVAL = 1/POSE_LOG_RATE;
-
-    p.param<std::string>("indivisual_pose_log_topic",INDIVISUAL_POSE_LOG_TOPIC,"pose_log");
+void RobotManager::multiThreadMain(void){
+    ROS_INFO_STREAM("start threads\n");
+    ros::spinOnce();
+    std::thread registrationThread([this]{registrationLoop();});
+    std::thread convertThread([this]{convertLoop();});
+    ros::spin();
+    registrationThread.join();
+    convertThread.join();//スレッドの終了を待つ??
+    ROS_INFO_STREAM("end main loop\n");
 }
 
 void RobotManager::robotRegistration(void){
@@ -99,8 +109,10 @@ void RobotManager::robotRegistration(void){
                 ROS_DEBUG_STREAM("registrationThread << edit list");
                 std::lock_guard<std::mutex> lock(robot.mutex);
                 robot.name = robotName;
-                robot.sub = nhs_.subscribe<geometry_msgs::PoseStamped>(topic.name, 1, [this, &robot](const geometry_msgs::PoseStamped::ConstPtr& msg) {update(msg, robot);});
-                robot.pub = nhs_.advertise<exploration_msgs::PoseStampedArray>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
+                // robot.sub = nhs_.subscribe<geometry_msgs::PoseStamped>(topic.name, 1, [this, &robot](const geometry_msgs::PoseStamped::ConstPtr& msg) {update(msg, robot);});
+                // robot.pub = nhs_.advertise<exploration_msgs::PoseStampedArray>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
+                robot.sub = ros::NodeHandle().subscribe<geometry_msgs::PoseStamped>(topic.name, 1, [this, &robot](const geometry_msgs::PoseStamped::ConstPtr& msg) {update(msg, robot);});
+                robot.pub = ros::NodeHandle().advertise<exploration_msgs::PoseStampedArray>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
             }
         }
     }
@@ -137,9 +149,8 @@ void RobotManager::convertPoseToRobotInfo(void){
         std::lock_guard<boost::shared_mutex> bLock(robotListMutex_);
         for(auto&& robot : robotList_){
             std::lock_guard<std::mutex> lock(robot.mutex);
-            double yaw = ExpLib::Convert::qToYaw(robot.pose.pose.orientation);
-            // ria.info.emplace_back(ExpLib::Construct::msgRobotInfo(robot.name,robot.pose,robot.pose.pose.position,ExpLib::Construct::msgVector(cos(yaw),sin(yaw))));
-            ria.info.emplace_back(ExpLib::Construct::msgRobotInfo(robot.name,robot.pose.pose));
+            double yaw = ExCov::qToYaw(robot.pose.pose.orientation);
+            ria.info.emplace_back(ExCos::msgRobotInfo(robot.name,robot.pose.pose));
         }
     }
     ria.header.stamp = ros::Time::now();
@@ -162,15 +173,16 @@ void RobotManager::convertLoop(void){
     }
 }
 
-void RobotManager::multiThreadMain(void){
-    ROS_INFO_STREAM("start threads\n");
-    ros::spinOnce();
-    std::thread registrationThread([this]{registrationLoop();});
-    std::thread convertThread([this]{convertLoop();});
-    ros::spin();
-    registrationThread.join();
-    convertThread.join();//スレッドの終了を待つ??
-    ROS_INFO_STREAM("end main loop\n");
+void RobotManager::loadParams(void){
+    ros::NodeHandle nh("~");
+    // static parameters
+    nh.param<std::string>("robot_topic",ROBOT_TOPIC,"pose");//globalのポーズを撮ってこないと厳しい
+    nh.param<double>("ragistration_rate", RAGISTRATION_RATE, 0.5);
+    nh.param<double>("convert_rate", CONVERT_RATE, 1.0);
+    double POSE_LOG_RATE;
+    nh.param<double>("pose_log_rate",POSE_LOG_RATE,10.0);
+    POSE_LOG_INTERVAL = 1/POSE_LOG_RATE;
+    nh.param<std::string>("indivisual_pose_log_topic",INDIVISUAL_POSE_LOG_TOPIC,"pose_log");
 }
 
 #endif // ROBOT_MANAGER
