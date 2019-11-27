@@ -106,6 +106,25 @@ Visualization::Visualization()
     rm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
 }
 
+void Visualization::multiThreadMain(void){
+    ROS_INFO_STREAM("start threads\n");
+    ros::spinOnce();
+    std::thread ppThread([this]() { posePathPublisher(); });
+    std::thread gmThread([this]() { goalMarkerPublisher(); });
+    std::thread bmThread([this]() { branchMarkerPublisher(); });
+    std::thread fmThread([this]() { frontierMarkerPublisher(); });
+    std::thread ufmThread([this]() { useFroMarkerPublisher(); });
+    std::thread rmThread([this]() { roadMarkerPublisher(); });
+    ros::spin();
+    ppThread.join();//スレッドの終了を待つ
+    gmThread.join();
+    bmThread.join();
+    fmThread.join();
+    ufmThread.join();
+    rmThread.join();
+    ROS_INFO_STREAM("end main loop\n");
+}
+
 void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
     pp_.poses.push_back(*msg);
     pp_.header.frame_id = msg->header.frame_id;
@@ -217,25 +236,6 @@ void Visualization::roadMarkerPublisher(void){
         roadMarker_.pub.publish(rm_);
         rate.sleep();
     }
-}
-
-void Visualization::multiThreadMain(void){
-    ROS_INFO_STREAM("start threads\n");
-    ros::spinOnce();
-    std::thread ppThread([this]() { posePathPublisher(); });
-    std::thread gmThread([this]() { goalMarkerPublisher(); });
-    std::thread bmThread([this]() { branchMarkerPublisher(); });
-    std::thread fmThread([this]() { frontierMarkerPublisher(); });
-    std::thread ufmThread([this]() { useFroMarkerPublisher(); });
-    std::thread rmThread([this]() { roadMarkerPublisher(); });
-    ros::spin();
-    ppThread.join();//スレッドの終了を待つ
-    gmThread.join();
-    bmThread.join();
-    fmThread.join();
-    ufmThread.join();
-    rmThread.join();
-    ROS_INFO_STREAM("end main loop\n");
 }
 
 void Visualization::loadParams(void){

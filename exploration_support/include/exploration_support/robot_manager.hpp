@@ -66,6 +66,17 @@ RobotManager::RobotManager()
     loadParams();
 }
 
+void RobotManager::multiThreadMain(void){
+    ROS_INFO_STREAM("start threads\n");
+    ros::spinOnce();
+    std::thread registrationThread([this]{registrationLoop();});
+    std::thread convertThread([this]{convertLoop();});
+    ros::spin();
+    registrationThread.join();
+    convertThread.join();//スレッドの終了を待つ??
+    ROS_INFO_STREAM("end main loop\n");
+}
+
 void RobotManager::robotRegistration(void){
     ros::master::V_TopicInfo topicList;
     ros::master::getTopics(topicList);
@@ -161,17 +172,6 @@ void RobotManager::convertLoop(void){
         convertPoseToRobotInfo();
         rate.sleep();
     }
-}
-
-void RobotManager::multiThreadMain(void){
-    ROS_INFO_STREAM("start threads\n");
-    ros::spinOnce();
-    std::thread registrationThread([this]{registrationLoop();});
-    std::thread convertThread([this]{convertLoop();});
-    ros::spin();
-    registrationThread.join();
-    convertThread.join();//スレッドの終了を待つ??
-    ROS_INFO_STREAM("end main loop\n");
 }
 
 void RobotManager::loadParams(void){
