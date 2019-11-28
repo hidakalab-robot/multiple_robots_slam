@@ -221,7 +221,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
 void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
-    ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
+    // ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
 
     if(!bumper_.q.callOne(ros::WallDuration(1)) && bumperCollision(bumper_.data)) return; // 障害物に接触してないか確認
     
