@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Marker1/Namespaces1
+        - /PoseArray1
       Splitter Ratio: 0.501440942
     Tree Height: 452
   - Class: rviz/Selection
@@ -355,6 +356,31 @@ Visualization Manager:
         "": true
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /robot1/rtabmap/labels
+      Name: MarkerArray
+      Namespaces:
+        ids: true
+        labels: true
+      Queue Size: 100
+      Value: true
+    - Alpha: 1
+      Arrow Length: 0.5
+      Axes Length: 0.300000012
+      Axes Radius: 0.00999999978
+      Class: rviz/PoseArray
+      Color: 255; 170; 0
+      Enabled: true
+      Head Length: 0.0700000003
+      Head Radius: 0.0299999993
+      Name: PoseArray
+      Shaft Length: 0.230000004
+      Shaft Radius: 0.00999999978
+      Shape: Arrow (Flat)
+      Topic: /robot1/rtabmap/landmarks
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -379,7 +405,7 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: -0.00499998219
+      Angle: 0
       Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
