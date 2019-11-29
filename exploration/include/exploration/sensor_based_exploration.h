@@ -1,5 +1,5 @@
-#ifndef SENSOR_BASED_EXPLORATION_HPP
-#define SENSOR_BASED_EXPLORATION_HPP
+#ifndef SENSOR_BASED_EXPLORATION_H
+#define SENSOR_BASED_EXPLORATION_H
 
 #include <ros/ros.h>
 #include <exploration_libraly/struct.h>
@@ -49,4 +49,4 @@ public:
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
-#endif // SENSOR_BASED_EXPLORATION_HPP
+#endif // SENSOR_BASED_EXPLORATION_H

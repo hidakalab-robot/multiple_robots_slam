@@ -1,5 +1,5 @@
-#include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/utility.hpp>
+#include <exploration_libraly/struct.h>
+#include <exploration_libraly/utility.h>
 #include <laser_geometry/laser_geometry.h>
 #include <message_filters/subscriber.h>
 #include <message_filters/sync_policies/approximate_time.h>

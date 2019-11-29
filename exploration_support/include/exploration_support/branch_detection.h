@@ -1,5 +1,5 @@
-#ifndef BRANCH_DETECTION_HPP
-#define BRANCH_DETECTION_HPP
+#ifndef BRANCH_DETECTION_H
+#define BRANCH_DETECTION_H
 
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/struct.h>
@@ -49,4 +49,4 @@ public:
     ~BranchDetection();
 };
 
-#endif // BRANCH_DETECTION_HPP
+#endif // BRANCH_DETECTION_H

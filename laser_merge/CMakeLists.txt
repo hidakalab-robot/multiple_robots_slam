@@ -202,5 +202,5 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(laser_merge src/laser_merge.cpp)
+add_executable(laser_merge src/laser_merge_node.cpp)
 target_link_libraries(laser_merge ${catkin_LIBRARIES})

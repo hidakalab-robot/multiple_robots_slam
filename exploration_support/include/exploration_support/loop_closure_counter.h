@@ -1,5 +1,5 @@
-#ifndef LOOP_CLOSURE_COUNTER_HPP
-#define LOOP_CLOSURE_COUNTER_HPP
+#ifndef LOOP_CLOSURE_COUNTER_H
+#define LOOP_CLOSURE_COUNTER_H
 
 #include <ros/ros.h>
 #include <tf/transform_listener.h>

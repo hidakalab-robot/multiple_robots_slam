@@ -1,5 +1,5 @@
-#ifndef CONVERT_HPP
-#define CONVERT_HPP
+#ifndef CONVERT_H
+#define CONVERT_H
 
 #include <geometry_msgs/Quaternion.h>
 #include <Eigen/Geometry>
@@ -56,4 +56,4 @@ Eigen::Quaterniond geoQuaToEigenQua(const geometry_msgs::Quaternion &gq);
 } // namespace Convert
 } // namespace ExpLib
 
-#endif // CONVERT_HPP
+#endif // CONVERT_H

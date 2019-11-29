@@ -1,5 +1,5 @@
-#ifndef SEAMLESS_HYBRID_EXPLORATION_HPP
-#define SEAMLESS_HYBRID_EXPLORATION_HPP
+#ifndef SEAMLESS_HYBRID_EXPLORATION_H
+#define SEAMLESS_HYBRID_EXPLORATION_H
 
 #include <ros/ros.h>
 #include <exploration/sensor_based_exploration.h>
@@ -75,4 +75,4 @@ public:
     void simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f);
 };
 
-#endif // SEAMLESS_HYBRID_EXPLORATION_HPP
+#endif // SEAMLESS_HYBRID_EXPLORATION_H

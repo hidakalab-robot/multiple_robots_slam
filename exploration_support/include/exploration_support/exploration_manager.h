@@ -1,6 +1,6 @@
 //探査の終了条件を判断する
-#ifndef EXPLORATION_MANAGER_HPP
-#define EXPLORATION_MANAGER_HPP
+#ifndef EXPLORATION_MANAGER_H
+#define EXPLORATION_MANAGER_H
 
 #include <exploration_libraly/struct.h>
 #include <exploration_libraly/construct.h>
@@ -55,4 +55,4 @@ public:
     void multiThreadMain(void);
 };
 
-#endif //EXPLORATION_MANAGER_HPP
+#endif //EXPLORATION_MANAGER_H

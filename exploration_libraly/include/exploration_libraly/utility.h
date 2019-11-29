@@ -1,5 +1,5 @@
-#ifndef UTILITY_HPP
-#define UTILITY_HPP
+#ifndef UTILITY_H
+#define UTILITY_H
 
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/convert.h>
@@ -43,4 +43,4 @@ double shorterRotationAngle(const geometry_msgs::Quaternion& orig, const geometr
 
 }
 }
-#endif // UTILITY_HPP
+#endif // UTILITY_H

@@ -1,6 +1,6 @@
 //topicのpublishレートを上げる(中間を埋めるだけ)
-#ifndef CONTINUITY_HPP
-#define CONTINUITY_HPP
+#ifndef CONTINUITY_H
+#define CONTINUITY_H
 
 #include <exploration_libraly/struct.h>
 #include <ros/ros.h>
@@ -19,4 +19,4 @@ public:
     void publishNow(void);
 };
 
-#endif //CONTINUITY_HPP
+#endif //CONTINUITY_H

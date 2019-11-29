@@ -1,5 +1,5 @@
-#ifndef MULTI_EXPLORATION_SIMULATOR_HPP
-#define MULTI_EXPLORATION_SIMULATOR_HPP
+#ifndef MULTI_EXPLORATION_SIMULATOR_H
+#define MULTI_EXPLORATION_SIMULATOR_H
 
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
@@ -47,4 +47,4 @@ public:
     void updateParams(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
 };
 
-#endif // MULTI_EXPLORATION_SIMULATOR_HPP
+#endif // MULTI_EXPLORATION_SIMULATOR_H

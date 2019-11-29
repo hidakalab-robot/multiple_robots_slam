@@ -1,5 +1,5 @@
-#ifndef FRONTIER_DETECTION_HPP
-#define FRONTIER_DETECTION_HPP
+#ifndef FRONTIER_DETECTION_H
+#define FRONTIER_DETECTION_H
 
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/struct.h>

@@ -1,5 +1,5 @@
-#ifndef MOVEMENT_HPP
-#define MOVEMENT_HPP
+#ifndef MOVEMENT_H
+#define MOVEMENT_H
 
 #include <ros/ros.h>
 #include <exploration_libraly/struct.h>
@@ -119,4 +119,4 @@ public:
     void oneRotation(void);
 };
 
-#endif //MOVEMENT_HPP
+#endif //MOVEMENT_H

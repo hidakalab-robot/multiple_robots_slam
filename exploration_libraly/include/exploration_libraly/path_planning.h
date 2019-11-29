@@ -1,5 +1,5 @@
-#ifndef PATH_PLANNING_HPP
-#define PATH_PLANNING_HPP
+#ifndef PATH_PLANNING_H
+#define PATH_PLANNING_H
 
 #include <costmap_2d/costmap_2d_ros.h>
 #include <Eigen/Geometry>
@@ -61,4 +61,4 @@ public:
 };
 }
 
-#endif //PATH_PLANNING_HPP
+#endif //PATH_PLANNING_H

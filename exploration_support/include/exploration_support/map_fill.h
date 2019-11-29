@@ -1,5 +1,5 @@
-#ifndef MAP_FILL_HPP
-#define MAP_FILL_HPP
+#ifndef MAP_FILL_H
+#define MAP_FILL_H
 
 #include <exploration_libraly/struct.h>
 #include <nav_msgs/OccupancyGrid.h>

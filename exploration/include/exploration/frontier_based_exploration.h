@@ -1,5 +1,5 @@
-#ifndef FRONTIER_BASED_EXPLORATION_HPP
-#define FRONTIER_BASED_EXPLORATION_HPP
+#ifndef FRONTIER_BASED_EXPLORATION_H
+#define FRONTIER_BASED_EXPLORATION_H
 
 #include <ros/ros.h>
 #include <exploration_libraly/struct.h>
@@ -43,4 +43,4 @@ public:
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
-#endif // FRONTIER_BASED_EXPLORATION_HPP
+#endif // FRONTIER_BASED_EXPLORATION_H

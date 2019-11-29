@@ -1,5 +1,5 @@
-#ifndef VISUALIZATION_HPP
-#define VISUALIZATION_HPP
+#ifndef VISUALIZATION_H
+#define VISUALIZATION_H
 
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/struct.h>
@@ -84,4 +84,4 @@ public:
     void multiThreadMain(void);
 };
 
-#endif //VISUALIZATION_HPP
+#endif //VISUALIZATION_H

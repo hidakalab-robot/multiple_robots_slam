@@ -1,5 +1,5 @@
-#ifndef ENUM_HPP
-#define ENUM_HPP
+#ifndef ENUM_H
+#define ENUM_H
 
 namespace ExpLib
 {
@@ -12,4 +12,4 @@ enum class DuplicationStatus{
 };
 }
 }
-#endif // ENUM_HPP
+#endif // ENUM_H

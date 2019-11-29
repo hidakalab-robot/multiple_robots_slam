@@ -1,5 +1,5 @@
-#ifndef ROBOT_MANAGER
-#define ROBOT_MANAGER
+#ifndef ROBOT_MANAGER_H
+#define ROBOT_MANAGER_H
 
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/convert.h>
@@ -60,4 +60,4 @@ public:
     void multiThreadMain(void);
 };
 
-#endif // ROBOT_MANAGER
+#endif // ROBOT_MANAGER_H

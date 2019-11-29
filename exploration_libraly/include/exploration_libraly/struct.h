@@ -1,5 +1,5 @@
-#ifndef STRUCT_HPP
-#define STRUCT_HPP
+#ifndef STRUCT_H
+#define STRUCT_H
 
 #include <exploration_libraly/enum.h>
 #include <exploration_libraly/utility.h>
@@ -81,4 +81,4 @@ struct mapSearchWindow{// 中心の座標, マップの大きさ, 窓の大き�
 
 }
 }
-#endif // STRUCT_HPP
+#endif // STRUCT_H
