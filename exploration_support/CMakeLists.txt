@@ -214,13 +214,13 @@ include_directories(
 # catkin_add_nosetests(test)
 
 add_library(libcontinuity src/continuity.cpp)
-target_link_libraries(libcontinuity ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(libcontinuity ${catkin_LIBRARIES})
 
 add_executable(visualization 
  src/visualization_node.cpp
  src/visualization.cpp
 )
-target_link_libraries(visualization ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(visualization ${catkin_LIBRARIES})
 
 add_executable(bumper_continuity 
   src/bumper_continuity_node.cpp
@@ -228,13 +228,12 @@ add_executable(bumper_continuity
 target_link_libraries(bumper_continuity
  ${catkin_LIBRARIES}
  libcontinuity
- ${exploration_libraly_LIBRARIES}
 )
 
 add_executable(movebase_canceller
  src/movebase_canceller_node.cpp
 )
-target_link_libraries(movebase_canceller ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(movebase_canceller ${catkin_LIBRARIES})
 
 add_executable(map_fill
  src/map_fill_node.cpp
@@ -244,7 +243,6 @@ add_dependencies(map_fill ${PROJECT_NAME}_gencfg)
 target_link_libraries(map_fill
  ${catkin_LIBRARIES}
  ${OpenCV_LIBRARIES}
- exploration_libraly
 )
 
 add_executable(exploration_manager
@@ -252,34 +250,34 @@ add_executable(exploration_manager
  src/exploration_manager.cpp
 )
 add_dependencies(exploration_manager ${PROJECT_NAME}_gencfg)
-target_link_libraries(exploration_manager ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(exploration_manager ${catkin_LIBRARIES})
 
 add_executable(robot_manager
  src/robot_manager_node.cpp
  src/robot_manager.cpp
 )
-target_link_libraries(robot_manager ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(robot_manager ${catkin_LIBRARIES})
 
 add_executable(frontier_detection
  src/frontier_detection_node.cpp
  src/frontier_detection.cpp
 )
 add_dependencies(frontier_detection ${PROJECT_NAME}_gencfg)
-target_link_libraries(frontier_detection ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(frontier_detection ${catkin_LIBRARIES})
 
 add_executable(branch_detection
  src/branch_detection_node.cpp
  src/branch_detection.cpp
 )
 add_dependencies(branch_detection ${PROJECT_NAME}_gencfg)
-target_link_libraries(branch_detection ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(branch_detection ${catkin_LIBRARIES})
 
 add_executable(loop_closure_counter
  src/loop_closure_counter_node.cpp
  src/loop_closure_counter.cpp
 )
 add_dependencies(loop_closure_counter ${PROJECT_NAME}_gencfg)
-target_link_libraries(loop_closure_counter ${catkin_LIBRARIES} ${exploration_libraly_LIBRARIES})
+target_link_libraries(loop_closure_counter ${catkin_LIBRARIES})
 
 add_executable(map_continuity
  src/map_continuity_node.cpp
@@ -287,5 +285,4 @@ add_executable(map_continuity
 target_link_libraries(map_continuity
  ${catkin_LIBRARIES}
  libcontinuity
- ${exploration_libraly_LIBRARIES}
 )
