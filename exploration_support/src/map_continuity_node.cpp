@@ -1,4 +1,4 @@
-#include <exploration_support/continuity.hpp>
+#include <exploration_support/continuity.h>
 #include <nav_msgs/OccupancyGrid.h>
 
 int main(int argc, char *argv[]){

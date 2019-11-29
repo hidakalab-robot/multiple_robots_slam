@@ -1,4 +1,4 @@
-#include <exploration_support/continuity.hpp>
+#include <exploration_support/continuity.h>
 #include <kobuki_msgs/BumperEvent.h>
 
 int main(int argc, char *argv[]){

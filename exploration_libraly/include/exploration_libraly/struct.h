@@ -1,8 +1,8 @@
 #ifndef STRUCT_HPP
 #define STRUCT_HPP
 
-#include <exploration_libraly/enum.hpp>
-#include <exploration_libraly/utility.hpp>
+#include <exploration_libraly/enum.h>
+#include <exploration_libraly/utility.h>
 #include <geometry_msgs/Point.h>
 #include <ros/callback_queue.h>
 #include <ros/ros.h>

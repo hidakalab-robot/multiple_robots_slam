@@ -1,8 +1,8 @@
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
 
-#include <exploration_libraly/construct.hpp>
-#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/construct.h>
+#include <exploration_libraly/convert.h>
 #include <tf/transform_listener.h>
 #include <nav_msgs/OccupancyGrid.h>
 

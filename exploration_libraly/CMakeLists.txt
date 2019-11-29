@@ -109,7 +109,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES exploration_libraly
+  LIBRARIES exploration_libraly
   CATKIN_DEPENDS costmap_2d exploration_msgs geometry_msgs pcl_ros roscpp std_msgs tf
 #  DEPENDS system_lib
 )
@@ -204,11 +204,11 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_library(libexploration_libraly 
+add_library(exploration_libraly 
   src/construct.cpp
   src/convert.cpp
   src/path_planning.cpp
   src/struct.cpp
   src/utility.cpp
 )
-target_link_libraries(libexploration_libraly ${catkin_LIBRARIES})
+target_link_libraries(exploration_libraly ${catkin_LIBRARIES})

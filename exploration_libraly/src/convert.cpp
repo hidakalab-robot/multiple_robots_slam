@@ -1,7 +1,7 @@
 #ifndef CONVERT_HPP
 #define CONVERT_HPP
 
-#include <exploration_library/convert.h>
+#include <exploration_libraly/convert.h>
 #include <geometry_msgs/Quaternion.h>
 #include <Eigen/Geometry>
 #include <pcl_ros/point_cloud.h>

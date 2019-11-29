@@ -1,4 +1,4 @@
-#include <exploration_library/construct.hpp>
+#include <exploration_libraly/construct.h>
 #include <exploration_msgs/Frontier.h>
 #include <exploration_msgs/RobotInfo.h>
 #include <geometry_msgs/Point.h>
@@ -14,7 +14,7 @@ namespace ExpLib
 {
 namespace Construct
 {
-geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0){
+geometry_msgs::Point msgPoint(double x,double y,double z){
     geometry_msgs::Point msg;
     msg.x = x;
     msg.y = y;
@@ -29,7 +29,7 @@ geometry_msgs::Pose msgPose(const geometry_msgs::Point& p, const geometry_msgs::
     return msg;
 }
 
-geometry_msgs::Vector3 msgVector(double x=0,double y=0,double z=0){
+geometry_msgs::Vector3 msgVector(double x,double y,double z){
     geometry_msgs::Vector3 msg;
     msg.x = x;
     msg.y = y;
@@ -37,14 +37,14 @@ geometry_msgs::Vector3 msgVector(double x=0,double y=0,double z=0){
     return msg;
 }
 
-geometry_msgs::Twist msgTwist(double x=0,double z=0){
+geometry_msgs::Twist msgTwist(double x,double z){
     geometry_msgs::Twist msg;
     msg.linear.x = x;
     msg.angular.z = z;
     return msg;
 }
 
-std_msgs::Bool msgBool(bool b=true){
+std_msgs::Bool msgBool(bool b){
     std_msgs::Bool msg;
     msg.data = b;
     return msg;
@@ -111,7 +111,7 @@ std::vector<T> oneFactorVector(const T& factor){
     return v;
 }
 
-visualization_msgs::Marker msgCubeListMarker(const std::string& frame_id, const double scale=0.5, const float r=1.0, const float g=0.0, const float b=0.0, const float a=1.0){
+visualization_msgs::Marker msgCubeListMarker(const std::string& frame_id, const double scale, const float r, const float g, const float b, const float a){
     visualization_msgs::Marker m;
     m.header.frame_id = frame_id;
     m.pose.orientation.w = 1.0;

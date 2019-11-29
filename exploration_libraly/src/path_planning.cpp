@@ -1,4 +1,4 @@
-#include <exploration_library/path_planning.h>
+#include <exploration_libraly/path_planning.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <Eigen/Geometry>
 #include <geometry_msgs/PoseStamped.h>
@@ -35,40 +35,46 @@ In source file
 
 namespace ExpLib
 {
-PathPlanning::PathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
+template<typename T>
+PathPlanning<T>::PathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
     ros::NodeHandle p("~");
     p.param<double>("path_to_vector_ratio", PATH_TO_VECTOR_RATIO, 0.5);
     planner.initialize("path_planner",&gcr);
     ros::spinOnce();
 }
 
-PathPlanning::PathPlanning(const std::string& costmapName, const std::string& plannerName):tfl(ros::Duration(10)),gcr(costmapName, tfl){
+template<typename T>
+PathPlanning<T>::PathPlanning(const std::string& costmapName, const std::string& plannerName):tfl(ros::Duration(10)),gcr(costmapName, tfl){
     planner.initialize(plannerName,&gcr);
     ros::spinOnce();
 }
 
-bool PathPlanning::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal){
+template<typename T>
+bool PathPlanning<T>::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal){
     ros::spinOnce();
     std::vector<geometry_msgs::PoseStamped> plan;
     return planner.makePlan(start,goal,plan);
 }
-
-bool PathPlanning::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
+template<typename T>
+bool PathPlanning<T>::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan){
     ros::spinOnce();
     return planner.makePlan(start,goal,plan);
 }
 
-bool PathPlanning::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map){//only voronoi
+template<typename T>
+bool PathPlanning<T>::createPath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan, nav_msgs::OccupancyGrid& map){//only voronoi
     ros::spinOnce();
     return planner.makePlan(start,goal,plan,map);
 }
 
-void PathPlanning::getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, std::vector<geometry_msgs::PoseStamped>& plan){
+template<typename T>
+void PathPlanning<T>::getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, std::vector<geometry_msgs::PoseStamped>& plan){
     distance = 0;
     for(int i=1,ie=plan.size();i!=ie;++i) distance += Eigen::Vector2d(plan[i].pose.position.x - plan[i-1].pose.position.x, plan[i].pose.position.y - plan[i-1].pose.position.y).norm();
 }
 
-bool PathPlanning::getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance){
+template<typename T>
+bool PathPlanning<T>::getDistance(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance){
     ros::spinOnce();
     std::vector<geometry_msgs::PoseStamped> plan;
     // ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");        // if(createPath(start,goal,plan)){
@@ -84,7 +90,8 @@ bool PathPlanning::getDistance(const geometry_msgs::PoseStamped& start, const ge
     return false;
 }
 
-void PathPlanning::getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec, std::vector<geometry_msgs::PoseStamped>& plan){
+template<typename T>
+void PathPlanning<T>::getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec, std::vector<geometry_msgs::PoseStamped>& plan){
     // 方法変更
     // for(int i=plan.size()-2,ie=-1;i!=ie;--i){
     //     if(plan[i].pose.position.x != plan[plan.size()-1].pose.position.x || plan[i].pose.position.y != plan[plan.size()-1].pose.position.y){
@@ -103,7 +110,8 @@ void PathPlanning::getVec(const geometry_msgs::PoseStamped& start, const geometr
     vec = Eigen::Vector2d(plan[b].pose.position.x - plan[a].pose.position.x, plan[b].pose.position.y - plan[a].pose.position.y).normalized();
 }
 
-bool PathPlanning::getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec){
+template<typename T>
+bool PathPlanning<T>::getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec){
     ros::spinOnce();
     std::vector<geometry_msgs::PoseStamped> plan;
     // ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");        // if(createPath(start,goal,plan)){
@@ -116,7 +124,8 @@ bool PathPlanning::getVec(const geometry_msgs::PoseStamped& start, const geometr
     return false;
 }
 
-bool PathPlanning::getDistanceAndVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, Eigen::Vector2d& vec){
+template<typename T>
+bool PathPlanning<T>::getDistanceAndVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, Eigen::Vector2d& vec){
     ros::spinOnce();
     std::vector<geometry_msgs::PoseStamped> plan;
     // ROS_INFO_STREAM("start : (" << start.pose.position.x << ", " << start.pose.position.y << ", " << start.header.frame_id << ") , goal : (" << goal.pose.position.x << ", " << goal.pose.position.y <<  ", " << start.header.frame_id << ")");
@@ -139,5 +148,3 @@ bool PathPlanning::getDistanceAndVec(const geometry_msgs::PoseStamped& start, co
 }
 
 }
-
-#endif //PATH_PLANNING_HPP

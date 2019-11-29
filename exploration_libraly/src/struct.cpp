@@ -15,8 +15,8 @@ subStruct<T>::subStruct(const std::string& topic,uint32_t queue_size){
     n.setCallbackQueue(&q);
     sub = n.subscribe<T>(topic, queue_size, [this](const boost::shared_ptr<const T>& msg) {data = *msg;});//データをコピーするコールバック関数を自動生成
 }
-
-template <typename T,class U,typename V>
+template <typename T>
+template <class U,typename V>
 subStruct<T>::subStruct(const std::string& topic,uint32_t queue_size, void(U::*fp)(V), U* obj){
     n.setCallbackQueue(&q);
     sub = n.subscribe(topic,queue_size,fp,obj);
@@ -33,7 +33,7 @@ subStructSimple::subStructSimple(const std::string& topic,uint32_t queue_size, v
 }
 
 template<typename T>
-pubStruct<T>::pubStruct(const std::string& topic,uint32_t queue_size,bool latch=false){
+pubStruct<T>::pubStruct(const std::string& topic,uint32_t queue_size,bool latch){
     pub = n.advertise<T>(topic, queue_size, latch);
 }
 
@@ -48,14 +48,14 @@ listStruct::listStruct():duplication(Enum::DuplicationStatus::NOT_DUPLECATION){}
 listStruct::listStruct(const geometry_msgs::Point& p):point(p),duplication(Enum::DuplicationStatus::NOT_DUPLECATION){};
 
 
-mapSearchWindow::mapSearchWindow(const geometry_msgs::Point& cc, const nav_msgs::MapMetaData& info, double lx, double ly=0.0){ // cc : 検索窓の中心座標, info : 地図のメタデータ, lx,ly : 検索窓の辺の長さ(m)
+mapSearchWindow::mapSearchWindow(const geometry_msgs::Point& cc, const nav_msgs::MapMetaData& info, double lx, double ly){ // cc : 検索窓の中心座標, info : 地図のメタデータ, lx,ly : 検索窓の辺の長さ(m)
     if(lx < info.resolution) lx = info.resolution;
     if(ly ==  0.0) ly = lx;
     else if(ly < info.resolution) ly = info.resolution;
     Eigen::Vector2i index(ExpLib::Utility::coordinateToMapIndex(cc,info));
     calcWindowSize(index.x(),index.y(),info.width, info.height, lx/info.resolution, ly/info.resolution);
 }
-mapSearchWindow::mapSearchWindow(const int cx, const int cy, const int mx, const int my, int lx, int ly=0){ // cx,cy : 検索窓の中心の二次元配列インデックス, mx,my : 地図の辺の長さ(cell), lx,ly : 検索窓の辺の長さ(cell)
+mapSearchWindow::mapSearchWindow(const int cx, const int cy, const int mx, const int my, int lx, int ly){ // cx,cy : 検索窓の中心の二次元配列インデックス, mx,my : 地図の辺の長さ(cell), lx,ly : 検索窓の辺の長さ(cell)
     if(lx < 1) lx = 1;
     if(ly == 0) ly = lx;
     else if(ly<  1) ly = 1;
