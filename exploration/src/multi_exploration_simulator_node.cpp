@@ -1,5 +1,5 @@
-#include <exploration/multi_exploration_simulator.hpp> // 必須
-#include <exploration/seamless_hybrid_exploration.hpp> // SeamlessHybrid sh(pp);　用
+#include <exploration/multi_exploration_simulator.h> // 必須
+#include <exploration/seamless_hybrid_exploration.h> // SeamlessHybrid sh(pp);　用
 
 int main(int argc, char* argv[]){
     /**
