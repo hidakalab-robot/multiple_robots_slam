@@ -1,6 +1,6 @@
 #include <exploration/sensor_based_exploration.h>
-#include <exploration_libraly/enum.hpp>
-#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/enum.h>
+#include <exploration_libraly/convert.h>
 #include <Eigen/Geometry>
 #include <fstream>
 
@@ -16,6 +16,10 @@ SensorBasedExploration::SensorBasedExploration()
     ,drs_(ros::NodeHandle("~/sensor_based_exploration")){
     loadParams();
     drs_.setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
+}
+
+SensorBasedExploration::~SensorBasedExploration(){
+    if(OUTPUT_SBE_PARAMETERS) outputParams();
 }
 
 bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){

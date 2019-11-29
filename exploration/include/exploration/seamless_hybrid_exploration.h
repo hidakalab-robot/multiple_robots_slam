@@ -3,8 +3,8 @@
 
 #include <ros/ros.h>
 #include <exploration/sensor_based_exploration.h>
-#include <exploration_libraly/struct.hpp>
-#include <exploration_libraly/path_planning.hpp>
+#include <exploration_libraly/struct.h>
+#include <exploration_libraly/path_planning.h>
 #include <exploration_msgs/FrontierArray.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <navfn/navfn_ros.h>
@@ -32,18 +32,18 @@ private:
     struct maxValue{
         double distance;
         double angle;
-        maxValue():distance(-DBL_MAX),angle(-DBL_MAX){};
+        maxValue();
     };
     struct preCalcResult{
         struct value{
             double distance;
             double angle;
-            value(){};
-            value(const double d, const double a):distance(d),angle(a){};
+            value();
+            value(const double d, const double a);
         };
         geometry_msgs::Point point;
         std::vector<value> values;
-        preCalcResult(){};
+        preCalcResult();
     };
 
     // variables
@@ -71,7 +71,7 @@ private:
 
 public:
     SeamlessHybridExploration();
-    ~SeamlessHybridExploration(){if(OUTPUT_SHE_PARAMETERS) outputParams();};
+    ~SeamlessHybridExploration();
     void simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f);
 };
 

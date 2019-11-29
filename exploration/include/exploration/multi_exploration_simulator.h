@@ -4,7 +4,7 @@
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration/multi_exploration_simulatorConfig.h>
-#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/struct.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/PoseArray.h>
 #include <visualization_msgs/Marker.h>
@@ -43,7 +43,6 @@ private:
 
 public:
     MultiExplorationSimulator();
-    // ~MultiExplorationSimulator(){if(OUTPUT_MULSIM_PARAMETERS) outputParams();};
     ~MultiExplorationSimulator();
     void updateParams(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn);
 };

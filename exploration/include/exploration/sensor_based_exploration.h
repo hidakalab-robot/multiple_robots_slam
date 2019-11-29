@@ -2,7 +2,7 @@
 #define SENSOR_BASED_EXPLORATION_HPP
 
 #include <ros/ros.h>
-#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/struct.h>
 #include <exploration_msgs/PointArray.h>
 #include <exploration_msgs/PoseStampedArray.h>
 #include <geometry_msgs/PointStamped.h>
@@ -45,7 +45,7 @@ protected:
 
 public:
     SensorBasedExploration();
-    virtual ~SensorBasedExploration(){if(OUTPUT_SBE_PARAMETERS) outputParams();};
+    virtual ~SensorBasedExploration();
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 

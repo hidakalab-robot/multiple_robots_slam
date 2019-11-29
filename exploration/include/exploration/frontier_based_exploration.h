@@ -2,7 +2,7 @@
 #define FRONTIER_BASED_EXPLORATION_HPP
 
 #include <ros/ros.h>
-#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/struct.h>
 #include <exploration_msgs/FrontierArray.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
@@ -39,7 +39,7 @@ private:
 
 public:
     FrontierBasedExploration();
-    ~FrontierBasedExploration(){if(OUTPUT_FBE_PARAMETERS) outputParams();};
+    ~FrontierBasedExploration();
     bool getGoal(geometry_msgs::PointStamped& goal);
 };
 

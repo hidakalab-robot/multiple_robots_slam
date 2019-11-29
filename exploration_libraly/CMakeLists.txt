@@ -206,5 +206,9 @@ include_directories(
 
 add_library(libexploration_libraly 
   src/construct.cpp
+  src/convert.cpp
+  src/path_planning.cpp
+  src/struct.cpp
+  src/utility.cpp
 )
 target_link_libraries(libexploration_libraly ${catkin_LIBRARIES})

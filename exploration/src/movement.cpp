@@ -1,7 +1,7 @@
 #include <exploration/movement.h>
 #include <actionlib/client/simple_action_client.h>
-#include <exploration_libraly/convert.hpp>
-#include <exploration_libraly/utility.hpp>
+#include <exploration_libraly/convert.h>
+#include <exploration_libraly/utility.h>
 #include <Eigen/Geometry>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <fstream>
@@ -24,6 +24,10 @@ Movement::Movement()
     ,drs_(ros::NodeHandle("~/movement")){
     loadParams();
     drs_.setCallback(boost::bind(&Movement::dynamicParamsCB,this, _1, _2));
+}
+
+Movement::~Movement(){
+    if(OUTPUT_MOVEMENT_PARAMETERS) outputParams();
 }
 
 void Movement::moveToGoal(geometry_msgs::PointStamped goal){

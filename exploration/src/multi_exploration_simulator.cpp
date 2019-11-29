@@ -1,6 +1,6 @@
 #include <exploration/multi_exploration_simulator.h>
-#include <exploration_libraly/construct.hpp>
-#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/construct.h>
+#include <exploration_libraly/convert.h>
 #include <fstream>
 #include <string>
 

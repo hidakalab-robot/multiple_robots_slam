@@ -2,13 +2,13 @@
 #define MOVEMENT_HPP
 
 #include <ros/ros.h>
-#include <exploration_libraly/struct.hpp>
+#include <exploration_libraly/struct.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <kobuki_msgs/BumperEvent.h>
 #include <sensor_msgs/LaserScan.h>
-#include <exploration_libraly/path_planning.hpp>
+#include <exploration_libraly/path_planning.h>
 #include <navfn/navfn_ros.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration/movement_parameter_reconfigureConfig.h>
@@ -113,7 +113,7 @@ private:
 
 public:
     Movement();
-    ~Movement(){if(OUTPUT_MOVEMENT_PARAMETERS) outputParams();};
+    ~Movement();
     void moveToGoal(geometry_msgs::PointStamped goal);
     void moveToForward(void);
     void oneRotation(void);

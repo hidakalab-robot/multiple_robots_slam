@@ -1,8 +1,9 @@
 #ifndef UTILITY_HPP
 #define UTILITY_HPP
 
-#include <exploration_libraly/construct.hpp>
-#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/utility.h>
+#include <exploration_libraly/construct.h>
+#include <exploration_libraly/convert.h>
 #include <tf/transform_listener.h>
 #include <nav_msgs/OccupancyGrid.h>
 
@@ -11,7 +12,6 @@ namespace ExpLib
 namespace Utility
 {
 // destFrame から見た origFrame の座標を取得する // origFrame の座標を destFrame での座標に変換する
-template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p);
 
 template<> void coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Pose& p){
     tf::StampedTransform transform;
@@ -41,9 +41,6 @@ template<> geometry_msgs::Pose coordinateConverter2d(const tf::TransformListener
     return p;
 }
 
-template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p);
-template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, const geometry_msgs::Point& p);
-
 template<> void coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, geometry_msgs::Point& p){
     geometry_msgs::Pose ps = Convert::pointToPose(p);
     coordinateConverter2d<void>(l,destFrame,origFrame,ps);
@@ -55,8 +52,6 @@ template<> geometry_msgs::Point coordinateConverter2d(const tf::TransformListene
     coordinateConverter2d<void>(l,destFrame,origFrame,pl);
     return pl;
 }
-
-template <typename T> T coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, pcl::PointXYZ& p);
 
 template<> void coordinateConverter2d(const tf::TransformListener& l, const std::string& destFrame, const std::string& origFrame, pcl::PointXYZ& p){
     geometry_msgs::Pose ps = Convert::pointToPose(Convert::pclPointXYZToPoint(p));

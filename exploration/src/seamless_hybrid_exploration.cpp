@@ -1,10 +1,16 @@
 #include <exploration/seamless_hybrid_exploration.h>
-#include <exploration_libraly/convert.hpp>
+#include <exploration_libraly/convert.h>
 #include <fstream>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
+
+SeamlessHybridExploration::maxValue::maxValue():distance(-DBL_MAX),angle(-DBL_MAX){};
+
+SeamlessHybridExploration::preCalcResult::preCalcResult(){};
+SeamlessHybridExploration::preCalcResult::value::value(){};
+SeamlessHybridExploration::preCalcResult::value::value(const double d, const double a):distance(d),angle(a){};
 
 SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_("robot_array", 1)
@@ -14,6 +20,10 @@ SeamlessHybridExploration::SeamlessHybridExploration()
     ,drs_(ros::NodeHandle("~/seamless_hybrid_exploration")){
     loadParams();
     drs_.setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
+}
+
+SeamlessHybridExploration::~SeamlessHybridExploration(){
+    if(OUTPUT_SHE_PARAMETERS) outputParams();
 }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){

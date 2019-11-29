@@ -12,6 +12,10 @@ FrontierBasedExploration::FrontierBasedExploration()
     drs_.setCallback(boost::bind(&FrontierBasedExploration::dynamicParamsCB,this, _1, _2));
 }
 
+FrontierBasedExploration::~FrontierBasedExploration(){
+    if(OUTPUT_FBE_PARAMETERS) outputParams();
+}
+
 bool FrontierBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // 分岐の読み込み
     if(frontier_.q.callOne(ros::WallDuration(1)) || frontier_.data.frontiers.size()==0){
