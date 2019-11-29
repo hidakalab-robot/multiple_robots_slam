@@ -203,3 +203,8 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_library(libexploration_libraly 
+  src/construct.cpp
+)
+target_link_libraries(libexploration_libraly ${catkin_LIBRARIES})

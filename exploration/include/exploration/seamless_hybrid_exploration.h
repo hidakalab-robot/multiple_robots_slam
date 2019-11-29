@@ -2,7 +2,7 @@
 #define SEAMLESS_HYBRID_EXPLORATION_HPP
 
 #include <ros/ros.h>
-#include <exploration/sensor_based_exploration.hpp>
+#include <exploration/sensor_based_exploration.h>
 #include <exploration_libraly/struct.hpp>
 #include <exploration_libraly/path_planning.hpp>
 #include <exploration_msgs/FrontierArray.h>

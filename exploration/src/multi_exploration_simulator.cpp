@@ -20,6 +20,10 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     frontierCoordinates_ = ExCos::msgCubeListMarker(MAP_FRAME_ID,FRONTIER_SCALE,0.0,1.0,1.0);
 }
 
+MultiExplorationSimulator::~MultiExplorationSimulator(){
+    if(OUTPUT_MULSIM_PARAMETERS) outputParams();
+}
+
 void MultiExplorationSimulator::updateParams(std::function<void(std::vector<geometry_msgs::Pose>&, std::vector<geometry_msgs::Point>&, std::vector<geometry_msgs::Point>&)> fn){
     // resize array
     robotPoses_.poses.resize(ROBOT_NUMBER);

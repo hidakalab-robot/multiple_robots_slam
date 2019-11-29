@@ -1,5 +1,4 @@
-#ifndef ENUM_HPP
-#define ENUM_HPP
+#include <exploration_library/enum.h>
 
 namespace ExpLib
 {
@@ -12,5 +11,3 @@ enum class DuplicationStatus{
 };
 }
 }
-
-#endif // ENUM_HPP

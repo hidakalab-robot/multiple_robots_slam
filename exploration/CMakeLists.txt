@@ -216,10 +216,6 @@ add_library(libmovement src/movement.cpp)
 add_dependencies(libmovement ${PROJECT_NAME}_gencfg)
 target_link_libraries(libmovement ${catkin_LIBRARIES})
 
-add_library(libshe src/seamless_hybrid_exploration.cpp)
-add_dependencies(libshe ${PROJECT_NAME}_gencfg)
-target_link_libraries(libshe ${catkin_LIBRARIES})
-
 add_library(libsbe src/sensor_based_exploration.cpp)
 add_dependencies(libsbe ${PROJECT_NAME}_gencfg)
 target_link_libraries(libsbe ${catkin_LIBRARIES})
@@ -227,6 +223,10 @@ target_link_libraries(libsbe ${catkin_LIBRARIES})
 add_library(libfbe src/frontier_based_exploration.cpp)
 add_dependencies(libfbe ${PROJECT_NAME}_gencfg)
 target_link_libraries(libfbe ${catkin_LIBRARIES})
+
+add_library(libshe src/seamless_hybrid_exploration.cpp)
+add_dependencies(libshe ${PROJECT_NAME}_gencfg)
+target_link_libraries(libshe ${catkin_LIBRARIES} libsbe)
 
 # add_executable(sensor_based_exploration src/sensor_based_exploration_node.cpp)
 add_executable(sensor_based_exploration 
@@ -268,7 +268,7 @@ add_executable(multi_exploration_simulator
  src/multi_exploration_simulator_node.cpp
  src/multi_exploration_simulator.cpp
 )
-# add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
+add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
 target_link_libraries(multi_exploration_simulator
  ${catkin_LIBRARIES}
  libshe

@@ -1,6 +1,4 @@
-#ifndef CONSTRUCT_HPP
-#define CONSTRUCT_HPP
-
+#include <exploration_library/construct.hpp>
 #include <exploration_msgs/Frontier.h>
 #include <exploration_msgs/RobotInfo.h>
 #include <geometry_msgs/Point.h>
@@ -130,4 +128,3 @@ visualization_msgs::Marker msgCubeListMarker(const std::string& frame_id, const 
 
 }
 }
-#endif // CONSTRUCT_HPP
