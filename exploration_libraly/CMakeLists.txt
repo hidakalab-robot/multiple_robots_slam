@@ -170,6 +170,16 @@ include_directories(
 #   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
+
+add_library(exploration_libraly 
+  src/construct.cpp
+  src/convert.cpp
+  src/path_planning.cpp
+  src/struct.cpp
+  src/utility.cpp
+)
+target_link_libraries(exploration_libraly ${catkin_LIBRARIES})
+
 ## Mark executables and/or libraries for installation
 install(TARGETS 
   exploration_libraly
@@ -205,11 +215,3 @@ install(DIRECTORY include/${PROJECT_NAME}/
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_library(exploration_libraly 
-  src/construct.cpp
-  src/convert.cpp
-  src/path_planning.cpp
-  src/struct.cpp
-  src/utility.cpp
-)
-target_link_libraries(exploration_libraly ${catkin_LIBRARIES})
