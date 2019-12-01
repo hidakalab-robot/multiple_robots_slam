@@ -4,6 +4,12 @@
 #include <memory>
 
 // 前方宣言
+
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+/// my packages
 namespace ExpLib{
     namespace Struct{
         template<typename T>
@@ -11,22 +17,20 @@ namespace ExpLib{
         struct subStructSimple;
     }
 }
-namespace boost{
-    template<class T> 
-    class shared_ptr;
+namespace exploration_support{
+    class map_fill_parameter_reconfigureConfig;
 }
+/// ros
+namespace dynamic_reconfigure{
+    template <class ConfigType>
+    class Server;
+}
+/// rosmsgs
 namespace nav_msgs{
     template <class ContainerAllocator>
     struct OccupancyGrid_;
     typedef ::nav_msgs::OccupancyGrid_<std::allocator<void>> OccupancyGrid;
     typedef boost::shared_ptr< ::nav_msgs::OccupancyGrid const> OccupancyGridConstPtr;
-}
-namespace exploration_support{
-    class map_fill_parameter_reconfigureConfig;
-}
-namespace dynamic_reconfigure{
-    template <class ConfigType>
-    class Server;
 }
 // 前方宣言ここまで
 

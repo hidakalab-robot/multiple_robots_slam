@@ -1,10 +1,17 @@
 #ifndef ROBOT_MANAGER_H
 #define ROBOT_MANAGER_H
 
-#include <forward_list>
 #include <memory>
+#include <forward_list>
 
 // 前方宣言
+
+namespace boost{
+    class shared_mutex;
+    template<class T> 
+    class shared_ptr;
+}
+/// my packages
 namespace ExpLib{
     namespace Struct{
         template<typename T>
@@ -13,27 +20,24 @@ namespace ExpLib{
 }
 namespace exploration_msgs{
     template <class ContainerAllocator>
-    struct RobotInfoArray_;
-    typedef ::exploration_msgs::RobotInfoArray_<std::allocator<void>> RobotInfoArray;
-    template <class ContainerAllocator>
     struct PoseStampedArray_;
     typedef ::exploration_msgs::PoseStampedArray_<std::allocator<void>> PoseStampedArray;
+    template <class ContainerAllocator>
+    struct RobotInfoArray_;
+    typedef ::exploration_msgs::RobotInfoArray_<std::allocator<void>> RobotInfoArray;
 }
-namespace boost{
-    class shared_mutex;
-    template<class T> 
-    class shared_ptr;
+/// ros
+namespace ros{
+    namespace master{
+        struct TopicInfo;
+    }
 }
+/// rosmsgs
 namespace geometry_msgs{
     template <class ContainerAllocator>
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
     typedef boost::shared_ptr< ::geometry_msgs::PoseStamped const> PoseStampedConstPtr;
-}
-namespace ros{
-    namespace master{
-        struct TopicInfo;
-    }
 }
 // 前方宣言ここまで
 

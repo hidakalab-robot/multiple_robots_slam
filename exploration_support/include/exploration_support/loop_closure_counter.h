@@ -4,6 +4,8 @@
 #include <memory>
 
 // 前方宣言
+
+/// my packages
 namespace ExpLib{
     namespace Struct{
         template<typename T>
@@ -13,10 +15,12 @@ namespace ExpLib{
 namespace exploration_support{
     class loop_closure_counter_parameter_reconfigureConfig;
 }
+/// ros
 namespace dynamic_reconfigure{
     template <class ConfigType>
     class Server;
 }
+/// rosmsgs
 namespace std_msgs{
     template <class ContainerAllocator>
     struct Float64_;

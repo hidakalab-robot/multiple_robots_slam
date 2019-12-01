@@ -2,8 +2,8 @@
 #ifndef CONTINUITY_H
 #define CONTINUITY_H
 
-#include <exploration_libraly/struct.h>
 #include <ros/ros.h>
+#include <exploration_libraly/struct.h>
 
 namespace ExStc = ExpLib::Struct;
 template<typename T>

@@ -5,6 +5,11 @@
 #include <Eigen/Geometry>
 
 // 前方宣言
+/// ros
+namespace tf{
+    class Quaternion;
+}
+/// rosmsgs
 namespace geometry_msgs{
     template <class ContainerAllocator>
     struct Point_;
@@ -13,26 +18,24 @@ namespace geometry_msgs{
     struct PointStamped_;
     typedef ::geometry_msgs::PointStamped_<std::allocator<void>> PointStamped;
     template <class ContainerAllocator>
+    struct Pose_;
+    typedef ::geometry_msgs::Pose_<std::allocator<void>> Pose;
+    template <class ContainerAllocator>
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
     template <class ContainerAllocator>
     struct Quaternion_;
     typedef ::geometry_msgs::Quaternion_<std::allocator<void>> Quaternion;
     template <class ContainerAllocator>
-    struct Pose_;
-    typedef ::geometry_msgs::Pose_<std::allocator<void>> Pose;
+    struct Twist_;
+    typedef ::geometry_msgs::Twist_<std::allocator<void>> Twist; 
     template <class ContainerAllocator>
     struct Vector3_;
     typedef ::geometry_msgs::Vector3_<std::allocator<void>> Vector3;
-    template <class ContainerAllocator>
-    struct Twist_;
-    typedef ::geometry_msgs::Twist_<std::allocator<void>> Twist; 
 }
+/// others
 namespace pcl{
     struct PointXYZ;
-}
-namespace tf{
-    class Quaternion;
 }
 // 前方宣言ここまで
 

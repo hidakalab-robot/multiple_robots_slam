@@ -5,16 +5,16 @@
 #include <ros/callback_queue.h>
 #include <exploration_libraly/enum.h>
 #include <geometry_msgs/Point.h>
-#include <memory>
 #include <vector>
 
 // 前方宣言
+
+/// rosmsgs
 namespace nav_msgs{
     template <class ContainerAllocator>
     struct MapMetaData_;
     typedef ::nav_msgs::MapMetaData_<std::allocator<void>> MapMetaData;
 }
-
 // 前方宣言 ここまで
 
 namespace ExpLib{
@@ -36,7 +36,6 @@ namespace ExpLib{
                 sub = n.subscribe(topic,queue_size,fp,obj);
             };
         };
-
         struct subStructSimple{
             ros::NodeHandle n;
             ros::Subscriber sub;
@@ -50,12 +49,10 @@ namespace ExpLib{
                 sub = n.subscribe(topic,queue_size,fp);
             };
         };
-
         struct subStructStd{
             ros::NodeHandle n;
             ros::Subscriber sub;
         };
-
         template<typename T>
         struct pubStruct{
             ros::NodeHandle n;
@@ -64,12 +61,10 @@ namespace ExpLib{
                 pub = n.advertise<T>(topic, queue_size, latch);
             };
         };
-
         struct pubStructStd{
             ros::NodeHandle n;
             ros::Publisher pub;
         };
-
         struct scanStruct{
             std::vector<float> ranges;
             std::vector<float> angles;
@@ -78,14 +73,13 @@ namespace ExpLib{
 
             scanStruct(int size);
         };
-
         struct listStruct{
             geometry_msgs::Point point;
             Enum::DuplicationStatus duplication;
+
             listStruct();
             listStruct(const geometry_msgs::Point& p);
         };
-
         struct mapSearchWindow{// 中心の座標, マップの大きさ, 窓の大きさを引数に取って　窓の上下左右の要素番号を返す
             int top;
             int bottom;

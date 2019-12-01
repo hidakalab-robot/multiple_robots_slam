@@ -4,16 +4,18 @@
 #include <exploration/sensor_based_exploration.h>
 
 // 前方宣言
+
+/// my packages
 namespace ExpLib{
-    namespace Struct{
-        template<typename T>
-        struct subStruct;
-        template<typename T>
-        struct pubStruct;
-        struct listStruct;
-    }
     template <typename T>
     class PathPlanning;
+    namespace Struct{
+        struct listStruct;
+        template<typename T>
+        struct pubStruct;
+        template<typename T>
+        struct subStruct;
+    }
 }
 namespace exploration_msgs{
     template <class ContainerAllocator>
@@ -23,26 +25,28 @@ namespace exploration_msgs{
     struct RobotInfoArray_;
     typedef ::exploration_msgs::RobotInfoArray_<std::allocator<void>> RobotInfoArray;
 }
-namespace navfn{
-    class NavfnROS;
-}
 namespace exploration{
     class seamless_hybrid_exploration_parameter_reconfigureConfig;
 }
+/// ros
 namespace dynamic_reconfigure{
     template <class ConfigType>
     class Server;
 }
+namespace navfn{
+    class NavfnROS;
+}
+/// rosmsgs
 namespace geometry_msgs{
     template <class ContainerAllocator>
     struct Point_;
     typedef ::geometry_msgs::Point_<std::allocator<void>> Point;
     template <class ContainerAllocator>
-    struct Pose_;
-    typedef ::geometry_msgs::Pose_<std::allocator<void>> Pose;
-    template <class ContainerAllocator>
     struct PointStamped_;
     typedef ::geometry_msgs::PointStamped_<std::allocator<void>> PointStamped;
+    template <class ContainerAllocator>
+    struct Pose_;
+    typedef ::geometry_msgs::Pose_<std::allocator<void>> Pose;
     template <class ContainerAllocator>
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;

@@ -4,23 +4,30 @@
 #include <memory>
 
 // 前方宣言
+
+/// my packages
 namespace ExpLib{
-    namespace Struct{
-        template<typename T>
-        struct subStruct;
-        template<typename T>
-        struct pubStruct;
-    }
     template <typename T>
     class PathPlanning;
+    namespace Struct{
+        template<typename T>
+        struct pubStruct;
+        template<typename T>
+        struct subStruct;
+    }
 }
 namespace exploration{
     class movement_parameter_reconfigureConfig;
 }
+/// ros
 namespace dynamic_reconfigure{
     template <class ConfigType>
     class Server;
 }
+namespace navfn{
+    class NavfnROS;
+}
+/// rosmsgs
 namespace geometry_msgs{
     template <class ContainerAllocator>
     struct Point_;
@@ -32,16 +39,11 @@ namespace geometry_msgs{
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
     template <class ContainerAllocator>
-    struct Twist_;
-    typedef ::geometry_msgs::Twist_<std::allocator<void>> Twist;
-    template <class ContainerAllocator>
     struct Quaternion_;
     typedef ::geometry_msgs::Quaternion_<std::allocator<void>> Quaternion;
-}
-namespace sensor_msgs{
     template <class ContainerAllocator>
-    struct LaserScan_;
-    typedef ::sensor_msgs::LaserScan_<std::allocator<void>> LaserScan;
+    struct Twist_;
+    typedef ::geometry_msgs::Twist_<std::allocator<void>> Twist;
 }
 namespace kobuki_msgs{
     template <class ContainerAllocator>
@@ -53,8 +55,10 @@ namespace nav_msgs{
     struct OccupancyGrid_;
     typedef ::nav_msgs::OccupancyGrid_<std::allocator<void>> OccupancyGrid;
 }
-namespace navfn{
-    class NavfnROS;
+namespace sensor_msgs{
+    template <class ContainerAllocator>
+    struct LaserScan_;
+    typedef ::sensor_msgs::LaserScan_<std::allocator<void>> LaserScan;
 }
 // 前方宣言ここまで
 

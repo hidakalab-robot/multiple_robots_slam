@@ -5,22 +5,20 @@
 #include <vector>
 
 // 前方宣言
+
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+/// my packages
 namespace ExpLib{
     namespace Struct{
         template<typename T>
-        struct subStruct;
-        template<typename T>
         struct pubStruct;
+        template<typename T>
+        struct subStruct;
         struct subStructSimple;
     }
-}
-namespace geometry_msgs{
-    template <class ContainerAllocator>
-    struct Point_;
-    typedef ::geometry_msgs::Point_<std::allocator<void>> Point;
-    template <class ContainerAllocator>
-    struct PoseStamped_;
-    typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;     
 }
 namespace exploration_msgs{
     template <class ContainerAllocator>
@@ -30,13 +28,19 @@ namespace exploration_msgs{
 namespace exploration_support{
     class branch_detection_parameter_reconfigureConfig;
 }
+/// ros
 namespace dynamic_reconfigure{
     template <class ConfigType>
     class Server;
 }
-namespace boost{
-    template<class T> 
-    class shared_ptr;
+/// rosmsgs
+namespace geometry_msgs{
+    template <class ContainerAllocator>
+    struct Point_;
+    typedef ::geometry_msgs::Point_<std::allocator<void>> Point;
+    template <class ContainerAllocator>
+    struct PoseStamped_;
+    typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;     
 }
 namespace sensor_msgs{
     template <class ContainerAllocator>

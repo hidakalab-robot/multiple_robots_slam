@@ -4,7 +4,17 @@
 #include <memory>
 #include <vector>
 
-// 前方宣言(ヘッダー読み込み減らす用)
+// 前方宣言
+
+/// my packages
+namespace ExpLib{
+    namespace Struct{
+        template<typename T>
+        struct pubStruct;
+        template<typename T>
+        struct subStruct;
+    }
+}
 namespace exploration_msgs{
     template <class ContainerAllocator>
     struct Frontier_;
@@ -13,6 +23,15 @@ namespace exploration_msgs{
     struct FrontierArray_;
     typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
 }
+namespace exploration{
+    class frontier_based_exploration_parameter_reconfigureConfig;
+}
+/// ros
+namespace dynamic_reconfigure{
+    template <class ConfigType>
+    class Server;
+}
+/// rosmsgs
 namespace geometry_msgs{
     template <class ContainerAllocator>
     struct Point_;
@@ -24,24 +43,10 @@ namespace geometry_msgs{
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;     
 }
-namespace ExpLib{
-    namespace Struct{
-        template<typename T>
-        struct subStruct;
-        template<typename T>
-        struct pubStruct;
-    }
-}
-namespace exploration{
-    class frontier_based_exploration_parameter_reconfigureConfig;
-}
-namespace dynamic_reconfigure{
-    template <class ConfigType>
-    class Server;
-}
 // 前方宣言 ここまで
 
 namespace ExStc = ExpLib::Struct;
+
 class FrontierBasedExploration{
     private:
         // dynamic parameters

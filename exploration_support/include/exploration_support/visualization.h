@@ -4,6 +4,12 @@
 #include <memory>
 
 // 前方宣言
+
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+/// my packages
 namespace ExpLib{
     namespace Struct{
         template<typename T>
@@ -11,22 +17,22 @@ namespace ExpLib{
         struct subStructSimple;
     }
 }
-namespace boost{
-    template<class T> 
-    class shared_ptr;
-}
-namespace std{
-    class mutex;
-}
 namespace exploration_msgs{
-    template <class ContainerAllocator>
-    struct PointArray_;
-    typedef ::exploration_msgs::PointArray_<std::allocator<void>> PointArray;
-    typedef boost::shared_ptr< ::exploration_msgs::PointArray const> PointArrayConstPtr;
     template <class ContainerAllocator>
     struct FrontierArray_;
     typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
     typedef boost::shared_ptr< ::exploration_msgs::FrontierArray const> FrontierArrayConstPtr;
+    template <class ContainerAllocator>
+    struct PointArray_;
+    typedef ::exploration_msgs::PointArray_<std::allocator<void>> PointArray;
+    typedef boost::shared_ptr< ::exploration_msgs::PointArray const> PointArrayConstPtr;
+}
+/// rosmsgs
+namespace actionlib_msgs{
+    template <class ContainerAllocator>
+    struct GoalStatusArray_;
+    typedef ::actionlib_msgs::GoalStatusArray_<std::allocator<void>> GoalStatusArray;
+    typedef boost::shared_ptr< ::actionlib_msgs::GoalStatusArray const> GoalStatusArrayConstPtr;
 }
 namespace geometry_msgs{
     template <class ContainerAllocator>
@@ -38,21 +44,19 @@ namespace geometry_msgs{
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
     typedef boost::shared_ptr< ::geometry_msgs::PoseStamped const> PoseStampedConstPtr;
 }
-namespace actionlib_msgs{
+namespace nav_msgs{
     template <class ContainerAllocator>
-    struct GoalStatusArray_;
-    typedef ::actionlib_msgs::GoalStatusArray_<std::allocator<void>> GoalStatusArray;
-    typedef boost::shared_ptr< ::actionlib_msgs::GoalStatusArray const> GoalStatusArrayConstPtr;
+    struct Path_;
+    typedef ::nav_msgs::Path_<std::allocator<void>> Path;
 }
 namespace visualization_msgs{
     template <class ContainerAllocator>
     struct Marker_;
     typedef ::visualization_msgs::Marker_<std::allocator<void>> Marker;
 }
-namespace nav_msgs{
-    template <class ContainerAllocator>
-    struct Path_;
-    typedef ::nav_msgs::Path_<std::allocator<void>> Path;
+//  others
+namespace std{
+    class mutex;
 }
 // 前方宣言ここまで
 

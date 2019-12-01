@@ -5,6 +5,12 @@
 #include <vector>
 
 // 前方宣言
+
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+/// my packages
 namespace ExpLib{
     namespace Struct{
         template<typename T>
@@ -12,35 +18,33 @@ namespace ExpLib{
         struct subStructSimple;
     }
 }
-namespace boost{
-    template<class T> 
-    class shared_ptr;
+namespace exploration_msgs{
+    template <class ContainerAllocator>
+    struct Frontier_;
+    typedef ::exploration_msgs::Frontier_<std::allocator<void>> Frontier;
+    template <class ContainerAllocator>
+    struct FrontierArray_;
+    typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
 }
+namespace exploration_support{
+    class frontier_detection_parameter_reconfigureConfig;
+}
+/// ros
+namespace dynamic_reconfigure{
+    template <class ConfigType>
+    class Server;
+}
+/// rosmsgs
 namespace nav_msgs{
     template <class ContainerAllocator>
     struct OccupancyGrid_;
     typedef ::nav_msgs::OccupancyGrid_<std::allocator<void>> OccupancyGrid;
     typedef boost::shared_ptr< ::nav_msgs::OccupancyGrid const> OccupancyGridConstPtr;
 }
-namespace exploration_msgs{
-    template <class ContainerAllocator>
-    struct FrontierArray_;
-    typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
-    template <class ContainerAllocator>
-    struct Frontier_;
-    typedef ::exploration_msgs::Frontier_<std::allocator<void>> Frontier;
-}
 namespace sensor_msgs{
     template <class ContainerAllocator>
     struct PointCloud2_;
     typedef ::sensor_msgs::PointCloud2_<std::allocator<void>> PointCloud2;
-}
-namespace exploration_support{
-    class frontier_detection_parameter_reconfigureConfig;
-}
-namespace dynamic_reconfigure{
-    template <class ConfigType>
-    class Server;
 }
 // 前方宣言ここまで
 

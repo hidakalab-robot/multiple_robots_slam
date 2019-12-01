@@ -5,25 +5,29 @@
 #include <Eigen/Core>
 
 // 前方宣言
-namespace nav_msgs{
-    template <class ContainerAllocator>
-    struct MapMetaData_;
-    typedef ::nav_msgs::MapMetaData_<std::allocator<void>> MapMetaData;
+
+/// ros
+namespace tf{
+    class TransformListener;
 }
+/// rosmsgs
 namespace geometry_msgs{
     template <class ContainerAllocator>
     struct Point_;
     typedef ::geometry_msgs::Point_<std::allocator<void>> Point;
     template <class ContainerAllocator>
-    struct Quaternion_;
-    typedef ::geometry_msgs::Quaternion_<std::allocator<void>> Quaternion;
-    template <class ContainerAllocator>
     struct Pose_;
     typedef ::geometry_msgs::Pose_<std::allocator<void>> Pose;     
+    template <class ContainerAllocator>
+    struct Quaternion_;
+    typedef ::geometry_msgs::Quaternion_<std::allocator<void>> Quaternion;
 }
-namespace tf{
-    class TransformListener;
+namespace nav_msgs{
+    template <class ContainerAllocator>
+    struct MapMetaData_;
+    typedef ::nav_msgs::MapMetaData_<std::allocator<void>> MapMetaData;
 }
+/// others
 namespace pcl{
     struct PointXYZ;
 }

@@ -5,6 +5,12 @@
 #include <memory>
 
 // 前方宣言
+
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+/// my packages
 namespace ExpLib{
     namespace Struct{
         template<typename T>
@@ -12,28 +18,26 @@ namespace ExpLib{
         struct subStructSimple;
     }
 }
-namespace exploration_support{
-    class exploration_manager_parameter_reconfigureConfig;
-}
-namespace dynamic_reconfigure{
-    template <class ConfigType>
-    class Server;
-}
-namespace boost{
-    template<class T> 
-    class shared_ptr;
-}
-namespace nav_msgs{
-    template <class ContainerAllocator>
-    struct OccupancyGrid_;
-    typedef ::nav_msgs::OccupancyGrid_<std::allocator<void>> OccupancyGrid;
-    typedef boost::shared_ptr< ::nav_msgs::OccupancyGrid const> OccupancyGridConstPtr;
-}
 namespace exploration_msgs{
     template <class ContainerAllocator>
     struct FrontierArray_;
     typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
     typedef boost::shared_ptr< ::exploration_msgs::FrontierArray const> FrontierArrayConstPtr;
+}
+namespace exploration_support{
+    class exploration_manager_parameter_reconfigureConfig;
+}
+/// ros
+namespace dynamic_reconfigure{
+    template <class ConfigType>
+    class Server;
+}
+/// rosmsgs
+namespace nav_msgs{
+    template <class ContainerAllocator>
+    struct OccupancyGrid_;
+    typedef ::nav_msgs::OccupancyGrid_<std::allocator<void>> OccupancyGrid;
+    typedef boost::shared_ptr< ::nav_msgs::OccupancyGrid const> OccupancyGridConstPtr;
 }
 namespace std_msgs{
     template <class ContainerAllocator>
