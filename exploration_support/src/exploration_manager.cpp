@@ -16,17 +16,17 @@ namespace ExStc = ExpLib::Struct;
 namespace ExCos = ExpLib::Construct;
 
 ExplorationManager::ExplorationManager()
-    :map_("map", 1, &ExplorationManager::mapCB, this)
-    ,frontier_("frontier", 1, &ExplorationManager::frontierCB, this)
-    ,areaEnd_("end/area",1,true)
-    ,frontierEnd_("end/frontier",1,true)
-    ,timerEnd_("end/timer",1,true)
-    ,areaVal_("end/area/value",1,true)
-    ,frontierVal_("end/frontier/value",1,true)
-    ,timerVal_("end/timer/value",1,true)
-    ,drs_(ros::NodeHandle("~/exmng")){
+    :map_(new ExStc::subStructSimple("map", 1, &ExplorationManager::mapCB, this))
+    ,frontier_(new ExStc::subStructSimple("frontier", 1, &ExplorationManager::frontierCB, this))
+    ,areaEnd_(new ExStc::pubStruct<std_msgs::Bool>("end/area",1,true))
+    ,frontierEnd_(new ExStc::pubStruct<std_msgs::Bool>("end/frontier",1,true))
+    ,timerEnd_(new ExStc::pubStruct<std_msgs::Bool>("end/timer",1,true))
+    ,areaVal_(new ExStc::pubStruct<std_msgs::Float64>("end/area/value",1,true))
+    ,frontierVal_(new ExStc::pubStruct<std_msgs::Int32>("end/frontier/value",1,true))
+    ,timerVal_(new ExStc::pubStruct<std_msgs::Float64>("end/timer/value",1,true))
+    ,drs_(new dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig>(ros::NodeHandle("~/exmng"))){
     loadParams();
-    drs_.setCallback(boost::bind(&ExplorationManager::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&ExplorationManager::dynamicParamsCB,this, _1, _2));
 }
 
 ExplorationManager::~ExplorationManager(){
@@ -42,20 +42,20 @@ void ExplorationManager::multiThreadMain(void){
     ROS_INFO_STREAM("end main loop");
 }
 
-void ExplorationManager::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
+void ExplorationManager::mapCB(const nav_msgs::OccupancyGridConstPtr& msg){
     int free = 0;
     for(const auto& m : msg->data){
         if(m == 0) ++free;
     }
     int val = msg->info.resolution * msg->info.resolution * free;
-    areaVal_.pub.publish(ExCos::msgDouble(val));
-    areaEnd_.pub.publish(ExCos::msgBool(val >= END_AREA ? true : false));
+    areaVal_->pub.publish(ExCos::msgDouble(val));
+    areaEnd_->pub.publish(ExCos::msgBool(val >= END_AREA ? true : false));
 }
 
-void ExplorationManager::frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg){
+void ExplorationManager::frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg){
     int val = msg->frontiers.size();
-    frontierVal_.pub.publish(ExCos::msgInt(val));
-    frontierEnd_.pub.publish(ExCos::msgBool(val <= END_FRONTIER ? true : false));
+    frontierVal_->pub.publish(ExCos::msgInt(val));
+    frontierEnd_->pub.publish(ExCos::msgBool(val <= END_FRONTIER ? true : false));
 }
 
 
@@ -65,8 +65,8 @@ void ExplorationManager::timer(void){
     ros::Rate rate(1);
     while(ros::ok()){
         double elapsedTime = ros::Duration(ros::Time::now()-startTime).toSec();
-        timerVal_.pub.publish(ExCos::msgDouble(elapsedTime));
-        timerEnd_.pub.publish(ExCos::msgBool(elapsedTime >= END_TIME ? true : false));
+        timerVal_->pub.publish(ExCos::msgDouble(elapsedTime));
+        timerEnd_->pub.publish(ExCos::msgBool(elapsedTime >= END_TIME ? true : false));
         rate.sleep();
     }
 }

@@ -1,87 +1,129 @@
 #ifndef VISUALIZATION_H
 #define VISUALIZATION_H
 
-#include <exploration_libraly/construct.h>
-#include <exploration_libraly/struct.h>
-#include <exploration_msgs/FrontierArray.h>
-#include <exploration_msgs/PointArray.h>
-#include <geometry_msgs/PointStamped.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <nav_msgs/Path.h>
-#include <ros/ros.h>
-#include <thread>
-#include <mutex>
-#include <actionlib_msgs/GoalStatusArray.h>
-#include <visualization_msgs/Marker.h>
+#include <memory>
+
+// 前方宣言
+namespace ExpLib{
+    namespace Struct{
+        template<typename T>
+        struct pubStruct;
+        struct subStructSimple;
+    }
+}
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+namespace std{
+    class mutex;
+}
+namespace exploration_msgs{
+    template <class ContainerAllocator>
+    struct PointArray_;
+    typedef ::exploration_msgs::PointArray_<std::allocator<void>> PointArray;
+    typedef boost::shared_ptr< ::exploration_msgs::PointArray const> PointArrayConstPtr;
+    template <class ContainerAllocator>
+    struct FrontierArray_;
+    typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
+    typedef boost::shared_ptr< ::exploration_msgs::FrontierArray const> FrontierArrayConstPtr;
+}
+namespace geometry_msgs{
+    template <class ContainerAllocator>
+    struct PointStamped_;
+    typedef ::geometry_msgs::PointStamped_<std::allocator<void>> PointStamped;
+    typedef boost::shared_ptr< ::geometry_msgs::PointStamped const> PointStampedConstPtr;
+    template <class ContainerAllocator>
+    struct PoseStamped_;
+    typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
+    typedef boost::shared_ptr< ::geometry_msgs::PoseStamped const> PoseStampedConstPtr;
+}
+namespace actionlib_msgs{
+    template <class ContainerAllocator>
+    struct GoalStatusArray_;
+    typedef ::actionlib_msgs::GoalStatusArray_<std::allocator<void>> GoalStatusArray;
+    typedef boost::shared_ptr< ::actionlib_msgs::GoalStatusArray const> GoalStatusArrayConstPtr;
+}
+namespace visualization_msgs{
+    template <class ContainerAllocator>
+    struct Marker_;
+    typedef ::visualization_msgs::Marker_<std::allocator<void>> Marker;
+}
+namespace nav_msgs{
+    template <class ContainerAllocator>
+    struct Path_;
+    typedef ::nav_msgs::Path_<std::allocator<void>> Path;
+}
+// 前方宣言ここまで
+
 
 namespace ExStc = ExpLib::Struct;
-namespace ExCos = ExpLib::Construct;
 
-class Visualization
-{
-private:
-    // static parameters
-    std::string INIT_FRAME_ID;
-    double POSE_PUBLISH_RATE;
-    double GOAL_PUBLISH_RATE;
-    double BRANCH_PUBLISH_RATE;
-    double FRONTIER_PUBLISH_RATE;
-    double USEFUL_FRONTIER_PUBLISH_RATE;
-    double ROAD_PUBLISH_RATE;
-    
-    // variables
-    // pose
-    ExStc::subStructSimple pose_;
-    ExStc::pubStruct<nav_msgs::Path> posePath_;   
-    nav_msgs::Path pp_;
+class Visualization{
+    private:
+        // static parameters
+        std::string INIT_FRAME_ID;
+        double POSE_PUBLISH_RATE;
+        double GOAL_PUBLISH_RATE;
+        double BRANCH_PUBLISH_RATE;
+        double FRONTIER_PUBLISH_RATE;
+        double USEFUL_FRONTIER_PUBLISH_RATE;
+        double ROAD_PUBLISH_RATE;
+        
+        // variables
+        // pose
+        std::unique_ptr<ExStc::subStructSimple> pose_;
+        std::unique_ptr<ExStc::pubStruct<nav_msgs::Path>> posePath_;   
+        std::unique_ptr<nav_msgs::Path> pp_;
 
-    // goal
-    ExStc::subStructSimple goal_;
-    ExStc::pubStruct<visualization_msgs::Marker> goalMarker_;
-    visualization_msgs::Marker gm_;
-    ExStc::subStructSimple goSt_;
-    std::mutex gmMutex_;
+        // goal
+        std::unique_ptr<ExStc::subStructSimple> goal_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> goalMarker_;
+        std::unique_ptr<visualization_msgs::Marker> gm_;
+        std::unique_ptr<ExStc::subStructSimple> goSt_;
+        std::unique_ptr<std::mutex> gmMutex_;
 
-    // branch
-    ExStc::subStructSimple branch_;
-    ExStc::pubStruct<visualization_msgs::Marker> branchMarker_;
-    visualization_msgs::Marker bm_;
+        // branch
+        std::unique_ptr<ExStc::subStructSimple> branch_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> branchMarker_;
+        std::unique_ptr<visualization_msgs::Marker> bm_;
 
-    // frontier
-    ExStc::subStructSimple frontier_;
-    ExStc::pubStruct<visualization_msgs::Marker> frontierMarker_;
-    visualization_msgs::Marker fm_;
+        // frontier
+        std::unique_ptr<ExStc::subStructSimple> frontier_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> frontierMarker_;
+        std::unique_ptr<visualization_msgs::Marker> fm_;
 
-    // useful frontier
-    ExStc::subStructSimple useFro_;
-    ExStc::pubStruct<visualization_msgs::Marker> useFroMarker_;
-    visualization_msgs::Marker ufm_;
+        // useful frontier
+        std::unique_ptr<ExStc::subStructSimple> useFro_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> useFroMarker_;
+        std::unique_ptr<visualization_msgs::Marker> ufm_;
 
-    // road
-    ExStc::subStructSimple road_;
-    ExStc::pubStruct<visualization_msgs::Marker> roadMarker_;
-    visualization_msgs::Marker rm_;
-    std::mutex rmMutex_;
-    
-    // functions
-    void poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg);
-    void goalCB(const geometry_msgs::PointStamped::ConstPtr& msg);
-    void goalStatusCB(const actionlib_msgs::GoalStatusArray::ConstPtr& msg);
-    void branchCB(const exploration_msgs::PointArray::ConstPtr& msg);
-    void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
-    void useFroCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
-    void roadCB(const geometry_msgs::PointStamped::ConstPtr& msg);
-    void posePathPublisher(void);
-    void goalMarkerPublisher(void);
-    void branchMarkerPublisher(void);
-    void frontierMarkerPublisher(void);
-    void useFroMarkerPublisher(void);
-    void roadMarkerPublisher(void);
-    void loadParams(void);
+        // road
+        std::unique_ptr<ExStc::subStructSimple> road_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> roadMarker_;
+        std::unique_ptr<visualization_msgs::Marker> rm_;
+        std::unique_ptr<std::mutex> rmMutex_;
+        
+        // functions
+        void poseCB(const geometry_msgs::PoseStampedConstPtr& msg);
+        void goalCB(const geometry_msgs::PointStampedConstPtr& msg);
+        void goalStatusCB(const actionlib_msgs::GoalStatusArrayConstPtr& msg);
+        void branchCB(const exploration_msgs::PointArrayConstPtr& msg);
+        void frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg);
+        void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
+        void roadCB(const geometry_msgs::PointStampedConstPtr& msg);
+        void posePathPublisher(void);
+        void goalMarkerPublisher(void);
+        void branchMarkerPublisher(void);
+        void frontierMarkerPublisher(void);
+        void useFroMarkerPublisher(void);
+        void roadMarkerPublisher(void);
+        void loadParams(void);
 
-public:
-    Visualization();
-    void multiThreadMain(void);
+    public:
+        Visualization();
+        ~Visualization();
+        void multiThreadMain(void);
 };
 
 #endif //VISUALIZATION_H

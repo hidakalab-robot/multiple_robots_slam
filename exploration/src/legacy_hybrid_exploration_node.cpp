@@ -1,6 +1,11 @@
+#include <ros/ros.h>
 #include <exploration/sensor_based_exploration.h>
 #include <exploration/frontier_based_exploration.h>
 #include <exploration/movement.h>
+#include <std_msgs/Bool.h>
+#include <std_msgs/Int8.h>
+#include <exploration_libraly/struct.h>
+#include <geometry_msgs/PointStamped.h>
 
 int main(int argc, char* argv[]){
     ros::init(argc, argv, "legacy_hybrid_exploration");

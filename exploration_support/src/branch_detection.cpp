@@ -8,42 +8,43 @@
 #include <dynamic_reconfigure/server.h>
 #include <exploration_support/branch_detection_parameter_reconfigureConfig.h>
 #include <fstream>
+#include <tf/transform_listener.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExUtl = ExpLib::Utility;
 namespace ExCos = ExpLib::Construct;
 
 BranchDetection::BranchDetection()
-    :scan_("scan", 1, &BranchDetection::scanCB, this)
-    ,pose_("pose", 1)
-    ,branch_("branch", 1)
-    ,drs_(ros::NodeHandle("~/branch")){
+    :scan_(new ExStc::subStructSimple("scan", 1, &BranchDetection::scanCB, this))
+    ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
+    ,branch_(new ExStc::pubStruct<exploration_msgs::PointArray>("branch", 1))
+    ,drs_(new dynamic_reconfigure::Server<exploration_support::branch_detection_parameter_reconfigureConfig>(ros::NodeHandle("~/branch"))){
     loadParams();
-    drs_.setCallback(boost::bind(&BranchDetection::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&BranchDetection::dynamicParamsCB,this, _1, _2));
 }
 
 BranchDetection::~BranchDetection(){
     if(OUTPUT_BRANCH_PARAMETERS) outputParams();
 }
 
-void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
-    if(pose_.q.callOne(ros::WallDuration(1))){
+void BranchDetection::scanCB(const sensor_msgs::LaserScanConstPtr& msg){
+    if(pose_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read pose");
-        publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
+        publishBranch(std::vector<geometry_msgs::Point>(),pose_->data.header.frame_id);
         return;
     }
 
     static bool initialized = false;
     static tf::TransformListener listener;
     if(!initialized){
-        listener.waitForTransform(pose_.data.header.frame_id, msg->header.frame_id, ros::Time(), ros::Duration(1.0));
+        listener.waitForTransform(pose_->data.header.frame_id, msg->header.frame_id, ros::Time(), ros::Duration(1.0));
         initialized = true;
     }
 
     // センサと障害物の距離が近い時は検出を行わない
     for(int t=OBSTACLE_CHECK_ANGLE/msg->angle_increment,i=(msg->ranges.size()/2)-1-t,ie=(msg->ranges.size()/2)+t;i!=ie;++i){
 		if(!std::isnan(msg->ranges[i]) && msg->ranges[i] < OBSTACLE_RANGE_THRESHOLD){
-            publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
+            publishBranch(std::vector<geometry_msgs::Point>(),pose_->data.header.frame_id);
             return;
 		}
     }
@@ -63,7 +64,7 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
 
     if(ss.ranges.size() < 2){
 		ROS_ERROR_STREAM("Scan data is insufficient");
-        publishBranch(std::vector<geometry_msgs::Point>(),pose_.data.header.frame_id);
+        publishBranch(std::vector<geometry_msgs::Point>(),pose_->data.header.frame_id);
         return;
     }
 
@@ -79,11 +80,11 @@ void BranchDetection::scanCB(const sensor_msgs::LaserScan::ConstPtr& msg){
         double diffY = std::abs(ss.y[i+1] - ss.y[i]);
         if(BRANCH_DIFF_Y_MIN > diffY || diffY > BRANCH_DIFF_Y_MAX) continue; //y座標の差が範囲内じゃないと分岐と認めない
         // 検出した座標をpose座標系に変換して input
-        branches.emplace_back(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, msg->header.frame_id, ExCos::msgPoint((ss.x[i+1] + ss.x[i])/2, (ss.y[i+1] + ss.y[i])/2)));
+        branches.emplace_back(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_->data.header.frame_id, msg->header.frame_id, ExCos::msgPoint((ss.x[i+1] + ss.x[i])/2, (ss.y[i+1] + ss.y[i])/2)));
 	}
 
     ROS_INFO_STREAM("Branch Found : " << branches.size());
-    publishBranch(branches,pose_.data.header.frame_id);
+    publishBranch(branches,pose_->data.header.frame_id);
 }
 
 void BranchDetection::publishBranch(const std::vector<geometry_msgs::Point>& branches, const std::string& frameId){
@@ -91,7 +92,7 @@ void BranchDetection::publishBranch(const std::vector<geometry_msgs::Point>& bra
     msg.points = branches;
     msg.header.frame_id = frameId;
     msg.header.stamp = ros::Time::now();
-    branch_.pub.publish(msg);
+    branch_->pub.publish(msg);
     ROS_INFO_STREAM("Publish branch");
 }
 

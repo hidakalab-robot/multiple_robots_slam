@@ -2,57 +2,88 @@
 #ifndef EXPLORATION_MANAGER_H
 #define EXPLORATION_MANAGER_H
 
-#include <exploration_libraly/struct.h>
-#include <exploration_libraly/construct.h>
-#include <exploration_msgs/FrontierArray.h>
-#include <nav_msgs/OccupancyGrid.h>
-#include <ros/ros.h>
-#include <std_msgs/Bool.h>
-#include <std_msgs/Float64.h>
-#include <std_msgs/Int32.h>
-#include <thread>
-#include <dynamic_reconfigure/server.h>
-#include <exploration_support/exploration_manager_parameter_reconfigureConfig.h>
-#include <fstream>
+#include <memory>
+
+// 前方宣言
+namespace ExpLib{
+    namespace Struct{
+        template<typename T>
+        struct pubStruct;
+        struct subStructSimple;
+    }
+}
+namespace exploration_support{
+    class exploration_manager_parameter_reconfigureConfig;
+}
+namespace dynamic_reconfigure{
+    template <class ConfigType>
+    class Server;
+}
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+namespace nav_msgs{
+    template <class ContainerAllocator>
+    struct OccupancyGrid_;
+    typedef ::nav_msgs::OccupancyGrid_<std::allocator<void>> OccupancyGrid;
+    typedef boost::shared_ptr< ::nav_msgs::OccupancyGrid const> OccupancyGridConstPtr;
+}
+namespace exploration_msgs{
+    template <class ContainerAllocator>
+    struct FrontierArray_;
+    typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
+    typedef boost::shared_ptr< ::exploration_msgs::FrontierArray const> FrontierArrayConstPtr;
+}
+namespace std_msgs{
+    template <class ContainerAllocator>
+    struct Bool_;
+    typedef ::std_msgs::Bool_<std::allocator<void>> Bool;
+    template <class ContainerAllocator>
+    struct Float64_;
+    typedef ::std_msgs::Float64_<std::allocator<void>> Float64;
+    template <class ContainerAllocator>
+    struct Int32_;
+    typedef ::std_msgs::Int32_<std::allocator<void>> Int32;
+}
+// 前方宣言ここまで
 
 namespace ExStc = ExpLib::Struct;
-namespace ExCos = ExpLib::Construct;
 
-class ExplorationManager
-{
-private:
-    // dynamic parameters
-    double END_AREA;
-    int END_FRONTIER;
-    double END_TIME;
+class ExplorationManager{
+    private:
+        // dynamic parameters
+        double END_AREA;
+        int END_FRONTIER;
+        double END_TIME;
 
-    // static parameters
-    std::string EXMNG_PARAMETER_FILE_PATH;
-    bool OUTPUT_EXMNG_PARAMETERS;
+        // static parameters
+        std::string EXMNG_PARAMETER_FILE_PATH;
+        bool OUTPUT_EXMNG_PARAMETERS;
 
-    // variables
-    ExStc::subStructSimple map_;
-    ExStc::subStructSimple frontier_;
-    ExStc::pubStruct<std_msgs::Bool> areaEnd_;
-    ExStc::pubStruct<std_msgs::Bool> frontierEnd_;
-    ExStc::pubStruct<std_msgs::Bool> timerEnd_;
-    ExStc::pubStruct<std_msgs::Float64> areaVal_;
-    ExStc::pubStruct<std_msgs::Int32> frontierVal_;
-    ExStc::pubStruct<std_msgs::Float64> timerVal_;
-    dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig> drs_;
+        // variables
+        std::unique_ptr<ExStc::subStructSimple> map_;
+        std::unique_ptr<ExStc::subStructSimple> frontier_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> areaEnd_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> frontierEnd_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> timerEnd_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> areaVal_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Int32>> frontierVal_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> timerVal_;
+        std::unique_ptr<dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig>> drs_;
 
-    // functions
-    void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-    void frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg);
-    void timer(void);
-    void loadParams(void);
-    void dynamicParamsCB(exploration_support::exploration_manager_parameter_reconfigureConfig &cfg, uint32_t level);
-    void outputParams(void);
+        // functions
+        void mapCB(const nav_msgs::OccupancyGridConstPtr& msg);
+        void frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg);
+        void timer(void);
+        void loadParams(void);
+        void dynamicParamsCB(exploration_support::exploration_manager_parameter_reconfigureConfig &cfg, uint32_t level);
+        void outputParams(void);
 
-public:
-    ExplorationManager();
-    ~ExplorationManager();
-    void multiThreadMain(void);
+    public:
+        ExplorationManager();
+        ~ExplorationManager();
+        void multiThreadMain(void);
 };
 
 #endif //EXPLORATION_MANAGER_H

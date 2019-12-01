@@ -3,19 +3,27 @@
 #include <exploration_libraly/convert.h>
 #include <Eigen/Geometry>
 #include <fstream>
+#include <exploration_msgs/PointArray.h>
+#include <exploration_msgs/PoseStampedArray.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <dynamic_reconfigure/server.h>
+#include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
+#include <exploration_libraly/struct.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
 
 SensorBasedExploration::SensorBasedExploration()
-    :branch_("branch", 1)
-    ,pose_("pose", 1)
-    ,poseLog_("pose_log", 1)
-    ,goal_("goal", 1, true)
-    ,drs_(ros::NodeHandle("~/sensor_based_exploration")){
+    :branch_(new ExStc::subStruct<exploration_msgs::PointArray>("branch", 1))
+    ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
+    ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
+    ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
+    ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
+    ,lastGoal_(new geometry_msgs::Point()){
     loadParams();
-    drs_.setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
 }
 
 SensorBasedExploration::~SensorBasedExploration(){
@@ -24,29 +32,29 @@ SensorBasedExploration::~SensorBasedExploration(){
 
 bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // 分岐の読み込み
-    if(branch_.q.callOne(ros::WallDuration(1)) || branch_.data.points.size()==0){
+    if(branch_->q.callOne(ros::WallDuration(1)) || branch_->data.points.size()==0){
         ROS_ERROR_STREAM("Can't read branch or don't find branch");  
         return false;
     }
 
     // pose の読みこみ
-    if(pose_.q.callOne(ros::WallDuration(1))){
+    if(pose_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read pose");
         return false;
     }
 
     // log の読みこみ
-    if(poseLog_.q.callOne(ros::WallDuration(1))){
+    if(poseLog_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read pose log");
         return false;
     }
 
     std::vector<ExStc::listStruct> ls;
-    ls.reserve(branch_.data.points.size());
+    ls.reserve(branch_->data.points.size());
 
     // 別形式 // 直前の目標と近い分岐は無視したい
-    for(const auto& b : branch_.data.points){
-        if(Eigen::Vector2d(b.x - lastGoal_.x, b.y - lastGoal_.y).norm()>LAST_GOAL_TOLERANCE) ls.emplace_back(b);
+    for(const auto& b : branch_->data.points){
+        if(Eigen::Vector2d(b.x - lastGoal_->x, b.y - lastGoal_->y).norm()>LAST_GOAL_TOLERANCE) ls.emplace_back(b);
     }
 
     if(ls.size() == 0){
@@ -55,10 +63,10 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     }
 
     // 重複探査検出
-    duplicateDetection(ls, poseLog_.data);
+    duplicateDetection(ls, poseLog_->data);
 
     // goal を決定 // 適切なゴールが無ければ false
-    return decideGoal(goal, ls, pose_.data);
+    return decideGoal(goal, ls, pose_->data);
 }
 
 
@@ -74,7 +82,6 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& 
 			break;
 		}
 	}
-
     for(auto&& l : ls){
         for(int i=ARRAY_MAX;i!=0;--i){
             //過去のオドメトリが重複判定の範囲内に入っているか//
@@ -103,8 +110,8 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
     if(dist < DBL_MAX){
         goal.header.frame_id = pose.header.frame_id;
         goal.header.stamp = ros::Time::now();
-        lastGoal_ = goal.point;
-        goal_.pub.publish(goal);
+        *lastGoal_ = goal.point;
+        goal_->pub.publish(goal);
         return true;
     }
     return false;

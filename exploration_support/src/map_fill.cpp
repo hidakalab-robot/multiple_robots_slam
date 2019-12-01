@@ -2,7 +2,6 @@
 #include <exploration_libraly/struct.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <opencv2/core/utility.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <ros/ros.h>
 #include <dynamic_reconfigure/server.h>
@@ -12,18 +11,18 @@
 namespace ExStc = ExpLib::Struct;
 
 MapFill::MapFill()
-    :map_("map", 1, &MapFill::mapCB, this)
-    ,fillMap_("fill_map",1)
-    ,drs_(ros::NodeHandle("~/map_fill")){
+    :map_(new ExStc::subStructSimple("map", 1, &MapFill::mapCB, this))
+    ,fillMap_(new ExStc::pubStruct<nav_msgs::OccupancyGrid>("fill_map",1))
+    ,drs_(new dynamic_reconfigure::Server<exploration_support::map_fill_parameter_reconfigureConfig>(ros::NodeHandle("~/map_fill"))){
     loadParams();
-    drs_.setCallback(boost::bind(&MapFill::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&MapFill::dynamicParamsCB,this, _1, _2));
 };
 
 MapFill::~MapFill(){
     if(OUTPUT_FILL_PARAMETERS) outputParams();
 }
 
-void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
+void MapFill::mapCB(const nav_msgs::OccupancyGridConstPtr& msg){
     ROS_INFO_STREAM("map input");
     //マップから画像に変換 //-1 -> 255 , 100 -> 100 , 0 -> 0
     cv::Mat image(msg->info.height,msg->info.width,CV_8UC1,const_cast<signed char*>(msg->data.data()));
@@ -61,7 +60,7 @@ void MapFill::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
     std::replace(map.data.begin(),map.data.end(),127,-1);
 
     ROS_INFO_STREAM("map_image publish");
-    fillMap_.pub.publish(map);
+    fillMap_->pub.publish(map);
 }
 
 void MapFill::loadParams(void){

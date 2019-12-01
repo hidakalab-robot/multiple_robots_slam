@@ -1,46 +1,76 @@
 #ifndef FRONTIER_BASED_EXPLORATION_H
 #define FRONTIER_BASED_EXPLORATION_H
 
-#include <ros/ros.h>
-#include <exploration_libraly/struct.h>
-#include <exploration_msgs/FrontierArray.h>
-#include <geometry_msgs/PointStamped.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <dynamic_reconfigure/server.h>
-#include <exploration/frontier_based_exploration_parameter_reconfigureConfig.h>
+#include <memory>
+#include <vector>
+
+// 前方宣言(ヘッダー読み込み減らす用)
+namespace exploration_msgs{
+    template <class ContainerAllocator>
+    struct Frontier_;
+    typedef ::exploration_msgs::Frontier_<std::allocator<void>> Frontier;
+    template <class ContainerAllocator>
+    struct FrontierArray_;
+    typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
+}
+namespace geometry_msgs{
+    template <class ContainerAllocator>
+    struct Point_;
+    typedef ::geometry_msgs::Point_<std::allocator<void>> Point;
+    template <class ContainerAllocator>
+    struct PointStamped_;
+    typedef ::geometry_msgs::PointStamped_<std::allocator<void>> PointStamped;
+    template <class ContainerAllocator>
+    struct PoseStamped_;
+    typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;     
+}
+namespace ExpLib{
+    namespace Struct{
+        template<typename T>
+        struct subStruct;
+        template<typename T>
+        struct pubStruct;
+    }
+}
+namespace exploration{
+    class frontier_based_exploration_parameter_reconfigureConfig;
+}
+namespace dynamic_reconfigure{
+    template <class ConfigType>
+    class Server;
+}
+// 前方宣言 ここまで
 
 namespace ExStc = ExpLib::Struct;
+class FrontierBasedExploration{
+    private:
+        // dynamic parameters
+        double DISTANCE_WEIGHT;
+        double DIRECTION_WEIGHT;
+        bool LAST_GOAL_EFFECT;
+        double LAST_GOAL_TOLERANCE;
 
-class FrontierBasedExploration
-{
-private:
-    // dynamic parameters
-    double DISTANCE_WEIGHT;
-    double DIRECTION_WEIGHT;
-    bool LAST_GOAL_EFFECT;
-    double LAST_GOAL_TOLERANCE;
+        // static parameters
+        std::string FBE_PARAMETER_FILE_PATH;
+        bool OUTPUT_FBE_PARAMETERS;
 
-    // static parameters
-    std::string FBE_PARAMETER_FILE_PATH;
-    bool OUTPUT_FBE_PARAMETERS;
+        // variables
+        std::unique_ptr<ExStc::subStruct<exploration_msgs::FrontierArray>> frontier_;
+        std::unique_ptr<ExStc::subStruct<geometry_msgs::PoseStamped>> pose_;
+        std::unique_ptr<ExStc::pubStruct<geometry_msgs::PointStamped>> goal_;
+        std::unique_ptr<dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig>> drs_;
+        std::unique_ptr<geometry_msgs::Point> lastGoal_;
 
-    // variables
-    ExStc::subStruct<exploration_msgs::FrontierArray> frontier_;
-    ExStc::subStruct<geometry_msgs::PoseStamped> pose_;
-    ExStc::pubStruct<geometry_msgs::PointStamped> goal_;
-    dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig> drs_;
-    geometry_msgs::Point lastGoal_;
+        // functions
+        bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<exploration_msgs::Frontier>& frontiers, const geometry_msgs::PoseStamped& pose);
+        void loadParams(void);
+        void dynamicParamsCB(exploration::frontier_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
+        void outputParams(void);
 
-    // functions
-    bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<exploration_msgs::Frontier>& frontiers, const geometry_msgs::PoseStamped& pose);
-    void loadParams(void);
-    void dynamicParamsCB(exploration::frontier_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
-    void outputParams(void);
-
-public:
-    FrontierBasedExploration();
-    ~FrontierBasedExploration();
-    bool getGoal(geometry_msgs::PointStamped& goal);
+    public:
+        FrontierBasedExploration();
+        ~FrontierBasedExploration();
+        bool getGoal(geometry_msgs::PointStamped& goal);
 };
 
 #endif // FRONTIER_BASED_EXPLORATION_H

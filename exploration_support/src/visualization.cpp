@@ -16,26 +16,36 @@ namespace ExStc = ExpLib::Struct;
 namespace ExCos = ExpLib::Construct;
 
 Visualization::Visualization()
-    :pose_("pose",1,&Visualization::poseCB, this)
-    ,posePath_("visualization/pose", 1)
-    ,goal_("goal",1,&Visualization::goalCB, this)
-    ,goalMarker_("visualization/goal", 1, true)
-    ,goSt_("move_base/status",1,&Visualization::goalStatusCB, this)
-    ,branch_("branch",1,&Visualization::branchCB, this)
-    ,branchMarker_("visualization/branch", 1, true)
-    ,frontier_("frontier",1,&Visualization::frontierCB, this)
-    ,frontierMarker_("visualization/frontier", 1, true)
-    ,useFro_("useful_frontier",1,&Visualization::useFroCB, this)
-    ,useFroMarker_("visualization/useful_frontier", 1, true)
-    ,road_("road",1,&Visualization::roadCB, this)
-    ,roadMarker_("visualization/road", 1, true){
+    :pose_(new ExStc::subStructSimple("pose",1,&Visualization::poseCB, this))
+    ,posePath_(new ExStc::pubStruct<nav_msgs::Path>("visualization/pose", 1))
+    ,pp_(new nav_msgs::Path())
+    ,goal_(new ExStc::subStructSimple("goal",1,&Visualization::goalCB, this))
+    ,goalMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/goal", 1, true))
+    ,gm_(new visualization_msgs::Marker())
+    ,goSt_(new ExStc::subStructSimple("move_base/status",1,&Visualization::goalStatusCB, this))
+    ,gmMutex_(new std::mutex())
+    ,branch_(new ExStc::subStructSimple("branch",1,&Visualization::branchCB, this))
+    ,branchMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/branch", 1, true))
+    ,bm_(new visualization_msgs::Marker())
+    ,frontier_(new ExStc::subStructSimple("frontier",1,&Visualization::frontierCB, this))
+    ,frontierMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/frontier", 1, true))
+    ,fm_(new visualization_msgs::Marker())
+    ,useFro_(new ExStc::subStructSimple("useful_frontier",1,&Visualization::useFroCB, this))
+    ,useFroMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/useful_frontier", 1, true))
+    ,ufm_(new visualization_msgs::Marker())
+    ,road_(new ExStc::subStructSimple("road",1,&Visualization::roadCB, this))
+    ,roadMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/road", 1, true))
+    ,rm_(new visualization_msgs::Marker())
+    ,rmMutex_(new std::mutex()){
     loadParams();
-    gm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
-    bm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
-    fm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
-    ufm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
-    rm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
+    *gm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
+    *bm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
+    *fm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
+    *ufm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
+    *rm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
 }
+
+Visualization::~Visualization(){};
 
 void Visualization::multiThreadMain(void){
     ROS_INFO_STREAM("start threads\n");
@@ -56,75 +66,75 @@ void Visualization::multiThreadMain(void){
     ROS_INFO_STREAM("end main loop\n");
 }
 
-void Visualization::poseCB(const geometry_msgs::PoseStamped::ConstPtr& msg){
-    pp_.poses.push_back(*msg);
-    pp_.header.frame_id = msg->header.frame_id;
-    pp_.header.stamp = ros::Time::now();
+void Visualization::poseCB(const geometry_msgs::PoseStampedConstPtr& msg){
+    pp_->poses.push_back(*msg);
+    pp_->header.frame_id = msg->header.frame_id;
+    pp_->header.stamp = ros::Time::now();
 }
 
 // goalに着いたのを検知してマーカーを消したい
-void Visualization::goalCB(const geometry_msgs::PointStamped::ConstPtr& msg){
-    std::lock_guard<std::mutex> lock(gmMutex_);
-    gm_.points = ExCos::oneFactorVector(msg->point);
-    gm_.header.frame_id = msg->header.frame_id;
-    gm_.header.stamp = ros::Time::now();
+void Visualization::goalCB(const geometry_msgs::PointStampedConstPtr& msg){
+    std::lock_guard<std::mutex> lock(*gmMutex_);
+    gm_->points = ExCos::oneFactorVector(msg->point);
+    gm_->header.frame_id = msg->header.frame_id;
+    gm_->header.stamp = ros::Time::now();
 }
 
-void Visualization::goalStatusCB(const actionlib_msgs::GoalStatusArray::ConstPtr& msg){
+void Visualization::goalStatusCB(const actionlib_msgs::GoalStatusArrayConstPtr& msg){
     if(msg->status_list.empty()||(!msg->status_list.empty() && (msg->status_list.back().status > 2))){
-        std::lock_guard<std::mutex> lock(gmMutex_);
-        gm_.points = std::vector<geometry_msgs::Point>();
-        gm_.header.stamp = ros::Time::now();
+        std::lock_guard<std::mutex> lock(*gmMutex_);
+        gm_->points = std::vector<geometry_msgs::Point>();
+        gm_->header.stamp = ros::Time::now();
     }
     else{
-        std::lock_guard<std::mutex> lock(rmMutex_);
-        rm_.points = std::vector<geometry_msgs::Point>();
-        rm_.header.stamp = ros::Time::now();
+        std::lock_guard<std::mutex> lock(*rmMutex_);
+        rm_->points = std::vector<geometry_msgs::Point>();
+        rm_->header.stamp = ros::Time::now();
     }
 }
 
-void Visualization::branchCB(const exploration_msgs::PointArray::ConstPtr& msg){
-    bm_.points = msg->points;
-    bm_.header.frame_id = msg->header.frame_id;
-    bm_.header.stamp = ros::Time::now();
+void Visualization::branchCB(const exploration_msgs::PointArrayConstPtr& msg){
+    bm_->points = msg->points;
+    bm_->header.frame_id = msg->header.frame_id;
+    bm_->header.stamp = ros::Time::now();
 }
 
-void Visualization::frontierCB(const exploration_msgs::FrontierArray::ConstPtr& msg){
+void Visualization::frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg){
     auto replace = [&msg]{
         std::vector<geometry_msgs::Point> p;
         p.reserve(msg->frontiers.size());
         for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
         return p;
     };
-    fm_.points = replace();
-    fm_.header.frame_id = msg->header.frame_id;
-    fm_.header.stamp = ros::Time::now();
+    fm_->points = replace();
+    fm_->header.frame_id = msg->header.frame_id;
+    fm_->header.stamp = ros::Time::now();
 }
 
-void Visualization::useFroCB(const exploration_msgs::FrontierArray::ConstPtr& msg){
+void Visualization::useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg){
     auto replace = [&msg]{
         std::vector<geometry_msgs::Point> p;
         p.reserve(msg->frontiers.size());
         for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
         return p;
     };
-    ufm_.points = replace();
-    ufm_.header.frame_id = msg->header.frame_id;
-    ufm_.header.stamp = ros::Time::now();
+    ufm_->points = replace();
+    ufm_->header.frame_id = msg->header.frame_id;
+    ufm_->header.stamp = ros::Time::now();
 }
 
 // 本当に空になってるか確認
-void Visualization::roadCB(const geometry_msgs::PointStamped::ConstPtr& msg){
-    std::lock_guard<std::mutex> lock(rmMutex_);
-    rm_.points = msg->header.frame_id != "" ? ExCos::oneFactorVector(msg->point) : std::vector<geometry_msgs::Point>();
-    rm_.header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
-    rm_.header.stamp = ros::Time::now();
+void Visualization::roadCB(const geometry_msgs::PointStampedConstPtr& msg){
+    std::lock_guard<std::mutex> lock(*rmMutex_);
+    rm_->points = msg->header.frame_id != "" ? ExCos::oneFactorVector(msg->point) : std::vector<geometry_msgs::Point>();
+    rm_->header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
+    rm_->header.stamp = ros::Time::now();
 }
 
 void Visualization::posePathPublisher(void){
     ros::Rate rate(POSE_PUBLISH_RATE);
     while(ros::ok()){
-        posePath_.pub.publish(pp_);
+        posePath_->pub.publish(*pp_);
         rate.sleep();
     }
 }
@@ -132,7 +142,7 @@ void Visualization::posePathPublisher(void){
 void Visualization::goalMarkerPublisher(void){
     ros::Rate rate(GOAL_PUBLISH_RATE);
     while(ros::ok()){
-        goalMarker_.pub.publish(gm_);
+        goalMarker_->pub.publish(*gm_);
         rate.sleep();
     }
 }
@@ -140,7 +150,7 @@ void Visualization::goalMarkerPublisher(void){
 void Visualization::branchMarkerPublisher(void){
     ros::Rate rate(BRANCH_PUBLISH_RATE);
     while(ros::ok()){
-        branchMarker_.pub.publish(bm_);
+        branchMarker_->pub.publish(*bm_);
         rate.sleep();
     }
 }
@@ -148,7 +158,7 @@ void Visualization::branchMarkerPublisher(void){
 void Visualization::frontierMarkerPublisher(void){
     ros::Rate rate(FRONTIER_PUBLISH_RATE);
     while(ros::ok()){
-        frontierMarker_.pub.publish(fm_);
+        frontierMarker_->pub.publish(*fm_);
         rate.sleep();
     }
 }
@@ -156,7 +166,7 @@ void Visualization::frontierMarkerPublisher(void){
 void Visualization::useFroMarkerPublisher(void){
     ros::Rate rate(USEFUL_FRONTIER_PUBLISH_RATE);
     while(ros::ok()){
-        useFroMarker_.pub.publish(ufm_);
+        useFroMarker_->pub.publish(*ufm_);
         rate.sleep();
     }
 }
@@ -164,7 +174,7 @@ void Visualization::useFroMarkerPublisher(void){
 void Visualization::roadMarkerPublisher(void){
     ros::Rate rate(ROAD_PUBLISH_RATE);
     while(ros::ok()){
-        roadMarker_.pub.publish(rm_);
+        roadMarker_->pub.publish(*rm_);
         rate.sleep();
     }
 }

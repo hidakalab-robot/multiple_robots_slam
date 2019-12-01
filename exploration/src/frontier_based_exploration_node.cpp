@@ -1,5 +1,9 @@
+#include <ros/ros.h>
 #include <exploration/frontier_based_exploration.h>
 #include <exploration/movement.h>
+#include <std_msgs/Bool.h>
+#include <exploration_libraly/struct.h>
+#include <geometry_msgs/PointStamped.h>
 
 //mainのところにexploration_endを評価する部分
 int main(int argc, char *argv[]){
@@ -9,7 +13,6 @@ int main(int argc, char *argv[]){
     Movement mv;
 
     ExpLib::Struct::subStruct<std_msgs::Bool> end("end",1);
-
     geometry_msgs::PointStamped goal;
 
     ros::NodeHandle p("~");

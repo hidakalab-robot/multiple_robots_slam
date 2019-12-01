@@ -9,18 +9,19 @@
 #include <exploration_support/loop_closure_counter_parameter_reconfigureConfig.h>
 #include <fstream>
 #include <thread>
+#include <Eigen/Core>
 
 // legacy loop counter
 namespace ExStc = ExpLib::Struct;
 namespace ExCos = ExpLib::Construct;
 
 LoopClosureCounter::LoopClosureCounter()
-    :count("loop_closure_counter/count",1)
-    ,accumTemp("loop_closure_counter/temp_accumlate",1)
-    ,accumPerm("loop_closure_counter/perm_accumlate",1)
-    ,drs_(ros::NodeHandle("~/loop")){
+    :count(new ExStc::pubStruct<std_msgs::Int8>("loop_closure_counter/count",1))
+    ,accumTemp(new ExStc::pubStruct<std_msgs::Float64>("loop_closure_counter/temp_accumlate",1))
+    ,accumPerm(new ExStc::pubStruct<std_msgs::Float64>("loop_closure_counter/perm_accumlate",1))
+    ,drs_(new dynamic_reconfigure::Server<exploration_support ::loop_closure_counter_parameter_reconfigureConfig>(ros::NodeHandle("~/loop"))){
     loadParams(); 
-    drs_.setCallback(boost::bind(&LoopClosureCounter::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&LoopClosureCounter::dynamicParamsCB,this, _1, _2));
 }
 
 LoopClosureCounter::~LoopClosureCounter(){
@@ -66,9 +67,9 @@ void LoopClosureCounter::loopDetection(void){
             }
             lastTrans << transX, transY; 
         }
-        count.pub.publish(ExCos::msgInt8(loopCount));
-        accumTemp.pub.publish(ExCos::msgDouble(accumTrans));
-        accumPerm.pub.publish(ExCos::msgDouble(accumTransPerm));
+        count->pub.publish(ExCos::msgInt8(loopCount));
+        accumTemp->pub.publish(ExCos::msgDouble(accumTrans));
+        accumPerm->pub.publish(ExCos::msgDouble(accumTransPerm));
         rate.sleep();
     }
 }

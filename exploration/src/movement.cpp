@@ -1,10 +1,21 @@
 #include <exploration/movement.h>
 #include <actionlib/client/simple_action_client.h>
 #include <exploration_libraly/convert.h>
+#include <exploration_libraly/construct.h>
 #include <exploration_libraly/utility.h>
 #include <Eigen/Geometry>
 #include <move_base_msgs/MoveBaseAction.h>
 #include <fstream>
+#include <dynamic_reconfigure/server.h>
+#include <exploration/movement_parameter_reconfigureConfig.h>
+#include <exploration_libraly/struct.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/Twist.h>
+#include <kobuki_msgs/BumperEvent.h>
+#include <sensor_msgs/LaserScan.h>
+#include <exploration_libraly/path_planning.h>
+#include <navfn/navfn_ros.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExUtl = ExpLib::Utility;
@@ -12,18 +23,18 @@ namespace ExCos = ExpLib::Construct;
 namespace ExCov = ExpLib::Convert;
 
 Movement::Movement()
-    :scan_("scan",1) // sub
-    ,pose_("pose",1) // sub
-    ,bumper_("bumper",1) // sub
-    ,velocity_("velocity", 1) //. pub
+    :scan_(new ExStc::subStruct<sensor_msgs::LaserScan>("scan",1)) // sub
+    ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose",1)) // sub
+    ,bumper_(new ExStc::subStruct<kobuki_msgs::BumperEvent>("bumper",1)) // sub
+    ,velocity_(new ExStc::pubStruct<geometry_msgs::Twist>("velocity", 1)) //. pub
     ,previousOrientation_(1.0)
-    ,pp_("movement_costmap","movement_planner") //クラス名
-    ,goal_("goal", 1, true) // pub
-    ,road_("road", 1) // pub
-    ,gCostmap_("global_costmap",1) // pub
-    ,drs_(ros::NodeHandle("~/movement")){
+    ,pp_(new ExpLib::PathPlanning<navfn::NavfnROS>("movement_costmap","movement_planner")) //クラス名
+    ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true)) // pub
+    ,road_(new ExStc::pubStruct<geometry_msgs::PointStamped>("road", 1)) // pub
+    ,gCostmap_(new ExStc::subStruct<nav_msgs::OccupancyGrid>("global_costmap",1)) // pub
+    ,drs_(new dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig>(ros::NodeHandle("~/movement"))){
     loadParams();
-    drs_.setCallback(boost::bind(&Movement::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&Movement::dynamicParamsCB,this, _1, _2));
 }
 
 Movement::~Movement(){
@@ -35,37 +46,37 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     
     while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()) ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME);
 
-    if(pose_.q.callOne(ros::WallDuration(1.0))) return;
+    if(pose_->q.callOne(ros::WallDuration(1.0))) return;
 
-    if(pose_.data.header.frame_id != goal.header.frame_id){
+    if(pose_->data.header.frame_id != goal.header.frame_id){
         static bool initialized = false;
         static tf::TransformListener listener;
         if(!initialized){
-            listener.waitForTransform(pose_.data.header.frame_id, goal.header.frame_id, ros::Time(), ros::Duration(1.0));
+            listener.waitForTransform(pose_->data.header.frame_id, goal.header.frame_id, ros::Time(), ros::Duration(1.0));
             initialized = true;
         }
-        ExUtl::coordinateConverter2d<void>(listener, pose_.data.header.frame_id, goal.header.frame_id, goal.point);
+        ExUtl::coordinateConverter2d<void>(listener, pose_->data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
-    if(lookupCostmap(pose_.data)){
-        escapeFromCostmap(pose_.data);
-        pose_.q.callOne(ros::WallDuration(1.0));
+    if(lookupCostmap(pose_->data)){
+        escapeFromCostmap(pose_->data);
+        pose_->q.callOne(ros::WallDuration(1.0));
     } 
 
     move_base_msgs::MoveBaseGoal mbg;
-    mbg.target_pose.header.frame_id = pose_.data.header.frame_id;
+    mbg.target_pose.header.frame_id = pose_->data.header.frame_id;
     mbg.target_pose.header.stamp = ros::Time::now();
 
     // 目標での姿勢
     Eigen::Vector2d startToGoal;
-    if(USE_ANGLE_BIAS || !pp_.getVec(pose_.data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
+    if(USE_ANGLE_BIAS || !pp_->getVec(pose_->data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
         // pathが取得できなかった場合の回転角度の補正値
-        double yaw = ExCov::qToYaw(pose_.data.pose.orientation);
-        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y,0.0).normalized());
+        double yaw = ExCov::qToYaw(pose_->data.pose.orientation);
+        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
         double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
         Eigen::Matrix2d rotation;
         rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
-        startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_.data.pose.position.x,goal.point.y-pose_.data.pose.position.y);
+        startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
     }
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
@@ -95,7 +106,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
             ROS_INFO_STREAM("send new goal to move_base");
             ac.sendGoal(mbg);
             // ゴールtopicに再出力
-            goal_.pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
+            goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
             ROS_INFO_STREAM("wait for result");
         }
         rate.sleep();
@@ -109,27 +120,27 @@ void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
     // ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
 
-    if(!bumper_.q.callOne(ros::WallDuration(1)) && bumperCollision(bumper_.data)) return; // 障害物に接触してないか確認
+    if(!bumper_->q.callOne(ros::WallDuration(1)) && bumperCollision(bumper_->data)) return; // 障害物に接触してないか確認
     
-    if(pose_.q.callOne(ros::WallDuration(1))) return;
+    if(pose_->q.callOne(ros::WallDuration(1))) return;
 
-    if(lookupCostmap(pose_.data)){
-        escapeFromCostmap(pose_.data);
-        pose_.q.callOne(ros::WallDuration(1.0));
+    if(lookupCostmap(pose_->data)){
+        escapeFromCostmap(pose_->data);
+        pose_->q.callOne(ros::WallDuration(1.0));
     } 
 
-    if(scan_.q.callOne(ros::WallDuration(1))) return;
+    if(scan_->q.callOne(ros::WallDuration(1))) return;
 
     if(APPROACH_WALL){
         double angle;
-        if(forwardWallDetection(scan_.data, angle)) VFHMove(scan_.data,std::move(angle));
-        else if(!roadCenterDetection(scan_.data)){
-            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+        if(forwardWallDetection(scan_->data, angle)) VFHMove(scan_->data,std::move(angle));
+        else if(!roadCenterDetection(scan_->data)){
+            if(!VFHMove(scan_->data)) emergencyAvoidance(scan_->data);
         }
     }
     else {
-        if(!roadCenterDetection(scan_.data)){
-            if(!VFHMove(scan_.data)) emergencyAvoidance(scan_.data);
+        if(!roadCenterDetection(scan_->data)){
+            if(!VFHMove(scan_->data)) emergencyAvoidance(scan_->data);
         }
     }
 }
@@ -138,9 +149,9 @@ void Movement::oneRotation(void){
     //ロボットがz軸周りに一回転する
     ROS_DEBUG_STREAM("rotation");
 
-    if(pose_.q.callOne(ros::WallDuration(1))) return;
+    if(pose_->q.callOne(ros::WallDuration(1))) return;
 
-    double initYaw,yaw = ExCov::qToYaw(pose_.data.pose.orientation);
+    double initYaw,yaw = ExCov::qToYaw(pose_->data.pose.orientation);
     double initSign = initYaw / std::abs(initYaw);
 
     if(std::isnan(initSign)) initSign = 1.0;
@@ -151,23 +162,23 @@ void Movement::oneRotation(void){
     
     for(int count=0;(count < 3 && (count < 2 || std::abs(yaw) < std::abs(initYaw))) && ros::ok();){
         double yawOld = yaw;
-        velocity_.pub.publish(vel);
-        pose_.q.callOne(ros::WallDuration(1));
-        yaw = ExCov::qToYaw(pose_.data.pose.orientation);
+        velocity_->pub.publish(vel);
+        pose_->q.callOne(ros::WallDuration(1));
+        yaw = ExCov::qToYaw(pose_->data.pose.orientation);
         if(yawOld * yaw < 0) ++count;
     }
 }
 
 bool Movement::lookupCostmap(void){
-    while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-    return lookupCostmap(pose_.data);
+    while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+    return lookupCostmap(pose_->data);
 }
 
 bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal){
     // コストマップを更新
-    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
+    while(gCostmap_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
     ROS_INFO_STREAM("get global costmap");
-    return lookupCostmap(goal,gCostmap_.data);
+    return lookupCostmap(goal,gCostmap_->data);
 }
 
 bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_msgs::OccupancyGrid& map){
@@ -194,11 +205,11 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     // ローカルコストマップを分割して安全そうなエリアに向かって脱出
 
     // // コストマップ
-    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
+    while(gCostmap_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
     ROS_INFO_STREAM("get global costmap");
-    std::vector<std::vector<int8_t>> gMap(ExUtl::mapArray1dTo2d(gCostmap_.data.data,gCostmap_.data.info));
+    std::vector<std::vector<int8_t>> gMap(ExUtl::mapArray1dTo2d(gCostmap_->data.data,gCostmap_->data.info));
 
-    ExStc::mapSearchWindow msw(pose.pose.position,gCostmap_.data.info,ESC_MAP_WIDTH,ESC_MAP_HEIGHT);
+    ExStc::mapSearchWindow msw(pose.pose.position,gCostmap_->data.info,ESC_MAP_WIDTH,ESC_MAP_HEIGHT);
 
     const int gw = (msw.right-msw.left) / ESC_MAP_DIV_X;
     const int gh = (msw.bottom-msw.top) / ESC_MAP_DIV_Y;
@@ -219,7 +230,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
                 for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h] > 0 ? gMap[w][h] : 0;
             }
             gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gw)/2,(msw.top*2+(2*dh+1)*gh)/2);
-            gmm[dw][dh].pose.position = ExUtl::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_.data.info);
+            gmm[dw][dh].pose.position = ExUtl::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_->data.info);
             gmm[dw][dh].risk = risk / (gw*gh);
         }
     }
@@ -279,9 +290,9 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     
     while(loop && lookupCostmap() && ros::ok()) {
         ROS_INFO_STREAM("escape to forward");
-        velocity_.pub.publish(ExCos::msgTwist(FORWARD_VELOCITY,0));
-        while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-        escapeFromCostmap(pose_.data);
+        velocity_->pub.publish(ExCos::msgTwist(FORWARD_VELOCITY,0));
+        while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+        escapeFromCostmap(pose_->data);
     }
     loop = false;
     lastIndex << INT_MAX,INT_MAX;
@@ -299,31 +310,31 @@ void Movement::rotationFromTo(const geometry_msgs::Quaternion& from, const geome
     double la = ExCov::qToYaw(from);
 
     if(rotation>=0){    
-        while(ExCov::qToYaw(pose_.data.pose.orientation) > 0 && sum < rotation - ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExCos::msgTwist(0,ROTATION_VELOCITY));
-            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExCov::qToYaw(pose_.data.pose.orientation) > 0 ? ExCov::qToYaw(pose_.data.pose.orientation)-la : ExCov::qToYaw(pose_.data.pose.orientation) + M_PI;
-            la = ExCov::qToYaw(pose_.data.pose.orientation) > 0 ? ExCov::qToYaw(pose_.data.pose.orientation) : -M_PI;
+        while(ExCov::qToYaw(pose_->data.pose.orientation) > 0 && sum < rotation - ROTATION_TOLERANCE && ros::ok()){
+            velocity_->pub.publish(ExCos::msgTwist(0,ROTATION_VELOCITY));
+            while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            sum += ExCov::qToYaw(pose_->data.pose.orientation) > 0 ? ExCov::qToYaw(pose_->data.pose.orientation)-la : ExCov::qToYaw(pose_->data.pose.orientation) + M_PI;
+            la = ExCov::qToYaw(pose_->data.pose.orientation) > 0 ? ExCov::qToYaw(pose_->data.pose.orientation) : -M_PI;
         }
         while(sum < rotation - ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExCos::msgTwist(0,ROTATION_VELOCITY));
-            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExCov::qToYaw(pose_.data.pose.orientation)-la;
-            la = ExCov::qToYaw(pose_.data.pose.orientation);
+            velocity_->pub.publish(ExCos::msgTwist(0,ROTATION_VELOCITY));
+            while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            sum += ExCov::qToYaw(pose_->data.pose.orientation)-la;
+            la = ExCov::qToYaw(pose_->data.pose.orientation);
         }
     }
     else{
-        while(ExCov::qToYaw(pose_.data.pose.orientation) < 0 && sum > rotation + ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExCos::msgTwist(0,-ROTATION_VELOCITY));
-            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExCov::qToYaw(pose_.data.pose.orientation) < 0 ? ExCov::qToYaw(pose_.data.pose.orientation)-la : ExCov::qToYaw(pose_.data.pose.orientation) - M_PI;
-            la = ExCov::qToYaw(pose_.data.pose.orientation) < 0 ? ExCov::qToYaw(pose_.data.pose.orientation) : M_PI;
+        while(ExCov::qToYaw(pose_->data.pose.orientation) < 0 && sum > rotation + ROTATION_TOLERANCE && ros::ok()){
+            velocity_->pub.publish(ExCos::msgTwist(0,-ROTATION_VELOCITY));
+            while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            sum += ExCov::qToYaw(pose_->data.pose.orientation) < 0 ? ExCov::qToYaw(pose_->data.pose.orientation)-la : ExCov::qToYaw(pose_->data.pose.orientation) - M_PI;
+            la = ExCov::qToYaw(pose_->data.pose.orientation) < 0 ? ExCov::qToYaw(pose_->data.pose.orientation) : M_PI;
         }
         while(sum > rotation + ROTATION_TOLERANCE && ros::ok()){
-            velocity_.pub.publish(ExCos::msgTwist(0,-ROTATION_VELOCITY));
-            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-            sum += ExCov::qToYaw(pose_.data.pose.orientation)-la;
-            la = ExCov::qToYaw(pose_.data.pose.orientation);
+            velocity_->pub.publish(ExCos::msgTwist(0,-ROTATION_VELOCITY));
+            while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+            sum += ExCov::qToYaw(pose_->data.pose.orientation)-la;
+            la = ExCov::qToYaw(pose_->data.pose.orientation);
         }
     }
 }
@@ -338,8 +349,8 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal){
     int pc = 0;
     ros::Rate rate(RESET_GOAL_PATH_RATE);
     
-    while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
-    while(!pp_.createPath(pose_.data,goal,path) && ros::ok()){
+    while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+    while(!pp_->createPath(pose_->data,goal,path) && ros::ok()){
         ROS_INFO_STREAM("Waiting path ..."); // 一生パスが作れない場合もあるので注意
         if(++pc >= RESET_GOAL_PATH_LIMIT){
             ROS_WARN_STREAM("create path limit");
@@ -351,16 +362,16 @@ bool Movement::resetGoal(geometry_msgs::PoseStamped& goal){
     // パスを少し遡ったところを目的地にする
     ROS_INFO_STREAM("path size: " << path.size());
     ROS_INFO_STREAM("PATH_BACK_INTERVAL: " << PATH_BACK_INTERVAL);
-    while(gCostmap_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
+    while(gCostmap_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting global costmap ...");
 
     // ここの中でこすとまっぷにかからなくなるまで再計算
     for(int i=1;PATH_BACK_INTERVAL*i < path.size() && ros::ok();++i){
         ROS_INFO_STREAM("goal reset try : " << i);
-        if(!lookupCostmap(path[path.size() - PATH_BACK_INTERVAL*i],gCostmap_.data)){
-            while(pose_.q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+        if(!lookupCostmap(path[path.size() - PATH_BACK_INTERVAL*i],gCostmap_->data)){
+            while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
             goal = path[path.size() - PATH_BACK_INTERVAL*i];
             Eigen::Vector2d vec;
-            pp_.getVec(pose_.data,goal,vec,path);
+            pp_->getVec(pose_->data,goal,vec,path);
             goal.pose.orientation = ExCov::eigenQuaToGeoQua(Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(vec.x(),vec.y(),0.0)));
             return true;
         }
@@ -375,7 +386,7 @@ bool Movement::bumperCollision(const kobuki_msgs::BumperEvent& bumper){
     if(bumper.state){
         ROS_WARN_STREAM("Bumper Hit !!");
         ros::Time setTime = ros::Time::now();
-        while(ros::Time::now()-setTime < ros::Duration(BACK_TIME)) velocity_.pub.publish(ExCos::msgTwist(BACK_VELOCITY,0));
+        while(ros::Time::now()-setTime < ros::Duration(BACK_TIME)) velocity_->pub.publish(ExCos::msgTwist(BACK_VELOCITY,0));
         return true;
     }
     return false;
@@ -387,7 +398,7 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     static bool initialized = false;
     static tf::TransformListener listener;
     if(!initialized){
-        listener.waitForTransform(pose_.data.header.frame_id, scan.header.frame_id, ros::Time(), ros::Duration(1.0));
+        listener.waitForTransform(pose_->data.header.frame_id, scan.header.frame_id, ros::Time(), ros::Duration(1.0));
         initialized = true;
     }
 
@@ -406,7 +417,7 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
     }
 
     if(ss.ranges.size() < 2){
-        road_.pub.publish(geometry_msgs::PointStamped());
+        road_->pub.publish(geometry_msgs::PointStamped());
         return false;
     }
 
@@ -414,13 +425,13 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
         if(std::abs(ss.y[i+1] - ss.y[i]) >= ROAD_THRESHOLD){
             ROS_DEBUG_STREAM("Road Center Found");
             //  通路中心座標pub
-            road_.pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_.data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((ss.x[i+1] + ss.x[i])/2, (ss.y[i+1] + ss.y[i])/2)),pose_.data.header.frame_id));
-            velocity_.pub.publish(velocityGenerator((ss.angles[i]+ss.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
+            road_->pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_->data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((ss.x[i+1] + ss.x[i])/2, (ss.y[i+1] + ss.y[i])/2)),pose_->data.header.frame_id));
+            velocity_->pub.publish(velocityGenerator((ss.angles[i]+ss.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
             return true;
         }
     }
     ROS_DEBUG_STREAM("Road Center Do Not Found");
-    road_.pub.publish(geometry_msgs::PointStamped());
+    road_->pub.publish(geometry_msgs::PointStamped());
     return false;
 }
 
@@ -512,7 +523,7 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     double gain = ti==cp[0] ? 0 : (aveDist - VFH_NEAR_RANGE_THRESHOLD) * (FAR_AVOIDANCE_GAIN - NEAR_AVOIDANCE_GAIN)/(VFH_FAR_RANGE_THRESHOLD - VFH_NEAR_RANGE_THRESHOLD) + NEAR_AVOIDANCE_GAIN;
     ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate << ", fRate : " << fRate << ", nRate : " << nRate << ", gain : " << gain << ", aveDist : " << aveDist);
     ROS_INFO_STREAM("this angle is safety");
-    velocity_.pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,gain));
+    velocity_->pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,gain));
     return true;
 }
 
@@ -560,7 +571,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
         if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation_ = aveP > aveM ? 1.0 : -1.0;
         ROS_INFO_STREAM((previousOrientation_ > 0 ? "Avoidance to Left" : "Avoidance to Right"));
-        velocity_.pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY, EMERGENCY_AVOIDANCE_GAIN));
+        velocity_->pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY, EMERGENCY_AVOIDANCE_GAIN));
         return true;
     }
     else{

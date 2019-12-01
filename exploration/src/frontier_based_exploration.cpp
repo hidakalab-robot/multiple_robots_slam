@@ -1,15 +1,25 @@
 #include <exploration/frontier_based_exploration.h>
 #include <fstream>
+#include <Eigen/Geometry>
+#include <exploration_libraly/convert.h>
+#include <geometry_msgs/PointStamped.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <exploration_libraly/struct.h>
+#include <exploration_msgs/FrontierArray.h>
+#include <exploration/frontier_based_exploration_parameter_reconfigureConfig.h>
+#include <dynamic_reconfigure/server.h>
 
 namespace ExCov = ExpLib::Convert;
+namespace ExStc = ExpLib::Struct;
 
 FrontierBasedExploration::FrontierBasedExploration()
-    :frontier_("frontier", 1)
-    ,pose_("pose", 1)
-    ,goal_("goal", 1, true)
-    ,drs_(ros::NodeHandle("~/frontier_based_exploration")){
+    :frontier_(new ExStc::subStruct<exploration_msgs::FrontierArray>("frontier", 1))
+    ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
+    ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
+    ,drs_(new dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/frontier_based_exploration")))
+    ,lastGoal_(new geometry_msgs::Point()){
     loadParams();
-    drs_.setCallback(boost::bind(&FrontierBasedExploration::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&FrontierBasedExploration::dynamicParamsCB,this, _1, _2));
 }
 
 FrontierBasedExploration::~FrontierBasedExploration(){
@@ -18,21 +28,21 @@ FrontierBasedExploration::~FrontierBasedExploration(){
 
 bool FrontierBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // 分岐の読み込み
-    if(frontier_.q.callOne(ros::WallDuration(1)) || frontier_.data.frontiers.size()==0){
+    if(frontier_->q.callOne(ros::WallDuration(1)) || frontier_->data.frontiers.size()==0){
         ROS_ERROR_STREAM("Can't read frontier or don't find frontier");  
         return false;
     }
     // pose の読みこみ
-    if(pose_.q.callOne(ros::WallDuration(1))){
+    if(pose_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read pose");
         return false;
     }
 
-    std::vector<exploration_msgs::Frontier> frontiers(frontier_.data.frontiers);
+    std::vector<exploration_msgs::Frontier> frontiers(frontier_->data.frontiers);
 
     // frontier を条件でフィルタする
     if(LAST_GOAL_EFFECT){
-        auto removeResult = std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){return Eigen::Vector2d(f.point.x - lastGoal_.x, f.point.y - lastGoal_.y).norm()<LAST_GOAL_TOLERANCE;});
+        auto removeResult = std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){return Eigen::Vector2d(f.point.x - lastGoal_->x, f.point.y - lastGoal_->y).norm()<LAST_GOAL_TOLERANCE;});
 		frontiers.erase(std::move(removeResult),frontiers.end());
     }
     
@@ -41,7 +51,7 @@ bool FrontierBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
         return false;
     }
 
-    return decideGoal(goal, frontiers, pose_.data);
+    return decideGoal(goal, frontiers, pose_->data);
 }
 
 bool FrontierBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<exploration_msgs::Frontier>& frontiers,const geometry_msgs::PoseStamped& pose){
@@ -64,8 +74,8 @@ bool FrontierBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, con
     if(max > -DBL_MAX){
         goal.header.frame_id = pose.header.frame_id;
         goal.header.stamp = ros::Time::now();
-        lastGoal_ = goal.point;
-        goal_.pub.publish(goal);
+        *lastGoal_ = goal.point;
+        goal_->pub.publish(goal);
         return true;
     }
     return false;

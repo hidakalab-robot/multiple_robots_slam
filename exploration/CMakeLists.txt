@@ -212,21 +212,21 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_library(libmovement src/movement.cpp)
-add_dependencies(libmovement ${PROJECT_NAME}_gencfg)
-target_link_libraries(libmovement ${catkin_LIBRARIES})
+add_library(movement src/movement.cpp)
+add_dependencies(movement ${PROJECT_NAME}_gencfg)
+target_link_libraries(movement ${catkin_LIBRARIES})
 
-add_library(libsbe src/sensor_based_exploration.cpp)
-add_dependencies(libsbe ${PROJECT_NAME}_gencfg)
-target_link_libraries(libsbe ${catkin_LIBRARIES})
+add_library(sbe src/sensor_based_exploration.cpp)
+add_dependencies(sbe ${PROJECT_NAME}_gencfg)
+target_link_libraries(sbe ${catkin_LIBRARIES})
 
-add_library(libfbe src/frontier_based_exploration.cpp)
-add_dependencies(libfbe ${PROJECT_NAME}_gencfg)
-target_link_libraries(libfbe ${catkin_LIBRARIES})
+add_library(fbe src/frontier_based_exploration.cpp)
+add_dependencies(fbe ${PROJECT_NAME}_gencfg)
+target_link_libraries(fbe ${catkin_LIBRARIES})
 
-add_library(libshe src/seamless_hybrid_exploration.cpp)
-add_dependencies(libshe ${PROJECT_NAME}_gencfg)
-target_link_libraries(libshe ${catkin_LIBRARIES} libsbe)
+add_library(she src/seamless_hybrid_exploration.cpp)
+add_dependencies(she ${PROJECT_NAME}_gencfg)
+target_link_libraries(she ${catkin_LIBRARIES} sbe)
 
 # add_executable(sensor_based_exploration src/sensor_based_exploration_node.cpp)
 add_executable(sensor_based_exploration 
@@ -236,8 +236,8 @@ add_executable(sensor_based_exploration
 # target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
 target_link_libraries(sensor_based_exploration 
   ${catkin_LIBRARIES} 
-  libsbe
-  libmovement
+  sbe
+  movement
 )
 
 # add_executable(frontier_based_exploration src/frontier_based_exploration_node.cpp)
@@ -248,8 +248,8 @@ add_executable(frontier_based_exploration
 # target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
 target_link_libraries(frontier_based_exploration
   ${catkin_LIBRARIES} 
-  libfbe
-  libmovement
+  fbe
+  movement
 )
 
 # add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration_node.cpp)
@@ -259,8 +259,8 @@ add_executable(seamless_hybrid_exploration
 # add_dependencies(seamless_hybrid_exploration ${PROJECT_NAME}_gencfg)
 target_link_libraries(seamless_hybrid_exploration
  ${catkin_LIBRARIES}
- libshe
- libmovement
+ she
+ movement
 )
 
 # add_executable(multi_exploration_simulator src/multi_exploration_simulator_node.cpp)
@@ -271,7 +271,7 @@ add_executable(multi_exploration_simulator
 add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
 target_link_libraries(multi_exploration_simulator
  ${catkin_LIBRARIES}
- libshe
+ she
 )
 
 add_executable(multi_exploration_simulator_input_support
@@ -285,7 +285,7 @@ add_executable(legacy_hybrid_exploration
 # add_dependencies(legacy_hybrid_exploration ${PROJECT_NAME}_gencfg)
 target_link_libraries(legacy_hybrid_exploration
  ${catkin_LIBRARIES}
- libshe
- libfbe
- libmovement
+ she
+ fbe
+ movement
 )

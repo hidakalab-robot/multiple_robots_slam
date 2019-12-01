@@ -1,25 +1,55 @@
 #include <exploration/seamless_hybrid_exploration.h>
 #include <exploration_libraly/convert.h>
 #include <fstream>
+#include <exploration_libraly/struct.h>
+#include <exploration_libraly/enum.h>
+#include <exploration_libraly/path_planning.h>
+#include <exploration_msgs/FrontierArray.h>
+#include <exploration_msgs/RobotInfoArray.h>
+#include <navfn/navfn_ros.h>
+#include <dynamic_reconfigure/server.h>
+#include <exploration/seamless_hybrid_exploration_parameter_reconfigureConfig.h>
+#include <geometry_msgs/Point.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
 
+struct SeamlessHybridExploration::maxValue{
+    double distance;
+    double angle;
+    maxValue();
+};
 SeamlessHybridExploration::maxValue::maxValue():distance(-DBL_MAX),angle(-DBL_MAX){};
 
+struct SeamlessHybridExploration::preCalcResult{
+    struct value{
+        double distance;
+        double angle;
+        value();
+        value(const double d, const double a);
+    };
+    geometry_msgs::Point point;
+    std::vector<value> values;
+    preCalcResult();
+};
 SeamlessHybridExploration::preCalcResult::preCalcResult(){};
 SeamlessHybridExploration::preCalcResult::value::value(){};
 SeamlessHybridExploration::preCalcResult::value::value(const double d, const double a):distance(d),angle(a){};
 
 SeamlessHybridExploration::SeamlessHybridExploration()
-    :robotArray_("robot_array", 1)
-    ,frontier_("frontier", 1)
-    ,useFro_("useful_frontier", 1, true)
-    ,pp_("seamless_costmap","seamless_planner")
-    ,drs_(ros::NodeHandle("~/seamless_hybrid_exploration")){
+    :robotArray_(new ExStc::subStruct<exploration_msgs::RobotInfoArray>("robot_array", 1))
+    ,frontier_(new ExStc::subStruct<exploration_msgs::FrontierArray>("frontier", 1))
+    ,useFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("useful_frontier", 1, true))
+    ,pp_(new ExpLib::PathPlanning<navfn::NavfnROS>("seamless_costmap","seamless_planner"))
+    ,drs_(new dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/seamless_hybrid_exploration")))
+    ,ls_(new std::vector<ExStc::listStruct>())
+    ,fa_(new exploration_msgs::FrontierArray())
+    ,ria_(new exploration_msgs::RobotInfoArray())
+    ,ps_(new geometry_msgs::PoseStamped())
+    ,mVal_(new maxValue()){
     loadParams();
-    drs_.setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
 }
 
 SeamlessHybridExploration::~SeamlessHybridExploration(){
@@ -27,36 +57,39 @@ SeamlessHybridExploration::~SeamlessHybridExploration(){
 }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
-    if(robotArray_.q.callOne(ros::WallDuration(1))){
+    if(robotArray_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read robot_array or don't find robot_array"); 
         return false;
     }
-    if(frontier_.q.callOne(ros::WallDuration(1))){
+    if(frontier_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read frontier or don't find frontier"); 
         return false;
     }
 
-    ps_ = pose;
-    ls_ = ls;
-    fa_ = frontier_.data;
-    ria_ = robotArray_.data;
+    *ps_ = pose;
+    *ls_ = ls;
+    *fa_ = frontier_->data;
+    *ria_ = robotArray_->data;
 
-    if(!filter(ls_, fa_, ria_)) return false;
+    if(!filter(*ls_, *fa_, *ria_)) return false;
 
     return decideGoal(goal);
 }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     // 事前計算
-    preCalc(ls_, fa_, ria_, ps_);
+    ROS_DEBUG_STREAM("tes1");
+    preCalc(*ls_, *fa_, *ria_, *ps_);
+    ROS_DEBUG_STREAM("tes10");
 
     // 評価計算
-    auto evaluation = [this](const double d, const double a){return DISTANCE_WEIGHT * d / mVal_.distance + DIRECTION_WEIGHT * a / mVal_.angle;};
+    auto evaluation = [this](const double d, const double a){return DISTANCE_WEIGHT * d / mVal_->distance + DIRECTION_WEIGHT * a / mVal_->angle;};
 
     double minE = DBL_MAX;
 
     for(int m=0,me=ownPreCalc_.size();m!=me;++m){
         double e = 1;
+        ROS_DEBUG_STREAM("tes11");
         for(int i=0,ie=ownPreCalc_[m].values.size();i!=ie;++i){
             double subE = 0;
             if(otherPreCalc_.size()==0) subE = DBL_MAX;
@@ -68,14 +101,14 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
         if(e < minE){
             minE = std::move(e);
             // goal = mainRobotInfo[m].robot.coordinate;
-            goal.header.frame_id = ps_.header.frame_id;
+            goal.header.frame_id = ps_->header.frame_id;
             goal.header.stamp = ros::Time::now();
             goal.point = ownPreCalc_[m].point;
-            goal_.pub.publish(goal);
+            goal_->pub.publish(goal);
             if(m == me -1) return false;
         }
     }
-    lastGoal_ = goal.point;
+    *lastGoal_ = goal.point;
     return true;
 }
 
@@ -96,7 +129,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
 	fa.frontiers.erase(std::move(faRemove),fa.frontiers.end());
     ROS_INFO_STREAM("after frontiers size : " << fa.frontiers.size());
 
-    useFro_.pub.publish(fa);
+    useFro_->pub.publish(fa);
     if(fa.frontiers.size()==0) return false;
 
     //ロボットリストのフィルタ
@@ -112,7 +145,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
 void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
     ownPreCalc_ = std::vector<preCalcResult>();
     otherPreCalc_ = std::vector<preCalcResult>();
-    mVal_ = maxValue();
+    *mVal_ = maxValue();
 
     auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1){
         SeamlessHybridExploration::preCalcResult pcr;
@@ -123,17 +156,17 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
             // 目標地点での向きをpathの最後の方の移動で決めたい
             Eigen::Vector2d v2;
             double distance;
-            if(!pp_.getDistanceAndVec(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
+            if(!pp_->getDistanceAndVec(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
                 v2 = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).normalized();
-                if(!pp_.getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
+                if(!pp_->getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
                     //最終手段で直線距離を計算
                     distance = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).norm();
                 }                
             }
             double angle = std::abs(acos(v1.dot(v2)));
             pcr.values.emplace_back(preCalcResult::value(distance,angle));
-            if(angle > mVal_.angle) mVal_.angle = std::move(angle);
-            if(distance > mVal_.distance) mVal_.distance = std::move(distance);
+            if(angle > mVal_->angle) mVal_->angle = std::move(angle);
+            if(distance > mVal_->distance) mVal_->distance = std::move(distance);
         }
         return pcr;
     };
@@ -146,7 +179,7 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
     for(const auto& l : ls){
         double distance;
         Eigen::Vector2d v1;
-        if(!pp_.getDistanceAndVec(pose,ExCov::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
+        if(!pp_->getDistanceAndVec(pose,ExCov::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
             v1 = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y);
             distance = v1.lpNorm<1>();
             v1.normalize();
@@ -155,11 +188,9 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
         forward += distance;
     }
     forward /= ls.size();
-
     // 直進時の計算
     Eigen::Vector2d fwdV1 = ExCov::qToVector2d(pose.pose.orientation);; 
     ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
-
     // 他のロボットに関する計算
     for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation)));
 }
@@ -169,12 +200,9 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
 
     ros::NodeHandle nh("~/mulsim");
     std::string FRAME_ID;
-    // std::string EXTRA_PARAMETER_NAMESPACE;
     int SIMULATE_ROBOT_INDEX;
 
     nh.param<std::string>("frame_id", FRAME_ID, "map");
-    // p.param<std::string>("extra_parameter_namespace", EXTRA_PARAMETER_NAMESPACE, "extra_parameter");
-    // p.param<int>("/"+EXTRA_PARAMETER_NAMESPACE+"/simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
     nh.param<int>("simulate_robot_index", SIMULATE_ROBOT_INDEX, 1); 
 
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
@@ -187,18 +215,18 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
     // ls 格納
     ls.resize(b.size());
     for(int i=0,ie=b.size();i!=ie;++i) ls[i].point = b[i];
-    ls_ = ls;
+    *ls_ = ls;
 
     // fa 格納
     fa.frontiers.resize(f.size());
     fa.header.frame_id = FRAME_ID;
     for(int i=0,ie=f.size();i!=ie;++i) fa.frontiers[i].point = f[i];
-    fa_ = fa;
+    *fa_ = fa;
 
     // ps 格納
     ps.header.frame_id = FRAME_ID;
     ps.pose = r[SIMULATE_ROBOT_INDEX-1];
-    ps_ = ps;
+    *ps_ = ps;
 
     // ria 格納 
     ria.info.resize(r.size()-1);
@@ -206,12 +234,12 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
         if(i+1 == SIMULATE_ROBOT_INDEX) continue;
         ria.info[ix++].pose = r[i];
     }
-    ria_ = ria;
+    *ria_ = ria;
 
     geometry_msgs::PointStamped goal;
     decideGoal(goal);
 
-    pp.createPath(ps_,ExCov::pointStampedToPoseStamped(goal));
+    pp.createPath(*ps_,ExCov::pointStampedToPoseStamped(goal));
 }
 
 void SeamlessHybridExploration::loadParams(void){

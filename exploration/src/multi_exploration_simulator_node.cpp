@@ -1,3 +1,4 @@
+#include <ros/ros.h>
 #include <exploration/multi_exploration_simulator.h> // 必須
 #include <exploration/seamless_hybrid_exploration.h> // SeamlessHybrid sh(pp);　用
 

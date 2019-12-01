@@ -213,9 +213,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_library(libcontinuity src/continuity.cpp)
-target_link_libraries(libcontinuity ${catkin_LIBRARIES})
-
 add_executable(visualization 
  src/visualization_node.cpp
  src/visualization.cpp
@@ -227,7 +224,6 @@ add_executable(bumper_continuity
 )
 target_link_libraries(bumper_continuity
  ${catkin_LIBRARIES}
- libcontinuity
 )
 
 add_executable(movebase_canceller
@@ -284,5 +280,4 @@ add_executable(map_continuity
 )
 target_link_libraries(map_continuity
  ${catkin_LIBRARIES}
- libcontinuity
 )

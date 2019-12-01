@@ -1,78 +1,87 @@
 #ifndef FRONTIER_DETECTION_H
 #define FRONTIER_DETECTION_H
 
-#include <exploration_libraly/construct.h>
-#include <exploration_libraly/struct.h>
-#include <exploration_msgs/FrontierArray.h>
-#include <Eigen/Geometry>
-#include <nav_msgs/OccupancyGrid.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <pcl_ros/point_cloud.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <exploration_libraly/utility.h>
-#include <dynamic_reconfigure/server.h>
-#include <exploration_support/frontier_detection_parameter_reconfigureConfig.h>
-#include <fstream>
+#include <memory>
+#include <vector>
+
+// 前方宣言
+namespace ExpLib{
+    namespace Struct{
+        template<typename T>
+        struct pubStruct;
+        struct subStructSimple;
+    }
+}
+namespace boost{
+    template<class T> 
+    class shared_ptr;
+}
+namespace nav_msgs{
+    template <class ContainerAllocator>
+    struct OccupancyGrid_;
+    typedef ::nav_msgs::OccupancyGrid_<std::allocator<void>> OccupancyGrid;
+    typedef boost::shared_ptr< ::nav_msgs::OccupancyGrid const> OccupancyGridConstPtr;
+}
+namespace exploration_msgs{
+    template <class ContainerAllocator>
+    struct FrontierArray_;
+    typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
+    template <class ContainerAllocator>
+    struct Frontier_;
+    typedef ::exploration_msgs::Frontier_<std::allocator<void>> Frontier;
+}
+namespace sensor_msgs{
+    template <class ContainerAllocator>
+    struct PointCloud2_;
+    typedef ::sensor_msgs::PointCloud2_<std::allocator<void>> PointCloud2;
+}
+namespace exploration_support{
+    class frontier_detection_parameter_reconfigureConfig;
+}
+namespace dynamic_reconfigure{
+    template <class ConfigType>
+    class Server;
+}
+// 前方宣言ここまで
 
 namespace ExStc = ExpLib::Struct;
-namespace ExUtl = ExpLib::Utility;
-namespace ExCos = ExpLib::Construct;
 
-class FrontierDetection
-{
-private:
-    // dynamic parameters
-    double CLUSTER_TOLERANCE;
-    int MIN_CLUSTER_SIZE;
-    int MAX_CLUSTER_SIZE;
-    float FILTER_SQUARE_DIAMETER;
+class FrontierDetection{
+    private:
+        // dynamic parameters
+        double CLUSTER_TOLERANCE;
+        int MIN_CLUSTER_SIZE;
+        int MAX_CLUSTER_SIZE;
+        float FILTER_SQUARE_DIAMETER;
 
-    // static parameters
-    std::string FRONTIER_PARAMETER_FILE_PATH;
-    bool OUTPUT_FRONTIER_PARAMETERS;
+        // static parameters
+        std::string FRONTIER_PARAMETER_FILE_PATH;
+        bool OUTPUT_FRONTIER_PARAMETERS;
 
-    // struct
-    struct mapStruct{
-        nav_msgs::MapMetaData info;
-        std::vector<std::vector<int8_t>> source;
-        std::vector<std::vector<int8_t>> horizon;
-        std::vector<std::vector<int8_t>> frontierMap;
-        mapStruct(const nav_msgs::OccupancyGrid& m);
-    };
-    struct clusterStruct{
-        std::vector<Eigen::Vector2i> index;
-        std::vector<int> isObstacle;
-        std::vector<double> areas;
-        std::vector<Eigen::Vector2d> variances;
-        std::vector<double> covariance;
-        std::vector<pcl::PointIndices> indices;
-        pcl::PointCloud<pcl::PointXYZ>::Ptr pc;
+        // struct
+        struct mapStruct;
+        struct clusterStruct;
 
-        clusterStruct();
-        clusterStruct(const clusterStruct& cs);
-        void reserve(int size);
-    };
+        // variables
+        std::unique_ptr<ExStc::subStructSimple> map_;
+        std::unique_ptr<ExStc::pubStruct<exploration_msgs::FrontierArray>> frontier_;
+        std::unique_ptr<ExStc::pubStruct<sensor_msgs::PointCloud2>> horizon_;
+        std::unique_ptr<dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig>> drs_;
 
-    // variables
-    ExStc::subStructSimple map_;
-    ExStc::pubStruct<exploration_msgs::FrontierArray> frontier_;
-    ExStc::pubStruct<sensor_msgs::PointCloud2> horizon_;
-    dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig> drs_;
+        // functions
+        void mapCB(const nav_msgs::OccupancyGridConstPtr& msg);
+        void horizonDetection(mapStruct& map);
+        clusterStruct clusterDetection(const mapStruct& map);
+        void obstacleFilter(mapStruct& map,clusterStruct& cs);
+        void publishHorizon(const clusterStruct& cs, const std::string& frameId);
+        void publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId);
+        void loadParams(void);
+        void dynamicParamsCB(exploration_support::frontier_detection_parameter_reconfigureConfig &cfg, uint32_t level);
+        void outputParams(void);
 
-    // functions
-    void mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg);
-    void horizonDetection(mapStruct& map);
-    clusterStruct clusterDetection(const mapStruct& map);
-    void obstacleFilter(mapStruct& map,clusterStruct& cs);
-    void publishHorizon(const clusterStruct& cs, const std::string& frameId);
-    void publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId);
-    void loadParams(void);
-    void dynamicParamsCB(exploration_support::frontier_detection_parameter_reconfigureConfig &cfg, uint32_t level);
-    void outputParams(void);
-
-public:
-    FrontierDetection();
-    ~FrontierDetection();
+    public:
+        FrontierDetection();
+        ~FrontierDetection();
 };
 
 #endif //FRONTIER_DETECTION_HPP

@@ -2,19 +2,27 @@
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/struct.h>
 #include <exploration_msgs/FrontierArray.h>
-#include <Eigen/Geometry>
 #include <nav_msgs/OccupancyGrid.h>
-#include <pcl/segmentation/extract_clusters.h>
-#include <pcl_ros/point_cloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <exploration_libraly/utility.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration_support/frontier_detection_parameter_reconfigureConfig.h>
 #include <fstream>
+#include <Eigen/Core>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl_ros/point_cloud.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExUtl = ExpLib::Utility;
 namespace ExCos = ExpLib::Construct;
+
+struct FrontierDetection::mapStruct{
+    nav_msgs::MapMetaData info;
+    std::vector<std::vector<int8_t>> source;
+    std::vector<std::vector<int8_t>> horizon;
+    std::vector<std::vector<int8_t>> frontierMap;
+    mapStruct(const nav_msgs::OccupancyGrid& m);
+};
 
 FrontierDetection::mapStruct::mapStruct(const nav_msgs::OccupancyGrid& m)
     :source(ExUtl::mapArray1dTo2d(m.data,m.info))
@@ -23,6 +31,19 @@ FrontierDetection::mapStruct::mapStruct(const nav_msgs::OccupancyGrid& m)
     info = m.info;
 }
 
+struct FrontierDetection::clusterStruct{
+    std::vector<Eigen::Vector2i> index;
+    std::vector<int> isObstacle;
+    std::vector<double> areas;
+    std::vector<Eigen::Vector2d> variances;
+    std::vector<double> covariance;
+    std::vector<pcl::PointIndices> indices;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr pc;
+
+    clusterStruct();
+    clusterStruct(const clusterStruct& cs);
+    void reserve(int size);
+};
 FrontierDetection::clusterStruct::clusterStruct():pc(new pcl::PointCloud<pcl::PointXYZ>){}
 FrontierDetection::clusterStruct::clusterStruct(const clusterStruct& cs)
     :index(cs.index)
@@ -42,19 +63,19 @@ void FrontierDetection::clusterStruct::reserve(int size){
 }
 
 FrontierDetection::FrontierDetection()
-    :map_("map", 1, &FrontierDetection::mapCB, this)
-    ,frontier_("frontier",1,true)
-    ,horizon_("horizon",1,true)
-    ,drs_(ros::NodeHandle("~/frontier")){
+    :map_(new ExStc::subStructSimple("map", 1, &FrontierDetection::mapCB, this))
+    ,frontier_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("frontier",1,true))
+    ,horizon_(new ExStc::pubStruct<sensor_msgs::PointCloud2>("horizon",1,true))
+    ,drs_(new dynamic_reconfigure::Server<exploration_support::frontier_detection_parameter_reconfigureConfig>(ros::NodeHandle("~/frontier"))){
     loadParams();
-    drs_.setCallback(boost::bind(&FrontierDetection::dynamicParamsCB,this, _1, _2));
+    drs_->setCallback(boost::bind(&FrontierDetection::dynamicParamsCB,this, _1, _2));
 }
 
 FrontierDetection::~FrontierDetection(){
     if(OUTPUT_FRONTIER_PARAMETERS) outputParams();
 }
 
-void FrontierDetection::mapCB(const nav_msgs::OccupancyGrid::ConstPtr& msg){
+void FrontierDetection::mapCB(const nav_msgs::OccupancyGridConstPtr& msg){
     // map の取り込み
     mapStruct map(*msg);
     horizonDetection(map);
@@ -227,7 +248,7 @@ void FrontierDetection::publishHorizon(const clusterStruct& cs, const std::strin
     pcl::toROSMsg(*colorCloud,msg);
     msg.header.frame_id = frameId;
     msg.header.stamp = ros::Time::now();
-    horizon_.pub.publish(msg);
+    horizon_->pub.publish(msg);
 	ROS_INFO_STREAM("Publish horizon");
 }
 
@@ -236,7 +257,7 @@ void FrontierDetection::publishFrontier(const std::vector<exploration_msgs::Fron
     msg.frontiers = frontiers;
     msg.header.frame_id = frameId;
     msg.header.stamp = ros::Time::now();
-    frontier_.pub.publish(msg);
+    frontier_->pub.publish(msg);
     ROS_INFO_STREAM("Publish frontier");
 }
 

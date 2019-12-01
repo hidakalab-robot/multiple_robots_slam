@@ -1,63 +1,77 @@
 #ifndef ROBOT_MANAGER_H
 #define ROBOT_MANAGER_H
 
-#include <exploration_libraly/construct.h>
-#include <exploration_libraly/convert.h>
-#include <exploration_libraly/struct.h>
-#include <exploration_msgs/PoseStampedArray.h>
-#include <exploration_msgs/RobotInfoArray.h>
 #include <forward_list>
-#include <geometry_msgs/PoseStamped.h>
-#include <iterator>
-#include <mutex>
-#include <ros/ros.h>
-#include <thread>
+#include <memory>
+
+// 前方宣言
+namespace ExpLib{
+    namespace Struct{
+        template<typename T>
+        struct pubStruct;
+    }
+}
+namespace exploration_msgs{
+    template <class ContainerAllocator>
+    struct RobotInfoArray_;
+    typedef ::exploration_msgs::RobotInfoArray_<std::allocator<void>> RobotInfoArray;
+    template <class ContainerAllocator>
+    struct PoseStampedArray_;
+    typedef ::exploration_msgs::PoseStampedArray_<std::allocator<void>> PoseStampedArray;
+}
+namespace boost{
+    class shared_mutex;
+    template<class T> 
+    class shared_ptr;
+}
+namespace geometry_msgs{
+    template <class ContainerAllocator>
+    struct PoseStamped_;
+    typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
+    typedef boost::shared_ptr< ::geometry_msgs::PoseStamped const> PoseStampedConstPtr;
+}
+namespace ros{
+    namespace master{
+        struct TopicInfo;
+    }
+}
+// 前方宣言ここまで
 
 //複数台のロボットの情報を管理する
 namespace ExStc = ExpLib::Struct;
-namespace ExCos = ExpLib::Construct;
-namespace ExCov = ExpLib::Convert;
 
-class RobotManager
-{
-private:
-    // static parameters
-    std::string ROBOT_TOPIC;
-    double RAGISTRATION_RATE;
-    double CONVERT_RATE;
-    double POSE_LOG_INTERVAL;
-    std::string INDIVISUAL_POSE_LOG_TOPIC;
+class RobotManager{
+    private:
+        // static parameters
+        std::string ROBOT_TOPIC;
+        double RAGISTRATION_RATE;
+        double CONVERT_RATE;
+        double POSE_LOG_INTERVAL;
+        std::string INDIVISUAL_POSE_LOG_TOPIC;
 
-    // struct
-    struct robotStruct{
-        std::mutex mutex;
-        std::string name;
-        geometry_msgs::PoseStamped pose;
-        exploration_msgs::PoseStampedArray poseLog;
-        ros::Subscriber sub;
-        ros::Publisher pub;
-    };
+        // struct
+        struct robotStruct;
 
-    // variables
-    ExStc::pubStruct<exploration_msgs::RobotInfoArray> robotArray_;
-    ExStc::pubStruct<exploration_msgs::PoseStampedArray> poseArray_; 
-    // ros::NodeHandle nhs_;
-    boost::shared_mutex robotListMutex_;
-    std::forward_list<robotStruct> robotList_;
-    exploration_msgs::PoseStampedArray allPoseLog_;
+        // variables
+        std::unique_ptr<ExStc::pubStruct<exploration_msgs::RobotInfoArray>> robotArray_;
+        std::unique_ptr<ExStc::pubStruct<exploration_msgs::PoseStampedArray>> poseArray_; 
+        std::unique_ptr<boost::shared_mutex> robotListMutex_;
+        std::unique_ptr<std::forward_list<robotStruct>> robotList_;
+        std::unique_ptr<exploration_msgs::PoseStampedArray> allPoseLog_;
 
-    // functions
-    void robotRegistration(void);//ロボットの情報を登録
-    void update(const geometry_msgs::PoseStamped::ConstPtr& msg, RobotManager::robotStruct& robot); // データの更新
-    bool isRobotTopic(const ros::master::TopicInfo& topic);
-    void convertPoseToRobotInfo(void);//publish用のデータに整形
-    void registrationLoop(void);
-    void convertLoop(void);
-    void loadParams(void);
+        // functions
+        void robotRegistration(void);//ロボットの情報を登録
+        void update(const geometry_msgs::PoseStampedConstPtr& msg, RobotManager::robotStruct& robot); // データの更新
+        bool isRobotTopic(const ros::master::TopicInfo& topic);
+        void convertPoseToRobotInfo(void);//publish用のデータに整形
+        void registrationLoop(void);
+        void convertLoop(void);
+        void loadParams(void);
 
-public:
-    RobotManager();
-    void multiThreadMain(void);
+    public:
+        RobotManager();
+        ~RobotManager();
+        void multiThreadMain(void);
 };
 
 #endif // ROBOT_MANAGER_H
