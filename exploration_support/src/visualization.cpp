@@ -40,7 +40,7 @@ Visualization::Visualization()
     ,rmMutex_(new std::mutex())
     ,avoSta_(new ExStc::subStructSimple("movement_status",1,&Visualization::avoStaCB, this))
     ,avoStaMarker_(new ExStc::pubStruct<visualization_msgs::MarkerArray>("visualization/avoidance_status", 1, true))
-    ,tasm_(new visualization_msgs::Marker())
+    ,asmt_(new visualization_msgs::Marker())
     ,asm_(new visualization_msgs::MarkerArray()){
     loadParams();
     *gm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
@@ -145,28 +145,33 @@ void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& ms
         // tasm_のpoints部分を書き換えてemplacebackする
         for(int i=0,ie=msg->range_pattern.size();i!=ie;++i){
             // ~pointsを書き換える処理~
-            std::vector<geometry_msgs::Point> tpa;
+            std::vector<geometry_msgs::Point> tpv;
             tpa.reserve(SIZE);
-            for(int j=0,je=SIZE;j!=je;++j){
+            for(int j=0;j!=SIZE;++j){
                 // 表示したい距離 msg->range_pattern[i];
                 geometry_msgs::Point tp;
+                double theta = msg->scan_angle_min+msg->scan_angle_increment*j;
                 switch (msg->calc_range_method){
                     case exploration_msgs::AvoidanceStatus::NORMAL:
-                        /* code */
+                        // 距離にcosをかけた値がx
+                        tp = ExCos::msgPoint(msg->range_pattern[i]*cos(theta),msg->range_pattern[i]*sin(theta));
                         break;
                     case exploration_msgs::AvoidanceStatus::COS:
-                        break; 
+                        // 距離がそのままx, 
+                        tp = ExCos::msgPoint(msg->range_pattern[i],msg->range_pattern[i]*tan(theta));
+                        break;
                     default:
                         ROS_INFO_STREAM("Invalid calc_range_method");
                         break;
                 }
-                tpa.emplace_back(tp);
+                tpv.emplace_back(std::move(tp));
             }
-            tasm_->points = tpa;
-            tasm_->text = tasm_->ns = msg->descriptions[i];
-            tasm_->header.frame_id = msg->scan_frame_id;
-            tasm_->header.stamp = ros::Time::now();
-            ta.markers.emplace_back(*tasm_);
+            asmt_->points = tpv;
+            asmt_->text = asmt_->ns = msg->descriptions[i];
+            asmt_->header.frame_id = msg->scan_frame_id;
+            asmt_->header.stamp = ros::Time::now();
+            asmt_->color.g *= (i+1)/SIZE;
+            ta.markers.emplace_back(*asmt_);
         }
     }
     *asm_ = ta;

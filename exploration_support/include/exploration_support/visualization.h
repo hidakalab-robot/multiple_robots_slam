@@ -119,7 +119,7 @@ class Visualization{
         // avoidance status
         std::unique_ptr<ExStc::subStructSimple> avoSta_;
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::MarkerArray>> avoStaMarker_;
-        std::unique_ptr<visualization_msgs::Marker> tasm_;
+        std::unique_ptr<visualization_msgs::Marker> asmt_;
         std::unique_ptr<visualization_msgs::MarkerArray> asm_;
         
         // functions
