@@ -44,6 +44,10 @@ namespace geometry_msgs{
     typedef ::geometry_msgs::PointStamped_<std::allocator<void>> PointStamped;
     typedef boost::shared_ptr< ::geometry_msgs::PointStamped const> PointStampedConstPtr;
     template <class ContainerAllocator>
+    struct PoseArray_;
+    typedef ::geometry_msgs::PoseArray_<std::allocator<void>> PoseArray;
+    typedef boost::shared_ptr< ::geometry_msgs::PoseArray const> PoseArrayConstPtr;
+    template <class ContainerAllocator>
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
     typedef boost::shared_ptr< ::geometry_msgs::PoseStamped const> PoseStampedConstPtr;
@@ -81,6 +85,7 @@ class Visualization{
         double USEFUL_FRONTIER_PUBLISH_RATE;
         double ROAD_PUBLISH_RATE;
         double AVOIDANCE_STATUS_PUBLISH_RATE;
+        double CANCELED_GOALS_PUBLISH_RATE;
         
         // variables
         // pose
@@ -121,6 +126,11 @@ class Visualization{
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::MarkerArray>> avoStaMarker_;
         std::unique_ptr<visualization_msgs::Marker> asmt_;
         std::unique_ptr<visualization_msgs::MarkerArray> asm_;
+
+        // canceled goals
+        std::unique_ptr<ExStc::subStructSimple> caGoals_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> caGoalsMarker_;
+        std::unique_ptr<visualization_msgs::Marker> cgm_;
         
         // functions
         void poseCB(const geometry_msgs::PoseStampedConstPtr& msg);
@@ -131,6 +141,7 @@ class Visualization{
         void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void roadCB(const geometry_msgs::PointStampedConstPtr& msg);
         void avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& msg);
+        void caGoalsCB(const geometry_msgs::PoseArrayConstPtr& msg);
         void posePathPublisher(void);
         void goalMarkerPublisher(void);
         void branchMarkerPublisher(void);
@@ -138,6 +149,7 @@ class Visualization{
         void useFroMarkerPublisher(void);
         void roadMarkerPublisher(void);
         void avoStaMarkerPublisher(void);
+        void caGoalsMarkerPublisher(void);
         void loadParams(void);
 
     public:

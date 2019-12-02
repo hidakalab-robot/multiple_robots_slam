@@ -12,6 +12,7 @@
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <exploration_msgs/AvoidanceStatus.h>
+#include <geometry_msgs/PoseArray.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCos = ExpLib::Construct;
@@ -41,7 +42,10 @@ Visualization::Visualization()
     ,avoSta_(new ExStc::subStructSimple("movement_status",1,&Visualization::avoStaCB, this))
     ,avoStaMarker_(new ExStc::pubStruct<visualization_msgs::MarkerArray>("visualization/avoidance_status", 1, true))
     ,asmt_(new visualization_msgs::Marker())
-    ,asm_(new visualization_msgs::MarkerArray()){
+    ,asm_(new visualization_msgs::MarkerArray())
+    ,caGoals_(new ExStc::subStructSimple("canceled_goals",1,&Visualization::caGoalsCB, this))
+    ,caGoalsMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/canceled_goals", 1, true))
+    ,cgm_(new visualization_msgs::Marker()){
     loadParams();
     *gm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
     *bm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
@@ -49,6 +53,7 @@ Visualization::Visualization()
     *ufm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
     *rm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
     *asmt_ = ExCos::msgMarker(INIT_FRAME_ID,0.1,0.5,1.0,0.5,1.0,visualization_msgs::Marker::LINE_STRIP);
+    *cgm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,1.0,1.0);
 }
 
 Visualization::~Visualization(){};
@@ -63,6 +68,7 @@ void Visualization::multiThreadMain(void){
     std::thread ufmThread([this]() { useFroMarkerPublisher(); });
     std::thread rmThread([this]() { roadMarkerPublisher(); });
     std::thread asmThread([this]() { avoStaMarkerPublisher(); });
+    std::thread cgmThread([this]() { caGoalsMarkerPublisher(); });
     ros::spin();
     ppThread.join();//スレッドの終了を待つ
     gmThread.join();
@@ -71,6 +77,7 @@ void Visualization::multiThreadMain(void){
     ufmThread.join();
     rmThread.join();
     asmThread.join();
+    cgmThread.join();
     ROS_INFO_STREAM("end main loop\n");
 }
 
@@ -179,6 +186,18 @@ void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& ms
     *asm_ = ta;
 }
 
+void Visualization::caGoalsCB(const geometry_msgs::PoseArrayConstPtr& msg){
+    auto replace = [&msg]{
+        std::vector<geometry_msgs::Point> p;
+        p.reserve(msg->poses.size());
+        for(auto&& ps : msg->poses) p.emplace_back(ps.position); 
+        return p;
+    };
+    cgm_->points = replace();
+    cgm_->header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
+    cgm_->header.stamp = ros::Time::now();
+}
+
 void Visualization::posePathPublisher(void){
     ros::Rate rate(POSE_PUBLISH_RATE);
     while(ros::ok()){
@@ -235,6 +254,14 @@ void Visualization::avoStaMarkerPublisher(void){
     }
 }
 
+void Visualization::caGoalsMarkerPublisher(void){
+    ros::Rate rate(CANCELED_GOALS_PUBLISH_RATE);
+    while(ros::ok()){
+        caGoalsMarker_->pub.publish(*cgm_);
+        rate.sleep();
+    }
+}
+
 void Visualization::loadParams(void){
     ros::NodeHandle nh("~");
     // static parameters
@@ -246,4 +273,5 @@ void Visualization::loadParams(void){
     nh.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
     nh.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);
     nh.param<double>("avoidance_status_publish_rate", AVOIDANCE_STATUS_PUBLISH_RATE, 10.0);
+    nh.param<double>("canceled_goals_publish_rate", CANCELED_GOALS_PUBLISH_RATE, 10.0);
 }
