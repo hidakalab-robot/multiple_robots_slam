@@ -16,6 +16,7 @@
 #include <sensor_msgs/LaserScan.h>
 #include <exploration_libraly/path_planning.h>
 #include <navfn/navfn_ros.h>
+#include <exploration_msgs/AvoidanceStatus.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExUtl = ExpLib::Utility;
@@ -32,6 +33,7 @@ Movement::Movement()
     ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true)) // pub
     ,road_(new ExStc::pubStruct<geometry_msgs::PointStamped>("road", 1)) // pub
     ,gCostmap_(new ExStc::subStruct<nav_msgs::OccupancyGrid>("global_costmap",1)) // pub
+    ,avoStatus_(new ExStc::pubStruct<exploration_msgs::AvoidanceStatus>("movement_status",1))
     ,drs_(new dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig>(ros::NodeHandle("~/movement"))){
     loadParams();
     drs_->setCallback(boost::bind(&Movement::dynamicParamsCB,this, _1, _2));
@@ -91,6 +93,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     ros::Rate rate(GOAL_RESET_RATE);
 
     while(!ac.getState().isDone() && ros::ok()){
+        publishMovementStatus("move_base");
         if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
             // 目的地を再設定
             if(!resetGoal(mbg.target_pose)){ 
@@ -426,6 +429,7 @@ bool Movement::roadCenterDetection(const sensor_msgs::LaserScan& scan){
             ROS_DEBUG_STREAM("Road Center Found");
             //  通路中心座標pub
             road_->pub.publish(ExCov::pointToPointStamped(ExUtl::coordinateConverter2d<geometry_msgs::Point>(listener, pose_->data.header.frame_id, scan.header.frame_id, ExCos::msgPoint((ss.x[i+1] + ss.x[i])/2, (ss.y[i+1] + ss.y[i])/2)),pose_->data.header.frame_id));
+            publishMovementStatus("ROAD_CENTER");
             velocity_->pub.publish(velocityGenerator((ss.angles[i]+ss.angles[i+1])/2,FORWARD_VELOCITY,ROAD_CENTER_GAIN));
             return true;
         }
@@ -460,11 +464,11 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     // その方向が安全であるかを見る   
     ROS_INFO_STREAM("angle : " << angle << ", ranges.size() : " << scan.ranges.size() << ", ti : " << ti << ", ti(rad) : " << scan.angle_min + ti*scan.angle_increment);
 
-    ExStc::scanStruct ss(scan.ranges.size());
-    for(int i=0,e=scan.ranges.size();i!=e;++i){
-        if(std::isnan(scan.ranges[i])) ss.x.emplace_back(scan.ranges[i]);
-        else ss.x.emplace_back(scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)));
-    }
+    // 距離の再計算
+    std::vector<float> scanCalced;
+    scanCalced.reserve(scan.ranges.size());
+    for(int i=0,e=scan.ranges.size();i!=e;++i)
+        scanCalced.emplace_back(CALC_RANGE_COS && !std::isnan(scan.ranges[i]) ? scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)) : scan.ranges[i]);
 
     // ここでrateがthreshold以下になるまでずらして計算
     int sw = 0;
@@ -488,27 +492,15 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
         int fc = 0;
         int nc = 0;
         // これだと結局近いところの障害物しか見てないのと同じ？
-        // cosの距離だと？
         for(int i=MINUS;i!=PLUS;++i){
-            // // nan or over far
-            // if(std::isnan(scan.ranges[i])||scan.ranges[i]>=VFH_FAR_RANGE_THRESHOLD){
-            //     dist += VFH_FAR_RANGE_THRESHOLD;
-            //     ++fc;
-            // }
-            // // far > range > near
-            // else if(scan.ranges[i]>=VFH_NEAR_RANGE_THRESHOLD){
-            //     dist += scan.ranges[i];
-            //     ++nc;
-            // }
-
-            // cos nan or over far
-            if(std::isnan(ss.x[i])||ss.x[i]>=VFH_FAR_RANGE_THRESHOLD){
+            // nan or over far
+            if(std::isnan(scanCalced[i])||scanCalced[i]>=VFH_FAR_RANGE_THRESHOLD){
                 dist += VFH_FAR_RANGE_THRESHOLD;
                 ++fc;
             }
             // far > range > near
-            else if(ss.x[i]>=VFH_NEAR_RANGE_THRESHOLD){
-                dist += ss.x[i];
+            else if(scanCalced[i]>=VFH_NEAR_RANGE_THRESHOLD){
+                dist += scanCalced[i];
                 ++nc;
             }
         }
@@ -523,6 +515,7 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
     double gain = ti==cp[0] ? 0 : (aveDist - VFH_NEAR_RANGE_THRESHOLD) * (FAR_AVOIDANCE_GAIN - NEAR_AVOIDANCE_GAIN)/(VFH_FAR_RANGE_THRESHOLD - VFH_NEAR_RANGE_THRESHOLD) + NEAR_AVOIDANCE_GAIN;
     ROS_INFO_STREAM("ti : " << ti <<  ", angle : " << scan.angle_min + ti * scan.angle_increment << ", rate : " << rate << ", fRate : " << fRate << ", nRate : " << nRate << ", gain : " << gain << ", aveDist : " << aveDist);
     ROS_INFO_STREAM("this angle is safety");
+    publishMovementStatus("VFH");
     velocity_->pub.publish(velocityGenerator(scan.angle_min+ti*scan.angle_increment,FORWARD_VELOCITY,gain));
     return true;
 }
@@ -530,19 +523,17 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
 bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     ROS_INFO_STREAM("emergencyAvoidance");
 
-    ExStc::scanStruct ss(scan.ranges.size());
-    for(int i=0,e=scan.ranges.size();i!=e;++i){
-        if(std::isnan(scan.ranges[i])) ss.x.emplace_back(scan.ranges[i]);
-        else ss.x.emplace_back(scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)));
-    }
+    // 距離の再計算
+    std::vector<float> scanCalced;
+    scanCalced.reserve(scan.ranges.size());
+    for(int i=0,e=scan.ranges.size();i!=e;++i)
+        scanCalced.emplace_back(CALC_RANGE_COS && !std::isnan(scan.ranges[i]) ? scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)) : scan.ranges[i]);
 
     //minus側の平均
     double aveM=0;
     int nanM = 0;
     for(int i=0,e=scan.ranges.size()/2;i!=e;++i){
-        // if(!std::isnan(scan.ranges[i])) aveM += scan.ranges[i];
-        // else ++nanM;
-        if(!std::isnan(ss.x[i])) aveM += ss.x[i];
+        if(!std::isnan(scanCalced[i])) aveM += scanCalced[i];
         else ++nanM;
     }
     aveM = nanM > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveM / scan.ranges.size()/2;
@@ -552,9 +543,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     double aveP=0;
     int nanP = 0;
     for(int i=scan.ranges.size()/2,e=scan.ranges.size();i!=e;++i){
-        // if(!std::isnan(scan.ranges[i])) aveP += scan.ranges[i];
-        // else ++nanP;
-        if(!std::isnan(ss.x[i])) aveP += ss.x[i];
+        if(!std::isnan(scanCalced[i])) aveP += scanCalced[i];
         else ++nanP;
     }
     aveP = nanP > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveP / scan.ranges.size()/2;
@@ -572,6 +561,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation_ = aveP > aveM ? 1.0 : -1.0;
         ROS_INFO_STREAM((previousOrientation_ > 0 ? "Avoidance to Left" : "Avoidance to Right"));
         velocity_->pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY, EMERGENCY_AVOIDANCE_GAIN));
+        publishMovementStatus("EMERGENCY");
         return true;
     }
     else{
@@ -683,6 +673,27 @@ geometry_msgs::Twist Movement::velocityGenerator(double theta,double v,double ga
     return ExCos::msgTwist(v,gain*CURVE_GAIN*theta);
 }
 
+void Movement::publishMovementStatus(const std::string& status){
+    const int PATTERN = 3; 
+    exploration_msgs::AvoidanceStatus msg;
+    msg.status = status;
+    msg.calc_range_method = CALC_RANGE_COS ? exploration_msgs::AvoidanceStatus::COS : exploration_msgs::AvoidanceStatus::NORMAL;
+    msg.range_pattern.reserve(PATTERN);
+    msg.range_pattern.emplace_back(VFH_FAR_RANGE_THRESHOLD);
+    msg.range_pattern.emplace_back(VFH_NEAR_RANGE_THRESHOLD);
+    msg.range_pattern.emplace_back(EMERGENCY_THRESHOLD);
+    msg.descriptions.reserve(PATTERN);
+    msg.descriptions.emplace_back("VFH_FAR_RANGE_THRESHOLD");
+    msg.descriptions.emplace_back("VFH_NEAR_RANGE_THRESHOLD");
+    msg.descriptions.emplace_back("EMERGENCY_THRESHOLD");
+    msg.scan_frame_id = scan_->data.header.frame_id;
+    msg.scan_angle_min = scan_->data.angle_min;
+    msg.scan_angle_max = scan_->data.angle_max;
+    msg.scan_angle_increment = scan_->data.angle_increment;
+    msg.header.stamp = ros::Time::now();
+    avoStatus_->pub.publish(msg);
+}
+
 void Movement::loadParams(void){
     ros::NodeHandle nh("~/movement");
     // dynamic parameters
@@ -712,6 +723,7 @@ void Movement::loadParams(void){
     nh.param<double>("vfh_rate_threshold", VFH_RATE_THRESHOLD, 0.9);
     nh.param<double>("far_avoidance_gain", FAR_AVOIDANCE_GAIN, 2.5);
     nh.param<double>("near_avoidance_gain", NEAR_AVOIDANCE_GAIN, 2.5);
+    nh.param<bool>("calc_range_cos", CALC_RANGE_COS, true);
     nh.param<double>("emergency_threshold", EMERGENCY_THRESHOLD, 0.1);
     nh.param<double>("emergency_diff_threshold", EMERGENCY_DIFF_THRESHOLD, 0.1);
     nh.param<double>("emergency_avoidance_gain", EMERGENCY_AVOIDANCE_GAIN, 2.5);
@@ -753,6 +765,7 @@ void Movement::dynamicParamsCB(exploration::movement_parameter_reconfigureConfig
     VFH_RATE_THRESHOLD = cfg.vfh_rate_threshold;
     FAR_AVOIDANCE_GAIN = cfg.far_avoidance_gain;
     NEAR_AVOIDANCE_GAIN = cfg.near_avoidance_gain;
+    CALC_RANGE_COS = cfg.calc_range_cos;
     EMERGENCY_THRESHOLD = cfg.emergency_threshold;
     EMERGENCY_DIFF_THRESHOLD = cfg.emergency_diff_threshold;
     EMERGENCY_AVOIDANCE_GAIN = cfg.emergency_avoidance_gain;
@@ -799,6 +812,7 @@ void Movement::outputParams(void){
     ofs << "vfh_rate_threshold: " << VFH_RATE_THRESHOLD << std::endl;
     ofs << "far_avoidance_gain: " << FAR_AVOIDANCE_GAIN << std::endl;
     ofs << "near_avoidance_gain: " << NEAR_AVOIDANCE_GAIN << std::endl;
+    ofs << "calc_range_cos: " << (CALC_RANGE_COS ? "true" : "false") << std::endl;
     ofs << "emergency_threshold: " << EMERGENCY_THRESHOLD << std::endl;
     ofs << "emergency_diff_threshold: " << EMERGENCY_DIFF_THRESHOLD << std::endl;
     ofs << "emergency_avoidance_gain: " << EMERGENCY_AVOIDANCE_GAIN << std::endl;

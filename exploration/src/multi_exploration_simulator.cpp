@@ -22,8 +22,8 @@ MultiExplorationSimulator::MultiExplorationSimulator()
     loadParams();
     drs_->setCallback(boost::bind(&MultiExplorationSimulator::dynamicParamsCB,this, _1, _2));
     robotPoses_->header.frame_id = MAP_FRAME_ID;
-    *branchCoordinates_ = ExCos::msgCubeListMarker(MAP_FRAME_ID,BRANCH_SCALE,1.0,1.0,0.0);
-    *frontierCoordinates_ = ExCos::msgCubeListMarker(MAP_FRAME_ID,FRONTIER_SCALE,0.0,1.0,1.0);
+    *branchCoordinates_ = ExCos::msgMarker(MAP_FRAME_ID,BRANCH_SCALE,1.0,1.0,0.0);
+    *frontierCoordinates_ = ExCos::msgMarker(MAP_FRAME_ID,FRONTIER_SCALE,0.0,1.0,1.0);
 }
 
 MultiExplorationSimulator::~MultiExplorationSimulator(){

@@ -24,6 +24,7 @@ vfh_near_range_threshold: 1.5
 vfh_rate_threshold: 0.9
 far_avoidance_gain: 2
 near_avoidance_gain: 3
+calc_range_cos: true
 emergency_threshold: 0.1
 emergency_diff_threshold: 0.1
 emergency_avoidance_gain: 3.2

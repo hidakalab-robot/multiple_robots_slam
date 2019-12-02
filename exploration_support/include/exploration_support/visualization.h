@@ -19,6 +19,10 @@ namespace ExpLib{
 }
 namespace exploration_msgs{
     template <class ContainerAllocator>
+    struct AvoidanceStatus_;
+    typedef ::exploration_msgs::AvoidanceStatus_<std::allocator<void>> AvoidanceStatus;
+    typedef boost::shared_ptr< ::exploration_msgs::AvoidanceStatus const> AvoidanceStatusConstPtr;
+    template <class ContainerAllocator>
     struct FrontierArray_;
     typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
     typedef boost::shared_ptr< ::exploration_msgs::FrontierArray const> FrontierArrayConstPtr;
@@ -53,6 +57,9 @@ namespace visualization_msgs{
     template <class ContainerAllocator>
     struct Marker_;
     typedef ::visualization_msgs::Marker_<std::allocator<void>> Marker;
+    template <class ContainerAllocator>
+    struct MarkerArray_;
+    typedef ::visualization_msgs::MarkerArray_<std::allocator<void>> MarkerArray;
 }
 //  others
 namespace std{
@@ -73,6 +80,7 @@ class Visualization{
         double FRONTIER_PUBLISH_RATE;
         double USEFUL_FRONTIER_PUBLISH_RATE;
         double ROAD_PUBLISH_RATE;
+        double AVOIDANCE_STATUS_PUBLISH_RATE;
         
         // variables
         // pose
@@ -107,6 +115,12 @@ class Visualization{
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> roadMarker_;
         std::unique_ptr<visualization_msgs::Marker> rm_;
         std::unique_ptr<std::mutex> rmMutex_;
+
+        // avoidance status
+        std::unique_ptr<ExStc::subStructSimple> avoSta_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::MarkerArray>> avoStaMarker_;
+        std::unique_ptr<visualization_msgs::Marker> tasm_;
+        std::unique_ptr<visualization_msgs::MarkerArray> asm_;
         
         // functions
         void poseCB(const geometry_msgs::PoseStampedConstPtr& msg);
@@ -116,12 +130,14 @@ class Visualization{
         void frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void roadCB(const geometry_msgs::PointStampedConstPtr& msg);
+        void avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& msg);
         void posePathPublisher(void);
         void goalMarkerPublisher(void);
         void branchMarkerPublisher(void);
         void frontierMarkerPublisher(void);
         void useFroMarkerPublisher(void);
         void roadMarkerPublisher(void);
+        void avoStaMarkerPublisher(void);
         void loadParams(void);
 
     public:

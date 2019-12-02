@@ -10,7 +10,8 @@
 #include <thread>
 #include <mutex>
 #include <actionlib_msgs/GoalStatusArray.h>
-#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <exploration_msgs/AvoidanceStatus.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCos = ExpLib::Construct;
@@ -36,13 +37,18 @@ Visualization::Visualization()
     ,road_(new ExStc::subStructSimple("road",1,&Visualization::roadCB, this))
     ,roadMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/road", 1, true))
     ,rm_(new visualization_msgs::Marker())
-    ,rmMutex_(new std::mutex()){
+    ,rmMutex_(new std::mutex())
+    ,avoSta_(new ExStc::subStructSimple("movement_status",1,&Visualization::avoStaCB, this))
+    ,avoStaMarker_(new ExStc::pubStruct<visualization_msgs::MarkerArray>("visualization/avoidance_status", 1, true))
+    ,tasm_(new visualization_msgs::Marker())
+    ,asm_(new visualization_msgs::MarkerArray()){
     loadParams();
-    *gm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
-    *bm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
-    *fm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
-    *ufm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
-    *rm_ = ExCos::msgCubeListMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
+    *gm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
+    *bm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
+    *fm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
+    *ufm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
+    *rm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
+    *tasm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,1.0,0.5,visualization_msgs::Marker::LINE_STRIP);
 }
 
 Visualization::~Visualization(){};
@@ -56,6 +62,7 @@ void Visualization::multiThreadMain(void){
     std::thread fmThread([this]() { frontierMarkerPublisher(); });
     std::thread ufmThread([this]() { useFroMarkerPublisher(); });
     std::thread rmThread([this]() { roadMarkerPublisher(); });
+    std::thread asmThread([this]() { avoStaMarkerPublisher(); });
     ros::spin();
     ppThread.join();//スレッドの終了を待つ
     gmThread.join();
@@ -63,6 +70,7 @@ void Visualization::multiThreadMain(void){
     fmThread.join();
     ufmThread.join();
     rmThread.join();
+    asmThread.join();
     ROS_INFO_STREAM("end main loop\n");
 }
 
@@ -72,7 +80,6 @@ void Visualization::poseCB(const geometry_msgs::PoseStampedConstPtr& msg){
     pp_->header.stamp = ros::Time::now();
 }
 
-// goalに着いたのを検知してマーカーを消したい
 void Visualization::goalCB(const geometry_msgs::PointStampedConstPtr& msg){
     std::lock_guard<std::mutex> lock(*gmMutex_);
     gm_->points = ExCos::oneFactorVector(msg->point);
@@ -123,12 +130,46 @@ void Visualization::useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg)
     ufm_->header.stamp = ros::Time::now();
 }
 
-// 本当に空になってるか確認
 void Visualization::roadCB(const geometry_msgs::PointStampedConstPtr& msg){
     std::lock_guard<std::mutex> lock(*rmMutex_);
     rm_->points = msg->header.frame_id != "" ? ExCos::oneFactorVector(msg->point) : std::vector<geometry_msgs::Point>();
     rm_->header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
     rm_->header.stamp = ros::Time::now();
+}
+
+void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& msg){
+    // 回避する距離のラインを表示したい
+    visualization_msgs::MarkerArray ta;
+    if(msg->status=="VFH" || msg->status=="EMERGENCY"){
+        int SIZE = (msg->scan_angle_max - msg->scan_angle_min)/msg->scan_angle_increment;
+        // tasm_のpoints部分を書き換えてemplacebackする
+        for(int i=0,ie=msg->range_pattern.size();i!=ie;++i){
+            // ~pointsを書き換える処理~
+            std::vector<geometry_msgs::Point> tpa;
+            tpa.reserve(SIZE);
+            for(int j=0,je=SIZE;j!=je;++j){
+                // 表示したい距離 msg->range_pattern[i];
+                geometry_msgs::Point tp;
+                switch (msg->calc_range_method){
+                    case exploration_msgs::AvoidanceStatus::NORMAL:
+                        /* code */
+                        break;
+                    case exploration_msgs::AvoidanceStatus::COS:
+                        break; 
+                    default:
+                        ROS_INFO_STREAM("Invalid calc_range_method");
+                        break;
+                }
+                tpa.emplace_back(tp);
+            }
+            tasm_->points = tpa;
+            tasm_->text = tasm_->ns = msg->descriptions[i];
+            tasm_->header.frame_id = msg->scan_frame_id;
+            tasm_->header.stamp = ros::Time::now();
+            ta.markers.emplace_back(*tasm_);
+        }
+    }
+    *asm_ = ta;
 }
 
 void Visualization::posePathPublisher(void){
@@ -179,6 +220,14 @@ void Visualization::roadMarkerPublisher(void){
     }
 }
 
+void Visualization::avoStaMarkerPublisher(void){
+    ros::Rate rate(AVOIDANCE_STATUS_PUBLISH_RATE);
+    while(ros::ok()){
+        avoStaMarker_->pub.publish(*asm_);
+        rate.sleep();
+    }
+}
+
 void Visualization::loadParams(void){
     ros::NodeHandle nh("~");
     // static parameters
@@ -189,4 +238,5 @@ void Visualization::loadParams(void){
     nh.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
     nh.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
     nh.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);
+    nh.param<double>("avoidance_status_publish_rate", AVOIDANCE_STATUS_PUBLISH_RATE, 10.0);
 }

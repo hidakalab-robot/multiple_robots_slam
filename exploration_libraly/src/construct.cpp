@@ -102,12 +102,12 @@ namespace ExpLib{
             return q;
         }
 
-        visualization_msgs::Marker msgCubeListMarker(const std::string& frame_id, const double scale, const float r, const float g, const float b, const float a){
+        visualization_msgs::Marker msgMarker(const std::string& frame_id, double scale, float r, float g, float b, float a, int type){
             visualization_msgs::Marker m;
             m.header.frame_id = frame_id;
             m.pose.orientation.w = 1.0;
             m.scale.x = m.scale.y = m.scale.z = scale;
-            m.type = visualization_msgs::Marker::CUBE_LIST;
+            m.type = type;
             m.action = visualization_msgs::Marker::ADD;
             m.lifetime = ros::Duration(0);
             m.color.r = r;

@@ -55,6 +55,7 @@ add_message_files(
    PoseStampedArray.msg
    RobotInfo.msg
    RobotInfoArray.msg
+   AvoidanceStatus.msg
  )
 
 ## Generate services in the 'srv' folder

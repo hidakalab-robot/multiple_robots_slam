@@ -63,7 +63,7 @@ namespace pcl{
 
 namespace ExpLib{
     namespace Construct{
-        visualization_msgs::Marker msgCubeListMarker(const std::string& frame_id, const double scale=0.5, const float r=1.0, const float g=0.0, const float b=0.0, const float a=1.0);
+        visualization_msgs::Marker msgMarker(const std::string& frame_id, double scale=0.5, float r=1.0, float g=0.0, float b=0.0, float a=1.0, int type = 6);
         geometry_msgs::Point msgPoint(double x=0,double y=0,double z=0);
         geometry_msgs::Pose msgPose(const geometry_msgs::Point& p, const geometry_msgs::Quaternion& q);
         geometry_msgs::Vector3 msgVector(double x=0,double y=0,double z=0);

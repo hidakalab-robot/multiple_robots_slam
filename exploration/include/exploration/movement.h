@@ -16,6 +16,11 @@ namespace ExpLib{
         struct subStruct;
     }
 }
+namespace exploration_msgs{
+    template <class ContainerAllocator>
+    struct AvoidanceStatus_;
+    typedef ::exploration_msgs::AvoidanceStatus_<std::allocator<void>> AvoidanceStatus;
+}
 namespace exploration{
     class movement_parameter_reconfigureConfig;
 }
@@ -95,6 +100,7 @@ class Movement {
         double VFH_RATE_THRESHOLD;
         double FAR_AVOIDANCE_GAIN;
         double NEAR_AVOIDANCE_GAIN;
+        bool CALC_RANGE_COS;
         double EMERGENCY_THRESHOLD;
         double EMERGENCY_DIFF_THRESHOLD;
         double EMERGENCY_AVOIDANCE_GAIN;
@@ -117,6 +123,7 @@ class Movement {
         std::unique_ptr<ExStc::pubStruct<geometry_msgs::Twist>> velocity_;
         std::unique_ptr<ExStc::pubStruct<geometry_msgs::PointStamped>> goal_;
         std::unique_ptr<ExStc::pubStruct<geometry_msgs::PointStamped>> road_;
+        std::unique_ptr<ExStc::pubStruct<exploration_msgs::AvoidanceStatus>> avoStatus_;
         std::unique_ptr<ExpLib::PathPlanning<navfn::NavfnROS>> pp_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration::movement_parameter_reconfigureConfig>> drs_;
         double previousOrientation_;
@@ -135,6 +142,7 @@ class Movement {
         bool forwardWallDetection(const sensor_msgs::LaserScan& scan, double& angle);
         double sideSpaceDetection(const sensor_msgs::LaserScan& scan, int plus, int minus);
         geometry_msgs::Twist velocityGenerator(double theta, double v, double gain);
+        void publishMovementStatus(const std::string& status);
         void loadParams(void);
         void dynamicParamsCB(exploration::movement_parameter_reconfigureConfig &cfg, uint32_t level);
         void outputParams(void);
