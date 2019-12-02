@@ -281,3 +281,10 @@ add_executable(map_continuity
 target_link_libraries(map_continuity
  ${catkin_LIBRARIES}
 )
+
+add_executable(goal_cancel_observer
+ src/goal_cancel_observer_node.cpp
+)
+target_link_libraries(goal_cancel_observer
+ ${catkin_LIBRARIES}
+)
