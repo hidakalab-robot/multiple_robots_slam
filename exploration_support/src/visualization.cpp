@@ -12,7 +12,6 @@
 #include <actionlib_msgs/GoalStatusArray.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <exploration_msgs/AvoidanceStatus.h>
-#include <geometry_msgs/PoseArray.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCos = ExpLib::Construct;
@@ -187,13 +186,7 @@ void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& ms
 }
 
 void Visualization::caGoalsCB(const geometry_msgs::PoseArrayConstPtr& msg){
-    auto replace = [&msg]{
-        std::vector<geometry_msgs::Point> p;
-        p.reserve(msg->poses.size());
-        for(auto&& ps : msg->poses) p.emplace_back(ps.position); 
-        return p;
-    };
-    cgm_->points = replace();
+    cgm_->points = msg->points;
     cgm_->header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
     cgm_->header.stamp = ros::Time::now();
 }

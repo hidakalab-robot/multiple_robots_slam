@@ -44,10 +44,6 @@ namespace geometry_msgs{
     typedef ::geometry_msgs::PointStamped_<std::allocator<void>> PointStamped;
     typedef boost::shared_ptr< ::geometry_msgs::PointStamped const> PointStampedConstPtr;
     template <class ContainerAllocator>
-    struct PoseArray_;
-    typedef ::geometry_msgs::PoseArray_<std::allocator<void>> PoseArray;
-    typedef boost::shared_ptr< ::geometry_msgs::PoseArray const> PoseArrayConstPtr;
-    template <class ContainerAllocator>
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
     typedef boost::shared_ptr< ::geometry_msgs::PoseStamped const> PoseStampedConstPtr;
@@ -141,7 +137,7 @@ class Visualization{
         void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void roadCB(const geometry_msgs::PointStampedConstPtr& msg);
         void avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& msg);
-        void caGoalsCB(const geometry_msgs::PoseArrayConstPtr& msg);
+        void caGoalsCB(const exploration_msgs::PointArrayConstPtr& msg);
         void posePathPublisher(void);
         void goalMarkerPublisher(void);
         void branchMarkerPublisher(void);
