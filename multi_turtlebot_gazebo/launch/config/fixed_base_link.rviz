@@ -6,7 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Marker1/Namespaces1
-        - /PoseArray1
       Splitter Ratio: 0.501440942
     Tree Height: 452
   - Class: rviz/Selection
@@ -354,6 +353,18 @@ Visualization Manager:
       Name: Marker
       Namespaces:
         "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /robot1/visualization/avoidance_status
+      Name: MarkerArray
+      Namespaces:
+        EMERGENCY_THRESHOLD: true
+        VFH_FAR_RANGE_THRESHOLD: true
+        VFH_NEAR_RANGE_THRESHOLD: true
+        ids: true
+        labels: true
       Queue Size: 100
       Value: true
     - Class: rviz/MarkerArray
