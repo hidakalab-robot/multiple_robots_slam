@@ -293,6 +293,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
     
     while(loop && lookupCostmap() && ros::ok()) {
         ROS_INFO_STREAM("escape to forward");
+        publishMovementStatus("esc_costmap");
         velocity_->pub.publish(ExCos::msgTwist(FORWARD_VELOCITY,0));
         while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
         escapeFromCostmap(pose_->data);

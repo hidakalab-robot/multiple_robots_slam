@@ -62,9 +62,6 @@ namespace ExpLib{
             void getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec, std::vector<geometry_msgs::PoseStamped>& plan){
                 int b = plan.size() - 1;
                 int a = b * PATH_TO_VECTOR_RATIO;
-                ROS_DEBUG_STREAM("a : "<< a << "b : " << b);
-                ROS_DEBUG_STREAM("PATH_TO_VECTOR_RATIO : " << PATH_TO_VECTOR_RATIO);
-
                 //a-b間のベクトル
                 vec = Eigen::Vector2d(plan[b].pose.position.x - plan[a].pose.position.x, plan[b].pose.position.y - plan[a].pose.position.y).normalized();
             };

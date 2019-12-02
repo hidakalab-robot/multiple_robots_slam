@@ -48,7 +48,7 @@ Visualization::Visualization()
     *fm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
     *ufm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
     *rm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
-    *tasm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,1.0,0.5,visualization_msgs::Marker::LINE_STRIP);
+    *asmt_ = ExCos::msgMarker(INIT_FRAME_ID,0.1,0.5,1.0,0.5,1.0,visualization_msgs::Marker::LINE_STRIP);
 }
 
 Visualization::~Visualization(){};
@@ -140,13 +140,15 @@ void Visualization::roadCB(const geometry_msgs::PointStampedConstPtr& msg){
 void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& msg){
     // 回避する距離のラインを表示したい
     visualization_msgs::MarkerArray ta;
-    if(msg->status=="VFH" || msg->status=="EMERGENCY"){
-        int SIZE = (msg->scan_angle_max - msg->scan_angle_min)/msg->scan_angle_increment;
-        // tasm_のpoints部分を書き換えてemplacebackする
-        for(int i=0,ie=msg->range_pattern.size();i!=ie;++i){
+    
+    int SIZE = (msg->scan_angle_max - msg->scan_angle_min)/msg->scan_angle_increment;
+    // tasm_のpoints部分を書き換えてemplacebackする
+    for(int i=0,ie=msg->range_pattern.size();i!=ie;++i){
+        std::vector<geometry_msgs::Point> tpv;
+        if(msg->status=="VFH" || msg->status=="EMERGENCY"){
             // ~pointsを書き換える処理~
-            std::vector<geometry_msgs::Point> tpv;
-            tpa.reserve(SIZE);
+            // std::vector<geometry_msgs::Point> tpv;
+            tpv.reserve(SIZE);
             for(int j=0;j!=SIZE;++j){
                 // 表示したい距離 msg->range_pattern[i];
                 geometry_msgs::Point tp;
@@ -166,13 +168,13 @@ void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& ms
                 }
                 tpv.emplace_back(std::move(tp));
             }
-            asmt_->points = tpv;
-            asmt_->text = asmt_->ns = msg->descriptions[i];
-            asmt_->header.frame_id = msg->scan_frame_id;
-            asmt_->header.stamp = ros::Time::now();
-            asmt_->color.g *= (i+1)/SIZE;
-            ta.markers.emplace_back(*asmt_);
         }
+        asmt_->points = tpv;
+        asmt_->text = asmt_->ns = msg->descriptions[i];
+        asmt_->header.frame_id = msg->scan_frame_id;
+        asmt_->header.stamp = ros::Time::now();
+        asmt_->color.g = float(float(i+1)/msg->range_pattern.size());
+        ta.markers.emplace_back(*asmt_);
     }
     *asm_ = ta;
 }
