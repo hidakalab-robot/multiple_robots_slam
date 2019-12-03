@@ -12,7 +12,7 @@ rotation_tolerance: 0.035
 goal_reset_rate: 2
 path_back_interval: 5
 reset_goal_path_limit: 5
-reset_goal_path_rate: 0.5
+reset_goal_path_rate: 2
 back_velocity: -0.2
 back_time: 1
 road_center_threshold: 1.6

@@ -121,7 +121,6 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
 void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
-    // ROS_INFO_STREAM("previous orientation : " << previousOrientation_);
 
     if(!bumper_->q.callOne(ros::WallDuration(1)) && bumperCollision(bumper_->data)) return; // 障害物に接触してないか確認
     
@@ -256,18 +255,11 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         for(int x=0;x!=ESC_MAP_DIV_X;++x){
             if(gmm[x][y].grad <= mingr){
                 double tempad = cAng.angularDistance(ExCov::geoQuaToEigenQua(gmm[x][y].pose.orientation));
-                if(gmm[x][y].grad == mingr){
-                    if(tempad <= minad){
-                        minad = tempad;
-                        mingr = gmm[x][y].grad;
-                        escIndex << x,y;
-                    }
-                }
-                else{
+                if(gmm[x][y].grad != mingr || (gmm[x][y].grad == mingr && tempad <= minad)){
                     minad = tempad;
                     mingr = gmm[x][y].grad;
                     escIndex << x,y;
-                }   
+                }
             }
         }
     }  
@@ -510,7 +502,6 @@ bool Movement::VFHMove(const sensor_msgs::LaserScan& scan, double angle){
         nRate = (double)nc / (PLUS-MINUS);
         aveDist = dist / (fc+nc);
         sw = sw > 0 ? -sw-1 : -sw+1;
-    // }while(rate < 0.9);
     }while(fRate < VFH_RATE_THRESHOLD && nRate < VFH_RATE_THRESHOLD);
 
     double gain = ti==cp[0] ? 0 : (aveDist - VFH_NEAR_RANGE_THRESHOLD) * (FAR_AVOIDANCE_GAIN - NEAR_AVOIDANCE_GAIN)/(VFH_FAR_RANGE_THRESHOLD - VFH_NEAR_RANGE_THRESHOLD) + NEAR_AVOIDANCE_GAIN;
@@ -540,7 +531,6 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         else ++nanM;
     }
     aveM = nanM > (scan.ranges.size()/2)*NAN_RATE ? DBL_MAX : aveM / (scan.ranges.size()/2-nanM);
-    // aveM /= scan.ranges.size()/2;
 
     //plus側
     double aveP=0;
@@ -550,7 +540,6 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         else ++nanP;
     }
     aveP = nanP > (scan.ranges.size()/2)*NAN_RATE ? DBL_MAX : aveP / (scan.ranges.size()/2-nanP);
-    // aveP /= scan.ranges.size()/2;
 
     //左右の差がそんなにないなら前回避けた方向を採用する
     //一回目に避けた方向に基本的に従う
@@ -563,7 +552,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         //センサの安全領域の大きさが変わった時の処理//大きさがほとんど同じだった時の処理//以前避けた方向に避ける
         if(std::abs(aveM-aveP) > EMERGENCY_DIFF_THRESHOLD) previousOrientation_ = aveP > aveM ? 1.0 : -1.0;
         ROS_INFO_STREAM((previousOrientation_ > 0 ? "Avoidance to Left" : "Avoidance to Right"));
-        velocity_->pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY, EMERGENCY_AVOIDANCE_GAIN));
+        velocity_->pub.publish(velocityGenerator((previousOrientation_ > 0 ? 1 : -1)*scan.angle_max/6, FORWARD_VELOCITY/2, EMERGENCY_AVOIDANCE_GAIN));
         publishMovementStatus("EMERGENCY");
         return true;
     }
