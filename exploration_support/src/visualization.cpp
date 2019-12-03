@@ -52,7 +52,7 @@ Visualization::Visualization()
     *ufm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
     *rm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
     *asmt_ = ExCos::msgMarker(INIT_FRAME_ID,0.1,0.5,1.0,0.5,1.0,visualization_msgs::Marker::LINE_STRIP);
-    *cgm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,1.0,1.0);
+    *cgm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,0.5);
 }
 
 Visualization::~Visualization(){};
