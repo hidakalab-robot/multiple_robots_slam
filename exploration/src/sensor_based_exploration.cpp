@@ -19,6 +19,7 @@ SensorBasedExploration::SensorBasedExploration()
     :branch_(new ExStc::subStruct<exploration_msgs::PointArray>("branch", 1))
     ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
     ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
+    ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals", 1)
     ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
     ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
@@ -49,18 +50,43 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
         return false;
     }
 
-    std::vector<ExStc::listStruct> ls;
-    ls.reserve(branch_->data.points.size());
+    std::vector<geometry_msgs::Point> branches(branch_->data.points);
 
-    // 別形式 // 直前の目標と近い分岐は無視したい
-    for(const auto& b : branch_->data.points){
-        if(Eigen::Vector2d(b.x - lastGoal_->x, b.y - lastGoal_->y).norm()>LAST_GOAL_TOLERANCE) ls.emplace_back(b);
+    //　最後のゴールと近かったら削除
+    if(LAST_GOAL_EFFECT){
+        auto removeResult = std::remove_if(branches.begin(),branches.end(),[this](geometry_msgs_msgs::Point& p){return Eigen::Vector2d(p.x - lastGoal_->x, p.y - lastGoal_->y).norm()<LAST_GOAL_TOLERANCE;});
+		branches.erase(std::move(removeResult),branches.end());
     }
 
-    if(ls.size() == 0){
+    if(CANCELED_GOAL_EFFECT && !canceled_->q.callOne(ros::WallDuration(1)) && canceled_->data.points.size()!=0){
+        auto removeResult = std::remove_if(branches.begin(),branches.end(),[this](geometry_msgs_msgs::Point& p){
+            for(const auto& c : canceled_->data.points){
+                if(Eigen::Vector2d(p.x - c.x, p.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
+            }
+            return false;
+        }
+		branches.erase(std::move(removeResult),branches.end());
+    }
+
+    if(branches.size() == 0){
         ROS_ERROR_STREAM("Branch array became empty");
         return false;
     }
+
+    std::vector<ExStc::listStruct> ls;
+    ls.reserve(branch_->data.points.size());
+    for(const auto& b : branches) ls.emplase_back(b);
+
+    // 別形式 // 直前の目標と近い分岐は無視したい
+
+    // for(const auto& b : branch_->data.points){
+    //     if(Eigen::Vector2d(b.x - lastGoal_->x, b.y - lastGoal_->y).norm()>LAST_GOAL_TOLERANCE) ls.emplace_back(b);
+    // }
+
+    // if(ls.size() == 0){
+    //     ROS_ERROR_STREAM("Branch array became empty");
+    //     return false;
+    // }
 
     // 重複探査検出
     duplicateDetection(ls, poseLog_->data);
@@ -120,7 +146,10 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
 void SensorBasedExploration::loadParams(void){
     ros::NodeHandle nh("~/sensor_based_exploration");
     // dynamic parameters
+    nh.param<bool>("last_goal_effect", LAST_GOAL_EFFECT, true);
     nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
+    nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
+    nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
     nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
     nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
@@ -130,7 +159,10 @@ void SensorBasedExploration::loadParams(void){
 }
 
 void SensorBasedExploration::dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_EFFECT = cfg.last_goal_effect;
     LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
+    CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
     DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
     LOG_CURRENT_TIME = cfg.log_current_time;
     NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
@@ -146,8 +178,11 @@ void SensorBasedExploration::outputParams(void){
         return;
     }
     
+    ofs << "last_goal_effect: " << (LAST_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
-    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
+    ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
+    ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
     ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
+    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
     ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
  }

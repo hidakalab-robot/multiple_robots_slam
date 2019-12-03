@@ -61,6 +61,7 @@ class SensorBasedExploration{
         std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> branch_;
         std::unique_ptr<ExStc::subStruct<geometry_msgs::PoseStamped>> pose_;
         std::unique_ptr<ExStc::subStruct<exploration_msgs::PoseStampedArray>> poseLog_;
+        std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> canceled_;
 
         // functions
         void duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
@@ -71,7 +72,10 @@ class SensorBasedExploration{
 
     protected:
         // dynamic parameters
+        bool LAST_GOAL_EFFECT;
         double LAST_GOAL_TOLERANCE;
+        bool CANCELED_GOAL_EFFECT;
+        double CANCELED_GOAL_TOLERANCE;
         double DUPLICATE_TOLERANCE;
         double LOG_CURRENT_TIME;//if 30 -> 30秒前までのログで重複検出
         double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ

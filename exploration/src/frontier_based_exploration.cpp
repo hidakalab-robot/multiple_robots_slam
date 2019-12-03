@@ -6,6 +6,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <exploration_libraly/struct.h>
 #include <exploration_msgs/FrontierArray.h>
+#include <exploration_msgs/PointArray.h>
 #include <exploration/frontier_based_exploration_parameter_reconfigureConfig.h>
 #include <dynamic_reconfigure/server.h>
 
@@ -15,6 +16,7 @@ namespace ExStc = ExpLib::Struct;
 FrontierBasedExploration::FrontierBasedExploration()
     :frontier_(new ExStc::subStruct<exploration_msgs::FrontierArray>("frontier", 1))
     ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
+    ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals",1))
     ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
     ,drs_(new dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/frontier_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
@@ -27,7 +29,7 @@ FrontierBasedExploration::~FrontierBasedExploration(){
 }
 
 bool FrontierBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
-    // 分岐の読み込み
+    // frontierの読み込み
     if(frontier_->q.callOne(ros::WallDuration(1)) || frontier_->data.frontiers.size()==0){
         ROS_ERROR_STREAM("Can't read frontier or don't find frontier");  
         return false;
@@ -43,6 +45,16 @@ bool FrontierBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // frontier を条件でフィルタする
     if(LAST_GOAL_EFFECT){
         auto removeResult = std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){return Eigen::Vector2d(f.point.x - lastGoal_->x, f.point.y - lastGoal_->y).norm()<LAST_GOAL_TOLERANCE;});
+		frontiers.erase(std::move(removeResult),frontiers.end());
+    }
+
+    if(CANCELED_GOAL_EFFECT && !canceled_->q.callOne(ros::WallDuration(1)) && canceled_->data.points.size()!=0){
+        auto removeResult = std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){
+            for(const auto& c : canceled_->data.points){
+                if(Eigen::Vector2d(f.point.x - c.x, f.point.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
+            }
+            return false;
+        }
 		frontiers.erase(std::move(removeResult),frontiers.end());
     }
     
@@ -88,6 +100,8 @@ void FrontierBasedExploration::loadParams(void){
     nh.param<double>("direction_weight", DIRECTION_WEIGHT, 0.0);
     nh.param<bool>("last_goal_effect", LAST_GOAL_EFFECT, true);
     nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 0.5);
+    nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
+    nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
     // static parameters
     nh.param<std::string>("fbe_parameter_file_path",FBE_PARAMETER_FILE_PATH,"fbe_last_parameters.yaml");
     nh.param<bool>("output_fbe_parameters",OUTPUT_FBE_PARAMETERS,true);
@@ -98,6 +112,8 @@ void FrontierBasedExploration::dynamicParamsCB(exploration::frontier_based_explo
     DIRECTION_WEIGHT = cfg.direction_weight;
     LAST_GOAL_EFFECT = cfg.last_goal_effect;
     LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
+    CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
 }
 
 void FrontierBasedExploration::outputParams(void){
@@ -114,4 +130,6 @@ void FrontierBasedExploration::outputParams(void){
     ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
     ofs << "last_goal_effect: " << (LAST_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
+    ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
  }

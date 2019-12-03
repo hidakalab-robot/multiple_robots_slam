@@ -245,6 +245,13 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
 void SeamlessHybridExploration::loadParams(void){
     ros::NodeHandle nh("~/seamless_hybrid_exploration");
     // dynamic parameters
+    nh.param<bool>("last_goal_effect", LAST_GOAL_EFFECT, true);
+    nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
+    nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
+    nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
+    nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
+    nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
+    nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
     nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
     nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
     nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
@@ -257,7 +264,10 @@ void SeamlessHybridExploration::loadParams(void){
 }
 
 void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level){
+    LAST_GOAL_EFFECT = cfg.last_goal_effect;
     LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
+    CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
+    CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
     DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
     LOG_CURRENT_TIME = cfg.log_current_time;
     NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
@@ -278,7 +288,10 @@ void SeamlessHybridExploration::outputParams(void){
         return;
     }
 
+    ofs << "last_goal_effect: " << (LAST_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
+    ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
+    ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
     ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
     ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
     ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;

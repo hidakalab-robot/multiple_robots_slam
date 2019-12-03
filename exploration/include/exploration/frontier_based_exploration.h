@@ -22,6 +22,9 @@ namespace exploration_msgs{
     template <class ContainerAllocator>
     struct FrontierArray_;
     typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
+    template <class ContainerAllocator>
+    struct PointArray_;
+    typedef ::exploration_msgs::PointArray_<std::allocator<void>> PointArray;
 }
 namespace exploration{
     class frontier_based_exploration_parameter_reconfigureConfig;
@@ -40,6 +43,9 @@ namespace geometry_msgs{
     struct PointStamped_;
     typedef ::geometry_msgs::PointStamped_<std::allocator<void>> PointStamped;
     template <class ContainerAllocator>
+    struct PoseArray_;
+    typedef ::geometry_msgs::PoseArray_<std::allocator<void>> PoseArray;
+    template <class ContainerAllocator>
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;     
 }
@@ -54,6 +60,8 @@ class FrontierBasedExploration{
         double DIRECTION_WEIGHT;
         bool LAST_GOAL_EFFECT;
         double LAST_GOAL_TOLERANCE;
+        bool CANCELED_GOAL_EFFECT;
+        double CANCELED_GOAL_TOLERANCE;
 
         // static parameters
         std::string FBE_PARAMETER_FILE_PATH;
@@ -62,6 +70,7 @@ class FrontierBasedExploration{
         // variables
         std::unique_ptr<ExStc::subStruct<exploration_msgs::FrontierArray>> frontier_;
         std::unique_ptr<ExStc::subStruct<geometry_msgs::PoseStamped>> pose_;
+        std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> canceled_;
         std::unique_ptr<ExStc::pubStruct<geometry_msgs::PointStamped>> goal_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration::frontier_based_exploration_parameter_reconfigureConfig>> drs_;
         std::unique_ptr<geometry_msgs::Point> lastGoal_;
