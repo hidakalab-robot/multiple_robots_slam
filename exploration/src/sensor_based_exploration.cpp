@@ -10,6 +10,7 @@
 #include <dynamic_reconfigure/server.h>
 #include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
 #include <exploration_libraly/struct.h>
+#include <nav_msgs/OccupancyGrid.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
@@ -20,6 +21,7 @@ SensorBasedExploration::SensorBasedExploration()
     ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
     ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
     ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals", 1))
+    ,map_(new ExStc::subStruct<nav_msgs::OccupancyGrid>("map", 1))
     ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
     ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
