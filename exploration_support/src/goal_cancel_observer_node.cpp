@@ -15,7 +15,7 @@ int main(int argc, char* argv[]){
 
     ros::Publisher pub = ros::NodeHandle().advertise<exploration_msgs::PointArray>("canceled_goals",1,true);
     std::vector<move_base_msgs::MoveBaseActionGoal> goals;
-    exploeration_msgs::PointArray canceledGoals;
+    exploration_msgs::PointArray canceledGoals;
     double CANCELED_GOALS_PUBLISH_RATE;
     ros::NodeHandle("~").param<double>("canceled_goals_publish_rate", CANCELED_GOALS_PUBLISH_RATE, 10.0);
     ros::Subscriber subGoal = ros::NodeHandle().subscribe<move_base_msgs::MoveBaseActionGoal>("move_base/goal",1,[&goals](const move_base_msgs::MoveBaseActionGoal::ConstPtr& msg){goals.emplace_back(*msg);});

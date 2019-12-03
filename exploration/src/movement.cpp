@@ -530,6 +530,8 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
     for(int i=0,e=scan.ranges.size();i!=e;++i)
         scanCalced.emplace_back(CALC_RANGE_COS && !std::isnan(scan.ranges[i]) ? scan.ranges[i]*cos(scan.angle_min+(scan.angle_increment*i)) : scan.ranges[i]);
 
+    double NAN_RATE = 0.8;
+
     //minus側の平均
     double aveM=0;
     int nanM = 0;
@@ -537,7 +539,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         if(!std::isnan(scanCalced[i])) aveM += scanCalced[i];
         else ++nanM;
     }
-    aveM = nanM > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveM / scan.ranges.size()/2;
+    aveM = nanM > (scan.ranges.size()/2)*NAN_RATE ? DBL_MAX : aveM / (scan.ranges.size()/2-nanM);
     // aveM /= scan.ranges.size()/2;
 
     //plus側
@@ -547,7 +549,7 @@ bool Movement::emergencyAvoidance(const sensor_msgs::LaserScan& scan){
         if(!std::isnan(scanCalced[i])) aveP += scanCalced[i];
         else ++nanP;
     }
-    aveP = nanP > (scan.ranges.size()/2)*0.8 ? DBL_MAX : aveP / scan.ranges.size()/2;
+    aveP = nanP > (scan.ranges.size()/2)*NAN_RATE ? DBL_MAX : aveP / (scan.ranges.size()/2-nanP);
     // aveP /= scan.ranges.size()/2;
 
     //左右の差がそんなにないなら前回避けた方向を採用する

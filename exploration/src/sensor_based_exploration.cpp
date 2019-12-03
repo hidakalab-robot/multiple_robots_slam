@@ -19,7 +19,7 @@ SensorBasedExploration::SensorBasedExploration()
     :branch_(new ExStc::subStruct<exploration_msgs::PointArray>("branch", 1))
     ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
     ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
-    ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals", 1)
+    ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals", 1))
     ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
     ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
@@ -54,17 +54,17 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 
     //　最後のゴールと近かったら削除
     if(LAST_GOAL_EFFECT){
-        auto removeResult = std::remove_if(branches.begin(),branches.end(),[this](geometry_msgs_msgs::Point& p){return Eigen::Vector2d(p.x - lastGoal_->x, p.y - lastGoal_->y).norm()<LAST_GOAL_TOLERANCE;});
+        auto removeResult = std::remove_if(branches.begin(),branches.end(),[this](geometry_msgs::Point& p){return Eigen::Vector2d(p.x - lastGoal_->x, p.y - lastGoal_->y).norm()<LAST_GOAL_TOLERANCE;});
 		branches.erase(std::move(removeResult),branches.end());
     }
 
     if(CANCELED_GOAL_EFFECT && !canceled_->q.callOne(ros::WallDuration(1)) && canceled_->data.points.size()!=0){
-        auto removeResult = std::remove_if(branches.begin(),branches.end(),[this](geometry_msgs_msgs::Point& p){
+        auto removeResult = std::remove_if(branches.begin(),branches.end(),[this](geometry_msgs::Point& p){
             for(const auto& c : canceled_->data.points){
                 if(Eigen::Vector2d(p.x - c.x, p.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
             }
             return false;
-        }
+        });
 		branches.erase(std::move(removeResult),branches.end());
     }
 
@@ -75,7 +75,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 
     std::vector<ExStc::listStruct> ls;
     ls.reserve(branch_->data.points.size());
-    for(const auto& b : branches) ls.emplase_back(b);
+    for(const auto& b : branches) ls.emplace_back(b);
 
     // 別形式 // 直前の目標と近い分岐は無視したい
 

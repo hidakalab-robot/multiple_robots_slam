@@ -4,10 +4,10 @@ curve_gain: 2
 use_angle_bias: false
 angle_bias: 0
 costmap_margin: 0.45
-esc_map_div_x: 7
-esc_map_div_y: 7
-esc_map_width: 0.75
-esc_map_height: 0.75
+esc_map_div_x: 5
+esc_map_div_y: 5
+esc_map_width: 0.6
+esc_map_height: 0.6
 rotation_tolerance: 0.035
 goal_reset_rate: 2
 path_back_interval: 5
@@ -25,7 +25,7 @@ vfh_rate_threshold: 0.9
 far_avoidance_gain: 1.5
 near_avoidance_gain: 2.5
 calc_range_cos: true
-emergency_threshold: 0.2
+emergency_threshold: 0.1
 emergency_diff_threshold: 0.1
 emergency_avoidance_gain: 2.8
 approach_wall: false

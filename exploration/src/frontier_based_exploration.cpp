@@ -54,7 +54,7 @@ bool FrontierBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
                 if(Eigen::Vector2d(f.point.x - c.x, f.point.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
             }
             return false;
-        }
+        });
 		frontiers.erase(std::move(removeResult),frontiers.end());
     }
     

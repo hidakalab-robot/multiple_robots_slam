@@ -177,7 +177,7 @@ void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& ms
         }
         asmt_->points = tpv;
         asmt_->text = asmt_->ns = msg->descriptions[i];
-        asmt_->header.frame_id = msg->scan_frame_id;
+        asmt_->header.frame_id = msg->scan_frame_id != "" ? msg->scan_frame_id : INIT_FRAME_ID;
         asmt_->header.stamp = ros::Time::now();
         asmt_->color.g = float(float(i+1)/msg->range_pattern.size());
         ta.markers.emplace_back(*asmt_);
@@ -185,7 +185,7 @@ void Visualization::avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& ms
     *asm_ = ta;
 }
 
-void Visualization::caGoalsCB(const geometry_msgs::PoseArrayConstPtr& msg){
+void Visualization::caGoalsCB(const exploration_msgs::PointArrayConstPtr& msg){
     cgm_->points = msg->points;
     cgm_->header.frame_id = msg->header.frame_id != "" ? msg->header.frame_id : INIT_FRAME_ID;
     cgm_->header.stamp = ros::Time::now();
