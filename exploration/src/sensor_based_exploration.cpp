@@ -1,6 +1,7 @@
 #include <exploration/sensor_based_exploration.h>
 #include <exploration_libraly/enum.h>
 #include <exploration_libraly/convert.h>
+#include <exploration_libraly/utility.h>
 #include <Eigen/Geometry>
 #include <fstream>
 #include <exploration_msgs/PointArray.h>
@@ -15,6 +16,7 @@
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
+namespace ExUtl = ExpLib::Utility;
 
 SensorBasedExploration::SensorBasedExploration()
     :branch_(new ExStc::subStruct<exploration_msgs::PointArray>("branch", 1))
@@ -79,22 +81,13 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     ls.reserve(branch_->data.points.size());
     for(const auto& b : branches) ls.emplace_back(b);
 
-    // 別形式 // 直前の目標と近い分岐は無視したい
-
-    // for(const auto& b : branch_->data.points){
-    //     if(Eigen::Vector2d(b.x - lastGoal_->x, b.y - lastGoal_->y).norm()>LAST_GOAL_TOLERANCE) ls.emplace_back(b);
-    // }
-
-    // if(ls.size() == 0){
-    //     ROS_ERROR_STREAM("Branch array became empty");
-    //     return false;
-    // }
-
     // 重複探査検出
     if(DUPLICATE_DETECTION) duplicateDetection(ls, poseLog_->data);
 
     // 行ったことがなくても地図ができてたら重複探査にする
-    if(ON_MAP_BRANCH_DETECTION) onMapBranchDetection(ls);
+    if(ON_MAP_BRANCH_DETECTION && !map_->q.callOne(ros::WallDuration(1))) onMapBranchDetection(ls);
+
+    for(auto&& l : ls) ROS_DEBUG_STREAM("\n branch : (" << l.point.x << ", " << l.point.y << ") , status : " << (int)l.duplication << "\n");
 
     // goal を決定 // 適切なゴールが無ければ false
     return decideGoal(goal, ls, pose_->data);
@@ -127,7 +120,18 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& 
 void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>& ls){
     // 分岐があり行ったことがない場所でも既に地図ができているところを検出する
     // パラメータで検索窓を作ってその窓の中で地図ができている割合が一定以上であれば地図ができているという判定にする
-
+    std::vector<std::vector<int8_t>> map2d = ExUtl::mapArray1dTo2d(map_->data.data,map_->data.info);
+    for(auto&& l : ls){
+        if(l.duplication != ExEnm::DuplicationStatus::NOT_DUPLECATION) continue;
+        ExStc::mapSearchWindow msw(l.point,map_->data.info,MAP_WINDOW_X,MAP_WINDOW_Y);
+        int c = 0;
+        for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+            for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
+                if(map2d[x][y] >= 0) ++c;
+            }
+        }
+        if((double)c/(MAP_WINDOW_X*MAP_WINDOW_Y)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
+    }
 }
 
 bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){

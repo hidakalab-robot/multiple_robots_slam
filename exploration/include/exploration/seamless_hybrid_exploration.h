@@ -63,6 +63,8 @@ class SeamlessHybridExploration :public SensorBasedExploration{
         double VARIANCE_THRESHOLD;
         double COVARIANCE_THRESHOLD;
         double OTHER_ROBOT_WEIGHT;
+        double DUPLICATE_COEFF;
+        double ON_MAP_COEFF;
 
         // static parameters
         std::string ROBOT_NAME;

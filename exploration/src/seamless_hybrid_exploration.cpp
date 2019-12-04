@@ -30,6 +30,7 @@ struct SeamlessHybridExploration::preCalcResult{
         value(const double d, const double a);
     };
     geometry_msgs::Point point;
+    ExEnm::DuplicationStatus branchStatus;
     std::vector<value> values;
     preCalcResult();
 };
@@ -94,6 +95,8 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
             e *= evaluation(ownPreCalc_[m].values[i].distance, ownPreCalc_[m].values[i].angle) + (OTHER_ROBOT_WEIGHT/subE);
         }
         // ROS_DEBUG_STREAM("position : (" << mainRobotInfo[m].robot.coordinate.x << "," << mainRobotInfo[m].robot.coordinate.y << "), sum : " << e);
+        if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::OLDER) e *= DUPLICATE_COEFF;
+        else if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::ON_MAP) e *= ON_MAP_COEFF;
         ROS_DEBUG_STREAM("position : (" << ownPreCalc_[m].point.x << "," << ownPreCalc_[m].point.y << "), sum : " << e);
         if(e < minE){
             minE = std::move(e);
@@ -144,9 +147,10 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
     otherPreCalc_ = std::vector<preCalcResult>();
     *mVal_ = maxValue();
 
-    auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1){
+    auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1, ExEnm::DuplicationStatus branchStatus){
         SeamlessHybridExploration::preCalcResult pcr;
         pcr.point = p;
+        pcr.branchStatus = branchStatus;
         // Eigen::Vector2d v1 = ExCov::qToVector2d(ps.orientation);
         pcr.values.reserve(fa.frontiers.size());
         for(const auto& f : fa.frontiers){
@@ -181,15 +185,15 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
             distance = v1.lpNorm<1>();
             v1.normalize();
         }
-        ownPreCalc_.emplace_back(calc(l.point,v1));
+        ownPreCalc_.emplace_back(calc(l.point,v1,l.duplication));
         forward += distance;
     }
     forward /= ls.size();
     // 直進時の計算
-    Eigen::Vector2d fwdV1 = ExCov::qToVector2d(pose.pose.orientation);; 
-    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1));
+    Eigen::Vector2d fwdV1 = ExCov::qToVector2d(pose.pose.orientation); 
+    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1,ExEnm::DuplicationStatus::NOT_DUPLECATION));
     // 他のロボットに関する計算
-    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation)));
+    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),ExEnm::DuplicationStatus::NOT_DUPLECATION));
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){
@@ -259,6 +263,8 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
     nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
     nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
+    nh.param<double>("duplicate_coeff", DUPLICATE_COEFF, 1.2);
+    nh.param<double>("on_map_coeff", ON_MAP_COEFF, 1.1);
     // static parameters
     nh.param<std::string>("robot_name", ROBOT_NAME, "robot1");
     nh.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
@@ -283,6 +289,8 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     VARIANCE_THRESHOLD = cfg.variance_threshold;
     COVARIANCE_THRESHOLD = cfg.covariance_threshold;
     OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
+    DUPLICATE_COEFF = cfg.duplicate_coeff;
+    ON_MAP_COEFF = cfg.on_map_coeff;
 }
 
 void SeamlessHybridExploration::outputParams(void){
@@ -312,4 +320,6 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
     ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
     ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
+    ofs << "duplicate_coeff: " << DUPLICATE_COEFF << std::endl;
+    ofs << "on_map_coeff: " << ON_MAP_COEFF << std::endl;
  }
