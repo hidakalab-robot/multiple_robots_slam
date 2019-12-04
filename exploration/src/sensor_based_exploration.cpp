@@ -98,7 +98,7 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& 
 	//重複が新しいときと古い時で挙動を変える
 	
 	//重複探査を考慮する時間の上限から参照する配列の最大値を設定
-	int ARRAY_MAX = log.poses.size();
+	int ARRAY_MAX = log.poses.size()-1;
 	for(int i=log.poses.size()-2;i!=0;--i){
 		if(ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > LOG_CURRENT_TIME){
 			ARRAY_MAX = i;

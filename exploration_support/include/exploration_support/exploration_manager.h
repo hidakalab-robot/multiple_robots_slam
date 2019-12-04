@@ -60,6 +60,8 @@ class ExplorationManager{
         double END_AREA;
         int END_FRONTIER;
         double END_TIME;
+        double END_AREA_DIFF;
+        double END_AREA_DIFF_INTERVAL;
 
         // static parameters
         std::string EXMNG_PARAMETER_FILE_PATH;
@@ -71,15 +73,19 @@ class ExplorationManager{
         std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> areaEnd_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> frontierEnd_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> timerEnd_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> areaDiffEnd_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> areaVal_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Int32>> frontierVal_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> timerVal_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> areaDiffVal_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig>> drs_;
+        double area_;
 
         // functions
         void mapCB(const nav_msgs::OccupancyGridConstPtr& msg);
         void frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void timer(void);
+        void areaDiff(void);
         void loadParams(void);
         void dynamicParamsCB(exploration_support::exploration_manager_parameter_reconfigureConfig &cfg, uint32_t level);
         void outputParams(void);

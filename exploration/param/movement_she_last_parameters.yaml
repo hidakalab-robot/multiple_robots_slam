@@ -1,8 +1,8 @@
 forward_velocity: 0.2
 rotation_velocity: 0.5
 curve_gain: 2
-use_angle_bias: false
-angle_bias: 0
+use_angle_bias: true
+angle_bias: 45.9
 costmap_margin: 0.45
 esc_map_div_x: 5
 esc_map_div_y: 5
