@@ -91,7 +91,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // }
 
     // 重複探査検出
-    if(DUPLICATE_DETEDCTION) duplicateDetection(ls, poseLog_->data);
+    if(DUPLICATE_DETECTION) duplicateDetection(ls, poseLog_->data);
 
     // 行ったことがなくても地図ができてたら重複探査にする
     if(ON_MAP_BRANCH_DETECTION) onMapBranchDetection(ls);
@@ -124,7 +124,7 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& 
 	}
 }
 
-void SensorBasedExploration::onMapBranchDetection(std::vector<geometry_msgs::Point>& branches){
+void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>& ls){
     // 分岐があり行ったことがない場所でも既に地図ができているところを検出する
     // パラメータで検索窓を作ってその窓の中で地図ができている割合が一定以上であれば地図ができているという判定にする
 
@@ -161,7 +161,7 @@ void SensorBasedExploration::loadParams(void){
     nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
     nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
-    nh.param<double>("on_map_branch_tolerance", ON_MAP_BRANCH_TOLERANCE, 0.5);
+    nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
     nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
     nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
     nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
@@ -179,7 +179,7 @@ void SensorBasedExploration::dynamicParamsCB(exploration::sensor_based_explorati
     CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
     ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
-    ON_MAP_BRANCH_TOLERANCE = cfg.on_map_branch_tolerance;
+    ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
     MAP_WINDOW_X = cfg.map_window_x;
     MAP_WINDOW_Y = cfg.map_window_y;
     DUPLICATE_DETECTION = cfg.duplicate_detection;
@@ -203,7 +203,7 @@ void SensorBasedExploration::outputParams(void){
     ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
     ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
-    ofs << "on_map_branch_tolerance: " << ON_MAP_BRANCH_TOLERANCE << std::endl;
+    ofs << "on_map_branch_tolerance: " << ON_MAP_BRANCH_RATE << std::endl;
     ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
     ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
     ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;

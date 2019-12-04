@@ -87,7 +87,7 @@ class SensorBasedExploration{
         double MAP_WINDOW_X;
         double MAP_WINDOW_Y;
         double ON_MAP_BRANCH_RATE;
-        bool DUPLICATE_DETEDCTION;
+        bool DUPLICATE_DETECTION;
         double DUPLICATE_TOLERANCE;
         double LOG_CURRENT_TIME;//if 30 -> 30秒前までのログで重複検出
         double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ

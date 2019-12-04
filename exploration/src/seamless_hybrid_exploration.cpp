@@ -247,7 +247,7 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
     nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
-    nh.param<double>("on_map_branch_tolerance", ON_MAP_BRANCH_TOLERANCE, 0.5);
+    nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
     nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
     nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
     nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
@@ -271,7 +271,7 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
     ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
-    ON_MAP_BRANCH_TOLERANCE = cfg.on_map_branch_tolerance;
+    ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
     MAP_WINDOW_X = cfg.map_window_x;
     MAP_WINDOW_Y = cfg.map_window_y;
     DUPLICATE_DETECTION = cfg.duplicate_detection;
@@ -300,7 +300,7 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
     ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
-    ofs << "on_map_branch_tolerance: " << ON_MAP_BRANCH_TOLERANCE << std::endl;
+    ofs << "on_map_branch_rate: " << ON_MAP_BRANCH_RATE << std::endl;
     ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
     ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
     ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
