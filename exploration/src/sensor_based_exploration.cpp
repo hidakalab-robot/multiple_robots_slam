@@ -91,12 +91,14 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // }
 
     // 重複探査検出
-    duplicateDetection(ls, poseLog_->data);
+    if(DUPLICATE_DETEDCTION) duplicateDetection(ls, poseLog_->data);
+
+    // 行ったことがなくても地図ができてたら重複探査にする
+    if(ON_MAP_BRANCH_DETECTION) onMapBranchDetection(ls);
 
     // goal を決定 // 適切なゴールが無ければ false
     return decideGoal(goal, ls, pose_->data);
 }
-
 
 void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
 	//重複探査の新しさとかはヘッダーの時間で見る
@@ -120,6 +122,12 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& 
             }
         }
 	}
+}
+
+void SensorBasedExploration::onMapBranchDetection(std::vector<geometry_msgs::Point>& branches){
+    // 分岐があり行ったことがない場所でも既に地図ができているところを検出する
+    // パラメータで検索窓を作ってその窓の中で地図ができている割合が一定以上であれば地図ができているという判定にする
+
 }
 
 bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
@@ -152,6 +160,11 @@ void SensorBasedExploration::loadParams(void){
     nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
     nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
+    nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
+    nh.param<double>("on_map_branch_tolerance", ON_MAP_BRANCH_TOLERANCE, 0.5);
+    nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
+    nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
+    nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
     nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
     nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
@@ -165,6 +178,11 @@ void SensorBasedExploration::dynamicParamsCB(exploration::sensor_based_explorati
     LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
     CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
+    ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
+    ON_MAP_BRANCH_TOLERANCE = cfg.on_map_branch_tolerance;
+    MAP_WINDOW_X = cfg.map_window_x;
+    MAP_WINDOW_Y = cfg.map_window_y;
+    DUPLICATE_DETECTION = cfg.duplicate_detection;
     DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
     LOG_CURRENT_TIME = cfg.log_current_time;
     NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
@@ -184,6 +202,11 @@ void SensorBasedExploration::outputParams(void){
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
     ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
+    ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
+    ofs << "on_map_branch_tolerance: " << ON_MAP_BRANCH_TOLERANCE << std::endl;
+    ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
+    ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
+    ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
     ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
     ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
     ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;

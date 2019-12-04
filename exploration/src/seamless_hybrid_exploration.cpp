@@ -78,9 +78,7 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, co
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     // 事前計算
-    ROS_DEBUG_STREAM("tes1");
     preCalc(*ls_, *fa_, *ria_, *ps_);
-    ROS_DEBUG_STREAM("tes10");
 
     // 評価計算
     auto evaluation = [this](const double d, const double a){return DISTANCE_WEIGHT * d / mVal_->distance + DIRECTION_WEIGHT * a / mVal_->angle;};
@@ -89,7 +87,6 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
 
     for(int m=0,me=ownPreCalc_.size();m!=me;++m){
         double e = 1;
-        ROS_DEBUG_STREAM("tes11");
         for(int i=0,ie=ownPreCalc_[m].values.size();i!=ie;++i){
             double subE = 0;
             if(otherPreCalc_.size()==0) subE = DBL_MAX;
@@ -249,6 +246,11 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
     nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
+    nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
+    nh.param<double>("on_map_branch_tolerance", ON_MAP_BRANCH_TOLERANCE, 0.5);
+    nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
+    nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
+    nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
     nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
     nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
@@ -268,6 +270,11 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
     CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
+    ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
+    ON_MAP_BRANCH_TOLERANCE = cfg.on_map_branch_tolerance;
+    MAP_WINDOW_X = cfg.map_window_x;
+    MAP_WINDOW_Y = cfg.map_window_y;
+    DUPLICATE_DETECTION = cfg.duplicate_detection;
     DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
     LOG_CURRENT_TIME = cfg.log_current_time;
     NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
@@ -292,6 +299,11 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
     ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
+    ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
+    ofs << "on_map_branch_tolerance: " << ON_MAP_BRANCH_TOLERANCE << std::endl;
+    ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
+    ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
+    ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
     ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
     ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
     ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;

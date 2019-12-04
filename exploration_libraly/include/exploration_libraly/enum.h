@@ -6,7 +6,8 @@ namespace ExpLib{
 		enum class DuplicationStatus{
 			NOT_DUPLECATION,
 			OLDER,
-			NEWER
+			NEWER,
+			ON_MAP
 		};
 	}
 }

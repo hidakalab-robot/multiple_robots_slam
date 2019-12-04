@@ -71,7 +71,7 @@ class SensorBasedExploration{
 
         // functions
         void duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
-        void deleteOnMapBranch(std::vector<geometry_msgs::Point>& branches);
+        void onMapBranchDetection(std::vector<ExStc::listStruct>& ls);
         virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
         virtual void loadParams(void);
         virtual void dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
@@ -83,6 +83,11 @@ class SensorBasedExploration{
         double LAST_GOAL_TOLERANCE;
         bool CANCELED_GOAL_EFFECT;
         double CANCELED_GOAL_TOLERANCE;
+        bool ON_MAP_BRANCH_DETECTION;
+        double MAP_WINDOW_X;
+        double MAP_WINDOW_Y;
+        double ON_MAP_BRANCH_RATE;
+        bool DUPLICATE_DETEDCTION;
         double DUPLICATE_TOLERANCE;
         double LOG_CURRENT_TIME;//if 30 -> 30秒前までのログで重複検出
         double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
