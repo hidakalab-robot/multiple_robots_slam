@@ -20,14 +20,12 @@ struct FrontierDetection::mapStruct{
     nav_msgs::MapMetaData info;
     std::vector<std::vector<int8_t>> source;
     std::vector<std::vector<int8_t>> horizon;
-    std::vector<std::vector<int8_t>> frontierMap;
     mapStruct(const nav_msgs::OccupancyGrid& m);
 };
 
 FrontierDetection::mapStruct::mapStruct(const nav_msgs::OccupancyGrid& m)
     :source(ExUtl::mapArray1dTo2d(m.data,m.info))
-    ,horizon(m.info.width,std::vector<int8_t>(m.info.height,0))
-    ,frontierMap(m.info.width,std::vector<int8_t>(m.info.height,0)){
+    ,horizon(m.info.width,std::vector<int8_t>(m.info.height,0)){
     info = m.info;
 }
 
@@ -200,23 +198,11 @@ FrontierDetection::clusterStruct FrontierDetection::clusterDetection(const mapSt
 void FrontierDetection::obstacleFilter(FrontierDetection::mapStruct& map,clusterStruct& cs){
     ROS_INFO_STREAM("Obstacle Filter");
     
-    //add obstacle cell
-    for(int x=0,ex=map.info.width;x!=ex;++x){
-        for(int y=0,ey=map.info.height;y!=ey;++y){
-            if(map.source[x][y] == 100) map.frontierMap[x][y] = 100;
-        }
-    }
-
     for(int i=0,ie=cs.index.size();i!=ie;++i){
-        if(map.frontierMap[cs.index[i].x()][cs.index[i].y()] == 100){
-            cs.isObstacle[i] = 0;
-            continue;
-        }
-        ExStc::mapSearchWindow msw(cs.index[i].x(),cs.index[i].y(),map.info.width,map.info.height,FILTER_SQUARE_DIAMETER);
+        ExStc::mapSearchWindow msw(cs.index[i].x(),cs.index[i].y(),map.info.width,map.info.height,FILTER_SQUARE_DIAMETER/map.info.resolution);
         for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
             for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
-                if(map.frontierMap[x][y] == 100){//障害部があったら終了
-                    map.frontierMap[cs.index[i].x()][cs.index[i].y()] = 0;
+                if(map.source[x][y] == 100){//障害部があったら終了
                     cs.isObstacle[i] = 0;
                     x = ex -1;//ラムダで関数作ってreturnで終わっても良いかも
                     y = ey -1;
