@@ -1,7 +1,7 @@
 obstacle_check_angle: 0.04
 obstacle_range_threshold: 2.5
-branch_range_threshold: 6
+branch_range_threshold: 10
 branch_diff_x_min: 1
 branch_diff_x_max: 10
-branch_diff_y_min: 0.25
+branch_diff_y_min: 0.4
 branch_diff_y_max: 10

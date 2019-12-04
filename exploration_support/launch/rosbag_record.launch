@@ -2,6 +2,8 @@
     <arg name="name" default="rosbag"/>
     <arg name="dir" default="$(env HOME)/rosbag/$(arg name)"/>
     <arg name="topics"/>
-    
-    <node pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-o $(arg dir) $(arg topics)"/>
+    <arg name="compress" default="false"/>
+
+    <node if="$(arg compress)" pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-j -o $(arg dir) $(arg topics)"/>
+    <node unless="$(arg compress)" pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-o $(arg dir) $(arg topics)"/>
 </launch>

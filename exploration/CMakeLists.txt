@@ -132,7 +132,6 @@ include_directories(
  include
   ${catkin_INCLUDE_DIRS}
   "/usr/include/eigen3"
-  ${OpenCV_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -213,25 +212,80 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(sensor_based_exploration src/sensor_based_exploration.cpp)
-add_dependencies(sensor_based_exploration ${PROJECT_NAME}_gencfg)
-target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
+add_library(movement src/movement.cpp)
+add_dependencies(movement ${PROJECT_NAME}_gencfg)
+target_link_libraries(movement ${catkin_LIBRARIES})
 
-add_executable(frontier_based_exploration src/frontier_based_exploration.cpp)
-add_dependencies(frontier_based_exploration ${PROJECT_NAME}_gencfg)
-target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
+add_library(sbe src/sensor_based_exploration.cpp)
+add_dependencies(sbe ${PROJECT_NAME}_gencfg)
+target_link_libraries(sbe ${catkin_LIBRARIES})
 
-add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration.cpp)
-add_dependencies(seamless_hybrid_exploration ${PROJECT_NAME}_gencfg)
-target_link_libraries(seamless_hybrid_exploration ${catkin_LIBRARIES})
+add_library(fbe src/frontier_based_exploration.cpp)
+add_dependencies(fbe ${PROJECT_NAME}_gencfg)
+target_link_libraries(fbe ${catkin_LIBRARIES})
 
-add_executable(multi_exploration_simulator src/multi_exploration_simulator.cpp)
+add_library(she src/seamless_hybrid_exploration.cpp)
+add_dependencies(she ${PROJECT_NAME}_gencfg)
+target_link_libraries(she ${catkin_LIBRARIES} sbe)
+
+# add_executable(sensor_based_exploration src/sensor_based_exploration_node.cpp)
+add_executable(sensor_based_exploration 
+  src/sensor_based_exploration_node.cpp
+)
+# add_dependencies(sensor_based_exploration ${PROJECT_NAME}_gencfg)
+# target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
+target_link_libraries(sensor_based_exploration 
+  ${catkin_LIBRARIES} 
+  sbe
+  movement
+)
+
+# add_executable(frontier_based_exploration src/frontier_based_exploration_node.cpp)
+add_executable(frontier_based_exploration 
+  src/frontier_based_exploration_node.cpp
+)
+# add_dependencies(frontier_based_exploration ${PROJECT_NAME}_gencfg)
+# target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
+target_link_libraries(frontier_based_exploration
+  ${catkin_LIBRARIES} 
+  fbe
+  movement
+)
+
+# add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration_node.cpp)
+add_executable(seamless_hybrid_exploration
+ src/seamless_hybrid_exploration_node.cpp
+)
+# add_dependencies(seamless_hybrid_exploration ${PROJECT_NAME}_gencfg)
+target_link_libraries(seamless_hybrid_exploration
+ ${catkin_LIBRARIES}
+ she
+ movement
+)
+
+# add_executable(multi_exploration_simulator src/multi_exploration_simulator_node.cpp)
+add_executable(multi_exploration_simulator
+ src/multi_exploration_simulator_node.cpp
+ src/multi_exploration_simulator.cpp
+)
 add_dependencies(multi_exploration_simulator ${PROJECT_NAME}_gencfg)
-target_link_libraries(multi_exploration_simulator ${catkin_LIBRARIES})
+target_link_libraries(multi_exploration_simulator
+ ${catkin_LIBRARIES}
+ she
+)
 
-add_executable(multi_exploration_simulator_input_support src/multi_exploration_simulator_input_support.cpp)
+add_executable(multi_exploration_simulator_input_support
+ src/multi_exploration_simulator_input_support_node.cpp
+)
 target_link_libraries(multi_exploration_simulator_input_support ${catkin_LIBRARIES})
 
-add_executable(legacy_hybrid_exploration src/legacy_hybrid_exploration.cpp)
-add_dependencies(legacy_hybrid_exploration ${PROJECT_NAME}_gencfg)
-target_link_libraries(legacy_hybrid_exploration ${catkin_LIBRARIES})
+add_executable(legacy_hybrid_exploration
+ src/legacy_hybrid_exploration_node.cpp
+)
+# add_dependencies(legacy_hybrid_exploration ${PROJECT_NAME}_gencfg)
+target_link_libraries(legacy_hybrid_exploration
+ ${catkin_LIBRARIES}
+ she
+ fbe
+ movement
+)

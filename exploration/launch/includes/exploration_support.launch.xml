@@ -61,4 +61,7 @@
 
     <!-- visualization -->
     <node pkg="exploration_support" type="visualization" name="visualization"/>
+
+    <!-- goal_cancel_observer -->
+    <node pkg="exploration_support" type="goal_cancel_observer" name="goal_cancel_observer"/>
 </launch>
