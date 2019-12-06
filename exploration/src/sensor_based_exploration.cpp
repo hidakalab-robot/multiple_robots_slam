@@ -91,7 +91,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 
     publishProcessedBranch(ls);
 
-    for(auto&& l : ls) ROS_DEBUG_STREAM("\n branch : (" << l.point.x << ", " << l.point.y << ") , status : " << (int)l.duplication << "\n");
+    // for(auto&& l : ls) ROS_DEBUG_STREAM("\n branch : (" << l.point.x << ", " << l.point.y << ") , status : " << (int)l.duplication << "\n");
 
     // goal を決定 // 適切なゴールが無ければ false
     return decideGoal(goal, ls, pose_->data);
@@ -161,23 +161,23 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
     return false;
 }
 
-void SensorBasedExploration::publishProcessedBranch(const std::vector<ExStc::listStruct>& ls, const std::string& frame_id){
+void SensorBasedExploration::publishProcessedBranch(const std::vector<ExStc::listStruct>& ls){
     exploration_msgs::PointArray dup,om;
     dup.points.reserve(ls.size());
     om.points.reserve(ls.size());
     for(auto&& l : ls){
         switch (l.duplication){
             case ExEnm::DuplicationStatus::OLDER:
-                dup.points.emplace_back(l.points);
+                dup.points.emplace_back(l.point);
                 break;
             case ExEnm::DuplicationStatus::ON_MAP:
-                om.points.emplace_back(l.points);
+                om.points.emplace_back(l.point);
                 break;
             default:
                 break;
         }
     }
-    dup.header.frame_id = om.header.frame_id = branch_->header.frame_id;
+    dup.header.frame_id = om.header.frame_id = branch_->data.header.frame_id;
     dupBra_->pub.publish(dup);
     onMapBra_->pub.publish(om);
 }

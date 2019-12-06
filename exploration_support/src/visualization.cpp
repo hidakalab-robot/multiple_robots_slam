@@ -54,8 +54,8 @@ Visualization::Visualization()
     loadParams();
     *gm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
     *bm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
-    *dbm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.6);
-    *obm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.3);
+    *dbm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.85,0.85);
+    *obm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.0,1.0,0.0);
     *fm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
     *ufm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
     *rm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
@@ -71,6 +71,8 @@ void Visualization::multiThreadMain(void){
     std::thread ppThread([this]() { posePathPublisher(); });
     std::thread gmThread([this]() { goalMarkerPublisher(); });
     std::thread bmThread([this]() { branchMarkerPublisher(); });
+    std::thread dbmThread([this]() { dupBranchMarkerPublisher(); });
+    std::thread obmThread([this]() { omBranchMarkerPublisher(); });
     std::thread fmThread([this]() { frontierMarkerPublisher(); });
     std::thread ufmThread([this]() { useFroMarkerPublisher(); });
     std::thread rmThread([this]() { roadMarkerPublisher(); });
@@ -80,6 +82,8 @@ void Visualization::multiThreadMain(void){
     ppThread.join();//スレッドの終了を待つ
     gmThread.join();
     bmThread.join();
+    dbmThread.join();
+    obmThread.join();
     fmThread.join();
     ufmThread.join();
     rmThread.join();
@@ -236,7 +240,7 @@ void Visualization::branchMarkerPublisher(void){
 }
 
 void Visualization::dupBranchMarkerPublisher(void){
-    ros::Rate rate(DUPLICATE_BRANCH_PUBLISH_RATE);
+    ros::Rate rate(DUPLICATED_BRANCH_PUBLISH_RATE);
     while(ros::ok()){
         dupBranchMarker_->pub.publish(*dbm_);
         rate.sleep();

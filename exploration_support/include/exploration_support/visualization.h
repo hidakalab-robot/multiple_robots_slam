@@ -77,7 +77,7 @@ class Visualization{
         double POSE_PUBLISH_RATE;
         double GOAL_PUBLISH_RATE;
         double BRANCH_PUBLISH_RATE;
-        double DUPLICATE_BRANCH_PUBLISH_RATE;
+        double DUPLICATED_BRANCH_PUBLISH_RATE;
         double ON_MAP_BRANCH_PUBLISH_RATE;
         double FRONTIER_PUBLISH_RATE;
         double USEFUL_FRONTIER_PUBLISH_RATE;
