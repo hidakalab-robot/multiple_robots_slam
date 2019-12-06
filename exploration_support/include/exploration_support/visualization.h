@@ -77,6 +77,8 @@ class Visualization{
         double POSE_PUBLISH_RATE;
         double GOAL_PUBLISH_RATE;
         double BRANCH_PUBLISH_RATE;
+        double DUPLICATE_BRANCH_PUBLISH_RATE;
+        double ON_MAP_BRANCH_PUBLISH_RATE;
         double FRONTIER_PUBLISH_RATE;
         double USEFUL_FRONTIER_PUBLISH_RATE;
         double ROAD_PUBLISH_RATE;
@@ -100,6 +102,16 @@ class Visualization{
         std::unique_ptr<ExStc::subStructSimple> branch_;
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> branchMarker_;
         std::unique_ptr<visualization_msgs::Marker> bm_;
+
+        // duplicated branch
+        std::unique_ptr<ExStc::subStructSimple> dupBranch_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> dupBranchMarker_;
+        std::unique_ptr<visualization_msgs::Marker> dbm_;
+
+        // on map branch
+        std::unique_ptr<ExStc::subStructSimple> omBranch_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> omBranchMarker_;
+        std::unique_ptr<visualization_msgs::Marker> obm_;
 
         // frontier
         std::unique_ptr<ExStc::subStructSimple> frontier_;
@@ -133,6 +145,8 @@ class Visualization{
         void goalCB(const geometry_msgs::PointStampedConstPtr& msg);
         void goalStatusCB(const actionlib_msgs::GoalStatusArrayConstPtr& msg);
         void branchCB(const exploration_msgs::PointArrayConstPtr& msg);
+        void dupBranchCB(const exploration_msgs::PointArrayConstPtr& msg);
+        void omBranchCB(const exploration_msgs::PointArrayConstPtr& msg);
         void frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void roadCB(const geometry_msgs::PointStampedConstPtr& msg);
@@ -141,6 +155,8 @@ class Visualization{
         void posePathPublisher(void);
         void goalMarkerPublisher(void);
         void branchMarkerPublisher(void);
+        void dupBranchMarkerPublisher(void);
+        void omBranchMarkerPublisher(void);
         void frontierMarkerPublisher(void);
         void useFroMarkerPublisher(void);
         void roadMarkerPublisher(void);

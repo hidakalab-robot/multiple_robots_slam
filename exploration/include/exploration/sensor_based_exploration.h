@@ -68,11 +68,14 @@ class SensorBasedExploration{
         std::unique_ptr<ExStc::subStruct<exploration_msgs::PoseStampedArray>> poseLog_;
         std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> canceled_;
         std::unique_ptr<ExStc::subStruct<nav_msgs::OccupancyGrid>> map_;
+        std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> dupBra_;
+        std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> onMapBra_;
 
         // functions
         void duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
         void onMapBranchDetection(std::vector<ExStc::listStruct>& ls);
         virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+        void publishProcessedBranch(const std::vector<ExStc::listStruct>& ls);
         virtual void loadParams(void);
         virtual void dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
         virtual void outputParams(void);

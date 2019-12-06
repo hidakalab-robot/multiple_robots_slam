@@ -28,6 +28,12 @@ Visualization::Visualization()
     ,branch_(new ExStc::subStructSimple("branch",1,&Visualization::branchCB, this))
     ,branchMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/branch", 1, true))
     ,bm_(new visualization_msgs::Marker())
+    ,dupBranch_(new ExStc::subStructSimple("duplicated_branch",1,&Visualization::dupBranchCB, this))
+    ,dupBranchMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/duplicated_branch", 1, true))
+    ,dbm_(new visualization_msgs::Marker())
+    ,omBranch_(new ExStc::subStructSimple("on_map_branch",1,&Visualization::omBranchCB, this))
+    ,omBranchMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/on_map_branch", 1, true))
+    ,obm_(new visualization_msgs::Marker())
     ,frontier_(new ExStc::subStructSimple("frontier",1,&Visualization::frontierCB, this))
     ,frontierMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/frontier", 1, true))
     ,fm_(new visualization_msgs::Marker())
@@ -48,6 +54,8 @@ Visualization::Visualization()
     loadParams();
     *gm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.0,1.0);
     *bm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.0);
+    *dbm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.6);
+    *obm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,1.0,0.3);
     *fm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
     *ufm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
     *rm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
@@ -110,6 +118,18 @@ void Visualization::branchCB(const exploration_msgs::PointArrayConstPtr& msg){
     bm_->points = msg->points;
     bm_->header.frame_id = msg->header.frame_id;
     bm_->header.stamp = ros::Time::now();
+}
+
+void Visualization::dupBranchCB(const exploration_msgs::PointArrayConstPtr& msg){
+    dbm_->points = msg->points;
+    dbm_->header.frame_id = msg->header.frame_id;
+    dbm_->header.stamp = ros::Time::now();
+}
+
+void Visualization::omBranchCB(const exploration_msgs::PointArrayConstPtr& msg){
+    obm_->points = msg->points;
+    obm_->header.frame_id = msg->header.frame_id;
+    obm_->header.stamp = ros::Time::now();
 }
 
 void Visualization::frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg){
@@ -215,6 +235,22 @@ void Visualization::branchMarkerPublisher(void){
     }
 }
 
+void Visualization::dupBranchMarkerPublisher(void){
+    ros::Rate rate(DUPLICATE_BRANCH_PUBLISH_RATE);
+    while(ros::ok()){
+        dupBranchMarker_->pub.publish(*dbm_);
+        rate.sleep();
+    }
+}
+
+void Visualization::omBranchMarkerPublisher(void){
+    ros::Rate rate(ON_MAP_BRANCH_PUBLISH_RATE);
+    while(ros::ok()){
+        omBranchMarker_->pub.publish(*obm_);
+        rate.sleep();
+    }
+}
+
 void Visualization::frontierMarkerPublisher(void){
     ros::Rate rate(FRONTIER_PUBLISH_RATE);
     while(ros::ok()){
@@ -262,6 +298,8 @@ void Visualization::loadParams(void){
     nh.param<double>("pose_publish_rate", POSE_PUBLISH_RATE, 10.0);
     nh.param<double>("goal_publish_rate", GOAL_PUBLISH_RATE, 10.0);
     nh.param<double>("branch_publish_rate", BRANCH_PUBLISH_RATE, 10.0);
+    nh.param<double>("duplicated_branch_publish_rate", DUPLICATED_BRANCH_PUBLISH_RATE, 10.0);
+    nh.param<double>("on_map_branch_publish_rate", ON_MAP_BRANCH_PUBLISH_RATE, 10.0);
     nh.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
     nh.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
     nh.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);

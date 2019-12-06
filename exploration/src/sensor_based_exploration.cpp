@@ -24,6 +24,8 @@ SensorBasedExploration::SensorBasedExploration()
     ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
     ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals", 1))
     ,map_(new ExStc::subStruct<nav_msgs::OccupancyGrid>("map", 1))
+    ,dupBra_(new ExStc::pubStruct<exploration_msgs::PointArray>("duplicated_branch", 1, true))
+    ,onMapBra_(new ExStc::pubStruct<exploration_msgs::PointArray>("on_map_branch", 1, true))
     ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
     ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
@@ -86,6 +88,8 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 
     // 行ったことがなくても地図ができてたら重複探査にする
     if(ON_MAP_BRANCH_DETECTION && !map_->q.callOne(ros::WallDuration(1))) onMapBranchDetection(ls);
+
+    publishProcessedBranch(ls);
 
     for(auto&& l : ls) ROS_DEBUG_STREAM("\n branch : (" << l.point.x << ", " << l.point.y << ") , status : " << (int)l.duplication << "\n");
 
@@ -155,6 +159,27 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
         return true;
     }
     return false;
+}
+
+void SensorBasedExploration::publishProcessedBranch(const std::vector<ExStc::listStruct>& ls, const std::string& frame_id){
+    exploration_msgs::PointArray dup,om;
+    dup.points.reserve(ls.size());
+    om.points.reserve(ls.size());
+    for(auto&& l : ls){
+        switch (l.duplication){
+            case ExEnm::DuplicationStatus::OLDER:
+                dup.points.emplace_back(l.points);
+                break;
+            case ExEnm::DuplicationStatus::ON_MAP:
+                om.points.emplace_back(l.points);
+                break;
+            default:
+                break;
+        }
+    }
+    dup.header.frame_id = om.header.frame_id = branch_->header.frame_id;
+    dupBra_->pub.publish(dup);
+    onMapBra_->pub.publish(om);
 }
 
 void SensorBasedExploration::loadParams(void){
