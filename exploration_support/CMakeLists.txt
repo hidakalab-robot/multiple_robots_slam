@@ -18,9 +18,11 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   pcl_ros
   visualization_msgs
+  dynamic_reconfigure
 )
 
 find_package(OpenCV REQUIRED)
+find_package(exploration_libraly REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -97,14 +99,17 @@ find_package(OpenCV REQUIRED)
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-# generate_dynamic_reconfigure_options(
-#   cfg/multi_exploration_simulator.cfg
-#   cfg/extra_parameter_reconfigure.cfg
-# )
+generate_dynamic_reconfigure_options(
+  cfg/branch_detection_parameter_reconfigure.cfg
+  cfg/exploration_manager_parameter_reconfigure.cfg
+  cfg/frontier_detection_parameter_reconfigure.cfg
+  cfg/loop_closure_counter_parameter_reconfigure.cfg
+  cfg/map_fill_parameter_reconfigure.cfg
+)
 
 ###################################
 ## catkin specific configuration ##
-###################################
+##################b#################
 ## The catkin_package macro generates cmake config files for your package
 ## Declare things to be passed to dependent projects
 ## INCLUDE_DIRS: uncomment this if your package contains header files
@@ -113,8 +118,8 @@ find_package(OpenCV REQUIRED)
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS include
-#  LIBRARIES exploration_support
-  CATKIN_DEPENDS actionlib_msgs exploration_libraly exploration_msgs geometry_msgs kobuki_msgs nav_msgs roscpp sensor_msgs pcl_ros visualization_msgs
+  # LIBRARIES exploration_libraly
+  CATKIN_DEPENDS actionlib_msgs exploration_libraly exploration_msgs geometry_msgs kobuki_msgs nav_msgs roscpp sensor_msgs pcl_ros visualization_msgs dynamic_reconfigure
 #  DEPENDS system_lib
 )
 
@@ -208,32 +213,78 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(visualization src/visualization.cpp)
+add_executable(visualization 
+ src/visualization_node.cpp
+ src/visualization.cpp
+)
 target_link_libraries(visualization ${catkin_LIBRARIES})
 
-add_executable(bumper_continuity src/bumper_continuity.cpp)
-target_link_libraries(bumper_continuity ${catkin_LIBRARIES})
+add_executable(bumper_continuity 
+  src/bumper_continuity_node.cpp
+)
+target_link_libraries(bumper_continuity
+ ${catkin_LIBRARIES}
+)
 
-add_executable(movebase_canceller src/movebase_canceller.cpp)
+add_executable(movebase_canceller
+ src/movebase_canceller_node.cpp
+)
 target_link_libraries(movebase_canceller ${catkin_LIBRARIES})
 
-add_executable(map_fill src/map_fill.cpp)
-target_link_libraries(map_fill ${catkin_LIBRARIES} ${OpenCV_LIBRARIES})
+add_executable(map_fill
+ src/map_fill_node.cpp
+ src/map_fill.cpp
+)
+add_dependencies(map_fill ${PROJECT_NAME}_gencfg)
+target_link_libraries(map_fill
+ ${catkin_LIBRARIES}
+ ${OpenCV_LIBRARIES}
+)
 
-add_executable(exploration_manager src/exploration_manager.cpp)
+add_executable(exploration_manager
+ src/exploration_manager_node.cpp
+ src/exploration_manager.cpp
+)
+add_dependencies(exploration_manager ${PROJECT_NAME}_gencfg)
 target_link_libraries(exploration_manager ${catkin_LIBRARIES})
 
-add_executable(robot_manager src/robot_manager.cpp)
+add_executable(robot_manager
+ src/robot_manager_node.cpp
+ src/robot_manager.cpp
+)
 target_link_libraries(robot_manager ${catkin_LIBRARIES})
 
-add_executable(frontier_detection src/frontier_detection.cpp)
+add_executable(frontier_detection
+ src/frontier_detection_node.cpp
+ src/frontier_detection.cpp
+)
+add_dependencies(frontier_detection ${PROJECT_NAME}_gencfg)
 target_link_libraries(frontier_detection ${catkin_LIBRARIES})
 
-add_executable(branch_detection src/branch_detection.cpp)
+add_executable(branch_detection
+ src/branch_detection_node.cpp
+ src/branch_detection.cpp
+)
+add_dependencies(branch_detection ${PROJECT_NAME}_gencfg)
 target_link_libraries(branch_detection ${catkin_LIBRARIES})
 
-add_executable(loop_closure_counter src/loop_closure_counter.cpp)
+add_executable(loop_closure_counter
+ src/loop_closure_counter_node.cpp
+ src/loop_closure_counter.cpp
+)
+add_dependencies(loop_closure_counter ${PROJECT_NAME}_gencfg)
 target_link_libraries(loop_closure_counter ${catkin_LIBRARIES})
 
-add_executable(map_continuity src/map_continuity.cpp)
-target_link_libraries(map_continuity ${catkin_LIBRARIES})
+add_executable(map_continuity
+ src/map_continuity_node.cpp
+)
+target_link_libraries(map_continuity
+ ${catkin_LIBRARIES}
+)
+
+add_executable(goal_cancel_observer
+ src/goal_cancel_observer_node.cpp
+)
+target_link_libraries(goal_cancel_observer
+ ${catkin_LIBRARIES}
+)

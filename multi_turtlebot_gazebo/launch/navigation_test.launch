@@ -1,0 +1,57 @@
+<launch>
+    <env name="GAZEBO_MODEL_PATH" value="$(find multi_turtlebot_gazebo)/world/models:$(optenv GAZEBO_MODEL_PATH)" /> 
+    <arg name="world_file"  default="$(find multi_turtlebot_gazebo)/world/virtual_factory.world"/>
+
+    <arg name="gui" default="true"/>
+    <arg name="sensor" default="kinect"/> <!-- kinect, stereo, urg_plus_kinect -->
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="use_sim_time" value="true"/>
+        <arg name="debug" value="false"/>
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="world_name" value="$(arg world_file)"/>
+    </include>
+
+    <!-- gazebo上でのロボットの初期位置 (map_mergeのような相対座標ではなく絶対座標で記述)-->
+    <arg name="robot1_name" default="robot1"/>
+    <arg name="robot1_init_x" default="0.0"/>
+    <!-- <arg name="robot1_init_x" default="19.0"/> -->
+    <arg name="robot1_init_y" default="0.0"/>
+    <arg name="robot1_init_yaw" default="0.0"/>
+    <!-- <arg name="robot1_init_yaw" default="3.14"/> -->
+
+    <arg name="map_path" default="$(find multi_turtlebot_gazebo)/launch/config/FBEmap/20191111.yaml"/>
+    <arg name="map_frame" default="$(arg robot1_name)/map"/>
+    <arg name="map_topic" default="/$(arg robot1_name)/map"/>
+
+    <group ns="$(arg robot1_name)">
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
+            <arg name="sensor" value="$(arg sensor)"/>
+            <arg name="robot_name" value="$(arg robot1_name)"/>
+            <arg name="init_x" value="$(arg robot1_init_x)"/>
+            <arg name="init_y" value="$(arg robot1_init_y)"/>
+            <arg name="init_yaw" value="$(arg robot1_init_yaw)"/>
+        </include>
+
+        <include file="$(find multi_turtlebot_gazebo)/launch/includes/move_base.launch.xml">
+            <arg name="robot_name" value="$(arg robot1_name)"/>
+            <arg name="global_frame_id" value="$(arg map_frame)"/>
+            <arg name="map_topic" default="$(arg map_topic)"/>
+        </include>
+
+        <node pkg="tf" type="static_transform_publisher" name="odom_to_map_tf_broadcaster" args="0 0 0 0 0 0 $(arg robot1_name)/map $(arg robot1_name)/odom 100"/>
+
+        <node pkg="map_server" type="map_server" name="map_server" args="$(arg map_path)">
+            <remap from="map" to="$(arg map_topic)"/>
+            <param name="frame_id" value="$(arg map_frame)"/>
+        </node>
+
+        <node pkg="robot_pose_publisher" type="robot_pose_publisher" name="robot_pose_publisher">
+            <remap from="robot_pose" to="pose"/>                                                                                  
+            <param name="map_frame" value="$(arg robot_name)/map"/>
+            <param name="base_frame" value="$(arg robot_name)/base_link"/>
+            <param name="is_stamped" value="true"/>
+        </node>
+    </group>
+
+</launch>

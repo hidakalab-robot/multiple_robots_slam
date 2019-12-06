@@ -20,6 +20,7 @@
     <!-- <arg name="bumper"/> sub topic -->
     <!-- <arg name="velocity"/> pub topic -->
     <!-- <arg name="pose"/> sub topic -->
+    <arg name="map_frame_id"/> <!-- param -->
 
     <!-- launch -->
     <!-- <arg name="debug" default="false"/> -->
@@ -30,18 +31,33 @@
         <remap from="end" to="$(arg end)"/>
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>
         <remap from="frontier" to="$(arg frontier)"/>
+        <remap from="costmap" to="/$(arg robot_name)/move_base/global_costmap/costmap"/>
 
+        <rosparam file="$(find exploration)/param/movement_planner_params.yaml" command="load"/>
+        <param name="movement_costmap/global_frame" value="$(arg map_frame_id)"/>
+        <param name="movement_costmap/robot_base_frame" value="$(arg robot_name)/base_footprint"/>
+        
         <param name="debug" value="$(arg debug)"/>
         <param name="rotation" value="$(arg rotation)"/>
-        <param name="movebase_name" value="/$(arg robot_name)/move_base"/>
-        <param name="angle_bias" value="60"/>
 
-        <param name="distance_weight" value="3.0"/>
-        <param name="direction_weight" value="2.0"/>
+        <rosparam file="$(find exploration)/param/movement_lhe_last_parameters.yaml" command="load" ns="movement"/>
+        <param name="movement/movement_parameter_file_path" value="$(find exploration)/param/movement_lhe_last_parameters.yaml"/>
+        <param name="movement/movebase_name" value="/$(arg robot_name)/move_base"/>
+        <param name="movement/angle_bias" value="60"/>
+
+        <rosparam file="$(find exploration)/param/lhes_last_parameters.yaml" command="load" ns="sensor_based_exploration">
+        <param name="sensor_based_exploration/sbe_parameter_file_path" value="$(find exploration)/param/lhes_last_parameters.yaml"/>
+
+        <rosparam file="$(find exploration)/param/lhef_last_parameters.yaml" command="load" ns="frontier_based_exploration"/>
+        <param name="frontier_based_exploration/fbe_parameter_file_path" value="$(find exploration)/param/lhef_last_parameters.yaml"/>
+        <param name="frontier_based_exploration/distance_weight" value="3.0"/>
+        <param name="frontier_based_exploration/direction_weight" value="2.0"/>
     </node>
 
     <node pkg="exploration_support" type="loop_closure_counter" name="loop_closure_counter">
-        <param name="odom_frame_id" value="$(arg robot_name)/odom"/>
-        <param name="map_frame_id" value="$(arg robot_name)/map"/>
+        <rosparam file="$(find exploration_support)/param/loop_last_parameters.yaml" command="load"/ ns="loop">
+        <param name="loop/loop_parameter_file_path" value="$(find exploration_support)/param/loop_last_parameters.yaml"/>
+        <param name="loop/odom_frame_id" value="$(arg robot_name)/odom"/>
+        <param name="loop/map_frame_id" value="$(arg robot_name)/map"/>
     </node>
 </launch>

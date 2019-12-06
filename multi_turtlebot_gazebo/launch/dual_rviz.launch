@@ -1,0 +1,15 @@
+<launch>
+    <arg name="robot_name" default="robot1"/>
+    <arg name="rviz_filepath_1" default="$(find multi_turtlebot_gazebo)/launch/config/fixed_map.rviz"/>
+    <arg name="rviz_filepath_2" default="$(find multi_turtlebot_gazebo)/launch/config/fixed_base_link.rviz"/>
+
+    <group ns="$(arg robot_name)">
+        <node pkg="rviz" type="rviz" name="rviz_1" args="-d $(arg rviz_filepath_1)">
+
+        </node>
+
+        <node pkg="rviz" type="rviz" name="rviz_2" args="-d $(arg rviz_filepath_2)">
+
+        </node>
+    </group>
+</launch>

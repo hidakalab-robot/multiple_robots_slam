@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<!-- detail of parameters : http://docs.ros.org/kinetic/api/gazebo_plugins/html/gazebo__ros__camera__utils_8cpp_source.html-->
+<robot name="turtlebot_gazebo" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:property name="WIDTH" value="1280" />
+  <xacro:property name="HEIGHT" value="720" /> 
+  <xacro:property name="UPDATE_RATE" value="30.0" /> 
+  <xacro:property name="HORIZONTAL_FOV" value="1.3962634" /> 
+  <xacro:property name="CLIP_NEAR" value="0.02" />
+  <xacro:property name="CLIP_FAR" value="300" /> 
+  <xacro:property name="HACK_BASE_LINE" value="0.07" />
+
+  <xacro:macro name="turtlebot_sim_stereo_left">
+    <gazebo reference="left_camera_frame">
+    <sensor type="camera" name="stereo_camera_left">
+      <update_rate>${UPDATE_RATE}</update_rate>
+      <camera name="left">
+        <horizontal_fov>${HORIZONTAL_FOV}</horizontal_fov>
+        <image>
+          <width>${WIDTH}</width>
+          <height>${HEIGHT}</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>${CLIP_NEAR}</near>
+          <far>${CLIP_FAR}</far>
+        </clip>
+        <!-- <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise> -->
+      </camera>
+      <plugin name="stereo_camera_left_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>camera/left</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>left_camera_optical_frame</frameName>
+        <hackBaseline>${HACK_BASE_LINE}</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </gazebo>
+  </xacro:macro>
+
+  <xacro:macro name="turtlebot_sim_stereo_right">
+    <gazebo reference="right_camera_frame">
+    <sensor type="camera" name="stereo_camera_right">
+      <update_rate>${UPDATE_RATE}</update_rate>
+      <camera name="right">
+        <horizontal_fov>${HORIZONTAL_FOV}</horizontal_fov>
+        <image>
+          <width>${WIDTH}</width>
+          <height>${HEIGHT}</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>${CLIP_NEAR}</near>
+          <far>${CLIP_FAR}</far>
+        </clip>
+        <!-- <noise>
+          <type>gaussian</type>
+          <mean>0.0</mean>
+          <stddev>0.007</stddev>
+        </noise> -->
+      </camera>
+      <plugin name="stereo_camera_right_controller" filename="libgazebo_ros_camera.so">
+        <alwaysOn>true</alwaysOn>
+        <updateRate>0.0</updateRate>
+        <cameraName>camera/right</cameraName>
+        <imageTopicName>image_raw</imageTopicName>
+        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+        <frameName>right_camera_optical_frame</frameName>
+        <hackBaseline>${HACK_BASE_LINE}</hackBaseline>
+        <distortionK1>0.0</distortionK1>
+        <distortionK2>0.0</distortionK2>
+        <distortionK3>0.0</distortionK3>
+        <distortionT1>0.0</distortionT1>
+        <distortionT2>0.0</distortionT2>
+      </plugin>
+    </sensor>
+  </gazebo>
+  </xacro:macro>
+</robot>

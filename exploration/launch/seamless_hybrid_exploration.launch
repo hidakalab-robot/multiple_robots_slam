@@ -3,6 +3,7 @@
 
     <arg name="robot_name" default="robot1"/>
     <arg name="multi" default="false"/>
+    <arg name="rosbag" default="false"/>
 
     <arg name="debug" default="false"/>
     <arg name="rotation" default="false"/>
@@ -33,6 +34,17 @@
             <arg name="map_fill" value="true"/>
             <arg name="orig_map" value="$(arg map)"/>
             <arg name="fill_map" default="$(arg fill_map)"/>
+        </include>
+
+        <!-- rosbag -->
+        <include if="$(arg rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
+            <arg name="topics" value="/$(arg robot_name)/map_continuity 
+                                        /$(arg robot_name)/pose
+                                        /$(arg robot_name)/scan
+                                        /$(arg robot_name)/move_base/global_costmap/costmap
+                                        /tf
+                                        /tf_static"/>
+            <arg name="compress" value="true"/>
         </include>
     </group>
 </launch>
