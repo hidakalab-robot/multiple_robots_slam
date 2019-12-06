@@ -2,7 +2,8 @@
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/convert.h>
 #include <exploration_libraly/struct.h>
-#include <exploration_msgs/PoseStampedArray.h>
+// #include <exploration_msgs/PoseStampedArray.h>
+#include <nav_msgs/Path.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <iterator>
 #include <thread>
@@ -18,17 +19,20 @@ struct RobotManager::robotStruct{
     std::mutex mutex;
     std::string name;
     geometry_msgs::PoseStamped pose;
-    exploration_msgs::PoseStampedArray poseLog;
+    // exploration_msgs::PoseStampedArray poseLog;
+    nav_msgs::Path poseLog;
     ros::Subscriber sub;
     ros::Publisher pub;
 };
 
 RobotManager::RobotManager()
     :robotArray_(new ExStc::pubStruct<exploration_msgs::RobotInfoArray>("robot_array",1,true))
-    ,poseArray_(new ExStc::pubStruct<exploration_msgs::PoseStampedArray>("pose_log/merge",1,true))
+    // ,poseArray_(new ExStc::pubStruct<exploration_msgs::PoseStampedArray>("pose_log/merge",1,true))
+    ,poseArray_(new ExStc::pubStruct<nav_msgs::Path>("pose_log/merge",1,true))
     ,robotListMutex_(new boost::shared_mutex())
     ,robotList_(new std::forward_list<robotStruct>())
-    ,allPoseLog_(new exploration_msgs::PoseStampedArray()){
+    // ,allPoseLog_(new exploration_msgs::PoseStampedArray()){
+    ,allPoseLog_(new nav_msgs::Path()){
     loadParams();
 }
 RobotManager::~RobotManager(){}
@@ -78,7 +82,8 @@ void RobotManager::robotRegistration(void){
                 std::lock_guard<std::mutex> lock(robot.mutex);
                 robot.name = robotName;
                 robot.sub = ros::NodeHandle().subscribe<geometry_msgs::PoseStamped>(topic.name, 1, [this, &robot](const geometry_msgs::PoseStamped::ConstPtr& msg) {update(msg, robot);});
-                robot.pub = ros::NodeHandle().advertise<exploration_msgs::PoseStampedArray>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
+                // robot.pub = ros::NodeHandle().advertise<exploration_msgs::PoseStampedArray>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
+                robot.pub = ros::NodeHandle().advertise<nav_msgs::Path>(ros::names::append(INDIVISUAL_POSE_LOG_TOPIC,robotName),1);
             }
         }
     }

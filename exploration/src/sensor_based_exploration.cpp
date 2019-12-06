@@ -5,13 +5,14 @@
 #include <Eigen/Geometry>
 #include <fstream>
 #include <exploration_msgs/PointArray.h>
-#include <exploration_msgs/PoseStampedArray.h>
+// #include <exploration_msgs/PoseStampedArray.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
 #include <exploration_libraly/struct.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
@@ -21,7 +22,8 @@ namespace ExUtl = ExpLib::Utility;
 SensorBasedExploration::SensorBasedExploration()
     :branch_(new ExStc::subStruct<exploration_msgs::PointArray>("branch", 1))
     ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
-    ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
+    // ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
+    ,poseLog_(new ExStc::subStruct<nav_msgs::Path>("pose_log", 1))
     ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals", 1))
     ,map_(new ExStc::subStruct<nav_msgs::OccupancyGrid>("map", 1))
     ,dupBra_(new ExStc::pubStruct<exploration_msgs::PointArray>("duplicated_branch", 1, true))
@@ -97,7 +99,8 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     return decideGoal(goal, ls, pose_->data);
 }
 
-void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
+// void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
+void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const nav_msgs::Path& log){
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
 	

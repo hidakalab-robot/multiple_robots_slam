@@ -17,7 +17,8 @@
     <group ns="$(arg robot_name)">
         <!-- exploration main -->
         <include file="$(find exploration)/launch/includes/seamless_hybrid_exploration.launch.xml">
-            <arg name="pose_log" value="pose_log/merge"/>
+            <!-- <arg name="pose_log" value="pose_log/merge"/> -->
+            <arg name="pose_log" value="rtabmap/mapPath"/>
             <arg name="end" value="end/$(arg end_method)"/>
             <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="debug" value="$(arg debug)"/>
@@ -42,6 +43,7 @@
                                         /$(arg robot_name)/pose
                                         /$(arg robot_name)/scan
                                         /$(arg robot_name)/move_base/global_costmap/costmap
+                                        /$(arg robot_name)/rtabmap/mapPath
                                         /tf
                                         /tf_static"/>
             <arg name="compress" value="true"/>

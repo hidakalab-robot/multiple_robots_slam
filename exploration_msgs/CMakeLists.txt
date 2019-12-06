@@ -52,7 +52,7 @@ add_message_files(
    Frontier.msg
    FrontierArray.msg
    PointArray.msg
-   PoseStampedArray.msg
+  #  PoseStampedArray.msg
    RobotInfo.msg
    RobotInfoArray.msg
    AvoidanceStatus.msg
