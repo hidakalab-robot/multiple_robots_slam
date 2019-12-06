@@ -44,6 +44,7 @@
                                         /$(arg robot_name)/move_base/global_costmap/costmap
                                         /tf
                                         /tf_static"/>
+            <arg name="compress" value="true"/>
         </include>
     </group>
 </launch>
