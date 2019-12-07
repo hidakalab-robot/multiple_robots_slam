@@ -130,14 +130,14 @@ void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>
     std::vector<std::vector<int8_t>> map2d = ExUtl::mapArray1dTo2d(map_->data.data,map_->data.info);
     for(auto&& l : ls){
         if(l.duplication != ExEnm::DuplicationStatus::NOT_DUPLECATION) continue;
-        ExStc::mapSearchWindow msw(l.point,map_->data.info,MAP_WINDOW_X,MAP_WINDOW_Y);
+        ExStc::mapSearchWindow msw(l.point,map_->data.info,OMB_MAP_WINDOW_X,OMB_MAP_WINDOW_Y);
         int c = 0;
         for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
             for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
                 if(map2d[x][y] >= 0) ++c;
             }
         }
-        if((double)c/(MAP_WINDOW_X*MAP_WINDOW_Y)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
+        if((double)c/(OMB_MAP_WINDOW_X*OMB_MAP_WINDOW_Y)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
     }
 }
 
@@ -181,6 +181,7 @@ void SensorBasedExploration::publishProcessedBranch(const std::vector<ExStc::lis
         }
     }
     dup.header.frame_id = om.header.frame_id = branch_->data.header.frame_id;
+    dup.header.stamp = om.header.stamp = ros::Time::now();
     dupBra_->pub.publish(dup);
     onMapBra_->pub.publish(om);
 }
@@ -194,8 +195,8 @@ void SensorBasedExploration::loadParams(void){
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
     nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
     nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
-    nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
-    nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
+    nh.param<double>("omb_map_window_x", OMB_MAP_WINDOW_X, 1.0);
+    nh.param<double>("omb_map_window_y", OMB_MAP_WINDOW_Y, 1.0);
     nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
     nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
@@ -212,8 +213,8 @@ void SensorBasedExploration::dynamicParamsCB(exploration::sensor_based_explorati
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
     ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
     ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
-    MAP_WINDOW_X = cfg.map_window_x;
-    MAP_WINDOW_Y = cfg.map_window_y;
+    OMB_MAP_WINDOW_X = cfg.omb_map_window_x;
+    OMB_MAP_WINDOW_Y = cfg.omb_map_window_y;
     DUPLICATE_DETECTION = cfg.duplicate_detection;
     DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
     LOG_CURRENT_TIME = cfg.log_current_time;
@@ -236,8 +237,8 @@ void SensorBasedExploration::outputParams(void){
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
     ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
     ofs << "on_map_branch_tolerance: " << ON_MAP_BRANCH_RATE << std::endl;
-    ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
-    ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
+    ofs << "omb_map_window_x: " << OMB_MAP_WINDOW_X << std::endl;
+    ofs << "omb_map_window_y: " << OMB_MAP_WINDOW_Y << std::endl;
     ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
     ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
     ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;

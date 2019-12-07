@@ -81,6 +81,7 @@ class Visualization{
         double ON_MAP_BRANCH_PUBLISH_RATE;
         double FRONTIER_PUBLISH_RATE;
         double USEFUL_FRONTIER_PUBLISH_RATE;
+        double ON_MAP_FRONTIER_PUBLISH_RATE;
         double ROAD_PUBLISH_RATE;
         double AVOIDANCE_STATUS_PUBLISH_RATE;
         double CANCELED_GOALS_PUBLISH_RATE;
@@ -123,6 +124,11 @@ class Visualization{
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> useFroMarker_;
         std::unique_ptr<visualization_msgs::Marker> ufm_;
 
+        // useful frontier
+        std::unique_ptr<ExStc::subStructSimple> omFro_;
+        std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> omFroMarker_;
+        std::unique_ptr<visualization_msgs::Marker> ofm_;
+
         // road
         std::unique_ptr<ExStc::subStructSimple> road_;
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> roadMarker_;
@@ -149,6 +155,7 @@ class Visualization{
         void omBranchCB(const exploration_msgs::PointArrayConstPtr& msg);
         void frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
+        void omFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void roadCB(const geometry_msgs::PointStampedConstPtr& msg);
         void avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& msg);
         void caGoalsCB(const exploration_msgs::PointArrayConstPtr& msg);
@@ -159,6 +166,7 @@ class Visualization{
         void omBranchMarkerPublisher(void);
         void frontierMarkerPublisher(void);
         void useFroMarkerPublisher(void);
+        void omFroMarkerPublisher(void);
         void roadMarkerPublisher(void);
         void avoStaMarkerPublisher(void);
         void caGoalsMarkerPublisher(void);

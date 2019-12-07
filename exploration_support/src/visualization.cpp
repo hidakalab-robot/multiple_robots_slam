@@ -40,6 +40,9 @@ Visualization::Visualization()
     ,useFro_(new ExStc::subStructSimple("useful_frontier",1,&Visualization::useFroCB, this))
     ,useFroMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/useful_frontier", 1, true))
     ,ufm_(new visualization_msgs::Marker())
+    ,omFro_(new ExStc::subStructSimple("on_map_frontier",1,&Visualization::omFroCB, this))
+    ,omFroMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/on_map_frontier", 1, true))
+    ,ofm_(new visualization_msgs::Marker())
     ,road_(new ExStc::subStructSimple("road",1,&Visualization::roadCB, this))
     ,roadMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/road", 1, true))
     ,rm_(new visualization_msgs::Marker())
@@ -58,6 +61,7 @@ Visualization::Visualization()
     *obm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.0,1.0,0.0);
     *fm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.0,1.0,1.0);
     *ufm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.5);
+    *ofm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,1.0,0.5,0.0);
     *rm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,1.0);
     *asmt_ = ExCos::msgMarker(INIT_FRAME_ID,0.1,0.5,1.0,0.5,1.0,visualization_msgs::Marker::LINE_STRIP);
     *cgm_ = ExCos::msgMarker(INIT_FRAME_ID,0.5,0.5,0.5,0.5);
@@ -75,6 +79,7 @@ void Visualization::multiThreadMain(void){
     std::thread obmThread([this]() { omBranchMarkerPublisher(); });
     std::thread fmThread([this]() { frontierMarkerPublisher(); });
     std::thread ufmThread([this]() { useFroMarkerPublisher(); });
+    std::thread ofmThread([this]() { omFroMarkerPublisher(); });
     std::thread rmThread([this]() { roadMarkerPublisher(); });
     std::thread asmThread([this]() { avoStaMarkerPublisher(); });
     std::thread cgmThread([this]() { caGoalsMarkerPublisher(); });
@@ -86,6 +91,7 @@ void Visualization::multiThreadMain(void){
     obmThread.join();
     fmThread.join();
     ufmThread.join();
+    ofmThread.join();
     rmThread.join();
     asmThread.join();
     cgmThread.join();
@@ -158,6 +164,18 @@ void Visualization::useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg)
     ufm_->points = replace();
     ufm_->header.frame_id = msg->header.frame_id;
     ufm_->header.stamp = ros::Time::now();
+}
+
+void Visualization::omFroCB(const exploration_msgs::FrontierArrayConstPtr& msg){
+    auto replace = [&msg]{
+        std::vector<geometry_msgs::Point> p;
+        p.reserve(msg->frontiers.size());
+        for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
+        return p;
+    };
+    ofm_->points = replace();
+    ofm_->header.frame_id = msg->header.frame_id;
+    ofm_->header.stamp = ros::Time::now();
 }
 
 void Visualization::roadCB(const geometry_msgs::PointStampedConstPtr& msg){
@@ -271,6 +289,14 @@ void Visualization::useFroMarkerPublisher(void){
     }
 }
 
+void Visualization::omFroMarkerPublisher(void){
+    ros::Rate rate(ON_MAP_FRONTIER_PUBLISH_RATE);
+    while(ros::ok()){
+        omFroMarker_->pub.publish(*ofm_);
+        rate.sleep();
+    }
+}
+
 void Visualization::roadMarkerPublisher(void){
     ros::Rate rate(ROAD_PUBLISH_RATE);
     while(ros::ok()){
@@ -306,6 +332,7 @@ void Visualization::loadParams(void){
     nh.param<double>("on_map_branch_publish_rate", ON_MAP_BRANCH_PUBLISH_RATE, 10.0);
     nh.param<double>("frontier_publish_rate", FRONTIER_PUBLISH_RATE, 10.0);
     nh.param<double>("useful_frontier_publish_rate", USEFUL_FRONTIER_PUBLISH_RATE, 10.0);
+    nh.param<double>("on_map_frontier_publish_rate", ON_MAP_FRONTIER_PUBLISH_RATE, 10.0);
     nh.param<double>("road_publish_rate", ROAD_PUBLISH_RATE, 10.0);
     nh.param<double>("avoidance_status_publish_rate", AVOIDANCE_STATUS_PUBLISH_RATE, 10.0);
     nh.param<double>("canceled_goals_publish_rate", CANCELED_GOALS_PUBLISH_RATE, 10.0);

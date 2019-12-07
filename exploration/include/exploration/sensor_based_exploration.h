@@ -71,7 +71,6 @@ class SensorBasedExploration{
         // std::unique_ptr<ExStc::subStruct<exploration_msgs::PoseStampedArray>> poseLog_;
         std::unique_ptr<ExStc::subStruct<nav_msgs::Path>> poseLog_;
         std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> canceled_;
-        std::unique_ptr<ExStc::subStruct<nav_msgs::OccupancyGrid>> map_;
         std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> dupBra_;
         std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> onMapBra_;
 
@@ -92,8 +91,8 @@ class SensorBasedExploration{
         bool CANCELED_GOAL_EFFECT;
         double CANCELED_GOAL_TOLERANCE;
         bool ON_MAP_BRANCH_DETECTION;
-        double MAP_WINDOW_X;
-        double MAP_WINDOW_Y;
+        double OMB_MAP_WINDOW_X;
+        double OMB_MAP_WINDOW_Y;
         double ON_MAP_BRANCH_RATE;
         bool DUPLICATE_DETECTION;
         double DUPLICATE_TOLERANCE;
@@ -102,6 +101,7 @@ class SensorBasedExploration{
         
         // variables
         std::unique_ptr<ExStc::pubStruct<geometry_msgs::PointStamped>> goal_;
+        std::unique_ptr<ExStc::subStruct<nav_msgs::OccupancyGrid>> map_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>> drs_;
         std::unique_ptr<geometry_msgs::Point> lastGoal_;
 
