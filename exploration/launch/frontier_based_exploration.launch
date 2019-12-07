@@ -27,6 +27,7 @@
 
         <!-- exploration support -->
         <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="frontier_detection" value="true"/>
             <arg name="branch_detection" value="false"/>
             <arg name="map_fill" value="$(arg map_fill)"/>

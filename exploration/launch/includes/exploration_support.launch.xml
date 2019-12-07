@@ -1,4 +1,5 @@
 <launch>
+    <arg name="robot_name"/>
     <arg name="frontier_detection"/>
     <arg name="branch_detection"/>
     <arg name="map_fill"/>
@@ -64,4 +65,9 @@
 
     <!-- goal_cancel_observer -->
     <node pkg="exploration_support" type="goal_cancel_observer" name="goal_cancel_observer"/>
+
+    <!-- poselog_optimizer -->
+    <node pkg="exploration_support" type="poselog_optimizer" name="poselog_optimizer">
+        <remap from="pose_log" to="pose_log/$(arg robot_name)"/>
+    </node>
 </launch>

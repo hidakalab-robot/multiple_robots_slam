@@ -19,6 +19,7 @@ find_package(catkin REQUIRED COMPONENTS
   pcl_ros
   visualization_msgs
   dynamic_reconfigure
+  message_filters
 )
 
 find_package(OpenCV REQUIRED)
@@ -286,5 +287,12 @@ add_executable(goal_cancel_observer
  src/goal_cancel_observer_node.cpp
 )
 target_link_libraries(goal_cancel_observer
+ ${catkin_LIBRARIES}
+)
+
+add_executable(poselog_optimizer
+ src/poselog_optimizer_node.cpp
+)
+target_link_libraries(poselog_optimizer
  ${catkin_LIBRARIES}
 )

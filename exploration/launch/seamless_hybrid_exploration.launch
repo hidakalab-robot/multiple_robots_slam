@@ -18,7 +18,8 @@
         <!-- exploration main -->
         <include file="$(find exploration)/launch/includes/seamless_hybrid_exploration.launch.xml">
             <!-- <arg name="pose_log" value="pose_log/merge"/> -->
-            <arg name="pose_log" value="rtabmap/mapPath"/>
+            <!-- <arg name="pose_log" value="rtabmap/mapPath"/> -->
+            <arg name="pose_log" value="pose_log/optimized"/>
             <arg name="end" value="end/$(arg end_method)"/>
             <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="debug" value="$(arg debug)"/>
@@ -30,6 +31,7 @@
 
         <!-- exploration support -->
         <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="frontier_detection" value="true"/>
             <arg name="branch_detection" value="true"/>
             <arg name="map_fill" value="true"/>
