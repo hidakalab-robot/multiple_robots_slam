@@ -1,5 +1,6 @@
 <launch>
     <arg name="robot_name"/>
+    <arg name="use_rosbag" default="false"/>
     <arg name="frontier_detection"/>
     <arg name="branch_detection"/>
     <arg name="map_fill"/>
@@ -53,7 +54,7 @@
     </node>
 
     <!-- robot_manager -->
-    <node pkg="exploration_support" type="robot_manager" name="robot_manager">
+    <node unless="$(arg use_rosbag)" pkg="exploration_support" type="robot_manager" name="robot_manager">
         <param name="pose_log_rate" value="1.0"/>
     </node>
 
