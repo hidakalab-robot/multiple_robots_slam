@@ -53,10 +53,10 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     }
 
     // log の読みこみ
-    if(poseLog_->q.callOne(ros::WallDuration(1))){
-        ROS_ERROR_STREAM("Can't read pose log");
-        return false;
-    }
+    // if(poseLog_->q.callOne(ros::WallDuration(1))){
+    //     ROS_ERROR_STREAM("Can't read pose log");
+    //     return false;
+    // }
 
     std::vector<geometry_msgs::Point> branches(branch_->data.points);
 
@@ -86,7 +86,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     for(const auto& b : branches) ls.emplace_back(b);
 
     // 重複探査検出
-    if(DUPLICATE_DETECTION) duplicateDetection(ls, poseLog_->data);
+    if(DUPLICATE_DETECTION && !poseLog_->q.callOne(ros::WallDuration(1)) && poseLog_->data.poses.size()>0) duplicateDetection(ls, poseLog_->data);
 
     // 行ったことがなくても地図ができてたら重複探査にする
     if(ON_MAP_BRANCH_DETECTION && !map_->q.callOne(ros::WallDuration(1))) onMapBranchDetection(ls);

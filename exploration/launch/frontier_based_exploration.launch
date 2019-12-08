@@ -39,7 +39,7 @@
         <include if="$(arg record_rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
             <arg name="topics" value="/$(arg robot_name)/map_continuity 
                                         /$(arg robot_name)/pose
-                                        /$(arg robot_name)/pose_log/merge
+                                        /$(arg robot_name)/pose_log/$(arg robot_name)
                                         /$(arg robot_name)/scan
                                         /$(arg robot_name)/move_base/global_costmap/costmap
                                         /$(arg robot_name)/rtabmap/mapPath

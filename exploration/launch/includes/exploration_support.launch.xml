@@ -68,7 +68,8 @@
     <node pkg="exploration_support" type="goal_cancel_observer" name="goal_cancel_observer"/>
 
     <!-- poselog_optimizer -->
-    <node pkg="exploration_support" type="poselog_optimizer" name="poselog_optimizer">
-        <remap from="pose_log" to="pose_log/$(arg robot_name)"/>
+    <node pkg="exploration_support" type="poselog_optimizer" name="poselog_optimizer" output="screen">
+        <remap unless="$(arg use_rosbag)" from="pose_log" to="pose_log/$(arg robot_name)"/>
+        <remap if="$(arg use_rosbag)" from="pose_log" to="pose_log/merge"/>
     </node>
 </launch>
