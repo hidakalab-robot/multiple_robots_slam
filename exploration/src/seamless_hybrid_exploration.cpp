@@ -141,7 +141,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
                     if(map2d[x][y] >= 0) ++c;
                 }
             }
-            if((double)c/(OMF_MAP_WINDOW_X*OMF_MAP_WINDOW_Y)>ON_MAP_FRONTIER_RATE){
+            if((double)c/(msw.width*msw.height)>ON_MAP_FRONTIER_RATE){
                 omf.frontiers.emplace_back(f);
                 return true;
             }

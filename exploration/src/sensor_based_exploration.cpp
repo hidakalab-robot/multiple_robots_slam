@@ -106,7 +106,7 @@ void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& 
 	
 	//重複探査を考慮する時間の上限から参照する配列の最大値を設定
 	int ARRAY_MAX = log.poses.size()-1;
-	for(int i=log.poses.size()-2;i!=0;--i){
+	for(int i=log.poses.size()-1;i!=0;--i){
 		if(ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > LOG_CURRENT_TIME){
 			ARRAY_MAX = i;
 			break;
@@ -137,7 +137,7 @@ void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>
                 if(map2d[x][y] >= 0) ++c;
             }
         }
-        if((double)c/(OMB_MAP_WINDOW_X*OMB_MAP_WINDOW_Y)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
+        if((double)c/(msw.width*msw.height)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
     }
 }
 
@@ -170,7 +170,7 @@ void SensorBasedExploration::publishProcessedBranch(const std::vector<ExStc::lis
     om.points.reserve(ls.size());
     for(auto&& l : ls){
         switch (l.duplication){
-            case ExEnm::DuplicationStatus::OLDER:
+            case ExEnm::DuplicationStatus::NEWER:
                 dup.points.emplace_back(l.point);
                 break;
             case ExEnm::DuplicationStatus::ON_MAP:

@@ -213,8 +213,8 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
 
     ExStc::mapSearchWindow msw(pose.pose.position,gCostmap_->data.info,ESC_MAP_WIDTH,ESC_MAP_HEIGHT);
 
-    const int gw = (msw.right-msw.left) / ESC_MAP_DIV_X;
-    const int gh = (msw.bottom-msw.top) / ESC_MAP_DIV_Y;
+    const int gw = (msw.right-msw.left+1) / ESC_MAP_DIV_X;
+    const int gh = (msw.bottom-msw.top+1) / ESC_MAP_DIV_Y;
 
     struct escMap{
         Eigen::Vector2i cIndex; //中心のいんでっくす

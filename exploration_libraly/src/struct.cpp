@@ -38,6 +38,8 @@ namespace ExpLib{
             bottom = cy+hy2 > my-1 ? my-1 : cy+hy2;
             left = cx < hx1 ? 0 : cx-hx1; 
             right = cx+hx2 > mx-1 ? mx-1 : cx+hx2;
+            width = right-left+1;
+            height = bottom-top+1;
         }
     }
 }
