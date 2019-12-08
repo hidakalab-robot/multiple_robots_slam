@@ -54,7 +54,8 @@
     </node>
 
     <!-- robot_manager -->
-    <node unless="$(arg use_rosbag)" pkg="exploration_support" type="robot_manager" name="robot_manager">
+    <node pkg="exploration_support" type="robot_manager" name="robot_manager">
+        <remap if="$(arg use_rosbag)" from="pose_log/merge" to="pose_log/merge/trash"/>
         <param name="pose_log_rate" value="1.0"/>
     </node>
 

@@ -32,7 +32,7 @@ SensorBasedExploration::SensorBasedExploration()
     ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
     loadParams();
-    drs_->setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
+    SensorBasedExploration::drs_->setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
 }
 
 SensorBasedExploration::~SensorBasedExploration(){
@@ -103,7 +103,6 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const nav_msgs::Path& log){
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
-	
 	//重複探査を考慮する時間の上限から参照する配列の最大値を設定
 	int ARRAY_MAX = log.poses.size()-1;
 	for(int i=log.poses.size()-1;i!=0;--i){
@@ -137,6 +136,7 @@ void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>
                 if(map2d[x][y] >= 0) ++c;
             }
         }
+        // ROS_DEBUG_STREAM("on map << c : " << c << ", width : " << msw.width << ", height : " << msw.height << ", ref rate : " << ON_MAP_BRANCH_RATE << ", calc rate : " << (double)c/(msw.width*msw.height) << ", map stamp : " << map_->data.header.stamp);
         if((double)c/(msw.width*msw.height)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
     }
 }

@@ -10,6 +10,7 @@
 #include <navfn/navfn_ros.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration/seamless_hybrid_exploration_parameter_reconfigureConfig.h>
+#include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
 #include <geometry_msgs/Point.h>
 
 namespace ExStc = ExpLib::Struct;
@@ -53,7 +54,8 @@ SeamlessHybridExploration::SeamlessHybridExploration()
     ,ps_(new geometry_msgs::PoseStamped())
     ,mVal_(new maxValue()){
     loadParams();
-    drs_->setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
+    SensorBasedExploration::drs_->clearCallback();
+    SeamlessHybridExploration::drs_->setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
 }
 
 SeamlessHybridExploration::~SeamlessHybridExploration(){
@@ -158,7 +160,7 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
     }
 
     // 分散が小さいかつ共分散も小さいものを削除
-    auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return (f.variance.x>f.variance.y ? f.variance.x : f.variance.y < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
+    auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return ((f.variance.x>f.variance.y ? f.variance.x : f.variance.y) < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
 	fa.frontiers.erase(std::move(faRemove2),fa.frontiers.end());
     ROS_INFO_STREAM("after frontiers size 2 : " << fa.frontiers.size());
 

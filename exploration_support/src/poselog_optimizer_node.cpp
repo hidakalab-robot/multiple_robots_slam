@@ -33,6 +33,7 @@ int main(int argc, char *argv[]){
             return true;
         });
 		tp.poses.erase(std::move(removeResult),tp.poses.end());
+        tp.header.frame_id = sp->header.frame_id;
         *optimizedPath = tp;
     },_1,_2,OPTIMIZE_TOLERANCE,&optimizedPath));
 
