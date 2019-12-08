@@ -109,7 +109,6 @@ void CloudMapMerge::mapUpdate(const sensor_msgs::PointCloud2::ConstPtr& msg, Clo
 void CloudMapMerge::mapMerging(void){
     ROS_INFO_STREAM("mergingThread << mapMerging\n");
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr mergeCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    Eigen::Matrix2d rotation;
     //updateされているかどうかで処理を変える
     {
         boost::shared_lock<boost::shared_mutex> lock(robotListMutex_);
@@ -120,7 +119,8 @@ void CloudMapMerge::mapMerging(void){
             std::lock_guard<std::mutex> lock(robot.mutex);
             if(robot.update){
                 pcl::PointCloud<pcl::PointXYZRGB>::Ptr tempCloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-                rotation << cos(robot.initPose.theta) , -sin(robot.initPose.theta) , sin(robot.initPose.theta) , cos(robot.initPose.theta);
+                Eigen::Matrix2d rotation = ExpLib::Construct::eigenMat2d(cos(robot.initPose.theta), -sin(robot.initPose.theta), sin(robot.initPose.theta), cos(robot.initPose.theta));
+                // rotation << cos(robot.initPose.theta) , -sin(robot.initPose.theta) , sin(robot.initPose.theta) , cos(robot.initPose.theta);
                 for(const auto& point : robot.pclMap->points){
                     if(point.z < CEILING_HEIGHT && point.z > FLOOR_HEIGHT){
                         Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(point.x,point.y));

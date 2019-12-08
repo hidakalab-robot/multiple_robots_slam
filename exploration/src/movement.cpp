@@ -76,8 +76,8 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
         double yaw = ExCov::qToYaw(pose_->data.pose.orientation);
         Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
         double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
-        Eigen::Matrix2d rotation;
-        rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
+        Eigen::Matrix2d rotation = ExCos::eigenMat2d(cos(rotateTheta),-sin(rotateTheta),sin(rotateTheta),cos(rotateTheta));
+        // rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
         startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
     }
 

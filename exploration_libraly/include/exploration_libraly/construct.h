@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <vector>
+#include <Eigen/Core>
 
 // 前方宣言
 
@@ -74,6 +75,7 @@ namespace ExpLib{
         std_msgs::Int8 msgInt8(int i);
         exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& p, double a, const geometry_msgs::Vector3& v, double c);
         pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b);
+        Eigen::Matrix2d eigenMat2d(double a,double b,double c,double d);
         exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Pose& p);
         geometry_msgs::Quaternion msgGeoQuaternion(double x, double y, double z, double w);
         template <typename T>
