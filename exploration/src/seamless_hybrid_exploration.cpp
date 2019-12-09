@@ -4,6 +4,7 @@
 #include <exploration_libraly/struct.h>
 #include <exploration_libraly/enum.h>
 #include <exploration_libraly/path_planning.h>
+#include <exploration_libraly/utility.h>
 #include <exploration_msgs/FrontierArray.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <navfn/navfn_ros.h>
@@ -14,6 +15,7 @@
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
+namespace ExUtl = ExpLib::Utility;
 
 struct SeamlessHybridExploration::maxValue{
     double distance;
@@ -42,6 +44,7 @@ SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_(new ExStc::subStruct<exploration_msgs::RobotInfoArray>("robot_array", 1))
     ,frontier_(new ExStc::subStruct<exploration_msgs::FrontierArray>("frontier", 1))
     ,useFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("useful_frontier", 1, true))
+    ,onMapFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("on_map_frontier", 1, true))
     ,pp_(new ExpLib::PathPlanning<navfn::NavfnROS>("seamless_costmap","seamless_planner"))
     ,drs_(new dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/seamless_hybrid_exploration")))
     ,ls_(new std::vector<ExStc::listStruct>())
@@ -124,10 +127,40 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
     //フロンティア領域のフィルタ
 
     ROS_INFO_STREAM("before frontiers size : " << fa.frontiers.size());
+    // 周囲の地図が出来ているフロンティアの削除
+    exploration_msgs::FrontierArray omf;
+    omf.header.frame_id = fa.header.frame_id;
+    if(ON_MAP_FRONTIER_DETECTION && !map_->q.callOne(ros::WallDuration(1))){
+        omf.frontiers.reserve(fa.frontiers.size());
+        std::vector<std::vector<int8_t>> map2d = ExUtl::mapArray1dTo2d(map_->data.data,map_->data.info);
+        auto faRemove1 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[&,this](exploration_msgs::Frontier& f){
+            ExStc::mapSearchWindow msw(f.point,map_->data.info,OMF_MAP_WINDOW_X,OMF_MAP_WINDOW_Y);
+            int c = 0;
+            for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+                for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
+                    if(map2d[x][y] >= 0) ++c;
+                }
+            }
+            if((double)c/(OMF_MAP_WINDOW_X*OMF_MAP_WINDOW_Y)>ON_MAP_FRONTIER_RATE){
+                omf.frontiers.emplace_back(f);
+                return true;
+            }
+            else return false;
+        });
+        fa.frontiers.erase(std::move(faRemove1),fa.frontiers.end());
+        omf.header.stamp = ros::Time::now();
+        onMapFro_->pub.publish(omf);
+        ROS_INFO_STREAM("after frontiers size 1 : " << fa.frontiers.size());
+    }
+    else{
+        omf.header.stamp = ros::Time::now();
+        onMapFro_->pub.publish(omf);
+    }
+
     // 分散が小さいかつ共分散も小さいものを削除
-    auto faRemove = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return (f.variance.x>f.variance.y ? f.variance.x : f.variance.y < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
-	fa.frontiers.erase(std::move(faRemove),fa.frontiers.end());
-    ROS_INFO_STREAM("after frontiers size : " << fa.frontiers.size());
+    auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return (f.variance.x>f.variance.y ? f.variance.x : f.variance.y < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
+	fa.frontiers.erase(std::move(faRemove2),fa.frontiers.end());
+    ROS_INFO_STREAM("after frontiers size 2 : " << fa.frontiers.size());
 
     useFro_->pub.publish(fa);
     if(fa.frontiers.size()==0) return false;
@@ -251,13 +284,17 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
     nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
+    nh.param<double>("omb_map_window_x", OMB_MAP_WINDOW_X, 1.0);
+    nh.param<double>("omb_map_window_y", OMB_MAP_WINDOW_Y, 1.0);
     nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
-    nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
-    nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
     nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
     nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
     nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+    nh.param<bool>("on_map_frontier_detection", ON_MAP_FRONTIER_DETECTION, true);
+    nh.param<double>("omf_map_window_x", OMF_MAP_WINDOW_X, 1.0);
+    nh.param<double>("omf_map_window_y", OMF_MAP_WINDOW_Y, 1.0);
+    nh.param<double>("on_map_frontier_rate", ON_MAP_FRONTIER_RATE, 0.5);
     nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
     nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
     nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
@@ -277,13 +314,17 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
     ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
+    OMB_MAP_WINDOW_X = cfg.omb_map_window_x;
+    OMB_MAP_WINDOW_Y = cfg.omb_map_window_y;
     ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
-    MAP_WINDOW_X = cfg.map_window_x;
-    MAP_WINDOW_Y = cfg.map_window_y;
     DUPLICATE_DETECTION = cfg.duplicate_detection;
     DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
     LOG_CURRENT_TIME = cfg.log_current_time;
     NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
+    ON_MAP_FRONTIER_DETECTION = cfg.on_map_frontier_detection;
+    OMF_MAP_WINDOW_X = cfg.omf_map_window_x;
+    OMF_MAP_WINDOW_Y = cfg.omf_map_window_y;
+    ON_MAP_FRONTIER_RATE = cfg.on_map_frontier_rate;
     DISTANCE_WEIGHT = cfg.distance_weight;
     DIRECTION_WEIGHT = cfg.direction_weight;
     VARIANCE_THRESHOLD = cfg.variance_threshold;
@@ -308,13 +349,17 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
     ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
+    ofs << "omb_map_window_x: " << OMB_MAP_WINDOW_X << std::endl;
+    ofs << "omb_map_window_y: " << OMB_MAP_WINDOW_Y << std::endl;
     ofs << "on_map_branch_rate: " << ON_MAP_BRANCH_RATE << std::endl;
-    ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
-    ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
     ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
     ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
     ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
     ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
+    ofs << "on_map_frontier_detection: " << (ON_MAP_FRONTIER_DETECTION ? "true" : "false") << std::endl;
+    ofs << "omf_map_window_x: " << OMF_MAP_WINDOW_X << std::endl;
+    ofs << "omf_map_window_y: " << OMF_MAP_WINDOW_Y << std::endl;
+    ofs << "on_map_frontier_rate: " << ON_MAP_FRONTIER_RATE << std::endl;
     ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
     ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
     ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;

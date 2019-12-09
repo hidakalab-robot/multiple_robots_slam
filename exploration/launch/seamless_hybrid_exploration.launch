@@ -8,7 +8,7 @@
     <arg name="debug" default="false"/>
     <arg name="rotation" default="false"/>
     <arg name="fill_map" default="fill_map"/>
-    <arg name="end_method" default="area"/>
+    <arg name="end_method" default="timer"/>
     
     <!-- <arg unless="$(arg multi)" name="map" default="/$(arg robot_name)/map"/> -->
     <arg unless="$(arg multi)" name="map" default="map_continuity"/>
@@ -17,7 +17,9 @@
     <group ns="$(arg robot_name)">
         <!-- exploration main -->
         <include file="$(find exploration)/launch/includes/seamless_hybrid_exploration.launch.xml">
-            <arg name="pose_log" value="pose_log/merge"/>
+            <!-- <arg name="pose_log" value="pose_log/merge"/> -->
+            <!-- <arg name="pose_log" value="rtabmap/mapPath"/> -->
+            <arg name="pose_log" value="pose_log/optimized"/>
             <arg name="end" value="end/$(arg end_method)"/>
             <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="debug" value="$(arg debug)"/>
@@ -29,6 +31,7 @@
 
         <!-- exploration support -->
         <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="frontier_detection" value="true"/>
             <arg name="branch_detection" value="true"/>
             <arg name="map_fill" value="true"/>
@@ -42,6 +45,7 @@
                                         /$(arg robot_name)/pose
                                         /$(arg robot_name)/scan
                                         /$(arg robot_name)/move_base/global_costmap/costmap
+                                        /$(arg robot_name)/rtabmap/mapPath
                                         /tf
                                         /tf_static"/>
             <arg name="compress" value="true"/>

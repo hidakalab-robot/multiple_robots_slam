@@ -341,7 +341,15 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /robot1/visualization/road
+      Marker Topic: /robot1/visualization/duplicated_branch
+      Name: Marker
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /robot1/visualization/on_map_branch
       Name: Marker
       Namespaces:
         "": true
@@ -350,6 +358,22 @@ Visualization Manager:
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /robot1/visualization/useful_frontier
+      Name: Marker
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /robot1/visualization/road
+      Name: Marker
+      Namespaces:
+        "": true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /robot1/visualization/on_map_frontier
       Name: Marker
       Namespaces:
         "": true

@@ -5,13 +5,14 @@
 #include <Eigen/Geometry>
 #include <fstream>
 #include <exploration_msgs/PointArray.h>
-#include <exploration_msgs/PoseStampedArray.h>
+// #include <exploration_msgs/PoseStampedArray.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
 #include <exploration_libraly/struct.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
@@ -21,9 +22,12 @@ namespace ExUtl = ExpLib::Utility;
 SensorBasedExploration::SensorBasedExploration()
     :branch_(new ExStc::subStruct<exploration_msgs::PointArray>("branch", 1))
     ,pose_(new ExStc::subStruct<geometry_msgs::PoseStamped>("pose", 1))
-    ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
+    // ,poseLog_(new ExStc::subStruct<exploration_msgs::PoseStampedArray>("pose_log", 1))
+    ,poseLog_(new ExStc::subStruct<nav_msgs::Path>("pose_log", 1))
     ,canceled_(new ExStc::subStruct<exploration_msgs::PointArray>("canceled_goals", 1))
     ,map_(new ExStc::subStruct<nav_msgs::OccupancyGrid>("map", 1))
+    ,dupBra_(new ExStc::pubStruct<exploration_msgs::PointArray>("duplicated_branch", 1, true))
+    ,onMapBra_(new ExStc::pubStruct<exploration_msgs::PointArray>("on_map_branch", 1, true))
     ,goal_(new ExStc::pubStruct<geometry_msgs::PointStamped>("goal", 1, true))
     ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
@@ -87,13 +91,16 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     // 行ったことがなくても地図ができてたら重複探査にする
     if(ON_MAP_BRANCH_DETECTION && !map_->q.callOne(ros::WallDuration(1))) onMapBranchDetection(ls);
 
-    for(auto&& l : ls) ROS_DEBUG_STREAM("\n branch : (" << l.point.x << ", " << l.point.y << ") , status : " << (int)l.duplication << "\n");
+    publishProcessedBranch(ls);
+
+    // for(auto&& l : ls) ROS_DEBUG_STREAM("\n branch : (" << l.point.x << ", " << l.point.y << ") , status : " << (int)l.duplication << "\n");
 
     // goal を決定 // 適切なゴールが無ければ false
     return decideGoal(goal, ls, pose_->data);
 }
 
-void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
+// void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log){
+void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const nav_msgs::Path& log){
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
 	
@@ -123,14 +130,14 @@ void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>
     std::vector<std::vector<int8_t>> map2d = ExUtl::mapArray1dTo2d(map_->data.data,map_->data.info);
     for(auto&& l : ls){
         if(l.duplication != ExEnm::DuplicationStatus::NOT_DUPLECATION) continue;
-        ExStc::mapSearchWindow msw(l.point,map_->data.info,MAP_WINDOW_X,MAP_WINDOW_Y);
+        ExStc::mapSearchWindow msw(l.point,map_->data.info,OMB_MAP_WINDOW_X,OMB_MAP_WINDOW_Y);
         int c = 0;
         for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
             for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
                 if(map2d[x][y] >= 0) ++c;
             }
         }
-        if((double)c/(MAP_WINDOW_X*MAP_WINDOW_Y)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
+        if((double)c/(OMB_MAP_WINDOW_X*OMB_MAP_WINDOW_Y)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
     }
 }
 
@@ -157,6 +164,28 @@ bool SensorBasedExploration::decideGoal(geometry_msgs::PointStamped& goal, const
     return false;
 }
 
+void SensorBasedExploration::publishProcessedBranch(const std::vector<ExStc::listStruct>& ls){
+    exploration_msgs::PointArray dup,om;
+    dup.points.reserve(ls.size());
+    om.points.reserve(ls.size());
+    for(auto&& l : ls){
+        switch (l.duplication){
+            case ExEnm::DuplicationStatus::OLDER:
+                dup.points.emplace_back(l.point);
+                break;
+            case ExEnm::DuplicationStatus::ON_MAP:
+                om.points.emplace_back(l.point);
+                break;
+            default:
+                break;
+        }
+    }
+    dup.header.frame_id = om.header.frame_id = branch_->data.header.frame_id;
+    dup.header.stamp = om.header.stamp = ros::Time::now();
+    dupBra_->pub.publish(dup);
+    onMapBra_->pub.publish(om);
+}
+
 void SensorBasedExploration::loadParams(void){
     ros::NodeHandle nh("~/sensor_based_exploration");
     // dynamic parameters
@@ -166,8 +195,8 @@ void SensorBasedExploration::loadParams(void){
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
     nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
     nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
-    nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
-    nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
+    nh.param<double>("omb_map_window_x", OMB_MAP_WINDOW_X, 1.0);
+    nh.param<double>("omb_map_window_y", OMB_MAP_WINDOW_Y, 1.0);
     nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
     nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
     nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
@@ -184,8 +213,8 @@ void SensorBasedExploration::dynamicParamsCB(exploration::sensor_based_explorati
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
     ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
     ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
-    MAP_WINDOW_X = cfg.map_window_x;
-    MAP_WINDOW_Y = cfg.map_window_y;
+    OMB_MAP_WINDOW_X = cfg.omb_map_window_x;
+    OMB_MAP_WINDOW_Y = cfg.omb_map_window_y;
     DUPLICATE_DETECTION = cfg.duplicate_detection;
     DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
     LOG_CURRENT_TIME = cfg.log_current_time;
@@ -208,8 +237,8 @@ void SensorBasedExploration::outputParams(void){
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
     ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
     ofs << "on_map_branch_tolerance: " << ON_MAP_BRANCH_RATE << std::endl;
-    ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
-    ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
+    ofs << "omb_map_window_x: " << OMB_MAP_WINDOW_X << std::endl;
+    ofs << "omb_map_window_y: " << OMB_MAP_WINDOW_Y << std::endl;
     ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
     ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
     ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;

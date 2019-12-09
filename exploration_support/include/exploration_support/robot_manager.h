@@ -19,9 +19,9 @@ namespace ExpLib{
     }
 }
 namespace exploration_msgs{
-    template <class ContainerAllocator>
-    struct PoseStampedArray_;
-    typedef ::exploration_msgs::PoseStampedArray_<std::allocator<void>> PoseStampedArray;
+    // template <class ContainerAllocator>
+    // struct PoseStampedArray_;
+    // typedef ::exploration_msgs::PoseStampedArray_<std::allocator<void>> PoseStampedArray;
     template <class ContainerAllocator>
     struct RobotInfoArray_;
     typedef ::exploration_msgs::RobotInfoArray_<std::allocator<void>> RobotInfoArray;
@@ -38,6 +38,11 @@ namespace geometry_msgs{
     struct PoseStamped_;
     typedef ::geometry_msgs::PoseStamped_<std::allocator<void>> PoseStamped;
     typedef boost::shared_ptr< ::geometry_msgs::PoseStamped const> PoseStampedConstPtr;
+}
+namespace nav_msgs{
+    template <class ContainerAllocator>
+    struct Path_;
+    typedef ::nav_msgs::Path_<std::allocator<void>> Path;
 }
 // 前方宣言ここまで
 
@@ -58,10 +63,12 @@ class RobotManager{
 
         // variables
         std::unique_ptr<ExStc::pubStruct<exploration_msgs::RobotInfoArray>> robotArray_;
-        std::unique_ptr<ExStc::pubStruct<exploration_msgs::PoseStampedArray>> poseArray_; 
+        // std::unique_ptr<ExStc::pubStruct<exploration_msgs::PoseStampedArray>> poseArray_; 
+        std::unique_ptr<ExStc::pubStruct<nav_msgs::Path>> poseArray_; 
         std::unique_ptr<boost::shared_mutex> robotListMutex_;
         std::unique_ptr<std::forward_list<robotStruct>> robotList_;
-        std::unique_ptr<exploration_msgs::PoseStampedArray> allPoseLog_;
+        // std::unique_ptr<exploration_msgs::PoseStampedArray> allPoseLog_;
+        std::unique_ptr<nav_msgs::Path> allPoseLog_;
 
         // functions
         void robotRegistration(void);//ロボットの情報を登録
