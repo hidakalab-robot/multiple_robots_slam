@@ -32,6 +32,7 @@
         </node>
         
         <node pkg="rrt_exploration" type="assigner.py" name="assigner" output="screen">
+            <remap from="move_base_node/NavfnROS/make_plan" to="move_base/NavfnROS/make_plan"/>
             <param name="map_topic" value="$(arg map_topic)"/>
             <param name="global_frame" value="$(arg robot_name)/map"/>
             <param name="info_radius" value="1"/> 
