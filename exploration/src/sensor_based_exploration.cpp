@@ -32,7 +32,7 @@ SensorBasedExploration::SensorBasedExploration()
     ,drs_(new dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/sensor_based_exploration")))
     ,lastGoal_(new geometry_msgs::Point()){
     loadParams();
-    drs_->setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
+    SensorBasedExploration::drs_->setCallback(boost::bind(&SensorBasedExploration::dynamicParamsCB,this, _1, _2));
 }
 
 SensorBasedExploration::~SensorBasedExploration(){
@@ -53,10 +53,10 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     }
 
     // log の読みこみ
-    if(poseLog_->q.callOne(ros::WallDuration(1))){
-        ROS_ERROR_STREAM("Can't read pose log");
-        return false;
-    }
+    // if(poseLog_->q.callOne(ros::WallDuration(1))){
+    //     ROS_ERROR_STREAM("Can't read pose log");
+    //     return false;
+    // }
 
     std::vector<geometry_msgs::Point> branches(branch_->data.points);
 
@@ -86,7 +86,7 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     for(const auto& b : branches) ls.emplace_back(b);
 
     // 重複探査検出
-    if(DUPLICATE_DETECTION) duplicateDetection(ls, poseLog_->data);
+    if(DUPLICATE_DETECTION && !poseLog_->q.callOne(ros::WallDuration(1)) && poseLog_->data.poses.size()>0) duplicateDetection(ls, poseLog_->data);
 
     // 行ったことがなくても地図ができてたら重複探査にする
     if(ON_MAP_BRANCH_DETECTION && !map_->q.callOne(ros::WallDuration(1))) onMapBranchDetection(ls);
@@ -103,10 +103,9 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
 void SensorBasedExploration::duplicateDetection(std::vector<ExStc::listStruct>& ls, const nav_msgs::Path& log){
 	//重複探査の新しさとかはヘッダーの時間で見る
 	//重複が新しいときと古い時で挙動を変える
-	
 	//重複探査を考慮する時間の上限から参照する配列の最大値を設定
 	int ARRAY_MAX = log.poses.size()-1;
-	for(int i=log.poses.size()-2;i!=0;--i){
+	for(int i=log.poses.size()-1;i!=0;--i){
 		if(ros::Duration(log.header.stamp - log.poses[i].header.stamp).toSec() > LOG_CURRENT_TIME){
 			ARRAY_MAX = i;
 			break;
@@ -137,7 +136,8 @@ void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>
                 if(map2d[x][y] >= 0) ++c;
             }
         }
-        if((double)c/(OMB_MAP_WINDOW_X*OMB_MAP_WINDOW_Y)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
+        // ROS_DEBUG_STREAM("on map << c : " << c << ", width : " << msw.width << ", height : " << msw.height << ", ref rate : " << ON_MAP_BRANCH_RATE << ", calc rate : " << (double)c/(msw.width*msw.height) << ", map stamp : " << map_->data.header.stamp);
+        if((double)c/(msw.width*msw.height)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
     }
 }
 
@@ -170,7 +170,7 @@ void SensorBasedExploration::publishProcessedBranch(const std::vector<ExStc::lis
     om.points.reserve(ls.size());
     for(auto&& l : ls){
         switch (l.duplication){
-            case ExEnm::DuplicationStatus::OLDER:
+            case ExEnm::DuplicationStatus::NEWER:
                 dup.points.emplace_back(l.point);
                 break;
             case ExEnm::DuplicationStatus::ON_MAP:

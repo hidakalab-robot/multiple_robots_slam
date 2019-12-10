@@ -86,6 +86,15 @@ namespace ExpLib{
             return p;
         }
 
+        Eigen::Matrix2d eigenMat2d(double a,double b,double c,double d){
+            // return matrix // 
+            //     |a b|     //
+            //     |c d|     //     
+            Eigen::Matrix2d m;
+            m << a, b, c, d;
+            return m;
+        }
+
         exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Pose& p){
             exploration_msgs::RobotInfo msg;
             msg.name = n;

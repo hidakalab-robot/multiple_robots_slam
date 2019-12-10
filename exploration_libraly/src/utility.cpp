@@ -22,9 +22,9 @@ namespace ExpLib{
             double transX = transform.getOrigin().getX();
             double transY = transform.getOrigin().getY();
 
-            Eigen::Matrix2d rotation;
-            rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
-
+            // Eigen::Matrix2d rotation;
+            // rotation << cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw);
+            Eigen::Matrix2d rotation = Construct::eigenMat2d(cos(transYaw),-sin(transYaw),sin(transYaw),cos(transYaw));
             Eigen::Vector2d tempPoint(rotation * Eigen::Vector2d(p.position.x, p.position.y) + Eigen::Vector2d(transX, transY));
             p.position = Construct::msgPoint(tempPoint.x(),tempPoint.y());
             p.orientation = Convert::tfQuaToGeoQua(tf::Quaternion(p.orientation.x,p.orientation.y,p.orientation.z,p.orientation.w)*=transQ);

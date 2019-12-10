@@ -3,7 +3,8 @@
 
     <arg name="robot_name" default="robot1"/>
     <arg name="multi" default="false"/>
-    <arg name="rosbag" default="false"/>
+    <arg name="record_rosbag" default="false"/>
+    <arg name="use_rosbag" default="false"/>
 
     <arg name="debug" default="false"/>
     <arg name="rotation" default="false"/>
@@ -32,6 +33,7 @@
         <!-- exploration support -->
         <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
             <arg name="robot_name" value="$(arg robot_name)"/>
+            <arg name="use_rosbag" value="$(arg use_rosbag)"/>
             <arg name="frontier_detection" value="true"/>
             <arg name="branch_detection" value="true"/>
             <arg name="map_fill" value="true"/>
@@ -40,9 +42,10 @@
         </include>
 
         <!-- rosbag -->
-        <include if="$(arg rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
+        <include if="$(arg record_rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
             <arg name="topics" value="/$(arg robot_name)/map_continuity 
                                         /$(arg robot_name)/pose
+                                        /$(arg robot_name)/pose_log/$(arg robot_name)
                                         /$(arg robot_name)/scan
                                         /$(arg robot_name)/move_base/global_costmap/costmap
                                         /$(arg robot_name)/rtabmap/mapPath

@@ -81,6 +81,8 @@ namespace ExpLib{
             listStruct(const geometry_msgs::Point& p);
         };
         struct mapSearchWindow{// 中心の座標, マップの大きさ, 窓の大きさを引数に取って　窓の上下左右の要素番号を返す
+            int width;
+            int height;
             int top;
             int bottom;
             int left;

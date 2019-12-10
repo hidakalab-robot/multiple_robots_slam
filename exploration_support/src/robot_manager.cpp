@@ -99,7 +99,7 @@ bool RobotManager::isRobotTopic(const ros::master::TopicInfo& topic){
 
 void RobotManager::update(const geometry_msgs::PoseStampedConstPtr& msg, RobotManager::robotStruct& robot){
     std::lock_guard<std::mutex> lock(robot.mutex);
-    if(msg -> header.stamp < robot.pose.header.stamp) return;
+    // if(msg -> header.stamp < robot.pose.header.stamp) return;
     robot.pose = *msg;
 
     if(ros::Duration(robot.pose.header.stamp - robot.poseLog.header.stamp).toSec() >= POSE_LOG_INTERVAL){

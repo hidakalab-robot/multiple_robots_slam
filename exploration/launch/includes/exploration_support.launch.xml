@@ -1,5 +1,6 @@
 <launch>
     <arg name="robot_name"/>
+    <arg name="use_rosbag" default="false"/>
     <arg name="frontier_detection"/>
     <arg name="branch_detection"/>
     <arg name="map_fill"/>
@@ -54,6 +55,8 @@
 
     <!-- robot_manager -->
     <node pkg="exploration_support" type="robot_manager" name="robot_manager">
+        <!-- <remap if="$(arg use_rosbag)" from="pose_log/merge" to="pose_log/merge/trash"/> -->
+        <param if="$(arg use_rosbag)" name="indivisual_pose_log_topic" value="pose_log/trash"/>
         <param name="pose_log_rate" value="1.0"/>
     </node>
 
@@ -67,7 +70,9 @@
     <node pkg="exploration_support" type="goal_cancel_observer" name="goal_cancel_observer"/>
 
     <!-- poselog_optimizer -->
-    <node pkg="exploration_support" type="poselog_optimizer" name="poselog_optimizer">
+    <node pkg="exploration_support" type="poselog_optimizer" name="poselog_optimizer" output="screen">
         <remap from="pose_log" to="pose_log/$(arg robot_name)"/>
+        <!-- <remap unless="$(arg use_rosbag)" from="pose_log" to="pose_log/$(arg robot_name)"/> -->
+        <!-- <remap if="$(arg use_rosbag)" from="pose_log" to="pose_log/merge"/> -->
     </node>
 </launch>

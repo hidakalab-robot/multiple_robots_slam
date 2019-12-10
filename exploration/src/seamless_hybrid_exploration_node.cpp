@@ -28,7 +28,11 @@ int main(int argc, char* argv[]){
     ros::Time getGoalTime= ros::Time::now();
 
     auto branchTimer = [&]{
-        if(ros::Duration(ros::Time::now()-getGoalTime).toSec()>BRANCH_WAIT_TIME){
+        if(DEBUG && std::abs(ros::Duration(ros::Time::now()-getGoalTime).toSec())>BRANCH_WAIT_TIME){
+            getGoalTime = ros::Time::now();
+            return true;
+        }
+        else if(ros::Duration(ros::Time::now()-getGoalTime).toSec()>BRANCH_WAIT_TIME){
             getGoalTime = ros::Time::now();
             return true;
         }

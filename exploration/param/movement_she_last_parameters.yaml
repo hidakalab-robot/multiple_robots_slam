@@ -1,8 +1,8 @@
 forward_velocity: 0.2
 rotation_velocity: 0.5
 curve_gain: 2
-use_angle_bias: true
-angle_bias: 45.9
+use_angle_bias: false
+angle_bias: 0
 costmap_margin: 0.45
 esc_map_div_x: 5
 esc_map_div_y: 5
@@ -19,7 +19,7 @@ road_center_threshold: 1.6
 road_threshold: 1.5
 road_center_gain: 1.25
 forward_angle: 0.35
-vfh_far_range_threshold: 5
+vfh_far_range_threshold: 3
 vfh_near_range_threshold: 1.5
 vfh_rate_threshold: 0.9
 far_avoidance_gain: 1.5
