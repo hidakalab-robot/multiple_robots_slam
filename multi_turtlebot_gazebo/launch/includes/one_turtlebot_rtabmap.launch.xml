@@ -76,11 +76,13 @@
             <param name="Optimizer/Slam2D"             type="string" value="true"/>
             <param name="Reg/Force3DoF"                type="string" value="true"/>
             <param name="GridGlobal/MinSize"           type="string" value="20"/>
-            <param name="RGBD/OptimizeMaxError"        type="string" value="0.05"/>
+            <param name="RGBD/OptimizeMaxError"        type="string" value="10.0"/>
             <param name="Grid/FromDepth"                type="string" value="false"/>
+            <param name="Grid/DepthMax"                 type="string" value="4.5"/>
+
             <!-- <param name="Rtabmap/LoopThr" value="0.15"/> -->
 
-            <param name="Rtabmap/LoopThr"               type="string" value="0.65"/>
+            <param name="Rtabmap/LoopThr"               type="string" value="0.0"/>
             <param name="Mem/STMSize"                   type="string" value="25"/>
             <param name="Optimizer/Strategy"            type="string" value="1"/>
             <param name="Optimizer/Robust"             type="string"   value="true"/>

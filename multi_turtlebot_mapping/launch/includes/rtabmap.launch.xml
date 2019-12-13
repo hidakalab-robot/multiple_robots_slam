@@ -67,7 +67,7 @@
       <param name="Optimizer/Slam2D"             type="string"  value="true"/>
       <param name="Reg/Force3DoF"                type="string"  value="true"/>
       <param name="GridGlobal/MinSize"           type="string"  value="20"/>
-      <param name="RGBD/OptimizeMaxError"        type="string"  value="20.0"/>
+      <param name="RGBD/OptimizeMaxError"        type="string"  value="1000.0"/>
       <param name="Grid/FromDepth" type="string"  value="false"/>
       <param name="Grid/RangeMax" type="string" value="$(arg scan_range_max_for_map)"/>
 
