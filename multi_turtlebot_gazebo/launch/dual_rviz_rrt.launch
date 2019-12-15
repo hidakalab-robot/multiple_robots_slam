@@ -1,0 +1,15 @@
+<launch>
+    <arg name="robot_name" default="robot1"/>
+    <arg name="rviz_filepath_1" default="$(find rrt_exploration_tutorials)/launch/includes/rviz_config/single_map.rviz"/>
+    <arg name="rviz_filepath_2" default="$(find rrt_exploration_tutorials)/launch/includes/rviz_config/single_baselink.rviz"/>
+/home/ros2/catkin_ws/src/rrt_exploration_tutorials/launch/includes/rviz_config
+    <group ns="$(arg robot_name)">
+        <node pkg="rviz" type="rviz" name="rviz_1" args="-d $(arg rviz_filepath_1)">
+
+        </node>
+
+        <node pkg="rviz" type="rviz" name="rviz_2" args="-d $(arg rviz_filepath_2)">
+
+        </node>
+    </group>
+</launch>
