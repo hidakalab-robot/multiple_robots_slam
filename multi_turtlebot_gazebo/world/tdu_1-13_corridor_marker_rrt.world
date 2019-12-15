@@ -1,0 +1,59 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="default">
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    <include>
+      <uri>model://tdu_1-13_corridor</uri>
+      <pose>19.65 6 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://number1</uri>
+      <pose>8.41584 1.79096 0.4 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://number2</uri>
+      <pose>8.47022 13.323 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://number3</uri>
+      <pose>14.1727 10.677 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://number4</uri>
+      <pose>25.3066 13.3041 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://number5</uri>
+      <pose>34.3174 5.81648 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://number6</uri>
+      <pose>43.3236 -0.164013 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://number7</uri>
+      <pose>37.9531 13.317 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://number8</uri>
+      <pose>25.3325 1.31943 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://number9</uri>
+      <pose>13.5671 -1.32019 0.4 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://baggage_D_2.2</uri>
+      <pose>22.831249 1.421436 1.1 0 -0 0</pose>
+    </include>
+    <include>
+      <uri>model://baggage_D_2.2</uri>
+      <pose>22.842500 10.553600 1.1 0 -0 0</pose>
+    </include>
+  </world>
+</sdf>

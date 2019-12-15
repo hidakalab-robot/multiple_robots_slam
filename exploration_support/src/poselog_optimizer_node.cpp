@@ -4,6 +4,7 @@
 #include <nav_msgs/Path.h>
 #include <Eigen/Core>
 #include <thread>
+#include <mutex>
 
 
 int main(int argc, char *argv[]){
@@ -19,11 +20,11 @@ int main(int argc, char *argv[]){
     nh.param<double>("poselog_optimized_publish_rate", POSELOG_OPTIMIZED_PUBLISH_RATE, 10.0);
 
     nav_msgs::Path optimizedPath;
-
+    std::mutex opm;
     typedef message_filters::sync_policies::ApproximateTime<nav_msgs::Path, nav_msgs::Path> MySyncPolicy;
 
     message_filters::Synchronizer<MySyncPolicy> sync(MySyncPolicy(10), myPathSub, slamPathSub);
-    sync.registerCallback(boost::bind(+[](const nav_msgs::PathConstPtr& mp,const nav_msgs::PathConstPtr& sp,const double& OPTIMIZE_TOLERANCE, nav_msgs::Path* optimizedPath)->void{
+    sync.registerCallback(boost::bind(+[](const nav_msgs::PathConstPtr& mp,const nav_msgs::PathConstPtr& sp,const double& OPTIMIZE_TOLERANCE, nav_msgs::Path* optimizedPath, std::mutex* opm)->void{
         // mpからspにないポーズを削除 <- rtabのポーズはタイムスタンプが書き換わってるため
         nav_msgs::Path tp = *mp;
         auto removeResult = std::remove_if(tp.poses.begin(),tp.poses.end(),[&](geometry_msgs::PoseStamped& p){
@@ -34,14 +35,18 @@ int main(int argc, char *argv[]){
         });
 		tp.poses.erase(std::move(removeResult),tp.poses.end());
         tp.header.frame_id = sp->header.frame_id;
+        std::lock_guard<std::mutex> lock(*opm);
         *optimizedPath = tp;
-    },_1,_2,OPTIMIZE_TOLERANCE,&optimizedPath));
+    },_1,_2,OPTIMIZE_TOLERANCE,&optimizedPath,&opm));
 
     std::thread pubThread([&]{
         ros::Rate rate(POSELOG_OPTIMIZED_PUBLISH_RATE);
         while(ros::ok()){
-            optimizedPath.header.stamp = ros::Time::now();
-            pub.publish(optimizedPath);
+            {
+                std::lock_guard<std::mutex> lock(opm);
+                optimizedPath.header.stamp = ros::Time::now();
+                pub.publish(optimizedPath);
+            }
             rate.sleep();
         }
     });

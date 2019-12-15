@@ -8,6 +8,9 @@ local_costmap:
    width: 4.0
    height: 4.0
    resolution: 0.05
+   # width: 1.5
+   # height: 1.5
+   # resolution: 0.01
    transform_tolerance: 0.5
    plugins:
     - {name: obstacle_layer,      type: "costmap_2d::VoxelLayer"}

@@ -282,10 +282,16 @@ target_link_libraries(multi_exploration_simulator_input_support ${catkin_LIBRARI
 add_executable(legacy_hybrid_exploration
  src/legacy_hybrid_exploration_node.cpp
 )
-# add_dependencies(legacy_hybrid_exploration ${PROJECT_NAME}_gencfg)
 target_link_libraries(legacy_hybrid_exploration
  ${catkin_LIBRARIES}
  she
  fbe
  movement
+)
+
+add_executable(rrt_point_publisher
+ src/rrt_point_publisher_node.cpp
+)
+target_link_libraries(rrt_point_publisher
+ ${catkin_LIBRARIES}
 )

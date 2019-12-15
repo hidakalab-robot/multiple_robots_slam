@@ -46,6 +46,30 @@
             <param name="delay_after_assignement" value="0.5"/>
             <param name="rate" value="100"/>
         </node>
+
+        <!-- exploration support -->
+        <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
+            <arg name="use_rosbag" value="false"/>
+            <arg name="frontier_detection" value="false"/>
+            <arg name="branch_detection" value="false"/>
+            <arg name="map_fill" value="false"/>
+            <arg name="orig_map" value="map_continuity"/>
+            <arg name="fill_map" default="fill_map"/>
+        </include>
+
+        <!-- rosbag -->
+        <include file="$(find exploration_support)/launch/rosbag_record.launch">
+            <arg name="topics" value="/$(arg robot_name)/map_continuity 
+                                        /$(arg robot_name)/pose
+                                        /$(arg robot_name)/pose_log/$(arg robot_name)
+                                        /$(arg robot_name)/scan
+                                        /$(arg robot_name)/move_base/global_costmap/costmap
+                                        /$(arg robot_name)/rtabmap/mapPath
+                                        /tf
+                                        /tf_static"/>
+            <arg name="compress" value="true"/>
+        </include>
     </group>
   
 </launch>

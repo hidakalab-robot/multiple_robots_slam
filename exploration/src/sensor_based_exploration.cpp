@@ -86,10 +86,14 @@ bool SensorBasedExploration::getGoal(geometry_msgs::PointStamped& goal){
     for(const auto& b : branches) ls.emplace_back(b);
 
     // 重複探査検出
+    ROS_INFO_STREAM("start : duplicate detection");
     if(DUPLICATE_DETECTION && !poseLog_->q.callOne(ros::WallDuration(1)) && poseLog_->data.poses.size()>0) duplicateDetection(ls, poseLog_->data);
+    ROS_INFO_STREAM("end : duplicate detection");
 
     // 行ったことがなくても地図ができてたら重複探査にする
+    ROS_INFO_STREAM("start : on map branch detection");
     if(ON_MAP_BRANCH_DETECTION && !map_->q.callOne(ros::WallDuration(1))) onMapBranchDetection(ls);
+    ROS_INFO_STREAM("end : on map branch detection");
 
     publishProcessedBranch(ls);
 
@@ -136,7 +140,7 @@ void SensorBasedExploration::onMapBranchDetection(std::vector<ExStc::listStruct>
                 if(map2d[x][y] >= 0) ++c;
             }
         }
-        // ROS_DEBUG_STREAM("on map << c : " << c << ", width : " << msw.width << ", height : " << msw.height << ", ref rate : " << ON_MAP_BRANCH_RATE << ", calc rate : " << (double)c/(msw.width*msw.height) << ", map stamp : " << map_->data.header.stamp);
+        ROS_DEBUG_STREAM("on map << c : " << c << ", width : " << msw.width << ", height : " << msw.height << ", ref rate : " << ON_MAP_BRANCH_RATE << ", calc rate : " << (double)c/(msw.width*msw.height) << ", map stamp : " << map_->data.header.stamp);
         if((double)c/(msw.width*msw.height)>ON_MAP_BRANCH_RATE) l.duplication = ExEnm::DuplicationStatus::ON_MAP;
     }
 }

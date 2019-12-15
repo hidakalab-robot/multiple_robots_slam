@@ -194,10 +194,10 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
             double distance;
             if(!pp_->getDistanceAndVec(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
                 v2 = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).normalized();
-                if(!pp_->getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
+                // if(!pp_->getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
                     //最終手段で直線距離を計算
                     distance = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).norm();
-                }                
+                // }                
             }
             double angle = std::abs(acos(v1.dot(v2)));
             pcr.values.emplace_back(preCalcResult::value(distance,angle));
