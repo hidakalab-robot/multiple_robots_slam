@@ -18,7 +18,7 @@
     <!-- <arg name="debug" default="false"/> -->
     <arg name="robot_name"/>
 
-    <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen">
+    <node pkg="exploration" type="frontier_based_exploration" name="frontier_based_exploration" output="screen" respawn="true">
         <remap from="frontier" to="$(arg frontier)"/>
         <remap from="end" to="$(arg end)"/>
         <remap unless="$(arg debug)" from="velocity" to="/$(arg robot_name)/mobile_base/commands/velocity"/>

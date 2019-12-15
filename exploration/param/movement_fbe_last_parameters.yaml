@@ -11,7 +11,7 @@ esc_map_height: 0.6
 rotation_tolerance: 0.05
 goal_reset_rate: 2
 path_back_interval: 5
-reset_goal_path_limit: 30
+reset_goal_path_limit: 5
 reset_goal_path_rate: 0.5
 back_velocity: -0.2
 back_time: 1

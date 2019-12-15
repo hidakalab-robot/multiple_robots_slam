@@ -289,3 +289,11 @@ target_link_libraries(legacy_hybrid_exploration
  fbe
  movement
 )
+
+add_executable(rotation
+ src/rotation_node.cpp
+)
+target_link_libraries(rotation
+ ${catkin_LIBRARIES}
+ movement
+)

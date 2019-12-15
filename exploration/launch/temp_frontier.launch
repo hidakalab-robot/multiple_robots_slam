@@ -1,0 +1,29 @@
+<launch>
+    <env name="ROSCONSOLE_CONFIG_FILE" value="$(find exploration)/cfg/custom_rosconsole.config"/>
+
+    <arg name="robot_name" default="robot1"/>
+    <arg name="multi" default="false"/>
+    <arg name="record_rosbag" default="false"/>
+    <arg name="use_rosbag" default="false"/>
+
+    <arg name="debug" default="false"/>
+    <arg name="rotation" default="true"/>
+    <arg name="end_method" default="timer"/>
+    <arg name="map_fill" default="false"/>
+    
+    <!-- <arg unless="$(arg multi)" name="map" default="/$(arg robot_name)/map"/> -->
+    <arg unless="$(arg multi)" name="map" default="map_continuity"/>
+    <arg if="$(arg multi)" name="map" default="/server/merge_map/grid"/>
+
+    <group ns="$(arg robot_name)">
+        <!-- exploration main -->
+        <include file="$(find exploration)/launch/includes/frontier_based_exploration.launch.xml">
+            <arg name="end" value="end/$(arg end_method)"/>
+            <arg name="debug" value="$(arg debug)"/>
+            <arg name="rotation" value="$(arg rotation)"/>
+            <arg name="robot_name" value="$(arg robot_name)"/>
+            <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
+            <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
+        </include>
+    </group>
+</launch>
