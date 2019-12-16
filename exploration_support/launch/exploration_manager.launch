@@ -1,0 +1,27 @@
+<launch>   
+
+    <arg name="robot_name" default="robot1"/>
+    <arg name="map_fill" default="false"/>
+
+    <arg name="orig_map" default="map_continuity"/>
+    <arg name="fill_map" default="fill_map"/>
+
+    <group ns="$(arg robot_name)">
+        <!-- exploration_manager -->
+        <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
+            <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+            <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
+            <rosparam file="$(find exploration_support)/param/exmng_last_parameters.yaml" command="load" ns="exmng"/>
+            <param name="exmng/exmng_parameter_file_path" value="$(find exploration_support)/param/exmng_last_parameters.yaml"/>
+        </node>
+
+        <!-- map_fill -->
+        <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="map_fill">
+            <remap from="map" to="$(arg orig_map)"/>
+            <remap from="fill_map" to="$(arg fill_map)"/>
+            <rosparam file="$(find exploration_support)/param/map_fill_last_parameters.yaml" command="load" ns="map_fill"/>
+            <param name="map_fill/fill_parameter_file_path" value="$(find exploration_support)/param/map_fill_last_parameters.yaml"/>
+        </node>
+    </group>
+
+</launch>
