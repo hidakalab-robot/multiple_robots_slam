@@ -9,7 +9,7 @@ on_map_branch_rate: 0.9
 duplicate_detection: true
 duplicate_tolerance: 1.5
 log_current_time: 10
-newer_duplication_threshold: 1000
+newer_duplication_threshold: 100
 on_map_frontier_detection: true
 omf_map_window_x: 2
 omf_map_window_y: 2

@@ -1,4 +1,4 @@
 cluster_tolerance: 0.15
 min_cluster_size: 15
 max_cluster_size: 15000
-filter_square_diameter: 0.75
+filter_square_diameter: 0.5
