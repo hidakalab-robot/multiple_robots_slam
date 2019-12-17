@@ -60,10 +60,10 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
         ExUtl::coordinateConverter2d<void>(listener, pose_->data.header.frame_id, goal.header.frame_id, goal.point);
     }
 
-    if(lookupCostmap(pose_->data)){
-        escapeFromCostmap(pose_->data);
-        pose_->q.callOne(ros::WallDuration(1.0));
-    } 
+    // if(lookupCostmap(pose_->data)){
+    //     escapeFromCostmap(pose_->data);
+    //     pose_->q.callOne(ros::WallDuration(1.0));
+    // } 
 
     move_base_msgs::MoveBaseGoal mbg;
     mbg.target_pose.header.frame_id = pose_->data.header.frame_id;
