@@ -94,24 +94,24 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     while(!ac.getState().isDone() && ros::ok()){
         publishMovementStatus("move_base");
-        if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
-            // 目的地を再設定
-            if(!resetGoal(mbg.target_pose)){ 
-                ROS_INFO_STREAM("current goal is canceled");
-                ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
-                ac.waitForResult();
-                break;
-            }
-            if(ac.getState().isDone()) break;
-            // 大丈夫な目的地に変わっているので再設定
-            ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
-            ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
-            ROS_INFO_STREAM("send new goal to move_base");
-            ac.sendGoal(mbg);
-            // ゴールtopicに再出力
-            goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
-            ROS_INFO_STREAM("wait for result");
-        }
+        // if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
+        //     // 目的地を再設定
+        //     if(!resetGoal(mbg.target_pose)){ 
+        //         ROS_INFO_STREAM("current goal is canceled");
+        //         ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
+        //         ac.waitForResult();
+        //         break;
+        //     }
+        //     if(ac.getState().isDone()) break;
+        //     // 大丈夫な目的地に変わっているので再設定
+        //     ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
+        //     ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
+        //     ROS_INFO_STREAM("send new goal to move_base");
+        //     ac.sendGoal(mbg);
+        //     // ゴールtopicに再出力
+        //     goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
+        //     ROS_INFO_STREAM("wait for result");
+        // }
         rate.sleep();
     };
 
