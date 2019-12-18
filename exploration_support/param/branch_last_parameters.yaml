@@ -1,7 +1,19 @@
 obstacle_check_angle: 0.04
+<<<<<<< HEAD
 obstacle_range_threshold: 1.4
 branch_range_threshold: 10
 branch_diff_x_min: 0.5
+=======
+obstacle_range_threshold: 2.5
+branch_range_max: 10
+branch_range_min: 0.2
+branch_diff_x_min: 1
+>>>>>>> 56e693e... add branch_detection filter
 branch_diff_x_max: 10
 branch_diff_y_min: 0
 branch_diff_y_max: 10
+scan_filter: 0
+scan_filter_order: 3
+branch_filter: 1
+branch_filter_order: 3
+branch_filter_tolerance: 0.1
