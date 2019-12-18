@@ -57,11 +57,17 @@ class BranchDetection{
         // dynamic parameters
         double OBSTACLE_CHECK_ANGLE;
         double OBSTACLE_RANGE_THRESHOLD;
-        double BRANCH_RANGE_THRESHOLD;
+        double BRANCH_RANGE_MIN;
+        double BRANCH_RANGE_MAX;
         double BRANCH_DIFF_X_MIN;
         double BRANCH_DIFF_X_MAX;
         double BRANCH_DIFF_Y_MIN;
         double BRANCH_DIFF_Y_MAX;
+        bool SCAN_FILTER;
+        int SCAN_FILTER_ORDER;
+        bool BRANCH_FILTER;
+        int BRANCH_FILTER_ORDER;
+        double BRANCH_FILTER_TOLERANCE;
 
         // static parameters
         std::string BRANCH_PARAMETER_FILE_PATH;
@@ -71,10 +77,13 @@ class BranchDetection{
         std::unique_ptr<ExStc::subStructSimple> scan_;
         std::unique_ptr<ExStc::subStruct<geometry_msgs::PoseStamped>> pose_;
         std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> branch_;
+        std::unique_ptr<ExStc::pubStruct<sensor_msgs::LaserScan>> filteredScan_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration_support::branch_detection_parameter_reconfigureConfig>> drs_;
 
         // functions
         void scanCB(const sensor_msgs::LaserScanConstPtr& msg);
+        sensor_msgs::LaserScan scanFilter(const sensor_msgs::LaserScan& scan);
+        void branchFilter(std::vector<geometry_msgs::Point>& branches);
         void publishBranch(const std::vector<geometry_msgs::Point>& branches, const std::string& frameId);
         void loadParams(void);
         void dynamicParamsCB(exploration_support::branch_detection_parameter_reconfigureConfig &cfg, uint32_t level);
