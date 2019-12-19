@@ -94,24 +94,24 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     while(!ac.getState().isDone() && ros::ok()){
         publishMovementStatus("move_base");
-        if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
-            // 目的地を再設定
-            if(!resetGoal(mbg.target_pose)){ 
-                ROS_INFO_STREAM("current goal is canceled");
-                ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
-                ac.waitForResult();
-                break;
-            }
-            if(ac.getState().isDone()) break;
-            // 大丈夫な目的地に変わっているので再設定
-            ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
-            ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
-            ROS_INFO_STREAM("send new goal to move_base");
-            ac.sendGoal(mbg);
-            // ゴールtopicに再出力
-            goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
-            ROS_INFO_STREAM("wait for result");
-        }
+        // if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
+        //     // 目的地を再設定
+        //     if(!resetGoal(mbg.target_pose)){ 
+        //         ROS_INFO_STREAM("current goal is canceled");
+        //         ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
+        //         ac.waitForResult();
+        //         break;
+        //     }
+        //     if(ac.getState().isDone()) break;
+        //     // 大丈夫な目的地に変わっているので再設定
+        //     ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
+        //     ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
+        //     ROS_INFO_STREAM("send new goal to move_base");
+        //     ac.sendGoal(mbg);
+        //     // ゴールtopicに再出力
+        //     goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
+        //     ROS_INFO_STREAM("wait for result");
+        // }
         rate.sleep();
     };
 
@@ -229,7 +229,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         for(int dw=0, dwe=ESC_MAP_DIV_X; dw!=dwe; ++dw){
             double risk = 0;
             for(int h=msw.top+dh*gh,he=msw.top+(dh+1)*gh;h!=he;++h){
-                for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h] > 0 ? gMap[w][h] : 0;
+                for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h] >= 99 ? gMap[w][h] : 0;
             }
             gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gw)/2,(msw.top*2+(2*dh+1)*gh)/2);
             gmm[dw][dh].pose.position = ExUtl::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_->data.info);
