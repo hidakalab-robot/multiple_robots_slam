@@ -214,9 +214,9 @@ void BranchDetection::outputParams(void){
     ofs << "branch_diff_x_max: " << BRANCH_DIFF_X_MAX << std::endl;
     ofs << "branch_diff_y_min: " << BRANCH_DIFF_Y_MIN << std::endl;
     ofs << "branch_diff_y_max: " << BRANCH_DIFF_Y_MAX << std::endl;
-    ofs << "scan_filter: " << SCAN_FILTER << std::endl;
+    ofs << "scan_filter: " << (SCAN_FILTER ? "true" : "false")<< std::endl;
     ofs << "scan_filter_order: " << SCAN_FILTER_ORDER << std::endl;
-    ofs << "branch_filter: " << BRANCH_FILTER << std::endl;
+    ofs << "branch_filter: " << (BRANCH_FILTER  ? "true" : "false")<< std::endl;
     ofs << "branch_filter_order: " << BRANCH_FILTER_ORDER << std::endl;
     ofs << "branch_filter_tolerance: " << BRANCH_FILTER_TOLERANCE << std::endl;
  }
