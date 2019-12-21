@@ -5,8 +5,3 @@ branch_diff_x_min: 0.5
 branch_diff_x_max: 10
 branch_diff_y_min: 0
 branch_diff_y_max: 10
-scan_filter: 0
-scan_filter_order: 3
-branch_filter: 1
-branch_filter_order: 3
-branch_filter_tolerance: 0.1

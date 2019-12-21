@@ -228,42 +228,27 @@ add_library(she src/seamless_hybrid_exploration.cpp)
 add_dependencies(she ${PROJECT_NAME}_gencfg)
 target_link_libraries(she ${catkin_LIBRARIES} sbe)
 
-# add_executable(sensor_based_exploration src/sensor_based_exploration_node.cpp)
-add_executable(sensor_based_exploration 
-  src/sensor_based_exploration_node.cpp
-)
-# add_dependencies(sensor_based_exploration ${PROJECT_NAME}_gencfg)
-# target_link_libraries(sensor_based_exploration ${catkin_LIBRARIES})
+add_executable(sensor_based_exploration src/sensor_based_exploration_node.cpp)
 target_link_libraries(sensor_based_exploration 
   ${catkin_LIBRARIES} 
   sbe
   movement
 )
 
-# add_executable(frontier_based_exploration src/frontier_based_exploration_node.cpp)
-add_executable(frontier_based_exploration 
-  src/frontier_based_exploration_node.cpp
-)
-# add_dependencies(frontier_based_exploration ${PROJECT_NAME}_gencfg)
-# target_link_libraries(frontier_based_exploration ${catkin_LIBRARIES})
+add_executable(frontier_based_exploration src/frontier_based_exploration_node.cpp)
 target_link_libraries(frontier_based_exploration
   ${catkin_LIBRARIES} 
   fbe
   movement
 )
 
-# add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration_node.cpp)
-add_executable(seamless_hybrid_exploration
- src/seamless_hybrid_exploration_node.cpp
-)
-# add_dependencies(seamless_hybrid_exploration ${PROJECT_NAME}_gencfg)
+add_executable(seamless_hybrid_exploration src/seamless_hybrid_exploration_node.cpp)
 target_link_libraries(seamless_hybrid_exploration
  ${catkin_LIBRARIES}
  she
  movement
 )
 
-# add_executable(multi_exploration_simulator src/multi_exploration_simulator_node.cpp)
 add_executable(multi_exploration_simulator
  src/multi_exploration_simulator_node.cpp
  src/multi_exploration_simulator.cpp
@@ -274,14 +259,10 @@ target_link_libraries(multi_exploration_simulator
  she
 )
 
-add_executable(multi_exploration_simulator_input_support
- src/multi_exploration_simulator_input_support_node.cpp
-)
+add_executable(multi_exploration_simulator_input_support src/multi_exploration_simulator_input_support_node.cpp)
 target_link_libraries(multi_exploration_simulator_input_support ${catkin_LIBRARIES})
 
-add_executable(legacy_hybrid_exploration
- src/legacy_hybrid_exploration_node.cpp
-)
+add_executable(legacy_hybrid_exploration src/legacy_hybrid_exploration_node.cpp)
 target_link_libraries(legacy_hybrid_exploration
  ${catkin_LIBRARIES}
  she
@@ -289,9 +270,13 @@ target_link_libraries(legacy_hybrid_exploration
  movement
 )
 
-add_executable(rrt_point_publisher
- src/rrt_point_publisher_node.cpp
-)
-target_link_libraries(rrt_point_publisher
+add_executable(rrt_point_publisher src/rrt_point_publisher_node.cpp)
+target_link_libraries(rrt_point_publisher ${catkin_LIBRARIES})
+
+add_executable(seamless_hybrid_exploration_actively_frontier src/seamless_hybrid_exploration_actively_frontier_node.cpp)
+target_link_libraries(seamless_hybrid_exploration_actively_frontier
  ${catkin_LIBRARIES}
+ she
+ fbe
+ movement
 )
