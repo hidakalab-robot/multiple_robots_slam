@@ -4,6 +4,6 @@
     <arg name="topics"/>
     <arg name="compress" default="false"/>
 
-    <node if="$(arg compress)" pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-j -o $(arg dir) $(arg topics)"/>
-    <node unless="$(arg compress)" pkg="rosbag" type="record" name="rosbag_record" output="screen" args="-o $(arg dir) $(arg topics)"/>
+    <node if="$(arg compress)" pkg="rosbag" type="record" name="rosbag_record_$(arg name)" output="screen" args="-j -o $(arg dir) $(arg topics)"/>
+    <node unless="$(arg compress)" pkg="rosbag" type="record" name="rosbag_record_$(arg name)" output="screen" args="-o $(arg dir) $(arg topics)"/>
 </launch>

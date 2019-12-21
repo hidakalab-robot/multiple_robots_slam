@@ -104,19 +104,29 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGridConstPtr& msg){
 
 void FrontierDetection::horizonDetection(mapStruct& map){
     ROS_INFO_STREAM("Horizon Detection");
+
+    auto isHorizon = [](int8_t free, int8_t unknown){
+        // return free == 0 && unknown ==-1;
+        return (0 <= free && free < 99) && unknown == -1;
+    };
+
     //x axis horizon
     for(int y=0,ey=map.info.height;y!=ey;++y){
         for(int x=0,ex=map.info.width-1;x!=ex;++x){
-            if(map.source[x][y] == 0 && map.source[x+1][y] == -1) map.horizon[x][y] = 1;
-            else if(map.source[x][y] == -1 && map.source[x+1][y] == 0) map.horizon[x+1][y] = 1;
+            // if(map.source[x][y] == 0 && map.source[x+1][y] == -1) map.horizon[x][y] = 1;
+            // else if(map.source[x][y] == -1 && map.source[x+1][y] == 0) map.horizon[x+1][y] = 1;
+            if(isHorizon(map.source[x][y], map.source[x+1][y])) map.horizon[x][y] = 1;
+            else if(isHorizon(map.source[x+1][y], map.source[x][y])) map.horizon[x+1][y] = 1;
         }
     }
 
     //y axis horizon
     for(int x=0,ex=map.info.width;x!=ex;++x){
         for(int y=0,ey=map.info.height-1;y!=ey;++y){
-            if(map.source[x][y] == 0 && map.source[x][y+1] == -1) map.horizon[x][y] = 1;
-            else if(map.source[x][y] == -1 && map.source[x][y+1] == 0) map.horizon[x][y+1] = 1;
+            // if(map.source[x][y] == 0 && map.source[x][y+1] == -1) map.horizon[x][y] = 1;
+            // else if(map.source[x][y] == -1 && map.source[x][y+1] == 0) map.horizon[x][y+1] = 1;
+            if(isHorizon(map.source[x][y], map.source[x][y+1])) map.horizon[x][y] = 1;
+            else if(isHorizon(map.source[x][y+1], map.source[x][y])) map.horizon[x][y+1] = 1;
         }
     }
     ROS_INFO_STREAM("Horizon Detection complete\n");

@@ -43,7 +43,7 @@
             <param name="n_robots" value="1"/>
             <param name="namespace_init_count" value="1"/>
             <param name="namespace" value="/robot"/>
-            <param name="delay_after_assignement" value="0.5"/>
+            <param name="delay_after_assignement" value="10.0"/>
             <param name="rate" value="100"/>
         </node>
 
@@ -69,6 +69,13 @@
                                         /tf
                                         /tf_static"/>
             <arg name="compress" value="true"/>
+        </include>
+
+        <!-- rosbag -->
+        <include file="$(find exploration_support)/launch/rosbag_record.launch">
+            <arg name="topics" value="/$(arg robot_name)/map_continuity"/>
+            <arg name="compress" value="true"/>
+            <arg name="name" value="filtered"/>
         </include>
     </group>
   
