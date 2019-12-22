@@ -3,9 +3,9 @@ last_goal_tolerance: 1
 canceled_goal_effect: true
 canceled_goal_tolerance: 0.5
 on_map_branch_detection: true
-omb_map_window_x: 2
-omb_map_window_y: 2
-on_map_branch_rate: 0.9
+omb_map_window_x: 1.5
+omb_map_window_y: 1.5
+on_map_branch_rate: 0.85
 duplicate_detection: true
 duplicate_tolerance: 1.5
 log_current_time: 10
@@ -17,6 +17,7 @@ on_map_frontier_rate: 0.85
 distance_weight: 3.5
 direction_weight: 1.5
 variance_threshold: 1.2
+variance_min_threshold: 0.1
 covariance_threshold: 0.5
 other_robot_weight: 1
 duplicate_coeff: 1.25
