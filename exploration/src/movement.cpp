@@ -71,14 +71,26 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     // 目標での姿勢
     Eigen::Vector2d startToGoal;
-    if(USE_ANGLE_BIAS || !pp_->getVec(pose_->data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
-        // pathが取得できなかった場合の回転角度の補正値
+    // if(USE_ANGLE_BIAS || !pp_->getVec(pose_->data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
+    //     // pathが取得できなかった場合の回転角度の補正値
+    //     double yaw = ExCov::qToYaw(pose_->data.pose.orientation);
+    //     Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
+    //     double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
+    //     Eigen::Matrix2d rotation = ExCos::eigenMat2d(cos(rotateTheta),-sin(rotateTheta),sin(rotateTheta),cos(rotateTheta));
+    //     // rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
+    //     startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
+    // }
+    if(!pp_->getVec(pose_->data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
+        startToGoal = Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
+    }
+
+    if(USE_ANGLE_BIAS){
         double yaw = ExCov::qToYaw(pose_->data.pose.orientation);
-        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
+        // Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
+        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0).normalized());
         double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
         Eigen::Matrix2d rotation = ExCos::eigenMat2d(cos(rotateTheta),-sin(rotateTheta),sin(rotateTheta),cos(rotateTheta));
-        // rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
-        startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
+        startToGoal = rotation * startToGoal;
     }
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
@@ -94,24 +106,24 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     while(!ac.getState().isDone() && ros::ok()){
         publishMovementStatus("move_base");
-        if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
-            // 目的地を再設定
-            if(!resetGoal(mbg.target_pose)){ 
-                ROS_INFO_STREAM("current goal is canceled");
-                ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
-                ac.waitForResult();
-                break;
-            }
-            if(ac.getState().isDone()) break;
-            // 大丈夫な目的地に変わっているので再設定
-            ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
-            ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
-            ROS_INFO_STREAM("send new goal to move_base");
-            ac.sendGoal(mbg);
-            // ゴールtopicに再出力
-            goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
-            ROS_INFO_STREAM("wait for result");
-        }
+        // if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
+        //     // 目的地を再設定
+        //     if(!resetGoal(mbg.target_pose)){ 
+        //         ROS_INFO_STREAM("current goal is canceled");
+        //         ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
+        //         ac.waitForResult();
+        //         break;
+        //     }
+        //     if(ac.getState().isDone()) break;
+        //     // 大丈夫な目的地に変わっているので再設定
+        //     ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
+        //     ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
+        //     ROS_INFO_STREAM("send new goal to move_base");
+        //     ac.sendGoal(mbg);
+        //     // ゴールtopicに再出力
+        //     goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
+        //     ROS_INFO_STREAM("wait for result");
+        // }
         rate.sleep();
     };
 

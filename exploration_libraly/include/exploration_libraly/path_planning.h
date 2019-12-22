@@ -17,7 +17,7 @@ namespace ExpLib{
 
         public:
             PathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
-                ros::NodeHandle("~").param<double>("path_to_vector_ratio", PATH_TO_VECTOR_RATIO, 0.5);
+                ros::NodeHandle("~").param<double>("path_to_vector_ratio", PATH_TO_VECTOR_RATIO, 0.8);
                 planner.initialize("path_planner",&gcr);
                 ros::spinOnce();
             };
