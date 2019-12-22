@@ -57,6 +57,13 @@ class FrontierDetection{
         int MIN_CLUSTER_SIZE;
         int MAX_CLUSTER_SIZE;
         float FILTER_SQUARE_DIAMETER;
+        bool ON_MAP_FRONTIER_DETECTION;
+        double OMF_MAP_WINDOW_X;
+        double OMF_MAP_WINDOW_Y;
+        double ON_MAP_FRONTIER_RATE;
+        double VARIANCE_THRESHOLD;
+        double VARIANCE_MIN_THRESHOLD;
+        double COVARIANCE_THRESHOLD;
 
         // static parameters
         std::string FRONTIER_PARAMETER_FILE_PATH;
@@ -78,6 +85,8 @@ class FrontierDetection{
         clusterStruct clusterDetection(const mapStruct& map);
         void obstacleFilter(mapStruct& map,clusterStruct& cs);
         void publishHorizon(const clusterStruct& cs, const std::string& frameId);
+        void onMapFrontierDetection(const FrontierDetection::mapStruct& map, std::vector<exploration_msgs::Frontier>& frontiers);
+        void usefulFrontierDetection(std::vector<exploration_msgs::Frontier>& frontiers);
         void publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId);
         void loadParams(void);
         void dynamicParamsCB(exploration_support::frontier_detection_parameter_reconfigureConfig &cfg, uint32_t level);

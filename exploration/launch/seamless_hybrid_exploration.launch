@@ -39,6 +39,7 @@
             <arg name="map_fill" value="true"/>
             <arg name="orig_map" value="$(arg map)"/>
             <arg name="fill_map" default="$(arg fill_map)"/>
+            <arg name="pose_log" value="pose_log/optimized"/>
         </include>
 
         <!-- rosbag -->

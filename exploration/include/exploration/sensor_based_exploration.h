@@ -18,6 +18,9 @@ namespace ExpLib{
 }
 namespace exploration_msgs{
     template <class ContainerAllocator>
+    struct BranchArray_;
+    typedef ::exploration_msgs::BranchArray_<std::allocator<void>> BranchArray;
+    template <class ContainerAllocator>
     struct PointArray_;
     typedef ::exploration_msgs::PointArray_<std::allocator<void>> PointArray;
     // template <class ContainerAllocator>
@@ -66,20 +69,22 @@ class SensorBasedExploration{
         std::string SBE_PARAMETER_FILE_PATH;
 
         // variables
-        std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> branch_;
+        // std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> branch_;
+        std::unique_ptr<ExStc::subStruct<exploration_msgs::BranchArray>> branch_;
         std::unique_ptr<ExStc::subStruct<geometry_msgs::PoseStamped>> pose_;
         // std::unique_ptr<ExStc::subStruct<exploration_msgs::PoseStampedArray>> poseLog_;
-        std::unique_ptr<ExStc::subStruct<nav_msgs::Path>> poseLog_;
+        // std::unique_ptr<ExStc::subStruct<nav_msgs::Path>> poseLog_;
         std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> canceled_;
-        std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> dupBra_;
-        std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> onMapBra_;
+        // std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> dupBra_;
+        // std::unique_ptr<ExStc::pubStruct<exploration_msgs::PointArray>> onMapBra_;
 
         // functions
         // void duplicateDetection(std::vector<ExStc::listStruct>& ls, const exploration_msgs::PoseStampedArray& log);
-        void duplicateDetection(std::vector<ExStc::listStruct>& ls, const nav_msgs::Path& log);
-        void onMapBranchDetection(std::vector<ExStc::listStruct>& ls);
-        virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
-        void publishProcessedBranch(const std::vector<ExStc::listStruct>& ls);
+        // void duplicateDetection(std::vector<ExStc::listStruct>& ls, const nav_msgs::Path& log);
+        // void onMapBranchDetection(std::vector<ExStc::listStruct>& ls);
+        // virtual bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+        virtual bool decideGoal(geometry_msgs::PointStamped& goal, const exploration_msgs::BranchArray& ls, const geometry_msgs::PoseStamped& pose);
+        // void publishProcessedBranch(const std::vector<ExStc::listStruct>& ls);
         virtual void loadParams(void);
         virtual void dynamicParamsCB(exploration::sensor_based_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
         virtual void outputParams(void);
@@ -90,18 +95,18 @@ class SensorBasedExploration{
         double LAST_GOAL_TOLERANCE;
         bool CANCELED_GOAL_EFFECT;
         double CANCELED_GOAL_TOLERANCE;
-        bool ON_MAP_BRANCH_DETECTION;
-        double OMB_MAP_WINDOW_X;
-        double OMB_MAP_WINDOW_Y;
-        double ON_MAP_BRANCH_RATE;
-        bool DUPLICATE_DETECTION;
-        double DUPLICATE_TOLERANCE;
-        double LOG_CURRENT_TIME;//if 30 -> 30秒前までのログで重複検出
-        double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
+        // bool ON_MAP_BRANCH_DETECTION;
+        // double OMB_MAP_WINDOW_X;
+        // double OMB_MAP_WINDOW_Y;
+        // double ON_MAP_BRANCH_RATE;
+        // bool DUPLICATE_DETECTION;
+        // double DUPLICATE_TOLERANCE;
+        // double LOG_CURRENT_TIME;//if 30 -> 30秒前までのログで重複検出
+        // double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
         
         // variables
         std::unique_ptr<ExStc::pubStruct<geometry_msgs::PointStamped>> goal_;
-        std::unique_ptr<ExStc::subStruct<nav_msgs::OccupancyGrid>> map_;
+        // std::unique_ptr<ExStc::subStruct<nav_msgs::OccupancyGrid>> map_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration::sensor_based_exploration_parameter_reconfigureConfig>> drs_;
         std::unique_ptr<geometry_msgs::Point> lastGoal_;
 

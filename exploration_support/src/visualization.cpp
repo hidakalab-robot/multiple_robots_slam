@@ -1,6 +1,7 @@
 #include <exploration_support/visualization.h>
 #include <exploration_libraly/construct.h>
 #include <exploration_libraly/struct.h>
+#include <exploration_msgs/BranchArray.h>
 #include <exploration_msgs/FrontierArray.h>
 #include <exploration_msgs/PointArray.h>
 #include <geometry_msgs/PointStamped.h>
@@ -28,19 +29,19 @@ Visualization::Visualization()
     ,branch_(new ExStc::subStructSimple("branch",1,&Visualization::branchCB, this))
     ,branchMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/branch", 1, true))
     ,bm_(new visualization_msgs::Marker())
-    ,dupBranch_(new ExStc::subStructSimple("duplicated_branch",1,&Visualization::dupBranchCB, this))
+    // ,dupBranch_(new ExStc::subStructSimple("duplicated_branch",1,&Visualization::dupBranchCB, this))
     ,dupBranchMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/duplicated_branch", 1, true))
     ,dbm_(new visualization_msgs::Marker())
-    ,omBranch_(new ExStc::subStructSimple("on_map_branch",1,&Visualization::omBranchCB, this))
+    // ,omBranch_(new ExStc::subStructSimple("on_map_branch",1,&Visualization::omBranchCB, this))
     ,omBranchMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/on_map_branch", 1, true))
     ,obm_(new visualization_msgs::Marker())
     ,frontier_(new ExStc::subStructSimple("frontier",1,&Visualization::frontierCB, this))
     ,frontierMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/frontier", 1, true))
     ,fm_(new visualization_msgs::Marker())
-    ,useFro_(new ExStc::subStructSimple("useful_frontier",1,&Visualization::useFroCB, this))
+    // ,useFro_(new ExStc::subStructSimple("useful_frontier",1,&Visualization::useFroCB, this))
     ,useFroMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/useful_frontier", 1, true))
     ,ufm_(new visualization_msgs::Marker())
-    ,omFro_(new ExStc::subStructSimple("on_map_frontier",1,&Visualization::omFroCB, this))
+    // ,omFro_(new ExStc::subStructSimple("on_map_frontier",1,&Visualization::omFroCB, this))
     ,omFroMarker_(new ExStc::pubStruct<visualization_msgs::Marker>("visualization/on_map_frontier", 1, true))
     ,ofm_(new visualization_msgs::Marker())
     ,road_(new ExStc::subStructSimple("road",1,&Visualization::roadCB, this))
@@ -124,59 +125,86 @@ void Visualization::goalStatusCB(const actionlib_msgs::GoalStatusArrayConstPtr& 
     }
 }
 
-void Visualization::branchCB(const exploration_msgs::PointArrayConstPtr& msg){
-    bm_->points = msg->points;
-    bm_->header.frame_id = msg->header.frame_id;
-    bm_->header.stamp = ros::Time::now();
+// void Visualization::branchCB(const exploration_msgs::PointArrayConstPtr& msg){
+void Visualization::branchCB(const exploration_msgs::BranchArrayConstPtr& msg){
+    auto replace = [&msg](std::function<bool(uint8_t)> fn){
+        std::vector<geometry_msgs::Point> p;
+        p.reserve(msg->branches.size());
+        // for(auto&& b : msg->branches) p.emplace_back(b.point); 
+        for(auto&& b : msg->branches) if(fn(b.status)) p.emplace_back(b.point); 
+        return p;
+    };
+    // bm_->points = replace();
+    bm_->points = replace([](uint8_t status){return true;});
+    dbm_->points = replace([](uint8_t status){return status == exploration_msgs::Branch::NEWER_DUPLICATION;});
+    obm_->points = replace([](uint8_t status){return status == exploration_msgs::Branch::ON_MAP;});
+
+    // bm_->header.frame_id = msg->header.frame_id;
+    // bm_->header.stamp = ros::Time::now();
+    bm_->header.frame_id = dbm_->header.frame_id = obm_->header.frame_id = msg->header.frame_id;
+    bm_->header.stamp = dbm_->header.stamp = obm_->header.stamp = ros::Time::now();
 }
 
-void Visualization::dupBranchCB(const exploration_msgs::PointArrayConstPtr& msg){
-    dbm_->points = msg->points;
-    dbm_->header.frame_id = msg->header.frame_id;
-    dbm_->header.stamp = ros::Time::now();
-}
+// void Visualization::dupBranchCB(const exploration_msgs::PointArrayConstPtr& msg){
+//     dbm_->points = msg->points;
+//     dbm_->header.frame_id = msg->header.frame_id;
+//     dbm_->header.stamp = ros::Time::now();
+// }
 
-void Visualization::omBranchCB(const exploration_msgs::PointArrayConstPtr& msg){
-    obm_->points = msg->points;
-    obm_->header.frame_id = msg->header.frame_id;
-    obm_->header.stamp = ros::Time::now();
-}
+// void Visualization::omBranchCB(const exploration_msgs::PointArrayConstPtr& msg){
+//     obm_->points = msg->points;
+//     obm_->header.frame_id = msg->header.frame_id;
+//     obm_->header.stamp = ros::Time::now();
+// }
 
 void Visualization::frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg){
-    auto replace = [&msg]{
+    auto replace = [&msg](std::function<bool(uint8_t)> fn){
         std::vector<geometry_msgs::Point> p;
         p.reserve(msg->frontiers.size());
-        for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
+        // for(auto&& b : msg->branches) p.emplace_back(b.point); 
+        for(auto&& f : msg->frontiers) if(fn(f.status)) p.emplace_back(f.point); 
         return p;
     };
-    fm_->points = replace();
-    fm_->header.frame_id = msg->header.frame_id;
-    fm_->header.stamp = ros::Time::now();
+    // auto replace = [&msg]{
+    //     std::vector<geometry_msgs::Point> p;
+    //     p.reserve(msg->frontiers.size());
+    //     for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
+    //     return p;
+    // };
+    // fm_->points = replace();
+    // fm_->header.frame_id = msg->header.frame_id;
+    // fm_->header.stamp = ros::Time::now();
+
+    fm_->points = replace([](uint8_t status){return true;});
+    ofm_->points = replace([](uint8_t status){return status == exploration_msgs::Frontier::ON_MAP;});
+    ufm_->points = replace([](uint8_t status){return status == exploration_msgs::Frontier::NORMAL;});
+    fm_->header.frame_id = ofm_->header.frame_id = ufm_->header.frame_id = msg->header.frame_id;
+    fm_->header.stamp = ofm_->header.stamp = ufm_->header.stamp = ros::Time::now();
 }
 
-void Visualization::useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg){
-    auto replace = [&msg]{
-        std::vector<geometry_msgs::Point> p;
-        p.reserve(msg->frontiers.size());
-        for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
-        return p;
-    };
-    ufm_->points = replace();
-    ufm_->header.frame_id = msg->header.frame_id;
-    ufm_->header.stamp = ros::Time::now();
-}
+// void Visualization::useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg){
+//     auto replace = [&msg]{
+//         std::vector<geometry_msgs::Point> p;
+//         p.reserve(msg->frontiers.size());
+//         for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
+//         return p;
+//     };
+//     ufm_->points = replace();
+//     ufm_->header.frame_id = msg->header.frame_id;
+//     ufm_->header.stamp = ros::Time::now();
+// }
 
-void Visualization::omFroCB(const exploration_msgs::FrontierArrayConstPtr& msg){
-    auto replace = [&msg]{
-        std::vector<geometry_msgs::Point> p;
-        p.reserve(msg->frontiers.size());
-        for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
-        return p;
-    };
-    ofm_->points = replace();
-    ofm_->header.frame_id = msg->header.frame_id;
-    ofm_->header.stamp = ros::Time::now();
-}
+// void Visualization::omFroCB(const exploration_msgs::FrontierArrayConstPtr& msg){
+//     auto replace = [&msg]{
+//         std::vector<geometry_msgs::Point> p;
+//         p.reserve(msg->frontiers.size());
+//         for(auto&& f : msg->frontiers) p.emplace_back(f.point); 
+//         return p;
+//     };
+//     ofm_->points = replace();
+//     ofm_->header.frame_id = msg->header.frame_id;
+//     ofm_->header.stamp = ros::Time::now();
+// }
 
 void Visualization::roadCB(const geometry_msgs::PointStampedConstPtr& msg){
     std::lock_guard<std::mutex> lock(*rmMutex_);

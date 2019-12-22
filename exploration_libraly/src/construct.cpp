@@ -1,4 +1,5 @@
 #include <exploration_libraly/construct.h>
+#include <exploration_msgs/Branch.h>
 #include <exploration_msgs/Frontier.h>
 #include <exploration_msgs/RobotInfo.h>
 #include <geometry_msgs/Point.h>
@@ -72,6 +73,14 @@ namespace ExpLib{
             msg.area = a;
             msg.variance = v;
             msg.covariance = c;
+            msg.status = exploration_msgs::Frontier::NORMAL;
+            return msg;
+        }
+
+         exploration_msgs::Branch msgBranch(const geometry_msgs::Point& p){
+            exploration_msgs::Branch msg;
+            msg.point = p;
+            msg.status = exploration_msgs::Branch::NORMAL;
             return msg;
         }
 

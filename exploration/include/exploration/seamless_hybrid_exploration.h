@@ -19,6 +19,9 @@ namespace ExpLib{
 }
 namespace exploration_msgs{
     template <class ContainerAllocator>
+    struct BranchArray_;
+    typedef ::exploration_msgs::BranchArray_<std::allocator<void>> BranchArray;
+    template <class ContainerAllocator>
     struct FrontierArray_;
     typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
     template <class ContainerAllocator>
@@ -58,15 +61,15 @@ namespace ExStc = ExpLib::Struct;
 class SeamlessHybridExploration :public SensorBasedExploration{
     private:
         // dynamic parameters
-        bool ON_MAP_FRONTIER_DETECTION;
-        double OMF_MAP_WINDOW_X;
-        double OMF_MAP_WINDOW_Y;
-        double ON_MAP_FRONTIER_RATE;
+        // bool ON_MAP_FRONTIER_DETECTION;
+        // double OMF_MAP_WINDOW_X;
+        // double OMF_MAP_WINDOW_Y;
+        // double ON_MAP_FRONTIER_RATE;
         double DISTANCE_WEIGHT;
         double DIRECTION_WEIGHT;
-        double VARIANCE_THRESHOLD;
-        double VARIANCE_MIN_THRESHOLD;
-        double COVARIANCE_THRESHOLD;
+        // double VARIANCE_THRESHOLD;
+        // double VARIANCE_MIN_THRESHOLD;
+        // double COVARIANCE_THRESHOLD;
         double OTHER_ROBOT_WEIGHT;
         double DUPLICATE_COEFF;
         double ON_MAP_COEFF;
@@ -83,11 +86,12 @@ class SeamlessHybridExploration :public SensorBasedExploration{
         // variables
         std::unique_ptr<ExStc::subStruct<exploration_msgs::RobotInfoArray>> robotArray_;
         std::unique_ptr<ExStc::subStruct<exploration_msgs::FrontierArray>> frontier_;
-        std::unique_ptr<ExStc::pubStruct<exploration_msgs::FrontierArray>> useFro_;
-        std::unique_ptr<ExStc::pubStruct<exploration_msgs::FrontierArray>> onMapFro_;
+        // std::unique_ptr<ExStc::pubStruct<exploration_msgs::FrontierArray>> useFro_;
+        // std::unique_ptr<ExStc::pubStruct<exploration_msgs::FrontierArray>> onMapFro_;
         std::unique_ptr<ExpLib::PathPlanning<navfn::NavfnROS>> pp_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>> drs_;
-        std::unique_ptr<std::vector<ExStc::listStruct>> ls_;
+        // std::unique_ptr<std::vector<ExStc::listStruct>> ls_;
+        std::unique_ptr<exploration_msgs::BranchArray> ba_;
         std::unique_ptr<exploration_msgs::FrontierArray> fa_;
         std::unique_ptr<exploration_msgs::RobotInfoArray> ria_;
         std::vector<preCalcResult> ownPreCalc_;
@@ -97,9 +101,12 @@ class SeamlessHybridExploration :public SensorBasedExploration{
 
         // functions
         bool decideGoal(geometry_msgs::PointStamped& goal);
-        bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
-        bool filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
-        void preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
+        // bool decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose);
+        bool decideGoal(geometry_msgs::PointStamped& goal, const exploration_msgs::BranchArray& ls, const geometry_msgs::PoseStamped& pose);
+        // bool filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
+        bool filter(exploration_msgs::BranchArray& ba, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria);
+        // void preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
+        void preCalc(const exploration_msgs::BranchArray& ba, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose);
         void loadParams(void);
         void dynamicParamsCB(exploration::seamless_hybrid_exploration_parameter_reconfigureConfig &cfg, uint32_t level);
         void outputParams(void);

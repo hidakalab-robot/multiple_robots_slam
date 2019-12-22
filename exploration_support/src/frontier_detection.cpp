@@ -97,6 +97,11 @@ void FrontierDetection::mapCB(const nav_msgs::OccupancyGridConstPtr& msg){
         frontiers.emplace_back(ExCos::msgFrontier(ExUtl::mapIndexToCoordinate(cluster.index[i].x(),cluster.index[i].y(),map.info),cluster.areas[i],ExCos::msgVector(cluster.variances[i].x(),cluster.variances[i].y()),cluster.covariance[i]));
     }
 
+    //onmap
+    if(ON_MAP_FRONTIER_DETECTION) onMapFrontierDetection(map, frontiers);
+    //useful
+    usefulFrontierDetection(frontiers);
+
     ROS_INFO_STREAM("Frontier Found : " << frontiers.size());
 
     publishFrontier(frontiers, msg->header.frame_id);
@@ -248,6 +253,42 @@ void FrontierDetection::publishHorizon(const clusterStruct& cs, const std::strin
 	ROS_INFO_STREAM("Publish horizon");
 }
 
+void FrontierDetection::onMapFrontierDetection(const FrontierDetection::mapStruct& map, std::vector<exploration_msgs::Frontier>& frontiers){
+        // std::vector<std::vector<int8_t>> map2d = ExUtl::mapArray1dTo2d(map_->data.data,map_->data.info);
+
+        // auto faRemove1 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[&,this](exploration_msgs::Frontier& f){
+        for(auto&& f : frontiers){
+            ExStc::mapSearchWindow msw(f.point,map.info,OMF_MAP_WINDOW_X,OMF_MAP_WINDOW_Y);
+            int c = 0;
+            for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+                for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
+                    if(map.source[x][y] >= 0) ++c;
+                }
+            }
+            if((double)c/(msw.width*msw.height)>ON_MAP_FRONTIER_RATE) f.status = exploration_msgs::Frontier::ON_MAP;
+        }
+            
+            
+            // if((double)c/(msw.width*msw.height)>ON_MAP_FRONTIER_RATE){
+            //     omf.frontiers.emplace_back(f);
+            //     return true;
+            // }
+            // else return false;
+        // });
+        // fa.frontiers.erase(std::move(faRemove1),fa.frontiers.end());
+        // omf.header.stamp = ros::Time::now();
+        // onMapFro_->pub.publish(omf);
+        // ROS_INFO_STREAM("after frontiers size 1 : " << fa.frontiers.size());
+}
+
+void FrontierDetection::usefulFrontierDetection(std::vector<exploration_msgs::Frontier>& frontiers){
+    for(auto&& f : frontiers){
+        if(f.status != exploration_msgs::Frontier::NORMAL) continue;
+        if(std::max(f.variance.x,f.variance.y) < VARIANCE_MIN_THRESHOLD || (std::max(f.variance.x,f.variance.y) < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD))
+            f.status = exploration_msgs::Frontier::NOT_USEFUL;
+    }
+}
+
 void FrontierDetection::publishFrontier(const std::vector<exploration_msgs::Frontier>& frontiers, const std::string& frameId){
     exploration_msgs::FrontierArray msg;
     msg.frontiers = frontiers;
@@ -264,6 +305,14 @@ void FrontierDetection::loadParams(void){
     nh.param<int>("min_cluster_size", MIN_CLUSTER_SIZE, 30);
     nh.param<int>("max_cluster_size", MAX_CLUSTER_SIZE, 15000);
     nh.param<float>("filter_square_diameter", FILTER_SQUARE_DIAMETER, 0.75);
+    nh.param<bool>("on_map_frontier_detection", ON_MAP_FRONTIER_DETECTION, true);
+    nh.param<double>("omf_map_window_x", OMF_MAP_WINDOW_X, 1.0);
+    nh.param<double>("omf_map_window_y", OMF_MAP_WINDOW_Y, 1.0);
+    nh.param<double>("on_map_frontier_rate", ON_MAP_FRONTIER_RATE, 0.5);
+    nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
+    nh.param<double>("variance_min_threshold", VARIANCE_MIN_THRESHOLD, 0.1);
+    nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
+   
     // static parameters
     nh.param<std::string>("frontier_parameter_file_path",FRONTIER_PARAMETER_FILE_PATH,"frontier_last_parameters.yaml");
     nh.param<bool>("output_frontier_parameters",OUTPUT_FRONTIER_PARAMETERS,true);
@@ -274,6 +323,13 @@ void FrontierDetection::dynamicParamsCB(exploration_support::frontier_detection_
     MIN_CLUSTER_SIZE = cfg.min_cluster_size;
     MAX_CLUSTER_SIZE = cfg.max_cluster_size;
     FILTER_SQUARE_DIAMETER = cfg.filter_square_diameter;
+    ON_MAP_FRONTIER_DETECTION = cfg.on_map_frontier_detection;
+    OMF_MAP_WINDOW_X = cfg.omf_map_window_x;
+    OMF_MAP_WINDOW_Y = cfg.omf_map_window_y;
+    ON_MAP_FRONTIER_RATE = cfg.on_map_frontier_rate;
+    VARIANCE_THRESHOLD = cfg.variance_threshold;
+    VARIANCE_MIN_THRESHOLD = cfg.variance_min_threshold;
+    COVARIANCE_THRESHOLD = cfg.covariance_threshold;
 }
 
 void FrontierDetection::outputParams(void){
@@ -288,6 +344,13 @@ void FrontierDetection::outputParams(void){
 
     ofs << "cluster_tolerance: " << CLUSTER_TOLERANCE << std::endl;
     ofs << "min_cluster_size: " << MIN_CLUSTER_SIZE << std::endl;
-    ofs << "max_cluster_size: " << MAX_CLUSTER_SIZE << std::endl;
+    ofs << "max_cluster_size: " << MAX_CLUSTER_SIZE << std::endl;   
     ofs << "filter_square_diameter: " << FILTER_SQUARE_DIAMETER << std::endl;
+    ofs << "on_map_frontier_detection: " << (ON_MAP_FRONTIER_DETECTION ? "true" : "false") << std::endl;
+    ofs << "omf_map_window_x: " << OMF_MAP_WINDOW_X << std::endl;
+    ofs << "omf_map_window_y: " << OMF_MAP_WINDOW_Y << std::endl;
+    ofs << "on_map_frontier_rate: " << ON_MAP_FRONTIER_RATE << std::endl;
+    ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
+    ofs << "variance_min_threshold: " << VARIANCE_MIN_THRESHOLD << std::endl;
+    ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
  }

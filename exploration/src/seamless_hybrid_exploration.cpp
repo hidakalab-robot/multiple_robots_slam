@@ -5,6 +5,7 @@
 #include <exploration_libraly/enum.h>
 #include <exploration_libraly/path_planning.h>
 #include <exploration_libraly/utility.h>
+#include <exploration_msgs/BranchArray.h>
 #include <exploration_msgs/FrontierArray.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <navfn/navfn_ros.h>
@@ -33,7 +34,8 @@ struct SeamlessHybridExploration::preCalcResult{
         value(const double d, const double a);
     };
     geometry_msgs::Point point;
-    ExEnm::DuplicationStatus branchStatus;
+    // ExEnm::DuplicationStatus branchStatus;
+    uint8_t branchStatus;
     std::vector<value> values;
     preCalcResult();
 };
@@ -44,11 +46,12 @@ SeamlessHybridExploration::preCalcResult::value::value(const double d, const dou
 SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_(new ExStc::subStruct<exploration_msgs::RobotInfoArray>("robot_array", 1))
     ,frontier_(new ExStc::subStruct<exploration_msgs::FrontierArray>("frontier", 1))
-    ,useFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("useful_frontier", 1, true))
-    ,onMapFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("on_map_frontier", 1, true))
+    // ,useFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("useful_frontier", 1, true))
+    // ,onMapFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("on_map_frontier", 1, true))
     ,pp_(new ExpLib::PathPlanning<navfn::NavfnROS>("seamless_costmap","seamless_planner"))
     ,drs_(new dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/seamless_hybrid_exploration")))
-    ,ls_(new std::vector<ExStc::listStruct>())
+    // ,ls_(new std::vector<ExStc::listStruct>())
+    ,ba_(new exploration_msgs::BranchArray())
     ,fa_(new exploration_msgs::FrontierArray())
     ,ria_(new exploration_msgs::RobotInfoArray())
     ,ps_(new geometry_msgs::PoseStamped())
@@ -62,7 +65,8 @@ SeamlessHybridExploration::~SeamlessHybridExploration(){
     if(OUTPUT_SHE_PARAMETERS) outputParams();
 }
 
-bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+// bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const exploration_msgs::BranchArray& ba, const geometry_msgs::PoseStamped& pose){
     if(robotArray_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read robot_array or don't find robot_array"); 
         return false;
@@ -73,18 +77,21 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, co
     }
 
     *ps_ = pose;
-    *ls_ = ls;
+    // *ls_ = ls;
+    *ba_ = ba;
     *fa_ = frontier_->data;
     *ria_ = robotArray_->data;
 
-    if(!filter(*ls_, *fa_, *ria_)) return false;
+    // if(!filter(*ls_, *fa_, *ria_)) return false;
+    if(!filter(*ba_, *fa_, *ria_)) return false;
 
     return decideGoal(goal);
 }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     // 事前計算
-    preCalc(*ls_, *fa_, *ria_, *ps_);
+    // preCalc(*ls_, *fa_, *ria_, *ps_);
+    preCalc(*ba_, *fa_, *ria_, *ps_);
 
     // 評価計算
     auto evaluation = [this](const double d, const double a){return DISTANCE_WEIGHT * d / mVal_->distance + DIRECTION_WEIGHT * a / mVal_->angle;};
@@ -100,8 +107,10 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
             e *= evaluation(ownPreCalc_[m].values[i].distance, ownPreCalc_[m].values[i].angle) + (OTHER_ROBOT_WEIGHT/subE);
         }
         // ROS_DEBUG_STREAM("position : (" << mainRobotInfo[m].robot.coordinate.x << "," << mainRobotInfo[m].robot.coordinate.y << "), sum : " << e);
-        if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::OLDER) e *= DUPLICATE_COEFF;
-        else if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::ON_MAP) e *= ON_MAP_COEFF;
+        // if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::OLDER) e *= DUPLICATE_COEFF;
+        // else if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::ON_MAP) e *= ON_MAP_COEFF;
+        if(ownPreCalc_[m].branchStatus==exploration_msgs::Branch::OLDER_DUPLICATION) e *= DUPLICATE_COEFF;
+        else if(ownPreCalc_[m].branchStatus==exploration_msgs::Branch::ON_MAP) e *= ON_MAP_COEFF;
         ROS_DEBUG_STREAM("position : (" << ownPreCalc_[m].point.x << "," << ownPreCalc_[m].point.y << "), sum : " << e);
         if(e < minE){
             minE = std::move(e);
@@ -117,57 +126,73 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     return true;
 }
 
-bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
+// bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
+bool SeamlessHybridExploration::filter(exploration_msgs::BranchArray& ba, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
     //分岐領域のフィルタ
-    ROS_INFO_STREAM("before branches size : " << ls.size());
-    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExStc::listStruct& l){return l.duplication == ExEnm::DuplicationStatus::NEWER;});
-	ls.erase(std::move(lsRemove),ls.end());
-    ROS_INFO_STREAM("after branches size : " << ls.size());
+    // ROS_INFO_STREAM("before branches size : " << ls.size());
+    // auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExStc::listStruct& l){return l.duplication == ExEnm::DuplicationStatus::NEWER;});
+	// ls.erase(std::move(lsRemove),ls.end());
+    // ROS_INFO_STREAM("after branches size : " << ls.size());
 
-    if(ls.size()==0) return false;
+    ROS_INFO_STREAM("before branches size : " << ba.branches.size());
+    auto baRemove = std::remove_if(ba.branches.begin(),ba.branches.end(),[this](exploration_msgs::Branch& b){return b.status == exploration_msgs::Branch::NEWER_DUPLICATION;});
+	ba.branches.erase(std::move(baRemove),ba.branches.end());
+    ROS_INFO_STREAM("after branches size : " << ba.branches.size());
+
+    // if(ls.size()==0) return false;
+    if(ba.branches.size()==0) return false;
 
     //フロンティア領域のフィルタ
 
     ROS_INFO_STREAM("before frontiers size : " << fa.frontiers.size());
     // 周囲の地図が出来ているフロンティアの削除
-    exploration_msgs::FrontierArray omf;
-    omf.header.frame_id = fa.header.frame_id;
-    if(ON_MAP_FRONTIER_DETECTION && !map_->q.callOne(ros::WallDuration(1))){
-        omf.frontiers.reserve(fa.frontiers.size());
-        std::vector<std::vector<int8_t>> map2d = ExUtl::mapArray1dTo2d(map_->data.data,map_->data.info);
-        auto faRemove1 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[&,this](exploration_msgs::Frontier& f){
-            ExStc::mapSearchWindow msw(f.point,map_->data.info,OMF_MAP_WINDOW_X,OMF_MAP_WINDOW_Y);
-            int c = 0;
-            for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
-                for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
-                    if(map2d[x][y] >= 0) ++c;
-                }
-            }
-            if((double)c/(msw.width*msw.height)>ON_MAP_FRONTIER_RATE){
-                omf.frontiers.emplace_back(f);
-                return true;
-            }
-            else return false;
-        });
-        fa.frontiers.erase(std::move(faRemove1),fa.frontiers.end());
-        omf.header.stamp = ros::Time::now();
-        onMapFro_->pub.publish(omf);
-        ROS_INFO_STREAM("after frontiers size 1 : " << fa.frontiers.size());
-    }
-    else{
-        omf.header.stamp = ros::Time::now();
-        onMapFro_->pub.publish(omf);
-    }
+    // exploration_msgs::FrontierArray omf;
+    // omf.header.frame_id = fa.header.frame_id;
+    // if(ON_MAP_FRONTIER_DETECTION && !map_->q.callOne(ros::WallDuration(1))){
+    //     omf.frontiers.reserve(fa.frontiers.size());
+    //     std::vector<std::vector<int8_t>> map2d = ExUtl::mapArray1dTo2d(map_->data.data,map_->data.info);
+    //     auto faRemove1 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[&,this](exploration_msgs::Frontier& f){
+    //         ExStc::mapSearchWindow msw(f.point,map_->data.info,OMF_MAP_WINDOW_X,OMF_MAP_WINDOW_Y);
+    //         int c = 0;
+    //         for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
+    //             for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
+    //                 if(map2d[x][y] >= 0) ++c;
+    //             }
+    //         }
+    //         if((double)c/(msw.width*msw.height)>ON_MAP_FRONTIER_RATE){
+    //             omf.frontiers.emplace_back(f);
+    //             return true;
+    //         }
+    //         else return false;
+    //     });
+    //     fa.frontiers.erase(std::move(faRemove1),fa.frontiers.end());
+    //     omf.header.stamp = ros::Time::now();
+    //     onMapFro_->pub.publish(omf);
+    //     ROS_INFO_STREAM("after frontiers size 1 : " << fa.frontiers.size());
+    // }
+    // else{
+    //     omf.header.stamp = ros::Time::now();
+    //     onMapFro_->pub.publish(omf);
+    // }
+
+    fa.frontiers.erase(std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[](exploration_msgs::Frontier& f){
+        return f.status == exploration_msgs::Frontier::ON_MAP;
+    }),fa.frontiers.end());
+    ROS_INFO_STREAM("after frontiers size 1 : " << fa.frontiers.size());
 
     // 分散が小さいかつ共分散も小さいものを削除
     // auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return ((f.variance.x>f.variance.y ? f.variance.x : f.variance.y) < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
-    auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){
-        return std::max(f.variance.x,f.variance.y) < VARIANCE_MIN_THRESHOLD || (std::max(f.variance.x,f.variance.y) < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD);
-    });
-	fa.frontiers.erase(std::move(faRemove2),fa.frontiers.end());
+    // auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){
+    //     return std::max(f.variance.x,f.variance.y) < VARIANCE_MIN_THRESHOLD || (std::max(f.variance.x,f.variance.y) < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD);
+    // });
+	// fa.frontiers.erase(std::move(faRemove2),fa.frontiers.end());
+    fa.frontiers.erase(std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[](exploration_msgs::Frontier& f){
+        return f.status == exploration_msgs::Frontier::NOT_USEFUL;
+    }),fa.frontiers.end());
+
     ROS_INFO_STREAM("after frontiers size 2 : " << fa.frontiers.size());
 
-    useFro_->pub.publish(fa);
+    // useFro_->pub.publish(fa);
     if(fa.frontiers.size()==0) return false;
 
     //ロボットリストのフィルタ
@@ -180,12 +205,14 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
     return true;
 }
 
-void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
+// void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
+void SeamlessHybridExploration::preCalc(const exploration_msgs::BranchArray& ba, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
     ownPreCalc_ = std::vector<preCalcResult>();
     otherPreCalc_ = std::vector<preCalcResult>();
     *mVal_ = maxValue();
 
-    auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1, ExEnm::DuplicationStatus branchStatus){
+    // auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1, ExEnm::DuplicationStatus branchStatus){
+    auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1, uint8_t branchStatus){
         SeamlessHybridExploration::preCalcResult pcr;
         pcr.point = p;
         pcr.branchStatus = branchStatus;
@@ -210,28 +237,33 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
         return pcr;
     };
 
-    ownPreCalc_.reserve(ls.size()+1);
+    // ownPreCalc_.reserve(ls.size()+1);
+    ownPreCalc_.reserve(ba.branches.size()+1);
     otherPreCalc_.reserve(ria.info.size());
 
     // 分岐領域の計算
     double forward = 0;
-    for(const auto& l : ls){
+    // for(const auto& l : ls){
+    for(const auto& b : ba.branches){
         double distance;
         Eigen::Vector2d v1;
-        if(!pp_->getDistanceAndVec(pose,ExCov::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
-            v1 = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y);
+        if(!pp_->getDistanceAndVec(pose,ExCov::pointToPoseStamped(b.point,pose.header.frame_id),distance,v1)){
+            v1 = Eigen::Vector2d(b.point.x - pose.pose.position.x, b.point.y - pose.pose.position.y);
             distance = v1.lpNorm<1>();
             v1.normalize();
         }
-        ownPreCalc_.emplace_back(calc(l.point,v1,l.duplication));
+        ownPreCalc_.emplace_back(calc(b.point,v1,b.status));
         forward += distance;
     }
-    forward /= ls.size();
+    // forward /= ls.size();
+    forward /= ba.branches.size();
     // 直進時の計算
     Eigen::Vector2d fwdV1 = ExCov::qToVector2d(pose.pose.orientation); 
-    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1,ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    // ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1,ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1,exploration_msgs::Branch::NORMAL));
     // 他のロボットに関する計算
-    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    // for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),exploration_msgs::Branch::NORMAL));
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){
@@ -247,14 +279,18 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
 
     geometry_msgs::PoseStamped ps;
-    std::vector<ExStc::listStruct> ls;
+    // std::vector<ExStc::listStruct> ls;
+    exploration_msgs::BranchArray ba;
     exploration_msgs::FrontierArray fa;
     exploration_msgs::RobotInfoArray ria;
 
     // ls 格納
-    ls.resize(b.size());
-    for(int i=0,ie=b.size();i!=ie;++i) ls[i].point = b[i];
-    *ls_ = ls;
+    // ls.resize(b.size());
+    // for(int i=0,ie=b.size();i!=ie;++i) ls[i].point = b[i];
+    // *ls_ = ls;
+    ba.branches.resize(b.size());
+    for(int i=0,ie=b.size();i!=ie;++i) ba.branches[i].point = b[i];
+    *ba_ = ba;
 
     // fa 格納
     fa.frontiers.resize(f.size());
@@ -288,23 +324,23 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
     nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
-    nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
-    nh.param<double>("omb_map_window_x", OMB_MAP_WINDOW_X, 1.0);
-    nh.param<double>("omb_map_window_y", OMB_MAP_WINDOW_Y, 1.0);
-    nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
-    nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
-    nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
-    nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
-    nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
-    nh.param<bool>("on_map_frontier_detection", ON_MAP_FRONTIER_DETECTION, true);
-    nh.param<double>("omf_map_window_x", OMF_MAP_WINDOW_X, 1.0);
-    nh.param<double>("omf_map_window_y", OMF_MAP_WINDOW_Y, 1.0);
-    nh.param<double>("on_map_frontier_rate", ON_MAP_FRONTIER_RATE, 0.5);
+    // nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
+    // nh.param<double>("omb_map_window_x", OMB_MAP_WINDOW_X, 1.0);
+    // nh.param<double>("omb_map_window_y", OMB_MAP_WINDOW_Y, 1.0);
+    // nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
+    // nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
+    // nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
+    // nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
+    // nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
+    // nh.param<bool>("on_map_frontier_detection", ON_MAP_FRONTIER_DETECTION, true);
+    // nh.param<double>("omf_map_window_x", OMF_MAP_WINDOW_X, 1.0);
+    // nh.param<double>("omf_map_window_y", OMF_MAP_WINDOW_Y, 1.0);
+    // nh.param<double>("on_map_frontier_rate", ON_MAP_FRONTIER_RATE, 0.5);
     nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
     nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
-    nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
-    nh.param<double>("variance_min_threshold", VARIANCE_MIN_THRESHOLD, 0.1);
-    nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
+    // nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
+    // nh.param<double>("variance_min_threshold", VARIANCE_MIN_THRESHOLD, 0.1);
+    // nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
     nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
     nh.param<double>("duplicate_coeff", DUPLICATE_COEFF, 1.2);
     nh.param<double>("on_map_coeff", ON_MAP_COEFF, 1.1);
@@ -319,23 +355,23 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
     CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
-    ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
-    OMB_MAP_WINDOW_X = cfg.omb_map_window_x;
-    OMB_MAP_WINDOW_Y = cfg.omb_map_window_y;
-    ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
-    DUPLICATE_DETECTION = cfg.duplicate_detection;
-    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
-    LOG_CURRENT_TIME = cfg.log_current_time;
-    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
-    ON_MAP_FRONTIER_DETECTION = cfg.on_map_frontier_detection;
-    OMF_MAP_WINDOW_X = cfg.omf_map_window_x;
-    OMF_MAP_WINDOW_Y = cfg.omf_map_window_y;
-    ON_MAP_FRONTIER_RATE = cfg.on_map_frontier_rate;
+    // ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
+    // OMB_MAP_WINDOW_X = cfg.omb_map_window_x;
+    // OMB_MAP_WINDOW_Y = cfg.omb_map_window_y;
+    // ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
+    // DUPLICATE_DETECTION = cfg.duplicate_detection;
+    // DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
+    // LOG_CURRENT_TIME = cfg.log_current_time;
+    // NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
+    // ON_MAP_FRONTIER_DETECTION = cfg.on_map_frontier_detection;
+    // OMF_MAP_WINDOW_X = cfg.omf_map_window_x;
+    // OMF_MAP_WINDOW_Y = cfg.omf_map_window_y;
+    // ON_MAP_FRONTIER_RATE = cfg.on_map_frontier_rate;
     DISTANCE_WEIGHT = cfg.distance_weight;
     DIRECTION_WEIGHT = cfg.direction_weight;
-    VARIANCE_THRESHOLD = cfg.variance_threshold;
-    VARIANCE_MIN_THRESHOLD = cfg.variance_min_threshold;
-    COVARIANCE_THRESHOLD = cfg.covariance_threshold;
+    // VARIANCE_THRESHOLD = cfg.variance_threshold;
+    // VARIANCE_MIN_THRESHOLD = cfg.variance_min_threshold;
+    // COVARIANCE_THRESHOLD = cfg.covariance_threshold;
     OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
     DUPLICATE_COEFF = cfg.duplicate_coeff;
     ON_MAP_COEFF = cfg.on_map_coeff;
@@ -355,23 +391,23 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
     ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
-    ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
-    ofs << "omb_map_window_x: " << OMB_MAP_WINDOW_X << std::endl;
-    ofs << "omb_map_window_y: " << OMB_MAP_WINDOW_Y << std::endl;
-    ofs << "on_map_branch_rate: " << ON_MAP_BRANCH_RATE << std::endl;
-    ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
-    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
-    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
-    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
-    ofs << "on_map_frontier_detection: " << (ON_MAP_FRONTIER_DETECTION ? "true" : "false") << std::endl;
-    ofs << "omf_map_window_x: " << OMF_MAP_WINDOW_X << std::endl;
-    ofs << "omf_map_window_y: " << OMF_MAP_WINDOW_Y << std::endl;
-    ofs << "on_map_frontier_rate: " << ON_MAP_FRONTIER_RATE << std::endl;
+    // ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
+    // ofs << "omb_map_window_x: " << OMB_MAP_WINDOW_X << std::endl;
+    // ofs << "omb_map_window_y: " << OMB_MAP_WINDOW_Y << std::endl;
+    // ofs << "on_map_branch_rate: " << ON_MAP_BRANCH_RATE << std::endl;
+    // ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
+    // ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
+    // ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
+    // ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
+    // ofs << "on_map_frontier_detection: " << (ON_MAP_FRONTIER_DETECTION ? "true" : "false") << std::endl;
+    // ofs << "omf_map_window_x: " << OMF_MAP_WINDOW_X << std::endl;
+    // ofs << "omf_map_window_y: " << OMF_MAP_WINDOW_Y << std::endl;
+    // ofs << "on_map_frontier_rate: " << ON_MAP_FRONTIER_RATE << std::endl;
     ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
     ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
-    ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
-    ofs << "variance_min_threshold: " << VARIANCE_MIN_THRESHOLD << std::endl;
-    ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
+    // ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
+    // ofs << "variance_min_threshold: " << VARIANCE_MIN_THRESHOLD << std::endl;
+    // ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
     ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
     ofs << "duplicate_coeff: " << DUPLICATE_COEFF << std::endl;
     ofs << "on_map_coeff: " << ON_MAP_COEFF << std::endl;

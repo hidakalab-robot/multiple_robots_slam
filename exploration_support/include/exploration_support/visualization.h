@@ -23,6 +23,10 @@ namespace exploration_msgs{
     typedef ::exploration_msgs::AvoidanceStatus_<std::allocator<void>> AvoidanceStatus;
     typedef boost::shared_ptr< ::exploration_msgs::AvoidanceStatus const> AvoidanceStatusConstPtr;
     template <class ContainerAllocator>
+    struct BranchArray_;
+    typedef ::exploration_msgs::BranchArray_<std::allocator<void>> BranchArray;
+    typedef boost::shared_ptr< ::exploration_msgs::BranchArray const> BranchArrayConstPtr;
+    template <class ContainerAllocator>
     struct FrontierArray_;
     typedef ::exploration_msgs::FrontierArray_<std::allocator<void>> FrontierArray;
     typedef boost::shared_ptr< ::exploration_msgs::FrontierArray const> FrontierArrayConstPtr;
@@ -105,12 +109,12 @@ class Visualization{
         std::unique_ptr<visualization_msgs::Marker> bm_;
 
         // duplicated branch
-        std::unique_ptr<ExStc::subStructSimple> dupBranch_;
+        // std::unique_ptr<ExStc::subStructSimple> dupBranch_;
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> dupBranchMarker_;
         std::unique_ptr<visualization_msgs::Marker> dbm_;
 
         // on map branch
-        std::unique_ptr<ExStc::subStructSimple> omBranch_;
+        // std::unique_ptr<ExStc::subStructSimple> omBranch_;
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> omBranchMarker_;
         std::unique_ptr<visualization_msgs::Marker> obm_;
 
@@ -120,12 +124,12 @@ class Visualization{
         std::unique_ptr<visualization_msgs::Marker> fm_;
 
         // useful frontier
-        std::unique_ptr<ExStc::subStructSimple> useFro_;
+        // std::unique_ptr<ExStc::subStructSimple> useFro_;
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> useFroMarker_;
         std::unique_ptr<visualization_msgs::Marker> ufm_;
 
         // useful frontier
-        std::unique_ptr<ExStc::subStructSimple> omFro_;
+        // std::unique_ptr<ExStc::subStructSimple> omFro_;
         std::unique_ptr<ExStc::pubStruct<visualization_msgs::Marker>> omFroMarker_;
         std::unique_ptr<visualization_msgs::Marker> ofm_;
 
@@ -150,12 +154,13 @@ class Visualization{
         void poseCB(const geometry_msgs::PoseStampedConstPtr& msg);
         void goalCB(const geometry_msgs::PointStampedConstPtr& msg);
         void goalStatusCB(const actionlib_msgs::GoalStatusArrayConstPtr& msg);
-        void branchCB(const exploration_msgs::PointArrayConstPtr& msg);
-        void dupBranchCB(const exploration_msgs::PointArrayConstPtr& msg);
-        void omBranchCB(const exploration_msgs::PointArrayConstPtr& msg);
+        // void branchCB(const exploration_msgs::PointArrayConstPtr& msg);
+        void branchCB(const exploration_msgs::BranchArrayConstPtr& msg);
+        // void dupBranchCB(const exploration_msgs::PointArrayConstPtr& msg);
+        // void omBranchCB(const exploration_msgs::PointArrayConstPtr& msg);
         void frontierCB(const exploration_msgs::FrontierArrayConstPtr& msg);
-        void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
-        void omFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
+        // void useFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
+        // void omFroCB(const exploration_msgs::FrontierArrayConstPtr& msg);
         void roadCB(const geometry_msgs::PointStampedConstPtr& msg);
         void avoStaCB(const exploration_msgs::AvoidanceStatusConstPtr& msg);
         void caGoalsCB(const exploration_msgs::PointArrayConstPtr& msg);

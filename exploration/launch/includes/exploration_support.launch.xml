@@ -10,6 +10,7 @@
     <arg name="orig_costmap" default="move_base/global_costmap/costmap"/>
     <arg name="fill_map" default="fill_map"/>
     <arg name="fill_costmap" default="fill_costmap"/>
+    <arg name="pose_log" default="pose_log"/>
 
     <!-- frontier_detection -->
     <node if="$(arg frontier_detection)" pkg="exploration_support" type="frontier_detection" name="frontier_detection">
@@ -25,6 +26,9 @@
 
     <!-- branch_detection -->
     <node if="$(arg branch_detection)" pkg="exploration_support" type="branch_detection" name="branch_detection">
+        <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+        <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
+        <remap from="pose_log" to="$(arg pose_log)"/>
         <rosparam file="$(find exploration_support)/param/branch_last_parameters.yaml" command="load" ns="branch"/>
         <param name="branch/branch_parameter_file_path" value="$(find exploration_support)/param/branch_last_parameters.yaml"/>
     </node>

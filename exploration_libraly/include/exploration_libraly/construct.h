@@ -10,6 +10,9 @@
 /// my packages
 namespace exploration_msgs{
     template <class ContainerAllocator>
+    struct Branch_;
+    typedef ::exploration_msgs::Branch_<std::allocator<void>> Branch;
+    template <class ContainerAllocator>
     struct Frontier_;
     typedef ::exploration_msgs::Frontier_<std::allocator<void>> Frontier;
     template <class ContainerAllocator>
@@ -74,6 +77,7 @@ namespace ExpLib{
         std_msgs::Int32 msgInt(int i);
         std_msgs::Int8 msgInt8(int i);
         exploration_msgs::Frontier msgFrontier(const geometry_msgs::Point& p, double a, const geometry_msgs::Vector3& v, double c);
+        exploration_msgs::Branch msgBranch(const geometry_msgs::Point& p);
         pcl::PointXYZRGB pclXYZRGB(float x,float y,float z,float r,float g,float b);
         Eigen::Matrix2d eigenMat2d(double a,double b,double c,double d);
         exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Pose& p);

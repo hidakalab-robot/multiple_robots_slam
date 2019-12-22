@@ -11,3 +11,11 @@ scan_filter_order: 3
 branch_filter: false
 branch_filter_order: 3
 branch_filter_tolerance: 0.2
+duplicate_detection: true
+duplicate_tolerance: 1.5
+log_current_time: 10
+newer_duplication_threshold: 200
+on_map_branch_detection: true
+omb_map_window_x: 1.5
+omb_map_window_y: 1.5
+on_map_branch_rate: 0.85
