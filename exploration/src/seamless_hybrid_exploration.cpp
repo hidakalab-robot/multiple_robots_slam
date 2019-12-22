@@ -160,7 +160,10 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
     }
 
     // 分散が小さいかつ共分散も小さいものを削除
-    auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return ((f.variance.x>f.variance.y ? f.variance.x : f.variance.y) < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
+    // auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return ((f.variance.x>f.variance.y ? f.variance.x : f.variance.y) < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
+    auto faRemove2 = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){
+        return std::max(f.variance.x,f.variance.y) < VARIANCE_MIN_THRESHOLD || (std::max(f.variance.x,f.variance.y) < VARIANCE_THRESHOLD && std::abs(f.covariance) < COVARIANCE_THRESHOLD);
+    });
 	fa.frontiers.erase(std::move(faRemove2),fa.frontiers.end());
     ROS_INFO_STREAM("after frontiers size 2 : " << fa.frontiers.size());
 
@@ -300,6 +303,7 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
     nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
     nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
+    nh.param<double>("variance_min_threshold", VARIANCE_MIN_THRESHOLD, 0.1);
     nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
     nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
     nh.param<double>("duplicate_coeff", DUPLICATE_COEFF, 1.2);
@@ -330,6 +334,7 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     DISTANCE_WEIGHT = cfg.distance_weight;
     DIRECTION_WEIGHT = cfg.direction_weight;
     VARIANCE_THRESHOLD = cfg.variance_threshold;
+    VARIANCE_MIN_THRESHOLD = cfg.variance_min_threshold;
     COVARIANCE_THRESHOLD = cfg.covariance_threshold;
     OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
     DUPLICATE_COEFF = cfg.duplicate_coeff;
@@ -365,6 +370,7 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
     ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
     ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
+    ofs << "variance_min_threshold: " << VARIANCE_MIN_THRESHOLD << std::endl;
     ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
     ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
     ofs << "duplicate_coeff: " << DUPLICATE_COEFF << std::endl;

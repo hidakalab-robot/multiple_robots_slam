@@ -65,6 +65,7 @@ class SeamlessHybridExploration :public SensorBasedExploration{
         double DISTANCE_WEIGHT;
         double DIRECTION_WEIGHT;
         double VARIANCE_THRESHOLD;
+        double VARIANCE_MIN_THRESHOLD;
         double COVARIANCE_THRESHOLD;
         double OTHER_ROBOT_WEIGHT;
         double DUPLICATE_COEFF;
