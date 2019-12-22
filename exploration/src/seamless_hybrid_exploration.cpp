@@ -7,6 +7,7 @@
 #include <exploration_libraly/utility.h>
 #include <exploration_msgs/BranchArray.h>
 #include <exploration_msgs/FrontierArray.h>
+#include <exploration_msgs/PointArray.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <navfn/navfn_ros.h>
 #include <dynamic_reconfigure/server.h>
@@ -264,6 +265,102 @@ void SeamlessHybridExploration::preCalc(const exploration_msgs::BranchArray& ba,
     // 他のロボットに関する計算
     // for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),ExEnm::DuplicationStatus::NOT_DUPLECATION));
     for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),exploration_msgs::Branch::NORMAL));
+}
+
+bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
+    // 面積の条件で切り替えた後の目標
+    if(frontier_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read frontier or don't find frontier"); 
+        return false;
+    }
+
+    if(pose_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read pose");
+        return false;
+    }
+
+    std::vector<exploration_msgs::Frontier> frontiers(frontier_->data.frontiers);
+
+    if(CANCELED_GOAL_EFFECT && !canceled_->q.callOne(ros::WallDuration(1)) && canceled_->data.points.size()!=0){
+		frontiers.erase(std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){
+            for(const auto& c : canceled_->data.points){
+                if(Eigen::Vector2d(f.point.x - c.x, f.point.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
+            }
+            return false;
+        }),frontiers.end());
+    }
+
+    if(frontiers.size() == 0){
+        ROS_ERROR_STREAM("Frontier array became empty");
+        return false;
+    }
+
+    std::vector<std::tuple<double,double,geometry_msgs::Point,uint8_t>> distAng; // distance, angle
+    std::vector<std::pair<geometry_msgs::Point,double>> valNormal;
+    std::vector<std::pair<geometry_msgs::Point,double>> valNotUseful;
+    std::vector<std::pair<geometry_msgs::Point,double>> valOnMap;
+
+    valNormal.reserve(frontiers.size());
+    valNotUseful.reserve(frontiers.size());
+    valOnMap.reserve(frontiers.size());
+
+    // frontierまでの距離と角度の最大
+    double distMax = -DBL_MAX;
+    double angMax = -DBL_MAX;
+
+    // usefulなやつの中で距離(path)の近いやつが良い -> frontierと距離と角度の重みのやつ
+    // 無いときはnot_usefulなやつで
+    Eigen::Vector2d v1 = ExCov::qToVector2d(pose_->data.pose.orientation);
+    for(const auto& f : frontiers){
+        // 目標地点での向きをpathの最後の方の移動で決めたい
+        Eigen::Vector2d v2;
+        double distance;
+        if(!pp_->getDistanceAndVec(pose_->data,ExCov::pointToPoseStamped(f.point,frontier_->data.header.frame_id),distance,v2)){
+            v2 = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).normalized();
+            distance = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).norm();       
+        }
+        double angle = std::abs(acos(v1.dot(v2)));
+        distAng.emplace_back(std::make_tuple(distance, angle ,f.point, f.status));
+        if(angle > angMax) angMax = std::move(angle);
+        if(distance > distMax) distMax = std::move(distance);
+    }
+
+    auto evaluation = [this](double d, double dMax, double a, double aMax){return DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax;};
+
+    for(const auto& da : distAng){
+        switch (std::get<3>(da)){
+        case exploration_msgs::Frontier::NORMAL:
+            valNormal.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax)));
+            break;
+        case exploration_msgs::Frontier::NOT_USEFUL:
+            valNotUseful.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax)));
+            break;
+        default:
+            valOnMap.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax)));
+            break;
+        }
+    }
+
+    if(!valNormal.empty()){
+        std::sort(valNormal.begin(),valNormal.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second > r.second;});
+        goal.point = valNormal[0].first;
+    }
+    else if(!valNotUseful.empty()){
+        std::sort(valNotUseful.begin(),valNotUseful.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second > r.second;});
+        goal.point = valNotUseful[0].first;
+    }
+    else if(!valOnMap.empty()){
+        std::sort(valOnMap.begin(),valOnMap.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second > r.second;});
+        goal.point = valOnMap[0].first;
+    }
+    else return false;
+
+    goal.header.frame_id = frontier_->data.header.frame_id;
+    goal.header.stamp = ros::Time::now();
+    goal_->pub.publish(goal);
+
+
+    return true;
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){

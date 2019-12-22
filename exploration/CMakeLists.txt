@@ -277,6 +277,6 @@ add_executable(seamless_hybrid_exploration_actively_frontier src/seamless_hybrid
 target_link_libraries(seamless_hybrid_exploration_actively_frontier
  ${catkin_LIBRARIES}
  she
- fbe
+#  fbe
  movement
 )

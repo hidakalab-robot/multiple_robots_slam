@@ -114,6 +114,7 @@ class SeamlessHybridExploration :public SensorBasedExploration{
     public:
         SeamlessHybridExploration();
         ~SeamlessHybridExploration();
+        bool getGoalAF(geometry_msgs::PointStamped& goal);
         void simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f);
 };
 

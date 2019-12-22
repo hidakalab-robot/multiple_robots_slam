@@ -1,6 +1,6 @@
 #include <ros/ros.h>
 #include <exploration/seamless_hybrid_exploration.h>
-#include <exploration/frontier_based_exploration.h>
+// #include <exploration/frontier_based_exploration.h>
 #include <exploration/movement.h>
 #include <std_msgs/Bool.h>
 #include <exploration_libraly/struct.h>
@@ -10,11 +10,11 @@ int main(int argc, char* argv[]){
     ros::init(argc, argv, "seamless_hybrid_exploration_actively_frontier");
 
     SeamlessHybridExploration she;
-    FrontierBasedExploration fbe;
+    // FrontierBasedExploration fbe;
     Movement mv;
 
     ExpLib::Struct::subStruct<std_msgs::Bool> end("end",1);
-    ExpLib::Struct::subStruct<std_msgs::Bool> areaDiff("end/area_diff",1);
+    ExpLib::Struct::subStruct<std_msgs::Bool> areaDiff("area_diff",1);
 
     geometry_msgs::PointStamped goal;
     ros::NodeHandle p("~");
@@ -56,7 +56,7 @@ int main(int argc, char* argv[]){
     ROS_INFO_STREAM("Switch exploration method SHE to FBE -> switch time :" << ros::Duration(switchTime-start).toSec() << " [s]");
 
     while(ros::ok()){
-        if(fbe.getGoal(goal) && !DEBUG) mv.moveToGoal(goal);
+        if(she.getGoalAF(goal) && !DEBUG) mv.moveToGoal(goal);
         if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
         ros::spinOnce();
     }
