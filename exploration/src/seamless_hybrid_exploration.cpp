@@ -342,15 +342,15 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
     }
 
     if(!valNormal.empty()){
-        std::sort(valNormal.begin(),valNormal.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second > r.second;});
+        std::sort(valNormal.begin(),valNormal.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
         goal.point = valNormal[0].first;
     }
     else if(!valNotUseful.empty()){
-        std::sort(valNotUseful.begin(),valNotUseful.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second > r.second;});
+        std::sort(valNotUseful.begin(),valNotUseful.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
         goal.point = valNotUseful[0].first;
     }
     else if(!valOnMap.empty()){
-        std::sort(valOnMap.begin(),valOnMap.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second > r.second;});
+        std::sort(valOnMap.begin(),valOnMap.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
         goal.point = valOnMap[0].first;
     }
     else return false;
