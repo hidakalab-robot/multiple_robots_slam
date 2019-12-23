@@ -7,5 +7,5 @@ omf_map_window_x: 1.5
 omf_map_window_y: 1.5
 on_map_frontier_rate: 0.85
 variance_threshold: 1.2
-variance_min_threshold: 0.1
+variance_min_threshold: 0.05
 covariance_threshold: 0.5
