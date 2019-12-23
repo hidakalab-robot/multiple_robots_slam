@@ -27,8 +27,8 @@
             <arg name="debug" value="$(arg debug)"/>
             <arg name="rotation" value="$(arg rotation)"/>
             <arg name="map" value="$(arg fill_map)"/>
-            <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
-            <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
+            <arg unless="$(arg multi)" name="map_frame_id" value="$(arg robot_name)/map"/>
+            <arg if="$(arg multi)" name="map_frame_id" value="/server/merge_map"/>
         </include>
 
         <!-- exploration support -->
@@ -39,7 +39,7 @@
             <arg name="branch_detection" value="true"/>
             <arg name="map_fill" value="true"/>
             <arg name="orig_map" value="$(arg map)"/>
-            <arg name="fill_map" default="$(arg fill_map)"/>
+            <arg name="fill_map" value="$(arg fill_map)"/>
             <arg name="pose_log" value="pose_log/optimized"/>
         </include>
 

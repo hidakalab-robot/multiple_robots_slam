@@ -8,8 +8,8 @@ branch_diff_y_min: 0.1
 branch_diff_y_max: 10
 scan_filter: false
 scan_filter_order: 3
-branch_filter: false
-branch_filter_order: 3
+branch_filter: true
+branch_filter_order: 2
 branch_filter_tolerance: 0.2
 duplicate_detection: true
 duplicate_tolerance: 1.5
