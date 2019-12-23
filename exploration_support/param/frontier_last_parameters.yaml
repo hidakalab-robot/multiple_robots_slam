@@ -1,7 +1,7 @@
 cluster_tolerance: 0.15
-min_cluster_size: 5
+min_cluster_size: 30
 max_cluster_size: 15000
-filter_square_diameter: 0.5
+filter_square_diameter: 0.55
 on_map_frontier_detection: true
 omf_map_window_x: 1.5
 omf_map_window_y: 1.5
