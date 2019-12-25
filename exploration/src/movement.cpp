@@ -105,7 +105,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal,bool sleep){
     if(sleep){
         // sleep
         ros::Time start = ros::Time::now();
-        double delay = 2.0;
+        double delay = 10.0;
         while(ros::Duration(ros::Time::now() - start).toSec()<delay){};
     }
     else{
