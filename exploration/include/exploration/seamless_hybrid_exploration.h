@@ -61,15 +61,8 @@ namespace ExStc = ExpLib::Struct;
 class SeamlessHybridExploration :public SensorBasedExploration{
     private:
         // dynamic parameters
-        // bool ON_MAP_FRONTIER_DETECTION;
-        // double OMF_MAP_WINDOW_X;
-        // double OMF_MAP_WINDOW_Y;
-        // double ON_MAP_FRONTIER_RATE;
         double DISTANCE_WEIGHT;
         double DIRECTION_WEIGHT;
-        // double VARIANCE_THRESHOLD;
-        // double VARIANCE_MIN_THRESHOLD;
-        // double COVARIANCE_THRESHOLD;
         double OTHER_ROBOT_WEIGHT;
         double DUPLICATE_COEFF;
         double ON_MAP_COEFF;
@@ -86,11 +79,8 @@ class SeamlessHybridExploration :public SensorBasedExploration{
         // variables
         std::unique_ptr<ExStc::subStruct<exploration_msgs::RobotInfoArray>> robotArray_;
         std::unique_ptr<ExStc::subStruct<exploration_msgs::FrontierArray>> frontier_;
-        // std::unique_ptr<ExStc::pubStruct<exploration_msgs::FrontierArray>> useFro_;
-        // std::unique_ptr<ExStc::pubStruct<exploration_msgs::FrontierArray>> onMapFro_;
         std::unique_ptr<ExpLib::PathPlanning<navfn::NavfnROS>> pp_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>> drs_;
-        // std::unique_ptr<std::vector<ExStc::listStruct>> ls_;
         std::unique_ptr<exploration_msgs::BranchArray> ba_;
         std::unique_ptr<exploration_msgs::FrontierArray> fa_;
         std::unique_ptr<exploration_msgs::RobotInfoArray> ria_;
