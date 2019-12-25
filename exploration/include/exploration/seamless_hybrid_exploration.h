@@ -66,6 +66,7 @@ class SeamlessHybridExploration :public SensorBasedExploration{
         double OTHER_ROBOT_WEIGHT;
         double DUPLICATE_COEFF;
         double ON_MAP_COEFF;
+        double LAST_GOAL_WEIGHT;
 
         // static parameters
         std::string ROBOT_NAME;

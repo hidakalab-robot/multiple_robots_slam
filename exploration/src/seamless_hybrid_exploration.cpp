@@ -288,9 +288,9 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
         if(last > lastMax) lastMax = std::move(last);
     }
 
-    double LAST_GOAL_WEIGHT = 1.2;
+    // double LAST_GOAL_WEIGHT = 1.2;
 
-    auto evaluation = [LAST_GOAL_WEIGHT, this](double d, double dMax, double a, double aMax, double l, double lMax){
+    auto evaluation = [this](double d, double dMax, double a, double aMax, double l, double lMax){
         return DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax + LAST_GOAL_WEIGHT * l / lMax;
     };
 
@@ -380,6 +380,7 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
     nh.param<double>("duplicate_coeff", DUPLICATE_COEFF, 1.2);
     nh.param<double>("on_map_coeff", ON_MAP_COEFF, 1.1);
+    nh.param<double>("last_goal_weight", LAST_GOAL_WEIGHT, 1.2);
     // static parameters
     nh.param<std::string>("robot_name", ROBOT_NAME, "robot1");
     nh.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
@@ -396,6 +397,7 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
     DUPLICATE_COEFF = cfg.duplicate_coeff;
     ON_MAP_COEFF = cfg.on_map_coeff;
+    LAST_GOAL_WEIGHT = cfg.last_goal_weight;
 }
 
 void SeamlessHybridExploration::outputParams(void){
@@ -417,4 +419,5 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
     ofs << "duplicate_coeff: " << DUPLICATE_COEFF << std::endl;
     ofs << "on_map_coeff: " << ON_MAP_COEFF << std::endl;
+    ofs << "last_goal_weight: " << LAST_GOAL_WEIGHT << std::endl;
  }
