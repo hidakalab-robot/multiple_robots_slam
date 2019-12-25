@@ -106,7 +106,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal,bool sleep){
         // sleep
         ros::Time start = ros::Time::now();
         double delay = 2.0;
-        while(ros::Duration(ros::Time::now() - start).toSec()<delay){};
+        while(ros::Duration(ros::Time::now() - start).toSec()<delay){publishMovementStatus("move_base");};
     }
     else{
         ros::Rate rate(GOAL_RESET_RATE);
