@@ -254,15 +254,11 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
         return false;
     }
 
-    std::vector<std::tuple<double,double,double,geometry_msgs::Point,uint8_t>> distAng; // distance, angle, lastgoal, frontier, status
-    std::vector<std::vector<std::pair<geometry_msgs::Point,double>>> valList(3,std::vector<std::pair<geometry_msgs::Point,double>>());
-    std::vector<std::pair<geometry_msgs::Point,double>> valNormal;
-    std::vector<std::pair<geometry_msgs::Point,double>> valNotUseful;
-    std::vector<std::pair<geometry_msgs::Point,double>> valOnMap;
+    int STATUS_SIZE = 3;
 
-    valNormal.reserve(frontiers.size());
-    valNotUseful.reserve(frontiers.size());
-    valOnMap.reserve(frontiers.size());
+    std::vector<std::tuple<double,double,double,geometry_msgs::Point,uint8_t>> distAng; // distance, angle, lastgoal, frontier, status
+    // std::vector<std::vector<std::pair<geometry_msgs::Point,double>>> valList(STATUS_SIZE,std::vector<std::pair<geometry_msgs::Point,double>>());
+    std::vector<std::pair<geometry_msgs::Point,double>> valList;
 
     // frontierまでの距離と角度の最大
     double distMax = -DBL_MAX;
@@ -290,20 +286,23 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
 
     // double LAST_GOAL_WEIGHT = 1.2;
 
-    auto evaluation = [this](double d, double dMax, double a, double aMax, double l, double lMax){
-        return DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax + LAST_GOAL_WEIGHT * l / lMax;
+    auto evaluation = [STATUS_SIZE,this](double d, double dMax, double a, double aMax, double l, double lMax, uint8_t status){
+        return (DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax + LAST_GOAL_WEIGHT * l / lMax)*((1.0+status)/STATUS_SIZE);
     };
 
     for(const auto& da : distAng)
-        valList[std::get<4>(da)].emplace_back(std::make_pair(std::get<3>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+        // valList[std::get<4>(da)].emplace_back(std::make_pair(std::get<3>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+        valList.emplace_back(std::make_pair(std::get<3>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax,std::get<4>(da))));
 
-    for(auto&& vl : valList){
-        if(!vl.empty()){
-            std::sort(vl.begin(),vl.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
-            goal.point = vl[0].first;
-            break;
-        }
-    }
+    // for(auto&& vl : valList){
+    //     if(!vl.empty()){
+    //         std::sort(vl.begin(),vl.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+    //         goal.point = vl[0].first;
+    //         break;
+    //     }
+    // }
+    std::sort(valList.begin(),valList.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+    goal.point = valList[0].first;
 
     // 最後の目標と同じところだったら新しいゴールとして返さない
     if(Eigen::Vector2d(lastGoal_->x-goal.point.x,lastGoal_->y-goal.point.y).norm()< LAST_GOAL_TOLERANCE) return false;
