@@ -56,7 +56,7 @@ int main(int argc, char* argv[]){
     ROS_INFO_STREAM("Switch exploration method SHE to FBE -> switch time :" << ros::Duration(switchTime-start).toSec() << " [s]");
 
     while(ros::ok()){
-        if(she.getGoalAF(goal) && !DEBUG) mv.moveToGoal(goal);
+        if(she.getGoalAF(goal) && !DEBUG) mv.moveToGoal(goal,true);
         if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
         ros::spinOnce();
     }

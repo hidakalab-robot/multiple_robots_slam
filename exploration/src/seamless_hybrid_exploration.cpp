@@ -281,14 +281,14 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
 
     std::vector<exploration_msgs::Frontier> frontiers(frontier_->data.frontiers);
 
-    if(CANCELED_GOAL_EFFECT && !canceled_->q.callOne(ros::WallDuration(1)) && canceled_->data.points.size()!=0){
-		frontiers.erase(std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){
-            for(const auto& c : canceled_->data.points){
-                if(Eigen::Vector2d(f.point.x - c.x, f.point.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
-            }
-            return false;
-        }),frontiers.end());
-    }
+    // if(CANCELED_GOAL_EFFECT && !canceled_->q.callOne(ros::WallDuration(1)) && canceled_->data.points.size()!=0){
+	// 	frontiers.erase(std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){
+    //         for(const auto& c : canceled_->data.points){
+    //             if(Eigen::Vector2d(f.point.x - c.x, f.point.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
+    //         }
+    //         return false;
+    //     }),frontiers.end());
+    // }
 
     if(frontiers.size() == 0){
         ROS_ERROR_STREAM("Frontier array became empty");
