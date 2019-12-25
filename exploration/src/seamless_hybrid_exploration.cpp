@@ -295,7 +295,8 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
         return false;
     }
 
-    std::vector<std::tuple<double,double,geometry_msgs::Point,uint8_t>> distAng; // distance, angle
+    std::vector<std::tuple<double,double,double,geometry_msgs::Point,uint8_t>> distAng; // distance, angle, lastgoal, frontier, status
+    std::vector<std::vector<std::pair<geometry_msgs::Point,double>>> valList(3);
     std::vector<std::pair<geometry_msgs::Point,double>> valNormal;
     std::vector<std::pair<geometry_msgs::Point,double>> valNotUseful;
     std::vector<std::pair<geometry_msgs::Point,double>> valOnMap;
@@ -307,6 +308,7 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
     // frontierまでの距離と角度の最大
     double distMax = -DBL_MAX;
     double angMax = -DBL_MAX;
+    double lastMax = -DBL_MAX;
 
     // usefulなやつの中で距離(path)の近いやつが良い -> frontierと距離と角度の重みのやつ
     // 無いときはnot_usefulなやつで
@@ -320,45 +322,69 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
             distance = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).norm();       
         }
         double angle = std::abs(acos(v1.dot(v2)));
-        distAng.emplace_back(std::make_tuple(distance, angle ,f.point, f.status));
+        double last = Eigen::Vector2d(*lastGoal_.x-f.point.x,*lastGoal_.y-f.point.y).norm();
+        distAng.emplace_back(std::make_tuple(distance, angle ,last, f.point, f.status));
         if(angle > angMax) angMax = std::move(angle);
         if(distance > distMax) distMax = std::move(distance);
+        if(last > lastMax) lastMax = std::move(last);
     }
 
-    auto evaluation = [this](double d, double dMax, double a, double aMax){return DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax;};
+    double LAST_GOAL_WEIGHT = 1.2;
 
-    for(const auto& da : distAng){
-        switch (std::get<3>(da)){
-        case exploration_msgs::Frontier::NORMAL:
-            valNormal.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax)));
-            break;
-        case exploration_msgs::Frontier::NOT_USEFUL:
-            valNotUseful.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax)));
-            break;
-        default:
-            valOnMap.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax)));
+    auto evaluation = [this](double d, double dMax, double a, double aMax, double l, double lMax){
+        return DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax + LAST_GOAL_WEIGHT * l / lMax;
+    };
+
+    // for(const auto& da : distAng){
+    //     switch (std::get<4>(da)){
+    //     case exploration_msgs::Frontier::NORMAL:
+    //         // valNormal.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+    //         valList[0].emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+    //         break;
+    //     case exploration_msgs::Frontier::NOT_USEFUL:
+    //         // valNotUseful.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+    //         valList[1].emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+    //         break;
+    //     default:
+    //         // valOnMap.emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+    //         valList[2].emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+    //         break;
+    //     }
+    // }
+
+    for(const auto& da : distAng)
+        valList[std::get<4>(da)].emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+
+    for(cosnt auto& vl : valList){
+        if(!vl.empty()){
+            std::sort(vl.begin(),vl.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+            goal.point = vl[0].first;
             break;
         }
     }
 
-    if(!valNormal.empty()){
-        std::sort(valNormal.begin(),valNormal.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
-        goal.point = valNormal[0].first;
-    }
-    else if(!valNotUseful.empty()){
-        std::sort(valNotUseful.begin(),valNotUseful.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
-        goal.point = valNotUseful[0].first;
-    }
-    else if(!valOnMap.empty()){
-        std::sort(valOnMap.begin(),valOnMap.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
-        goal.point = valOnMap[0].first;
-    }
-    else return false;
+    // if(!valNormal.empty()){
+    //     std::sort(valNormal.begin(),valNormal.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+    //     goal.point = valNormal[0].first;
+    // }
+    // else if(!valNotUseful.empty()){
+    //     std::sort(valNotUseful.begin(),valNotUseful.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+    //     goal.point = valNotUseful[0].first;
+    // }
+    // else if(!valOnMap.empty()){
+    //     std::sort(valOnMap.begin(),valOnMap.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+    //     goal.point = valOnMap[0].first;
+    // }
+    // else return false;
+
+    // 最後の目標と同じところだったら新しいゴールとして返さない
+    if(Eigen::Vector2d(*lastGoal_.x-goal.point.x,*lastGoal_.y-goal.point.y).norm()< LAST_GOAL_TOLERANCE) return false;
 
     goal.header.frame_id = frontier_->data.header.frame_id;
     goal.header.stamp = ros::Time::now();
     goal_->pub.publish(goal);
 
+    *lastGoal_ = goal.point;
 
     return true;
 }
