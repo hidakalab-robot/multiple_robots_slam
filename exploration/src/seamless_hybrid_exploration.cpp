@@ -296,7 +296,7 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
     }
 
     std::vector<std::tuple<double,double,double,geometry_msgs::Point,uint8_t>> distAng; // distance, angle, lastgoal, frontier, status
-    std::vector<std::vector<std::pair<geometry_msgs::Point,double>>> valList(3);
+    std::vector<std::vector<std::pair<geometry_msgs::Point,double>>> valList(3,std::vector<std::pair<geometry_msgs::Point,double>>());
     std::vector<std::pair<geometry_msgs::Point,double>> valNormal;
     std::vector<std::pair<geometry_msgs::Point,double>> valNotUseful;
     std::vector<std::pair<geometry_msgs::Point,double>> valOnMap;
@@ -322,7 +322,7 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
             distance = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).norm();       
         }
         double angle = std::abs(acos(v1.dot(v2)));
-        double last = Eigen::Vector2d(*lastGoal_.x-f.point.x,*lastGoal_.y-f.point.y).norm();
+        double last = Eigen::Vector2d(lastGoal_->x-f.point.x,lastGoal_->y-f.point.y).norm();
         distAng.emplace_back(std::make_tuple(distance, angle ,last, f.point, f.status));
         if(angle > angMax) angMax = std::move(angle);
         if(distance > distMax) distMax = std::move(distance);
@@ -331,7 +331,7 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
 
     double LAST_GOAL_WEIGHT = 1.2;
 
-    auto evaluation = [this](double d, double dMax, double a, double aMax, double l, double lMax){
+    auto evaluation = [LAST_GOAL_WEIGHT, this](double d, double dMax, double a, double aMax, double l, double lMax){
         return DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax + LAST_GOAL_WEIGHT * l / lMax;
     };
 
@@ -353,9 +353,9 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
     // }
 
     for(const auto& da : distAng)
-        valList[std::get<4>(da)].emplace_back(std::make_pair(std::get<2>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+        valList[std::get<4>(da)].emplace_back(std::make_pair(std::get<3>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
 
-    for(cosnt auto& vl : valList){
+    for(auto&& vl : valList){
         if(!vl.empty()){
             std::sort(vl.begin(),vl.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
             goal.point = vl[0].first;
@@ -378,7 +378,7 @@ bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
     // else return false;
 
     // 最後の目標と同じところだったら新しいゴールとして返さない
-    if(Eigen::Vector2d(*lastGoal_.x-goal.point.x,*lastGoal_.y-goal.point.y).norm()< LAST_GOAL_TOLERANCE) return false;
+    if(Eigen::Vector2d(lastGoal_->x-goal.point.x,lastGoal_->y-goal.point.y).norm()< LAST_GOAL_TOLERANCE) return false;
 
     goal.header.frame_id = frontier_->data.header.frame_id;
     goal.header.stamp = ros::Time::now();
