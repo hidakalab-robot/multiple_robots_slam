@@ -47,7 +47,7 @@ int main(int argc, char* argv[]){
 
     while(ros::ok()){
         if(!areaDiff.q.callOne(ros::WallDuration(0.5)) && areaDiff.data.data) break;// ここに切り替え条件入れる
-        branchTimer() && she.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : she.forwardTargetDetection ? mv.moveToForward() : mv.halfRotation();
+        branchTimer() && she.getGoal(goal) && !DEBUG ? mv.moveToGoal(goal) : she.forwardTargetDetection() ? mv.moveToForward() : mv.halfRotation();
         if(AUTO_FINISH && !end.q.callOne(ros::WallDuration(0.5)) && end.data.data) break;
         ros::spinOnce();
     }

@@ -70,7 +70,7 @@ class SensorBasedExploration{
 
         // variables
         // std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> branch_;
-        std::unique_ptr<ExStc::subStruct<exploration_msgs::BranchArray>> branch_;
+        // std::unique_ptr<ExStc::subStruct<exploration_msgs::BranchArray>> branch_;
         // std::unique_ptr<ExStc::subStruct<geometry_msgs::PoseStamped>> pose_;
         // std::unique_ptr<ExStc::subStruct<exploration_msgs::PoseStampedArray>> poseLog_;
         // std::unique_ptr<ExStc::subStruct<nav_msgs::Path>> poseLog_;
@@ -105,6 +105,7 @@ class SensorBasedExploration{
         // double NEWER_DUPLICATION_THRESHOLD;//最近通った場所の重複とみなす時間の上限,時間の仕様はLOG_NEWER_LIMITと同じ
         
         // variables
+        std::unique_ptr<ExStc::subStruct<exploration_msgs::BranchArray>> branch_;
         std::unique_ptr<ExStc::subStruct<geometry_msgs::PoseStamped>> pose_;
         std::unique_ptr<ExStc::pubStruct<geometry_msgs::PointStamped>> goal_;
         std::unique_ptr<ExStc::subStruct<exploration_msgs::PointArray>> canceled_;
