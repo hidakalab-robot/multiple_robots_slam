@@ -192,6 +192,13 @@ void Movement::oneRotation(void){
     }
 }
 
+void Movement::halfRotation(void){
+    while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+    geoemtry_msg::Quaternion gq = pose_->.data.orientation;
+    // ExCov::tfQuaToGeoQua(tf::Quaternion(gq.x,gq.y,gq.z,gq.w) * tf::createQuaternionFromRPY(0, 0, M_PI/2));
+    rotationFromTo(pose_->.data.orientation,ExCov::tfQuaToGeoQua(tf::Quaternion(gq.x,gq.y,gq.z,gq.w) * tf::createQuaternionFromRPY(0, 0, M_PI)););
+}
+
 bool Movement::lookupCostmap(void){
     while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
     return lookupCostmap(pose_->data);

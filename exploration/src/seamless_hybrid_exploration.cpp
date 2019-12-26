@@ -226,6 +226,50 @@ void SeamlessHybridExploration::preCalc(const exploration_msgs::BranchArray& ba,
     for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),exploration_msgs::Branch::NORMAL));
 }
 
+bool SeamlessHybridExploration::forwardTargetDetection(void){
+    // 前方に目標候補が存在するかを見る
+
+    ROS_DEBUG_STREAM("function : forwardTargetDetection");  
+
+    if(pose_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read pose");
+        return false;
+    }
+
+    branch_->q.callOne(ros::WallDuration(1));
+    frontier_->q.callOne(ros::WallDuration(1));
+
+    // 自分の姿勢と自分の位置からターゲット候補の位置の角度を計算
+    Eigen::Vector2d v1 = ExCov::qToVector2d(pose_->data.pose.orientation);
+
+    for(const auto& b : branch_->data.branches){
+        Eigen::Vector2d v2;
+        if(!pp_->getVec(pose_->data,ExCov::pointToPoseStamped(b.point,branch_->data.header.frame_id),v2)){
+            v2 = Eigen::Vector2d(b.point.x - pose_->data.pose.position.x, b.point.y - pose_->data.pose.position.y).normalized();   
+        }
+        if(std::abs(acos(v1.dot(v2)))>M_PI/2){
+            ROS_INFO_STREAM("detected forward target (bracnch) : (" << b.point.x << ", " << b.point.y << ")");
+            return true;
+        }
+    }
+
+    for(const auto& f : frontier_->data.frontiers){
+        Eigen::Vector2d v2;
+        if(!pp_->getVec(pose_->data,ExCov::pointToPoseStamped(f.point,branch_->data.header.frame_id),v2)){
+            v2 = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).normalized();   
+        }
+        if(std::abs(acos(v1.dot(v2)))>M_PI/2){
+            ROS_INFO_STREAM("detected forward target (frontier) : (" << f.point.x << ", " << f.point.y << ")");
+            return true;
+        }
+    }
+
+    ROS_INFO_STREAM("don't detected forward target");
+
+    return false;
+
+}
+
 bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
     // 面積の条件で切り替えた後の目標
     if(frontier_->q.callOne(ros::WallDuration(1))){
