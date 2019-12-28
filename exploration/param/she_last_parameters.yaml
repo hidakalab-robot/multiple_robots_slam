@@ -7,3 +7,4 @@ direction_weight: 1.5
 other_robot_weight: 1
 duplicate_coeff: 1.25
 on_map_coeff: 1.15
+last_goal_weight: 1.2

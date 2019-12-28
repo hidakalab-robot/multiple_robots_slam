@@ -247,7 +247,7 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
         if(!pp_->getVec(pose_->data,ExCov::pointToPoseStamped(b.point,branch_->data.header.frame_id),v2)){
             v2 = Eigen::Vector2d(b.point.x - pose_->data.pose.position.x, b.point.y - pose_->data.pose.position.y).normalized();   
         }
-        if(std::abs(acos(v1.dot(v2)))>M_PI/2){
+        if(std::abs(acos(v1.dot(v2)))<M_PI/2){
             ROS_INFO_STREAM("detected forward target (bracnch) : (" << b.point.x << ", " << b.point.y << ")");
             return true;
         }
@@ -258,7 +258,7 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
         if(!pp_->getVec(pose_->data,ExCov::pointToPoseStamped(f.point,branch_->data.header.frame_id),v2)){
             v2 = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).normalized();   
         }
-        if(std::abs(acos(v1.dot(v2)))>M_PI/2){
+        if(std::abs(acos(v1.dot(v2)))<M_PI/2){
             ROS_INFO_STREAM("detected forward target (frontier) : (" << f.point.x << ", " << f.point.y << ")");
             return true;
         }
