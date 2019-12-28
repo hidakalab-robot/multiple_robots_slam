@@ -220,7 +220,7 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_m
     for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
         for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
             // if(lmap[x][y] > 0){
-            if(lmap[x][y] > 98){
+            if(lmap[x][y] == 100){
                 ROS_INFO_STREAM("current goal is over the costmap !!");
                 return true; //被ってたら終了
             }
