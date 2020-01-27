@@ -46,12 +46,13 @@
                                         /tf
                                         /tf_static"/>
             <arg name="compress" value="true"/>
+            <arg name="name" value="rosbag_fbe"/>
         </include>
         
         <include file="$(find exploration_support)/launch/rosbag_record.launch">
             <arg name="topics" value="/$(arg robot_name)/map_continuity"/>
             <arg name="compress" value="true"/>
-            <arg name="name" value="rosbag_filtered"/>
+            <arg name="name" value="rosbag_fbe_filtered"/>
         </include>
     </group>
 </launch>

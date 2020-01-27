@@ -233,21 +233,30 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
 
     if(pose_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read pose");
-        return false;
+        return true;
     }
 
-    branch_->q.callOne(ros::WallDuration(1));
-    frontier_->q.callOne(ros::WallDuration(1));
+    if(branch_->q.callOne(ros::WallDuration(1)) && frontier_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read target");
+        return true;
+    }
 
     // 自分の姿勢と自分の位置からターゲット候補の位置の角度を計算
     Eigen::Vector2d v1 = ExCov::qToVector2d(pose_->data.pose.orientation);
+    double allowAngle = M_PI / 2;
+    double allowDistance = 2.5;
 
     for(const auto& b : branch_->data.branches){
         Eigen::Vector2d v2;
-        if(!pp_->getVec(pose_->data,ExCov::pointToPoseStamped(b.point,branch_->data.header.frame_id),v2)){
-            v2 = Eigen::Vector2d(b.point.x - pose_->data.pose.position.x, b.point.y - pose_->data.pose.position.y).normalized();   
-        }
-        if(std::abs(acos(v1.dot(v2)))<M_PI/2){
+        double d;
+        // if(!pp_->getVecInit(pose_->data,ExCov::pointToPoseStamped(b.point,branch_->data.header.frame_id),v2)){
+            v2 = Eigen::Vector2d(b.point.x - pose_->data.pose.position.x, b.point.y - pose_->data.pose.position.y);
+            d = v2.norm();   
+            v2.normalize();
+        // }
+        double angle = std::abs(acos(v1.dot(v2)));
+        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d << ", bracnch : (" << b.point.x << ", " << b.point.y << ")");
+        if(angle < allowAngle || d < allowDistance){
             ROS_INFO_STREAM("detected forward target (bracnch) : (" << b.point.x << ", " << b.point.y << ")");
             return true;
         }
@@ -255,10 +264,15 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
 
     for(const auto& f : frontier_->data.frontiers){
         Eigen::Vector2d v2;
-        if(!pp_->getVec(pose_->data,ExCov::pointToPoseStamped(f.point,branch_->data.header.frame_id),v2)){
-            v2 = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).normalized();   
-        }
-        if(std::abs(acos(v1.dot(v2)))<M_PI/2){
+        double d;
+        // if(!pp_->getVecInit(pose_->data,ExCov::pointToPoseStamped(f.point,frontier_->data.header.frame_id),v2)){
+            v2 = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y);   
+            d = v2.norm();   
+            v2.normalize();
+        // }
+        double angle = std::abs(acos(v1.dot(v2)));
+        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d  << ", frontier : (" << f.point.x << ", " << f.point.y << ")");
+        if(angle < allowAngle || d < allowDistance){
             ROS_INFO_STREAM("detected forward target (frontier) : (" << f.point.x << ", " << f.point.y << ")");
             return true;
         }
