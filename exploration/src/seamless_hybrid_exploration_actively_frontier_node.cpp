@@ -26,7 +26,7 @@ int main(int argc, char* argv[]){
     p.param<bool>("rotation",ROTATION,true);
     p.param<bool>("auto_finish",AUTO_FINISH,true);
     p.param<double>("branch_wait_time",BRANCH_WAIT_TIME,1.0);
-    p.param<double>("ftd_wait_time",FTD_WAIT_TIME,5.0);
+    p.param<double>("ftd_wait_time",FTD_WAIT_TIME,2.0);
 
     usleep(2e5);//timeがsim_timeに合うのを待つ
 

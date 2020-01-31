@@ -229,6 +229,8 @@ void SeamlessHybridExploration::preCalc(const exploration_msgs::BranchArray& ba,
 bool SeamlessHybridExploration::forwardTargetDetection(void){
     // 前方に目標候補が存在するかを見る
 
+    static bool stat = false;
+
     ROS_DEBUG_STREAM("function : forwardTargetDetection");  
 
     if(pose_->q.callOne(ros::WallDuration(1))){
@@ -236,7 +238,7 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
         return true;
     }
 
-    if(branch_->q.callOne(ros::WallDuration(1)) && frontier_->q.callOne(ros::WallDuration(1))){
+    if(branch_->q.callOne(ros::WallDuration(1)) || frontier_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read target");
         return true;
     }
@@ -244,7 +246,9 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
     // 自分の姿勢と自分の位置からターゲット候補の位置の角度を計算
     Eigen::Vector2d v1 = ExCov::qToVector2d(pose_->data.pose.orientation);
     double allowAngle = M_PI / 2;
-    double allowDistance = 2.5;
+    double allowDistance = 3.0;
+
+    ROS_INFO_STREAM("robot : (" << pose_->data.pose.position.x << ", " << pose_->data.pose.position.y << ", " << ExCov::qToYaw(pose_->data.pose.orientation) << ")");
 
     for(const auto& b : branch_->data.branches){
         Eigen::Vector2d v2;
@@ -255,9 +259,10 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
             v2.normalize();
         // }
         double angle = std::abs(acos(v1.dot(v2)));
-        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d << ", bracnch : (" << b.point.x << ", " << b.point.y << ")");
+        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d << ", bracnch : (" << b.point.x << ", " << b.point.y << ", " << ExCov::qToYaw(ExCov::vector2dToQ(v2)) << ")");
         if(angle < allowAngle || d < allowDistance){
             ROS_INFO_STREAM("detected forward target (bracnch) : (" << b.point.x << ", " << b.point.y << ")");
+            stat = false;
             return true;
         }
     }
@@ -271,17 +276,24 @@ bool SeamlessHybridExploration::forwardTargetDetection(void){
             v2.normalize();
         // }
         double angle = std::abs(acos(v1.dot(v2)));
-        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d  << ", frontier : (" << f.point.x << ", " << f.point.y << ")");
+        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d  << ", frontier : (" << f.point.x << ", " << f.point.y << ", " << ExCov::qToYaw(ExCov::vector2dToQ(v2)) << ")");
         if(angle < allowAngle || d < allowDistance){
             ROS_INFO_STREAM("detected forward target (frontier) : (" << f.point.x << ", " << f.point.y << ")");
+            stat = false;
             return true;
         }
     }
 
     ROS_INFO_STREAM("don't detected forward target");
 
-    return false;
-
+    if(stat){
+        stat = false;
+        return false;
+    }
+    else {
+        stat = true;
+        return true;
+    }
 }
 
 bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){

@@ -137,6 +137,7 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal,bool sleep){
 
         ROS_INFO_STREAM("move_base was finished");
         ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
+        usleep(1e6);
     }
  }
 
