@@ -3,7 +3,7 @@ uint8 COS = 1
 
 std_msgs/Header header
 string status # move_base, VFH
-int32 calc_range_method # normal , cos
+uint8 calc_range_method # normal , cos
 float64[] range_pattern # avoidance ranges pattern
 string[] descriptions # ranges description
 string scan_frame_id

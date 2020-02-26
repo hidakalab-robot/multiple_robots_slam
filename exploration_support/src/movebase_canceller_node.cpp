@@ -9,7 +9,7 @@ ns = namespace of move_base topic
 */
 
 int main(int argc, char *argv[]){
-    ros::init(argc, argv, "movebase_breaker");
+    ros::init(argc, argv, "movebase_canceller");
 
     std::string ns;
     ros::NodeHandle("~").getParam("ns",ns);
@@ -23,19 +23,19 @@ int main(int argc, char *argv[]){
         if(lastId.id != newId.id){
             repeat = false;
             //その目標を許すかどうかの判断をする
-            ROS_INFO_STREAM("id : " << newId.id);
-            ROS_INFO_STREAM("Move to this target ? [y/n] : ");
+            std::cout << "id : " << newId.id << "\n";
+            std::cout << "Move to this target ? [y/n] : ";
             std::string input;
             std::getline(std::cin,input);
             if(input == "n"){
                 pub.publish(newId);
                 lastId = newId;
                 repeat = true;
-                ROS_INFO_STREAM("Rejected");
+                std::cout << "Rejected\n";
                 return;
             }
             lastId = newId;
-            ROS_INFO_STREAM("Accepted");
+            std::cout << "Accepted\n";
         }
         else if(repeat && msg->status_list.back().status != actionlib_msgs::GoalStatus::PREEMPTED) pub.publish(newId);
     });

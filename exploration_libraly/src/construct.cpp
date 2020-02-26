@@ -1,4 +1,5 @@
 #include <exploration_libraly/construct.h>
+#include <exploration_msgs/Branch.h>
 #include <exploration_msgs/Frontier.h>
 #include <exploration_msgs/RobotInfo.h>
 #include <geometry_msgs/Point.h>
@@ -72,6 +73,14 @@ namespace ExpLib{
             msg.area = a;
             msg.variance = v;
             msg.covariance = c;
+            msg.status = exploration_msgs::Frontier::NORMAL;
+            return msg;
+        }
+
+         exploration_msgs::Branch msgBranch(const geometry_msgs::Point& p){
+            exploration_msgs::Branch msg;
+            msg.point = p;
+            msg.status = exploration_msgs::Branch::NORMAL;
             return msg;
         }
 
@@ -84,6 +93,15 @@ namespace ExpLib{
             p.g = g;
             p.b = b;
             return p;
+        }
+
+        Eigen::Matrix2d eigenMat2d(double a,double b,double c,double d){
+            // return matrix // 
+            //     |a b|     //
+            //     |c d|     //     
+            Eigen::Matrix2d m;
+            m << a, b, c, d;
+            return m;
         }
 
         exploration_msgs::RobotInfo msgRobotInfo(const std::string& n, const geometry_msgs::Pose& p){

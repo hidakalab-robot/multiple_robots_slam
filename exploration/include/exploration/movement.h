@@ -150,9 +150,10 @@ class Movement {
     public:
         Movement();
         ~Movement();
-        void moveToGoal(geometry_msgs::PointStamped goal);
+        void moveToGoal(geometry_msgs::PointStamped goal, bool sleep=false);
         void moveToForward(void);
         void oneRotation(void);
+        void halfRotation(void);
 };
 
 #endif //MOVEMENT_H

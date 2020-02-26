@@ -3,6 +3,7 @@
     <arg name="multi" default="false"/>
     <arg name="merge_map_frame" default="/server/merge_map"/>
     <arg name="merge_map_topic" default="/server/merge_map/grid"/>
+    <arg name="scan" default="scan"/>
 
     <!-- Gmapping -->
     
@@ -42,7 +43,7 @@
         <param name="llsamplestep" value="0.01"/>
         <param name="lasamplerange" value="0.005"/>
         <param name="lasamplestep" value="0.005"/>
-        <remap from="scan" to="/$(arg robot_name)/scan"/>
+        <remap from="scan" to="$(arg scan)"/>
     </node>
 
     <!-- Move base -->

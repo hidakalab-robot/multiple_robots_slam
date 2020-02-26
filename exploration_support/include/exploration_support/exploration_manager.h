@@ -62,6 +62,8 @@ class ExplorationManager{
         double END_TIME;
         double END_AREA_DIFF;
         double END_AREA_DIFF_INTERVAL;
+        double END_AREA_DIFF_RATE;
+        double END_AREA_DIFF_AVERATE;
 
         // static parameters
         std::string EXMNG_PARAMETER_FILE_PATH;
@@ -74,10 +76,14 @@ class ExplorationManager{
         std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> frontierEnd_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> timerEnd_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> areaDiffEnd_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> areaDiffRateEnd_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Bool>> areaDiffAveRateEnd_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> areaVal_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Int32>> frontierVal_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> timerVal_;
         std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> areaDiffVal_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> areaDiffRateVal_;
+        std::unique_ptr<ExStc::pubStruct<std_msgs::Float64>> areaDiffAveRateVal_;
         std::unique_ptr<dynamic_reconfigure::Server<exploration_support::exploration_manager_parameter_reconfigureConfig>> drs_;
         double area_;
 

@@ -17,7 +17,7 @@ namespace ExpLib{
 
         public:
             PathPlanning():tfl(ros::Duration(10)),gcr("costmap", tfl){
-                ros::NodeHandle("~").param<double>("path_to_vector_ratio", PATH_TO_VECTOR_RATIO, 0.5);
+                ros::NodeHandle("~").param<double>("path_to_vector_ratio", PATH_TO_VECTOR_RATIO, 0.8);
                 planner.initialize("path_planner",&gcr);
                 ros::spinOnce();
             };
@@ -59,9 +59,9 @@ namespace ExpLib{
                 return false;
             };
 
-            void getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec, std::vector<geometry_msgs::PoseStamped>& plan){
-                int b = plan.size() - 1;
-                int a = b * PATH_TO_VECTOR_RATIO;
+            void getVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec, std::vector<geometry_msgs::PoseStamped>& plan, bool init=false){
+                int b = init ? (plan.size()-1)*0.2 : plan.size() - 1;
+                int a = init ? 0 : b * PATH_TO_VECTOR_RATIO;
                 //a-b間のベクトル
                 vec = Eigen::Vector2d(plan[b].pose.position.x - plan[a].pose.position.x, plan[b].pose.position.y - plan[a].pose.position.y).normalized();
             };
@@ -75,6 +75,17 @@ namespace ExpLib{
                 }
                 return false;
             };
+
+            bool getVecInit(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, Eigen::Vector2d& vec){
+                ros::spinOnce();
+                std::vector<geometry_msgs::PoseStamped> plan;
+                if(planner.makePlan(start,goal,plan)){
+                    getVec(start,goal,vec,plan,true);
+                    return true;
+                }
+                return false;
+            };
+
 
             bool getDistanceAndVec(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, double& distance, Eigen::Vector2d& vec){
                 ros::spinOnce();

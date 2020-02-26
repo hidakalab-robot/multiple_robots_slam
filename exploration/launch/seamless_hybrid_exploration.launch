@@ -3,12 +3,13 @@
 
     <arg name="robot_name" default="robot1"/>
     <arg name="multi" default="false"/>
-    <arg name="rosbag" default="false"/>
+    <arg name="record_rosbag" default="false"/>
+    <arg name="use_rosbag" default="false"/>
 
     <arg name="debug" default="false"/>
     <arg name="rotation" default="false"/>
     <arg name="fill_map" default="fill_map"/>
-    <arg name="end_method" default="area"/>
+    <arg name="end_method" default="timer"/>
     
     <!-- <arg unless="$(arg multi)" name="map" default="/$(arg robot_name)/map"/> -->
     <arg unless="$(arg multi)" name="map" default="map_continuity"/>
@@ -17,33 +18,47 @@
     <group ns="$(arg robot_name)">
         <!-- exploration main -->
         <include file="$(find exploration)/launch/includes/seamless_hybrid_exploration.launch.xml">
-            <arg name="pose_log" value="pose_log/merge"/>
+            <!-- <arg name="pose_log" value="pose_log/merge"/> -->
+            <!-- <arg name="pose_log" value="rtabmap/mapPath"/> -->
+            <arg name="pose_log" value="pose_log/optimized"/>
             <arg name="end" value="end/$(arg end_method)"/>
             <arg name="robot_name" value="$(arg robot_name)"/>
             <arg name="debug" value="$(arg debug)"/>
             <arg name="rotation" value="$(arg rotation)"/>
             <arg name="map" value="$(arg fill_map)"/>
-            <arg unless="$(arg multi)" name="map_frame_id" default="$(arg robot_name)/map"/>
-            <arg if="$(arg multi)" name="map_frame_id" default="/server/merge_map"/>
+            <arg unless="$(arg multi)" name="map_frame_id" value="$(arg robot_name)/map"/>
+            <arg if="$(arg multi)" name="map_frame_id" value="/server/merge_map"/>
         </include>
 
         <!-- exploration support -->
         <include file="$(find exploration)/launch/includes/exploration_support.launch.xml">
+            <arg name="robot_name" value="$(arg robot_name)"/>
+            <arg name="use_rosbag" value="$(arg use_rosbag)"/>
             <arg name="frontier_detection" value="true"/>
             <arg name="branch_detection" value="true"/>
             <arg name="map_fill" value="true"/>
             <arg name="orig_map" value="$(arg map)"/>
-            <arg name="fill_map" default="$(arg fill_map)"/>
+            <arg name="fill_map" value="$(arg fill_map)"/>
+            <arg name="pose_log" value="pose_log/optimized"/>
         </include>
 
         <!-- rosbag -->
-        <include if="$(arg rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
+        <include if="$(arg record_rosbag)" file="$(find exploration_support)/launch/rosbag_record.launch">
             <arg name="topics" value="/$(arg robot_name)/map_continuity 
                                         /$(arg robot_name)/pose
+                                        /$(arg robot_name)/pose_log/$(arg robot_name)
                                         /$(arg robot_name)/scan
                                         /$(arg robot_name)/move_base/global_costmap/costmap
+                                        /$(arg robot_name)/rtabmap/mapPath
                                         /tf
                                         /tf_static"/>
+            <arg name="compress" value="true"/>
+        </include>
+
+        <include file="$(find exploration_support)/launch/rosbag_record.launch">
+            <arg name="topics" value="/$(arg robot_name)/map_continuity"/>
+            <arg name="compress" value="true"/>
+            <arg name="name" value="rosbag_filtered"/>
         </include>
     </group>
 </launch>

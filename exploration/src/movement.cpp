@@ -43,7 +43,7 @@ Movement::~Movement(){
     if(OUTPUT_MOVEMENT_PARAMETERS) outputParams();
 }
 
-void Movement::moveToGoal(geometry_msgs::PointStamped goal){
+void Movement::moveToGoal(geometry_msgs::PointStamped goal,bool sleep){
     static actionlib::SimpleActionClient<move_base_msgs::MoveBaseAction> ac(MOVEBASE_NAME, true);
     
     while(!ac.waitForServer(ros::Duration(1.0)) && ros::ok()) ROS_INFO_STREAM("wait for action server << " << MOVEBASE_NAME);
@@ -71,14 +71,26 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
 
     // 目標での姿勢
     Eigen::Vector2d startToGoal;
-    if(USE_ANGLE_BIAS || !pp_->getVec(pose_->data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
-        // pathが取得できなかった場合の回転角度の補正値
+    // if(USE_ANGLE_BIAS || !pp_->getVec(pose_->data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
+    //     // pathが取得できなかった場合の回転角度の補正値
+    //     double yaw = ExCov::qToYaw(pose_->data.pose.orientation);
+    //     Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
+    //     double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
+    //     Eigen::Matrix2d rotation = ExCos::eigenMat2d(cos(rotateTheta),-sin(rotateTheta),sin(rotateTheta),cos(rotateTheta));
+    //     // rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
+    //     startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
+    // }
+    if(!pp_->getVec(pose_->data,ExCov::pointStampedToPoseStamped(goal),startToGoal)){
+        startToGoal = Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
+    }
+
+    if(USE_ANGLE_BIAS){
         double yaw = ExCov::qToYaw(pose_->data.pose.orientation);
-        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
+        // Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y,0.0).normalized());
+        Eigen::Vector3d cross = Eigen::Vector3d(cos(yaw),sin(yaw),0.0).normalized().cross(Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0).normalized());
         double rotateTheta = ANGLE_BIAS * M_PI/180 * (cross.z() > 0 ? 1.0 : cross.z() < 0 ? -1.0 : 0);
-        Eigen::Matrix2d rotation;
-        rotation << cos(rotateTheta), -sin(rotateTheta), sin(rotateTheta), cos(rotateTheta);
-        startToGoal = rotation * Eigen::Vector2d(goal.point.x-pose_->data.pose.position.x,goal.point.y-pose_->data.pose.position.y);
+        Eigen::Matrix2d rotation = ExCos::eigenMat2d(cos(rotateTheta),-sin(rotateTheta),sin(rotateTheta),cos(rotateTheta));
+        startToGoal = rotation * startToGoal;
     }
 
     Eigen::Quaterniond q = Eigen::Quaterniond::FromTwoVectors(Eigen::Vector3d::UnitX(),Eigen::Vector3d(startToGoal.x(),startToGoal.y(),0.0));
@@ -90,34 +102,44 @@ void Movement::moveToGoal(geometry_msgs::PointStamped goal){
     ac.sendGoal(mbg);
     ROS_INFO_STREAM("wait for result");
 
-    ros::Rate rate(GOAL_RESET_RATE);
+    if(sleep){
+        // sleep
+        ros::Time start = ros::Time::now();
+        double delay = 2.0;
+        while(ros::Duration(ros::Time::now() - start).toSec()<delay){publishMovementStatus("move_base");};
+    }
+    else{
+        ros::Rate rate(GOAL_RESET_RATE);
 
-    while(!ac.getState().isDone() && ros::ok()){
-        publishMovementStatus("move_base");
-        if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
-            // 目的地を再設定
-            if(!resetGoal(mbg.target_pose)){ 
-                ROS_INFO_STREAM("current goal is canceled");
-                ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
-                ac.waitForResult();
-                break;
+        while(!ac.getState().isDone() && ros::ok()){
+            publishMovementStatus("move_base");
+            if(lookupCostmap(mbg.target_pose)){ //コストマップに被っているばあい
+                // 目的地を再設定
+                if(!resetGoal(mbg.target_pose)){ 
+                    ROS_INFO_STREAM("current goal is canceled");
+                    ac.cancelGoal(); //リセット出来ないばあいは目標をキャンセ留守る
+                    ac.waitForResult();
+                    break;
+                    // return;
+                }
+                if(ac.getState().isDone()) break;
+                // 大丈夫な目的地に変わっているので再設定
+                ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
+                ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
+                ROS_INFO_STREAM("send new goal to move_base");
+                ac.sendGoal(mbg);
+                // ゴールtopicに再出力
+                goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
+                ROS_INFO_STREAM("wait for result");
             }
-            if(ac.getState().isDone()) break;
-            // 大丈夫な目的地に変わっているので再設定
-            ROS_INFO_STREAM("set a new goal pose : " << mbg.target_pose.pose);
-            ROS_DEBUG_STREAM("new goal yaw : " << ExCov::qToYaw(mbg.target_pose.pose.orientation));
-            ROS_INFO_STREAM("send new goal to move_base");
-            ac.sendGoal(mbg);
-            // ゴールtopicに再出力
-            goal_->pub.publish(ExCov::poseStampedToPointStamped(mbg.target_pose));
-            ROS_INFO_STREAM("wait for result");
+            rate.sleep();
         }
-        rate.sleep();
-    };
 
-    ROS_INFO_STREAM("move_base was finished");
-    ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
-}
+        ROS_INFO_STREAM("move_base was finished");
+        ROS_INFO_STREAM((ac.getState() == actionlib::SimpleClientGoalState::SUCCEEDED ? "I Reached Given Target" : "I did not Reach Given Target"));
+        usleep(1e6);
+    }
+ }
 
 void Movement::moveToForward(void){
     ROS_INFO_STREAM("Moving Straight");
@@ -171,6 +193,13 @@ void Movement::oneRotation(void){
     }
 }
 
+void Movement::halfRotation(void){
+    while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
+    geometry_msgs::Quaternion gq = pose_->data.pose.orientation;
+    // ExCov::tfQuaToGeoQua(tf::Quaternion(gq.x,gq.y,gq.z,gq.w) * tf::createQuaternionFromRPY(0, 0, M_PI/2));
+    rotationFromTo(pose_->data.pose.orientation,ExCov::tfQuaToGeoQua(tf::Quaternion(gq.x,gq.y,gq.z,gq.w) * tf::createQuaternionFromRPY(0, 0, M_PI)));
+}
+
 bool Movement::lookupCostmap(void){
     while(pose_->q.callOne(ros::WallDuration(1.0))&&ros::ok()) ROS_INFO_STREAM("Waiting pose ...");
     return lookupCostmap(pose_->data);
@@ -191,7 +220,8 @@ bool Movement::lookupCostmap(const geometry_msgs::PoseStamped& goal, const nav_m
     ExStc::mapSearchWindow msw(goal.pose.position,map.info,COSTMAP_MARGIN);
     for(int y=msw.top,ey=msw.bottom+1;y!=ey;++y){
         for(int x=msw.left,ex=msw.right+1;x!=ex;++x){
-            if(lmap[x][y] > 0){
+            // if(lmap[x][y] > 0){
+            if(lmap[x][y] > 98){
                 ROS_INFO_STREAM("current goal is over the costmap !!");
                 return true; //被ってたら終了
             }
@@ -213,8 +243,8 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
 
     ExStc::mapSearchWindow msw(pose.pose.position,gCostmap_->data.info,ESC_MAP_WIDTH,ESC_MAP_HEIGHT);
 
-    const int gw = (msw.right-msw.left) / ESC_MAP_DIV_X;
-    const int gh = (msw.bottom-msw.top) / ESC_MAP_DIV_Y;
+    const int gw = (msw.right-msw.left+1) / ESC_MAP_DIV_X;
+    const int gh = (msw.bottom-msw.top+1) / ESC_MAP_DIV_Y;
 
     struct escMap{
         Eigen::Vector2i cIndex; //中心のいんでっくす
@@ -229,7 +259,7 @@ void Movement::escapeFromCostmap(const geometry_msgs::PoseStamped& pose){
         for(int dw=0, dwe=ESC_MAP_DIV_X; dw!=dwe; ++dw){
             double risk = 0;
             for(int h=msw.top+dh*gh,he=msw.top+(dh+1)*gh;h!=he;++h){
-                for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h] > 0 ? gMap[w][h] : 0;
+                for(int w=msw.left+dw*gw,we=msw.left+(dw+1)*gw;w!=we;++w) risk += gMap[w][h] >= 99 ? gMap[w][h] : 0;
             }
             gmm[dw][dh].cIndex = Eigen::Vector2i((msw.left*2+(2*dw+1)*gw)/2,(msw.top*2+(2*dh+1)*gh)/2);
             gmm[dw][dh].pose.position = ExUtl::mapIndexToCoordinate(gmm[dw][dh].cIndex.x(),gmm[dw][dh].cIndex.y(),gCostmap_->data.info);

@@ -26,7 +26,7 @@ obstacle_layer:
     marking: true
     clearing: true
     min_obstacle_height: 0.35
-    max_obstacle_height: 0.45
+    max_obstacle_height: 0.6
   bump:
     data_type: PointCloud2
     topic: mobile_base/sensors/bumper_pointcloud
@@ -40,8 +40,8 @@ obstacle_layer:
 inflation_layer:
   enabled:              true
   cost_scaling_factor:  5.0  # exponential rate at which the obstacle cost drops off (default: 10)
-  inflation_radius:     0.2  # max. distance from an obstacle at which costs are incurred for planning paths.
-
+  # inflation_radius:     0.2  # max. distance from an obstacle at which costs are incurred for planning paths.
+  inflation_radius:     0.4  # max. distance from an obstacle at which costs are incurred for planning paths.
 static_layer:
   enabled:              true  
 

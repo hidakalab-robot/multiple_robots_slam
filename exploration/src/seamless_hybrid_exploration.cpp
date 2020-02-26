@@ -4,16 +4,21 @@
 #include <exploration_libraly/struct.h>
 #include <exploration_libraly/enum.h>
 #include <exploration_libraly/path_planning.h>
+#include <exploration_libraly/utility.h>
+#include <exploration_msgs/BranchArray.h>
 #include <exploration_msgs/FrontierArray.h>
+#include <exploration_msgs/PointArray.h>
 #include <exploration_msgs/RobotInfoArray.h>
 #include <navfn/navfn_ros.h>
 #include <dynamic_reconfigure/server.h>
 #include <exploration/seamless_hybrid_exploration_parameter_reconfigureConfig.h>
+#include <exploration/sensor_based_exploration_parameter_reconfigureConfig.h>
 #include <geometry_msgs/Point.h>
 
 namespace ExStc = ExpLib::Struct;
 namespace ExCov = ExpLib::Convert;
 namespace ExEnm = ExpLib::Enum;
+namespace ExUtl = ExpLib::Utility;
 
 struct SeamlessHybridExploration::maxValue{
     double distance;
@@ -30,7 +35,8 @@ struct SeamlessHybridExploration::preCalcResult{
         value(const double d, const double a);
     };
     geometry_msgs::Point point;
-    ExEnm::DuplicationStatus branchStatus;
+    // ExEnm::DuplicationStatus branchStatus;
+    uint8_t branchStatus;
     std::vector<value> values;
     preCalcResult();
 };
@@ -41,23 +47,27 @@ SeamlessHybridExploration::preCalcResult::value::value(const double d, const dou
 SeamlessHybridExploration::SeamlessHybridExploration()
     :robotArray_(new ExStc::subStruct<exploration_msgs::RobotInfoArray>("robot_array", 1))
     ,frontier_(new ExStc::subStruct<exploration_msgs::FrontierArray>("frontier", 1))
-    ,useFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("useful_frontier", 1, true))
+    // ,useFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("useful_frontier", 1, true))
+    // ,onMapFro_(new ExStc::pubStruct<exploration_msgs::FrontierArray>("on_map_frontier", 1, true))
     ,pp_(new ExpLib::PathPlanning<navfn::NavfnROS>("seamless_costmap","seamless_planner"))
     ,drs_(new dynamic_reconfigure::Server<exploration::seamless_hybrid_exploration_parameter_reconfigureConfig>(ros::NodeHandle("~/seamless_hybrid_exploration")))
-    ,ls_(new std::vector<ExStc::listStruct>())
+    // ,ls_(new std::vector<ExStc::listStruct>())
+    ,ba_(new exploration_msgs::BranchArray())
     ,fa_(new exploration_msgs::FrontierArray())
     ,ria_(new exploration_msgs::RobotInfoArray())
     ,ps_(new geometry_msgs::PoseStamped())
     ,mVal_(new maxValue()){
     loadParams();
-    drs_->setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
+    SensorBasedExploration::drs_->clearCallback();
+    SeamlessHybridExploration::drs_->setCallback(boost::bind(&SeamlessHybridExploration::dynamicParamsCB,this, _1, _2));
 }
 
 SeamlessHybridExploration::~SeamlessHybridExploration(){
     if(OUTPUT_SHE_PARAMETERS) outputParams();
 }
 
-bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+// bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const std::vector<ExStc::listStruct>& ls, const geometry_msgs::PoseStamped& pose){
+bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, const exploration_msgs::BranchArray& ba, const geometry_msgs::PoseStamped& pose){
     if(robotArray_->q.callOne(ros::WallDuration(1))){
         ROS_ERROR_STREAM("Can't read robot_array or don't find robot_array"); 
         return false;
@@ -68,18 +78,21 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal, co
     }
 
     *ps_ = pose;
-    *ls_ = ls;
+    // *ls_ = ls;
+    *ba_ = ba;
     *fa_ = frontier_->data;
     *ria_ = robotArray_->data;
 
-    if(!filter(*ls_, *fa_, *ria_)) return false;
+    // if(!filter(*ls_, *fa_, *ria_)) return false;
+    if(!filter(*ba_, *fa_, *ria_)) return false;
 
     return decideGoal(goal);
 }
 
 bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     // 事前計算
-    preCalc(*ls_, *fa_, *ria_, *ps_);
+    // preCalc(*ls_, *fa_, *ria_, *ps_);
+    preCalc(*ba_, *fa_, *ria_, *ps_);
 
     // 評価計算
     auto evaluation = [this](const double d, const double a){return DISTANCE_WEIGHT * d / mVal_->distance + DIRECTION_WEIGHT * a / mVal_->angle;};
@@ -94,9 +107,9 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
             else for(const auto& opc : otherPreCalc_) subE += evaluation(opc.values[i].distance, opc.values[i].angle);
             e *= evaluation(ownPreCalc_[m].values[i].distance, ownPreCalc_[m].values[i].angle) + (OTHER_ROBOT_WEIGHT/subE);
         }
-        // ROS_DEBUG_STREAM("position : (" << mainRobotInfo[m].robot.coordinate.x << "," << mainRobotInfo[m].robot.coordinate.y << "), sum : " << e);
-        if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::OLDER) e *= DUPLICATE_COEFF;
-        else if(ownPreCalc_[m].branchStatus==ExEnm::DuplicationStatus::ON_MAP) e *= ON_MAP_COEFF;
+
+        if(ownPreCalc_[m].branchStatus==exploration_msgs::Branch::OLDER_DUPLICATION) e *= DUPLICATE_COEFF;
+        else if(ownPreCalc_[m].branchStatus==exploration_msgs::Branch::ON_MAP) e *= ON_MAP_COEFF;
         ROS_DEBUG_STREAM("position : (" << ownPreCalc_[m].point.x << "," << ownPreCalc_[m].point.y << "), sum : " << e);
         if(e < minE){
             minE = std::move(e);
@@ -112,24 +125,34 @@ bool SeamlessHybridExploration::decideGoal(geometry_msgs::PointStamped& goal){
     return true;
 }
 
-bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
+// bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
+bool SeamlessHybridExploration::filter(exploration_msgs::BranchArray& ba, exploration_msgs::FrontierArray& fa, exploration_msgs::RobotInfoArray& ria){
     //分岐領域のフィルタ
-    ROS_INFO_STREAM("before branches size : " << ls.size());
-    auto lsRemove = std::remove_if(ls.begin(),ls.end(),[this](ExStc::listStruct& l){return l.duplication == ExEnm::DuplicationStatus::NEWER;});
-	ls.erase(std::move(lsRemove),ls.end());
-    ROS_INFO_STREAM("after branches size : " << ls.size());
+    ROS_INFO_STREAM("before branches size : " << ba.branches.size());
+    auto baRemove = std::remove_if(ba.branches.begin(),ba.branches.end(),[this](exploration_msgs::Branch& b){return b.status == exploration_msgs::Branch::NEWER_DUPLICATION;});
+	ba.branches.erase(std::move(baRemove),ba.branches.end());
+    ROS_INFO_STREAM("after branches size : " << ba.branches.size());
 
-    if(ls.size()==0) return false;
+    // if(ls.size()==0) return false;
+    if(ba.branches.size()==0) return false;
 
     //フロンティア領域のフィルタ
 
     ROS_INFO_STREAM("before frontiers size : " << fa.frontiers.size());
-    // 分散が小さいかつ共分散も小さいものを削除
-    auto faRemove = std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[this](exploration_msgs::Frontier& f){return (f.variance.x>f.variance.y ? f.variance.x : f.variance.y < VARIANCE_THRESHOLD) && std::abs(f.covariance) < COVARIANCE_THRESHOLD;});
-	fa.frontiers.erase(std::move(faRemove),fa.frontiers.end());
-    ROS_INFO_STREAM("after frontiers size : " << fa.frontiers.size());
 
-    useFro_->pub.publish(fa);
+    fa.frontiers.erase(std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[](exploration_msgs::Frontier& f){
+        return f.status == exploration_msgs::Frontier::ON_MAP;
+    }),fa.frontiers.end());
+    ROS_INFO_STREAM("after frontiers size 1 : " << fa.frontiers.size());
+
+    // 分散が小さいかつ共分散も小さいものを削除
+    fa.frontiers.erase(std::remove_if(fa.frontiers.begin(),fa.frontiers.end(),[](exploration_msgs::Frontier& f){
+        return f.status == exploration_msgs::Frontier::NOT_USEFUL;
+    }),fa.frontiers.end());
+
+    ROS_INFO_STREAM("after frontiers size 2 : " << fa.frontiers.size());
+
+    // useFro_->pub.publish(fa);
     if(fa.frontiers.size()==0) return false;
 
     //ロボットリストのフィルタ
@@ -142,12 +165,14 @@ bool SeamlessHybridExploration::filter(std::vector<ExStc::listStruct>& ls, explo
     return true;
 }
 
-void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
+// void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
+void SeamlessHybridExploration::preCalc(const exploration_msgs::BranchArray& ba, const exploration_msgs::FrontierArray& fa, const exploration_msgs::RobotInfoArray& ria, const geometry_msgs::PoseStamped& pose){
     ownPreCalc_ = std::vector<preCalcResult>();
     otherPreCalc_ = std::vector<preCalcResult>();
     *mVal_ = maxValue();
 
-    auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1, ExEnm::DuplicationStatus branchStatus){
+    // auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1, ExEnm::DuplicationStatus branchStatus){
+    auto calc = [&,this](const geometry_msgs::Point& p,const Eigen::Vector2d& v1, uint8_t branchStatus){
         SeamlessHybridExploration::preCalcResult pcr;
         pcr.point = p;
         pcr.branchStatus = branchStatus;
@@ -159,10 +184,10 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
             double distance;
             if(!pp_->getDistanceAndVec(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance,v2)){
                 v2 = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).normalized();
-                if(!pp_->getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
+                // if(!pp_->getDistance(ExCov::pointToPoseStamped(p,pose.header.frame_id),ExCov::pointToPoseStamped(f.point,fa.header.frame_id),distance)){
                     //最終手段で直線距離を計算
                     distance = Eigen::Vector2d(f.point.x - p.x, f.point.y - p.y).norm();
-                }                
+                // }                
             }
             double angle = std::abs(acos(v1.dot(v2)));
             pcr.values.emplace_back(preCalcResult::value(distance,angle));
@@ -172,28 +197,193 @@ void SeamlessHybridExploration::preCalc(const std::vector<ExStc::listStruct>& ls
         return pcr;
     };
 
-    ownPreCalc_.reserve(ls.size()+1);
+    // ownPreCalc_.reserve(ls.size()+1);
+    ownPreCalc_.reserve(ba.branches.size()+1);
     otherPreCalc_.reserve(ria.info.size());
 
     // 分岐領域の計算
     double forward = 0;
-    for(const auto& l : ls){
+    // for(const auto& l : ls){
+    for(const auto& b : ba.branches){
         double distance;
         Eigen::Vector2d v1;
-        if(!pp_->getDistanceAndVec(pose,ExCov::pointToPoseStamped(l.point,pose.header.frame_id),distance,v1)){
-            v1 = Eigen::Vector2d(l.point.x - pose.pose.position.x, l.point.y - pose.pose.position.y);
+        if(!pp_->getDistanceAndVec(pose,ExCov::pointToPoseStamped(b.point,pose.header.frame_id),distance,v1)){
+            v1 = Eigen::Vector2d(b.point.x - pose.pose.position.x, b.point.y - pose.pose.position.y);
             distance = v1.lpNorm<1>();
             v1.normalize();
         }
-        ownPreCalc_.emplace_back(calc(l.point,v1,l.duplication));
+        ownPreCalc_.emplace_back(calc(b.point,v1,b.status));
         forward += distance;
     }
-    forward /= ls.size();
+    // forward /= ls.size();
+    forward /= ba.branches.size();
     // 直進時の計算
     Eigen::Vector2d fwdV1 = ExCov::qToVector2d(pose.pose.orientation); 
-    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1,ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    // ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1,ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    ownPreCalc_.emplace_back(calc(ExCov::vector2dToPoint(Eigen::Vector2d(pose.pose.position.x,pose.pose.position.y)+forward*fwdV1),fwdV1,exploration_msgs::Branch::NORMAL));
     // 他のロボットに関する計算
-    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    // for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),ExEnm::DuplicationStatus::NOT_DUPLECATION));
+    for(const auto& ri : ria.info) otherPreCalc_.emplace_back(calc(ri.pose.position,ExCov::qToVector2d(ri.pose.orientation),exploration_msgs::Branch::NORMAL));
+}
+
+bool SeamlessHybridExploration::forwardTargetDetection(void){
+    // 前方に目標候補が存在するかを見る
+
+    static bool stat = false;
+
+    ROS_DEBUG_STREAM("function : forwardTargetDetection");  
+
+    if(pose_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read pose");
+        return true;
+    }
+
+    if(branch_->q.callOne(ros::WallDuration(1)) || frontier_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read target");
+        return true;
+    }
+
+    // 自分の姿勢と自分の位置からターゲット候補の位置の角度を計算
+    Eigen::Vector2d v1 = ExCov::qToVector2d(pose_->data.pose.orientation);
+    double allowAngle = M_PI / 2;
+    double allowDistance = 3.0;
+
+    ROS_INFO_STREAM("robot : (" << pose_->data.pose.position.x << ", " << pose_->data.pose.position.y << ", " << ExCov::qToYaw(pose_->data.pose.orientation) << ")");
+
+    for(const auto& b : branch_->data.branches){
+        Eigen::Vector2d v2;
+        double d;
+        // if(!pp_->getVecInit(pose_->data,ExCov::pointToPoseStamped(b.point,branch_->data.header.frame_id),v2)){
+            v2 = Eigen::Vector2d(b.point.x - pose_->data.pose.position.x, b.point.y - pose_->data.pose.position.y);
+            d = v2.norm();   
+            v2.normalize();
+        // }
+        double angle = std::abs(acos(v1.dot(v2)));
+        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d << ", bracnch : (" << b.point.x << ", " << b.point.y << ", " << ExCov::qToYaw(ExCov::vector2dToQ(v2)) << ")");
+        if(angle < allowAngle || d < allowDistance){
+            ROS_INFO_STREAM("detected forward target (bracnch) : (" << b.point.x << ", " << b.point.y << ")");
+            stat = false;
+            return true;
+        }
+    }
+
+    for(const auto& f : frontier_->data.frontiers){
+        Eigen::Vector2d v2;
+        double d;
+        // if(!pp_->getVecInit(pose_->data,ExCov::pointToPoseStamped(f.point,frontier_->data.header.frame_id),v2)){
+            v2 = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y);   
+            d = v2.norm();   
+            v2.normalize();
+        // }
+        double angle = std::abs(acos(v1.dot(v2)));
+        ROS_INFO_STREAM("angle : " << angle << ", distance : " << d  << ", frontier : (" << f.point.x << ", " << f.point.y << ", " << ExCov::qToYaw(ExCov::vector2dToQ(v2)) << ")");
+        if(angle < allowAngle || d < allowDistance){
+            ROS_INFO_STREAM("detected forward target (frontier) : (" << f.point.x << ", " << f.point.y << ")");
+            stat = false;
+            return true;
+        }
+    }
+
+    ROS_INFO_STREAM("don't detected forward target");
+
+    if(stat){
+        stat = false;
+        return false;
+    }
+    else {
+        stat = true;
+        return true;
+    }
+}
+
+bool SeamlessHybridExploration::getGoalAF(geometry_msgs::PointStamped& goal){
+    // 面積の条件で切り替えた後の目標
+    if(frontier_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read frontier or don't find frontier"); 
+        return false;
+    }
+
+    if(pose_->q.callOne(ros::WallDuration(1))){
+        ROS_ERROR_STREAM("Can't read pose");
+        return false;
+    }
+
+    std::vector<exploration_msgs::Frontier> frontiers(frontier_->data.frontiers);
+
+    if(CANCELED_GOAL_EFFECT && !canceled_->q.callOne(ros::WallDuration(1)) && canceled_->data.points.size()!=0){
+		frontiers.erase(std::remove_if(frontiers.begin(),frontiers.end(),[this](exploration_msgs::Frontier& f){
+            for(const auto& c : canceled_->data.points){
+                if(Eigen::Vector2d(f.point.x - c.x, f.point.y - c.y).norm()<CANCELED_GOAL_TOLERANCE) return true;
+            }
+            return false;
+        }),frontiers.end());
+    }
+
+    if(frontiers.size() == 0){
+        ROS_ERROR_STREAM("Frontier array became empty");
+        return false;
+    }
+
+    int STATUS_SIZE = 3;
+
+    std::vector<std::tuple<double,double,double,geometry_msgs::Point,uint8_t>> distAng; // distance, angle, lastgoal, frontier, status
+    // std::vector<std::vector<std::pair<geometry_msgs::Point,double>>> valList(STATUS_SIZE,std::vector<std::pair<geometry_msgs::Point,double>>());
+    std::vector<std::pair<geometry_msgs::Point,double>> valList;
+
+    // frontierまでの距離と角度の最大
+    double distMax = -DBL_MAX;
+    double angMax = -DBL_MAX;
+    double lastMax = -DBL_MAX;
+
+    // usefulなやつの中で距離(path)の近いやつが良い -> frontierと距離と角度の重みのやつ
+    // 無いときはnot_usefulなやつで
+    Eigen::Vector2d v1 = ExCov::qToVector2d(pose_->data.pose.orientation);
+    for(const auto& f : frontiers){
+        // 目標地点での向きをpathの最後の方の移動で決めたい
+        Eigen::Vector2d v2;
+        double distance;
+        if(!pp_->getDistanceAndVec(pose_->data,ExCov::pointToPoseStamped(f.point,frontier_->data.header.frame_id),distance,v2)){
+            v2 = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).normalized();
+            distance = Eigen::Vector2d(f.point.x - pose_->data.pose.position.x, f.point.y - pose_->data.pose.position.y).norm();       
+        }
+        double angle = std::abs(acos(v1.dot(v2)));
+        double last = Eigen::Vector2d(lastGoal_->x-f.point.x,lastGoal_->y-f.point.y).norm();
+        distAng.emplace_back(std::make_tuple(distance, angle ,last, f.point, f.status));
+        if(angle > angMax) angMax = std::move(angle);
+        if(distance > distMax) distMax = std::move(distance);
+        if(last > lastMax) lastMax = std::move(last);
+    }
+
+    // double LAST_GOAL_WEIGHT = 1.2;
+
+    auto evaluation = [STATUS_SIZE,this](double d, double dMax, double a, double aMax, double l, double lMax, uint8_t status){
+        return (DISTANCE_WEIGHT * d / dMax + DIRECTION_WEIGHT * a / aMax + LAST_GOAL_WEIGHT * l / lMax)*((1.0+status)/STATUS_SIZE);
+    };
+
+    for(const auto& da : distAng)
+        // valList[std::get<4>(da)].emplace_back(std::make_pair(std::get<3>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax)));
+        valList.emplace_back(std::make_pair(std::get<3>(da),evaluation(std::get<0>(da),distMax,std::get<1>(da),angMax,std::get<2>(da),lastMax,std::get<4>(da))));
+
+    // for(auto&& vl : valList){
+    //     if(!vl.empty()){
+    //         std::sort(vl.begin(),vl.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+    //         goal.point = vl[0].first;
+    //         break;
+    //     }
+    // }
+    std::sort(valList.begin(),valList.end(),[](const std::pair<geometry_msgs::Point,double>& l, const std::pair<geometry_msgs::Point,double>& r){return l.second < r.second;});
+    goal.point = valList[0].first;
+
+    // 最後の目標と同じところだったら新しいゴールとして返さない
+    if(Eigen::Vector2d(lastGoal_->x-goal.point.x,lastGoal_->y-goal.point.y).norm()< LAST_GOAL_TOLERANCE) return false;
+
+    goal.header.frame_id = frontier_->data.header.frame_id;
+    goal.header.stamp = ros::Time::now();
+    goal_->pub.publish(goal);
+
+    *lastGoal_ = goal.point;
+
+    return true;
 }
 
 void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, std::vector<geometry_msgs::Point>& b, std::vector<geometry_msgs::Point>& f){
@@ -209,14 +399,18 @@ void SeamlessHybridExploration::simBridge(std::vector<geometry_msgs::Pose>& r, s
     if(SIMULATE_ROBOT_INDEX > r.size()) SIMULATE_ROBOT_INDEX = 1;
 
     geometry_msgs::PoseStamped ps;
-    std::vector<ExStc::listStruct> ls;
+    // std::vector<ExStc::listStruct> ls;
+    exploration_msgs::BranchArray ba;
     exploration_msgs::FrontierArray fa;
     exploration_msgs::RobotInfoArray ria;
 
     // ls 格納
-    ls.resize(b.size());
-    for(int i=0,ie=b.size();i!=ie;++i) ls[i].point = b[i];
-    *ls_ = ls;
+    // ls.resize(b.size());
+    // for(int i=0,ie=b.size();i!=ie;++i) ls[i].point = b[i];
+    // *ls_ = ls;
+    ba.branches.resize(b.size());
+    for(int i=0,ie=b.size();i!=ie;++i) ba.branches[i].point = b[i];
+    *ba_ = ba;
 
     // fa 格納
     fa.frontiers.resize(f.size());
@@ -250,21 +444,12 @@ void SeamlessHybridExploration::loadParams(void){
     nh.param<double>("last_goal_tolerance", LAST_GOAL_TOLERANCE, 1.0);
     nh.param<bool>("canceled_goal_effect", CANCELED_GOAL_EFFECT, true);
     nh.param<double>("canceled_goal_tolerance", CANCELED_GOAL_TOLERANCE, 0.5);
-    nh.param<bool>("on_map_branch_detection", ON_MAP_BRANCH_DETECTION, true);
-    nh.param<double>("on_map_branch_rate", ON_MAP_BRANCH_RATE, 0.5);
-    nh.param<double>("map_window_x", MAP_WINDOW_X, 1.0);
-    nh.param<double>("map_window_y", MAP_WINDOW_Y, 1.0);
-    nh.param<bool>("duplicate_detection", DUPLICATE_DETECTION, true);
-    nh.param<double>("duplicate_tolerance", DUPLICATE_TOLERANCE, 1.5);
-    nh.param<double>("log_current_time", LOG_CURRENT_TIME, 10);
-    nh.param<double>("newer_duplication_threshold", NEWER_DUPLICATION_THRESHOLD, 100);
     nh.param<double>("direction_weight", DIRECTION_WEIGHT, 1.5);
     nh.param<double>("distance_weight", DISTANCE_WEIGHT, 2.5);
-    nh.param<double>("variance_threshold", VARIANCE_THRESHOLD, 1.5);
-    nh.param<double>("covariance_threshold", COVARIANCE_THRESHOLD, 0.7);
     nh.param<double>("other_robot_weight", OTHER_ROBOT_WEIGHT, 1.0);
     nh.param<double>("duplicate_coeff", DUPLICATE_COEFF, 1.2);
     nh.param<double>("on_map_coeff", ON_MAP_COEFF, 1.1);
+    nh.param<double>("last_goal_weight", LAST_GOAL_WEIGHT, 1.2);
     // static parameters
     nh.param<std::string>("robot_name", ROBOT_NAME, "robot1");
     nh.param<std::string>("she_parameter_file_path",SHE_PARAMETER_FILE_PATH,"she_last_parameters.yaml");
@@ -276,21 +461,12 @@ void SeamlessHybridExploration::dynamicParamsCB(exploration::seamless_hybrid_exp
     LAST_GOAL_TOLERANCE = cfg.last_goal_tolerance;
     CANCELED_GOAL_EFFECT = cfg.canceled_goal_effect;
     CANCELED_GOAL_TOLERANCE = cfg.canceled_goal_tolerance;
-    ON_MAP_BRANCH_DETECTION = cfg.on_map_branch_detection;
-    ON_MAP_BRANCH_RATE = cfg.on_map_branch_rate;
-    MAP_WINDOW_X = cfg.map_window_x;
-    MAP_WINDOW_Y = cfg.map_window_y;
-    DUPLICATE_DETECTION = cfg.duplicate_detection;
-    DUPLICATE_TOLERANCE = cfg.duplicate_tolerance;
-    LOG_CURRENT_TIME = cfg.log_current_time;
-    NEWER_DUPLICATION_THRESHOLD = cfg.newer_duplication_threshold;
     DISTANCE_WEIGHT = cfg.distance_weight;
     DIRECTION_WEIGHT = cfg.direction_weight;
-    VARIANCE_THRESHOLD = cfg.variance_threshold;
-    COVARIANCE_THRESHOLD = cfg.covariance_threshold;
     OTHER_ROBOT_WEIGHT = cfg.other_robot_weight;
     DUPLICATE_COEFF = cfg.duplicate_coeff;
     ON_MAP_COEFF = cfg.on_map_coeff;
+    LAST_GOAL_WEIGHT = cfg.last_goal_weight;
 }
 
 void SeamlessHybridExploration::outputParams(void){
@@ -307,19 +483,10 @@ void SeamlessHybridExploration::outputParams(void){
     ofs << "last_goal_tolerance: " << LAST_GOAL_TOLERANCE << std::endl;
     ofs << "canceled_goal_effect: " << (CANCELED_GOAL_EFFECT ? "true" : "false") << std::endl;
     ofs << "canceled_goal_tolerance: " << CANCELED_GOAL_TOLERANCE << std::endl;
-    ofs << "on_map_branch_detection: " << (ON_MAP_BRANCH_DETECTION ? "true" : "false") << std::endl;
-    ofs << "on_map_branch_rate: " << ON_MAP_BRANCH_RATE << std::endl;
-    ofs << "map_window_x: " << MAP_WINDOW_X << std::endl;
-    ofs << "map_window_y: " << MAP_WINDOW_Y << std::endl;
-    ofs << "duplicate_detection: " << (DUPLICATE_DETECTION ? "true" : "false") << std::endl;
-    ofs << "duplicate_tolerance: " << DUPLICATE_TOLERANCE << std::endl;
-    ofs << "log_current_time: " << LOG_CURRENT_TIME << std::endl;
-    ofs << "newer_duplication_threshold: " << NEWER_DUPLICATION_THRESHOLD << std::endl;
     ofs << "distance_weight: " << DISTANCE_WEIGHT << std::endl;
     ofs << "direction_weight: " << DIRECTION_WEIGHT << std::endl;
-    ofs << "variance_threshold: " << VARIANCE_THRESHOLD << std::endl;
-    ofs << "covariance_threshold: " << COVARIANCE_THRESHOLD << std::endl;
     ofs << "other_robot_weight: " << OTHER_ROBOT_WEIGHT << std::endl;
     ofs << "duplicate_coeff: " << DUPLICATE_COEFF << std::endl;
     ofs << "on_map_coeff: " << ON_MAP_COEFF << std::endl;
+    ofs << "last_goal_weight: " << LAST_GOAL_WEIGHT << std::endl;
  }

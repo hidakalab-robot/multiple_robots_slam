@@ -1,4 +1,6 @@
 <launch>
+    <arg name="robot_name"/>
+    <arg name="use_rosbag" default="false"/>
     <arg name="frontier_detection"/>
     <arg name="branch_detection"/>
     <arg name="map_fill"/>
@@ -8,9 +10,10 @@
     <arg name="orig_costmap" default="move_base/global_costmap/costmap"/>
     <arg name="fill_map" default="fill_map"/>
     <arg name="fill_costmap" default="fill_costmap"/>
+    <arg name="pose_log" default="pose_log"/>
 
     <!-- frontier_detection -->
-    <node if="$(arg frontier_detection)" pkg="exploration_support" type="frontier_detection" name="frontier_detection">
+    <node if="$(arg frontier_detection)" pkg="exploration_support" type="frontier_detection" name="frontier_detection" respawn="true">
         <!-- <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
         <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/> -->
         <remap if="$(eval arg('map_fill') and arg('frontier_from_costmap'))" from="map" to="$(arg fill_costmap)"/>
@@ -22,13 +25,16 @@
     </node>
 
     <!-- branch_detection -->
-    <node if="$(arg branch_detection)" pkg="exploration_support" type="branch_detection" name="branch_detection">
+    <node if="$(arg branch_detection)" pkg="exploration_support" type="branch_detection" name="branch_detection" respawn="true">
+        <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
+        <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
+        <remap from="pose_log" to="$(arg pose_log)"/>
         <rosparam file="$(find exploration_support)/param/branch_last_parameters.yaml" command="load" ns="branch"/>
         <param name="branch/branch_parameter_file_path" value="$(find exploration_support)/param/branch_last_parameters.yaml"/>
     </node>
 
     <!-- map_fill -->
-    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="map_fill">
+    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="map_fill" respawn="true">
         <remap from="map" to="$(arg orig_map)"/>
         <remap from="fill_map" to="$(arg fill_map)"/>
         <rosparam file="$(find exploration_support)/param/map_fill_last_parameters.yaml" command="load" ns="map_fill"/>
@@ -36,7 +42,7 @@
     </node>
 
     <!-- costmap_fill -->
-    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="costmap_fill">
+    <node if="$(arg map_fill)" pkg="exploration_support" type="map_fill" name="costmap_fill" respawn="true">
         <remap from="map" to="$(arg orig_costmap)"/>
         <remap from="fill_map" to="$(arg fill_costmap)"/>
         <rosparam file="$(find exploration_support)/param/costmap_fill_last_parameters.yaml" command="load" ns="map_fill"/>
@@ -44,7 +50,7 @@
     </node>
 
     <!-- exploration_manager -->
-    <node pkg="exploration_support" type="exploration_manager" name="exploration_manager">
+    <node pkg="exploration_support" type="exploration_manager" name="exploration_manager" respawn="true">
         <remap if="$(arg map_fill)" from="map" to="$(arg fill_map)"/>
         <remap unless="$(arg map_fill)" from="map" to="$(arg orig_map)"/>
         <rosparam file="$(find exploration_support)/param/exmng_last_parameters.yaml" command="load" ns="exmng"/>
@@ -52,16 +58,25 @@
     </node>
 
     <!-- robot_manager -->
-    <node pkg="exploration_support" type="robot_manager" name="robot_manager">
+    <node pkg="exploration_support" type="robot_manager" name="robot_manager" respawn="true">
+        <!-- <remap if="$(arg use_rosbag)" from="pose_log/merge" to="pose_log/merge/trash"/> -->
+        <param if="$(arg use_rosbag)" name="indivisual_pose_log_topic" value="pose_log/trash"/>
         <param name="pose_log_rate" value="1.0"/>
     </node>
 
     <!-- bumper_continuity -->
-    <node pkg="exploration_support" type="bumper_continuity" name="bumper_continuity"/>
+    <node pkg="exploration_support" type="bumper_continuity" name="bumper_continuity" respawn="true"/>
 
     <!-- visualization -->
-    <node pkg="exploration_support" type="visualization" name="visualization"/>
+    <node pkg="exploration_support" type="visualization" name="visualization" respawn="true"/>
 
     <!-- goal_cancel_observer -->
-    <node pkg="exploration_support" type="goal_cancel_observer" name="goal_cancel_observer"/>
+    <node pkg="exploration_support" type="goal_cancel_observer" name="goal_cancel_observer" respawn="true"/>
+
+    <!-- poselog_optimizer -->
+    <node pkg="exploration_support" type="poselog_optimizer" name="poselog_optimizer" output="screen" respawn="true">
+        <remap from="pose_log" to="pose_log/$(arg robot_name)"/>
+        <!-- <remap unless="$(arg use_rosbag)" from="pose_log" to="pose_log/$(arg robot_name)"/> -->
+        <!-- <remap if="$(arg use_rosbag)" from="pose_log" to="pose_log/merge"/> -->
+    </node>
 </launch>
