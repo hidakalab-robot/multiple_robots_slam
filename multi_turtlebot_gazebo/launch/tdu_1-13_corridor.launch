@@ -9,6 +9,7 @@
     <arg name="rtabmap" default="true"/>
     <arg name="gmapping" default="false"/>
     <arg name="multi" default="false"/>
+    <arg name="scan" default="scan"/>
 
     <include file="$(find gazebo_ros)/launch/empty_world.launch">
         <arg name="use_sim_time" value="true"/>
@@ -22,11 +23,11 @@
     <!-- gazebo上でのロボットの初期位置 (map_mergeのような相対座標ではなく絶対座標で記述)-->
     <arg name="robot1_name" default="robot1"/>
     <arg name="robot1_init_x" default="0.0"/>
-    <!-- <arg name="robot1_init_x" default="14.0"/> -->
+    <!-- <arg name="robot1_init_x" default="7.0"/> -->
     <arg name="robot1_init_y" default="0.0"/>
-    <!-- <arg name="robot1_init_y" default="12.0"/> -->
+    <!-- <arg name="robot1_init_y" default="6.0"/> -->
     <arg name="robot1_init_yaw" default="0.0"/>
-    <!-- <arg name="robot1_init_yaw" default="3.14"/> -->
+    <!-- <arg name="robot1_init_yaw" default="-1.57"/> -->
 
     <group ns="$(arg robot1_name)">
         <include file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_spawn.launch.xml">
@@ -39,7 +40,8 @@
 
         <include if="$(eval arg('mapping') and arg('rtabmap'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_rtabmap.launch.xml">
             <arg name="robot_name"  value="$(arg robot1_name)"/>
-            <arg name="multi" default="$(arg multi)"/>
+            <arg name="multi" value="$(arg multi)"/>
+            <arg name="scan" value="$(arg scan)"/>
         </include>
 
         <include if="$(eval arg('mapping') and arg('gmapping'))" file="$(find multi_turtlebot_gazebo)/launch/includes/one_turtlebot_gmapping.launch.xml">

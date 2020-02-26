@@ -26,7 +26,7 @@ obstacle_layer:
     marking: true
     clearing: true
     min_obstacle_height: 0.35
-    max_obstacle_height: 0.45
+    max_obstacle_height: 0.6
   bump:
     data_type: PointCloud2
     topic: mobile_base/sensors/bumper_pointcloud

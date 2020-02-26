@@ -33,12 +33,13 @@
 	<xacro:property name="cam_op" value="0" />
 	<xacro:property name="cam_oy" value="0" />
 
-  <xacro:property name="urg_px" value="-0.06" />
+  <!-- <xacro:property name="urg_px" value="-0.06" /> -->
+  <xacro:property name="urg_px" value="0.1" />
 	<xacro:property name="urg_py" value="0.0" />
-  <xacro:property name="urg_pz" value="0.0" />
+  <xacro:property name="urg_pz" value="0.15" />
 	<xacro:property name="urg_or" value="0.0" />
 	<xacro:property name="urg_op" value="0.0" />
-	<xacro:property name="urg_oy" value="${M_PI}" />
-
+	<!-- <xacro:property name="urg_oy" value="${M_PI}" /> -->
+  <xacro:property name="urg_oy" value="0.0" />
 
 </robot>
