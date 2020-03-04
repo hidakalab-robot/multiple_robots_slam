@@ -1,0 +1,20 @@
+<launch>
+    <node pkg="tf" type="static_transform_publisher" name="robot1_mo_broadcaster" args="3.0 -3.0 0 1.57 0 0 map fake_odom 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="robot1_ob_broadcaster" args="0 0 0 0 0 0 fake_odom fake_base 100"/>
+
+    <node pkg="tf" type="static_transform_publisher" name="robot2_mo_broadcaster" args="0 0 0 0 0 0 map odom 100"/>
+    <node pkg="tf" type="static_transform_publisher" name="robot2_ob_broadcaster" args="0 0 0 0 0 0 odom base_footprint 100"/>
+
+    <node pkg="exploration_support" type="tf_name_converter" name="tf_name_converter_r2">
+        <remap from="sub_topic" to="/robot2/zed_node/odom"/>
+        <remap from="pub_topic" to="/robot2/zed_node/odom_fix"/>
+        <param name="tf_name" value="fake_odom"/>
+        <param name="child_tf_name" value="fake_base"/>
+    </node>
+
+    <node pkg="exploration_support" type="tf_name_converter" name="tf_name_converter_r1">
+        <remap from="sub_topic" to="/robot1/odom"/>
+        <remap from="pub_topic" to="/robot1/odom_fix"/>
+    </node>
+
+</launch>

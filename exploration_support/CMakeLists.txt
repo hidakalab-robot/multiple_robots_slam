@@ -296,3 +296,10 @@ add_executable(poselog_optimizer
 target_link_libraries(poselog_optimizer
  ${catkin_LIBRARIES}
 )
+
+add_executable(tf_name_converter
+ src/tf_name_converter.cpp
+)
+target_link_libraries(tf_name_converter
+ ${catkin_LIBRARIES}
+)
